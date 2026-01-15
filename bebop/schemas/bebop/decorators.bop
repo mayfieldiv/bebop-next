@@ -1,0 +1,47 @@
+// decorators.bop
+//
+// Copyright 2026 6OVER3 INSTITUTE. All rights reserved.
+//
+// Standard decorator definitions. Import with:
+//
+//   import "bebop/decorators.bop"
+
+package bebop
+
+/// Marks an element as deprecated.
+///
+/// Code generators emit language-appropriate deprecation annotations
+/// (`@Deprecated` in Java, `[[deprecated]]` in C++, `#[deprecated]` in Rust).
+///
+/// Cannot be applied to struct fields. Struct fields are positionally
+/// encoded, so removing a deprecated struct field breaks wire compatibility.
+/// Message fields, which are tagged, can be removed safely.
+#decorator(deprecated) {
+    targets = ALL
+    param reason?: string
+    validate [[
+        if target.kind == "field" and target.parent_kind == "struct" then
+            error("The 'deprecated' decorator cannot be applied to struct fields")
+        end
+    ]]
+}
+
+/// Marks an enum as a bit flags enum.
+///
+/// Members represent bit positions combinable with bitwise OR. Generators
+/// emit bitwise operator overloads or equivalent for the target language.
+///
+/// ```bebop
+/// @flags
+/// enum Permissions : uint8 {
+///   READ = 1;
+///   WRITE = 2;
+///   EXECUTE = 4;
+/// }
+/// ```
+///
+/// Without `@flags`, enum values are mutually exclusive. With `@flags`,
+/// values are composable: `READ | WRITE` is a valid Permissions value.
+#decorator(flags) {
+    targets = ENUM
+}

@@ -1,0 +1,16 @@
+mut struct BasicTypes {
+    a_bool: bool;
+    a_byte: byte;
+    a_int16: int16;
+    a_uint16: uint16;
+    a_int32: int32;
+    a_uint32: uint32;
+    a_int64: int64;
+    a_uint64: uint64;
+    a_float32: float32;
+    a_float64: float64;
+    a_string: string;
+    a_uuid: guid;
+    a_timestamp: timestamp;
+    a_duration: duration;
+}

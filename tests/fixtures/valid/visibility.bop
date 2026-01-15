@@ -1,0 +1,54 @@
+edition = "2026"
+
+// Top-level definitions are exported by default
+struct PublicStruct {
+    value: int32;
+}
+
+// Use 'local' to make top-level definitions file-private
+local struct PrivateStruct {
+    hidden: int32;
+}
+
+// Exported message
+message PublicMessage {
+    name(1): string;
+}
+
+// Local message
+local message PrivateMessage {
+    secret(1): int32;
+}
+
+// Local const
+local const int32 PRIVATE_VALUE = 42;
+
+// Exported const (default)
+const string PUBLIC_NAME = "hello";
+
+// Union with exported and local inline branch definitions
+union Result {
+    // Default visibility (local for nested)
+    Success(1): {
+        value: string;
+    }
+    // Explicitly exported branch - accessible via Result.Error
+    export Error(2): {
+        code: int32;
+        details: string;
+    }
+    // Explicitly local branch (redundant, nested is local by default)
+    Warning(3): {
+        msg: string;
+    }
+}
+
+// Union with mutable struct branches
+union MutableResult {
+    MutSuccess(1): mut {
+        value: string;
+    }
+    export MutError(2): mut {
+        code: int32;
+    }
+}

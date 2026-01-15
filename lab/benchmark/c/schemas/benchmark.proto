@@ -1,0 +1,146 @@
+syntax = "proto3";
+
+package benchmark;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+message Person {
+    int32 id = 1;
+    string name = 2;
+    string email = 3;
+    int32 age = 4;
+}
+
+message Order {
+    int64 order_id = 1;
+    int64 customer_id = 2;
+    repeated int64 item_ids = 3;
+    repeated int32 quantities = 4;
+    double total = 5;
+    int64 timestamp = 6;
+}
+
+message Event {
+    int64 id = 1;
+    string type = 2;
+    string source = 3;
+    int64 timestamp = 4;
+    bytes payload = 5;
+}
+
+message TreeNode {
+    int32 value = 1;
+    repeated TreeNode children = 2;
+}
+
+message JsonNull {}
+
+message JsonBool {
+    bool value = 1;
+}
+
+message JsonNumber {
+    double value = 1;
+}
+
+message JsonString {
+    string value = 1;
+}
+
+message JsonList {
+    repeated JsonValue values = 1;
+}
+
+message JsonObject {
+    map<string, JsonValue> fields = 1;
+}
+
+message JsonValue {
+    oneof value {
+        JsonNull null_val = 1;
+        JsonBool bool_val = 2;
+        JsonNumber number_val = 3;
+        JsonString string_val = 4;
+        JsonList list_val = 5;
+        JsonObject object_val = 6;
+    }
+}
+
+message Document {
+    string title = 1;
+    string body = 2;
+    map<string, JsonValue> metadata = 3;
+}
+
+enum ChunkKind {
+    CHUNK_KIND_UNKNOWN = 0;
+    CHUNK_KIND_PARAGRAPH = 1;
+    CHUNK_KIND_CHAPTER = 2;
+    CHUNK_KIND_HEADING = 3;
+}
+
+message TextSpan {
+    uint32 start = 1;
+    uint32 len = 2;
+    ChunkKind kind = 3;
+}
+
+message ChunkedText {
+    string source = 1;
+    repeated TextSpan spans = 2;
+}
+
+message EmbeddingBF16 {
+    string id = 1;
+    bytes vector = 2;
+}
+
+message EmbeddingF32 {
+    string id = 1;
+    repeated float vector = 2;
+}
+
+message EmbeddingBatch {
+    string model = 1;
+    repeated EmbeddingBF16 embeddings = 2;
+    uint32 usage_tokens = 3;
+}
+
+message TokenLogprob {
+    string token = 1;
+    uint32 token_id = 2;
+    float logprob = 3;
+}
+
+message TokenAlternatives {
+    repeated TokenLogprob top_tokens = 1;
+}
+
+message LLMStreamChunk {
+    uint32 chunk_id = 1;
+    repeated string tokens = 2;
+    repeated TokenAlternatives logprobs = 3;
+    string finish_reason = 4;
+}
+
+message TensorShard {
+    string name = 1;
+    repeated uint32 shape = 2;
+    string dtype = 3;
+    bytes data = 4;
+    uint64 offset = 5;
+    uint64 total_elements = 6;
+}
+
+message InferenceTiming {
+    google.protobuf.Duration queue_time = 1;
+    google.protobuf.Duration inference_time = 2;
+    float tokens_per_second = 3;
+}
+
+message InferenceResponse {
+    string request_id = 1;
+    repeated EmbeddingBF16 embeddings = 2;
+    InferenceTiming timing = 3;
+}

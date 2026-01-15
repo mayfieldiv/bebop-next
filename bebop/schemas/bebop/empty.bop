@@ -1,0 +1,16 @@
+// empty.bop
+//
+// Copyright 2026 6OVER3 INSTITUTE. All rights reserved.
+//
+// Empty record for service methods with no input or no output.
+//
+//   service Notifications {
+//     GetCount(bebop.Empty): CountResponse;
+//     Acknowledge(AckRequest): bebop.Empty;
+//   }
+
+edition = "2026"
+package bebop
+
+/// Record with no fields.
+struct Empty {}

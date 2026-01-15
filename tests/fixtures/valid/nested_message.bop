@@ -1,0 +1,12 @@
+message InnerM { x(1): int32; }
+mut struct InnerS { y: bool; }
+
+message OuterM {
+    innerM(1): InnerM;
+    innerS(2): InnerS;
+}
+
+mut struct OuterS {
+    innerM: InnerM;
+    innerS: InnerS;
+}

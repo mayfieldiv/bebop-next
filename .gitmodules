@@ -1,0 +1,9 @@
+[submodule "tests/unity"]
+	path = tests/unity
+	url = https://github.com/ThrowTheSwitch/Unity
+[submodule "vendor/cyaml"]
+	path = vendor/cyaml
+	url = https://github.com/andrewmd5/cyaml.git
+[submodule "vendor/lsp-framework"]
+	path = vendor/lsp-framework
+	url = https://github.com/leon-bckl/lsp-framework

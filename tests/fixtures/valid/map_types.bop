@@ -1,0 +1,10 @@
+message M { a(1): float32; b(2): float64; }
+struct S { x: int32; y: int32; }
+
+mut struct SomeMaps {
+    m1: map[bool, bool];
+    m2: map[string, map[string, string]];
+    m3: map[int32, map[bool, S][]][];
+    m4: map[string, float32[]][];
+    m5: map[guid, M];
+}

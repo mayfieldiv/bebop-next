@@ -1,0 +1,3 @@
+mut struct WrongMap {
+    m1: map[bool[], bool];
+}

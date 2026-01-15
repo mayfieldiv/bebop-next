@@ -1,0 +1,5 @@
+// This enum should fail because it has no member with value 0
+enum MissingZero {
+    A = 1;
+    B = 2;
+}

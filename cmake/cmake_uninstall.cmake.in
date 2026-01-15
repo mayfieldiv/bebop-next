@@ -1,0 +1,40 @@
+if(NOT EXISTS "@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt")
+    message(FATAL_ERROR "Cannot find install manifest: @CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt")
+endif()
+
+file(READ "@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt" files)
+string(REGEX REPLACE "\n" ";" files "${files}")
+
+# Collect directories to potentially remove
+set(dirs_to_check "")
+
+foreach(file ${files})
+    message(STATUS "Uninstalling $ENV{DESTDIR}${file}")
+    if(IS_SYMLINK "$ENV{DESTDIR}${file}" OR EXISTS "$ENV{DESTDIR}${file}")
+        execute_process(
+            COMMAND "@CMAKE_COMMAND@" -E remove "$ENV{DESTDIR}${file}"
+            RESULT_VARIABLE rm_retval
+        )
+        if(NOT "${rm_retval}" STREQUAL 0)
+            message(FATAL_ERROR "Problem when removing $ENV{DESTDIR}${file}")
+        endif()
+        # Track parent directory
+        get_filename_component(dir "$ENV{DESTDIR}${file}" DIRECTORY)
+        list(APPEND dirs_to_check "${dir}")
+    else()
+        message(STATUS "File $ENV{DESTDIR}${file} does not exist.")
+    endif()
+endforeach()
+
+# Remove empty directories (deepest first)
+list(REMOVE_DUPLICATES dirs_to_check)
+list(SORT dirs_to_check ORDER DESCENDING)
+foreach(dir ${dirs_to_check})
+    if(IS_DIRECTORY "${dir}")
+        file(GLOB dir_contents "${dir}/*")
+        if("${dir_contents}" STREQUAL "")
+            message(STATUS "Removing empty directory ${dir}")
+            execute_process(COMMAND "@CMAKE_COMMAND@" -E remove_directory "${dir}")
+        endif()
+    endif()
+endforeach()

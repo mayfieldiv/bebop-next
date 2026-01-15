@@ -1,0 +1,116 @@
+edition = "2026"
+package reflection
+
+import "bebop/any.bop"
+
+/// Point with two coordinates
+struct Point {
+  x: float32;
+  y: float32;
+}
+
+/// RGB color
+struct Color {
+  r: uint8;
+  g: uint8;
+  b: uint8;
+  a: uint8;
+}
+
+/// All scalar types for comprehensive testing
+struct AllScalars {
+  f_bool: bool;
+  f_byte: byte;
+  f_int8: int8;
+  f_uint8: uint8;
+  f_int16: int16;
+  f_uint16: uint16;
+  f_int32: int32;
+  f_uint32: uint32;
+  f_int64: int64;
+  f_uint64: uint64;
+  f_float32: float32;
+  f_float64: float64;
+  f_string: string;
+  f_uuid: guid;
+}
+
+/// Message with optional fields
+message OptionalFields {
+  name(1): string;
+  age(2): int32;
+  active(3): bool;
+}
+
+/// Test for arrays
+struct ArrayContainer {
+  integers: int32[];
+  strings: string[];
+  points: Point[];
+}
+
+/// Test for fixed arrays
+struct FixedArrayContainer {
+  coords: float32[3];
+  bytes: byte[16];
+}
+
+/// Test for maps
+struct MapContainer {
+  string_to_int: map[string, int32];
+  int_to_point: map[int32, Point];
+}
+
+/// Nested struct
+struct Outer {
+  id: int32;
+  inner: Inner;
+
+  struct Inner {
+    value: string;
+    count: int32;
+  }
+}
+
+enum Status : uint8 {
+  Unknown = 0;
+  Active = 1;
+  Inactive = 2;
+  Pending = 3;
+}
+
+struct WithEnum {
+  status: Status;
+  name: string;
+}
+
+/// Union for polymorphic data
+union Shape {
+  Circle(1): {
+    radius: float32;
+    center: Point;
+  }
+  Rectangle(2): {
+    width: float32;
+    height: float32;
+    origin: Point;
+  }
+  Triangle(3): {
+    a: Point;
+    b: Point;
+    c: Point;
+  }
+}
+
+/// Event envelope using Any for polymorphic payload
+struct Event {
+  id: guid;
+  timestamp: uint64;
+  payload: bebop.Any;
+}
+
+/// Container with multiple Any values
+struct AnyContainer {
+  items: bebop.Any[];
+  named: map[string, bebop.Any];
+}

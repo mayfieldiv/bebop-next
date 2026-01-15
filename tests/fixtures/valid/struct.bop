@@ -1,0 +1,61 @@
+mut struct BasicTypes2 {
+    a_bool: bool;
+    a_byte: byte;
+    a_int16: int16;
+    a_uint16: uint16;
+    a_int32: int32;
+    a_uint32: uint32;
+    a_int64: int64;
+    a_uint64: uint64;
+    a_float32: float32;
+    a_float64: float64;
+    a_string: string;
+    a_uuid: guid;
+    a_timestamp: timestamp;
+    a_duration: duration;
+}
+
+mut struct BasicArrays2 {
+    a_bool: bool[];
+    a_byte: byte[];
+    a_int16: int16[];
+    a_uint16: uint16[];
+    a_int32: int32[];
+    a_uint32: uint32[];
+    a_int64: int64[];
+    a_uint64: uint64[];
+    a_float32: float32[];
+    a_float64: float64[];
+    a_string: string[];
+    a_uuid: guid[];
+}
+
+struct S2 { x: int32; y: int32; }
+
+mut struct SomeMaps2 {
+    m1: map[bool, bool];
+    m2: map[string, map[string, string]];
+    m3: map[int32, map[bool, S2][]][];
+    m4: map[string, float32[]][];
+}
+
+mut struct TestInt32Array2 { a: int32[]; }
+
+mut struct ArrayOfStrings2 {
+    strings: string[];
+}
+
+mut struct StructOfStructs {
+    basicTypes: BasicTypes2;
+    basicArrays: BasicArrays2;
+}
+
+mut struct EmptyStruct {}
+
+mut struct OpcodeStruct {
+    x: int32;
+}
+
+mut struct ShouldNotHaveLifetime {
+    v: OpcodeStruct[];
+}

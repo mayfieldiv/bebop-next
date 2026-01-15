@@ -1,0 +1,76 @@
+// Decorator demonstrating both validate and export blocks
+
+#decorator(range) {
+    targets = FIELD
+    param min!: int32
+    param max!: int32
+
+    validate [[
+        if min >= max then
+            error("min must be less than max")
+        end
+    ]]
+
+    export [[
+        return {
+            constraint = "range",
+            range_min = min,
+            range_max = max,
+            width = max - min
+        }
+    ]]
+}
+
+#decorator(indexed) {
+    targets = FIELD
+    param key!: string
+    param unique?: bool
+
+    validate [[
+        local valid_keys = { id = true, name = true, timestamp = true }
+        if not valid_keys[key] then
+            error("invalid index key: " .. key)
+        end
+    ]]
+
+    export [[
+        return {
+            index_key = key,
+            is_unique = unique or false
+        }
+    ]]
+}
+
+#decorator(computed) {
+    targets = FIELD
+    param formula!: string
+
+    validate [[
+        if #formula == 0 then
+            error("formula cannot be empty")
+        end
+    ]]
+
+    export [[
+        return {
+            expression = formula
+        }
+    ]]
+}
+
+struct Product {
+    @indexed(key: "id", unique: true)
+    id: guid;
+
+    @indexed(key: "name")
+    name: string;
+
+    @range(min: 0, max: 10000)
+    price: int32;
+
+    @range(min: 0, max: 1000000)
+    quantity: int32;
+
+    @computed(formula: "price * quantity")
+    total: int64;
+}

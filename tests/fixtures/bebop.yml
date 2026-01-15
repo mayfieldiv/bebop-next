@@ -1,0 +1,17 @@
+sources:
+  - "schemas/**/*.bop"
+  - "shared/*.bop"
+
+exclude:
+  - "**/vendor/**"
+
+include:
+  - "vendor/bebop-std"
+
+plugins:
+  c: ./generated/c
+  typescript: ./generated/ts
+
+options:
+  namespace: MyApp.Models
+  emit_source_info: "true"

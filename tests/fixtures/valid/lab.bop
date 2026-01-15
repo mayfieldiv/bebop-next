@@ -1,0 +1,16 @@
+mut struct Int32s { a: int32[]; }
+mut struct Uint32s { a: uint32[]; }
+mut struct Float32s { a: float32[]; }
+mut struct Int64s { a: int64[]; }
+mut struct Uint64s { a: uint64[]; }
+mut struct Float64s { a: float64[]; }
+
+enum VideoCodec { H264=0; H265=1; }
+mut struct VideoData { time: float64; width: uint32; height: uint32; fragment: byte[]; }
+message MediaMessage { codec(1): VideoCodec; data(2): VideoData; }
+
+// Should be able to decode a "SkipTestNewContainer" as a "SkipTestOldContainer".
+message SkipTestOld { x(1): int32; y(2): int32; }
+message SkipTestNew { x(1): int32; y(2): int32; z(3): int32; }
+message SkipTestOldContainer { s(1): SkipTestOld; after(2): int32; }
+message SkipTestNewContainer { s(1): SkipTestNew; after(2): int32; }

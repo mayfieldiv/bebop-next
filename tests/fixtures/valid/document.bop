@@ -1,0 +1,13 @@
+// Test importing the well-known JSON types
+
+edition = "2026"
+package test
+
+import "bebop/json.bop"
+
+message Document {
+    title(1): string;
+    metadata(2): bebop.Object;
+    tags(3): bebop.List;
+    content(4): bebop.Value;
+}

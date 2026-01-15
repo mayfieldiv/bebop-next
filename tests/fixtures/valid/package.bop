@@ -1,0 +1,14 @@
+edition = "2026"
+
+package my.test.package;
+
+struct Point {
+    x: float32;
+    y: float32;
+}
+
+message Vector {
+    x(1): float32;
+    y(2): float32;
+    z(3): float32;
+}

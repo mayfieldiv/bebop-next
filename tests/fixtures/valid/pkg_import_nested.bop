@@ -1,0 +1,15 @@
+// Test importing and using nested types from another package
+package graphics;
+
+import "pkg_nested.bop"
+
+// Reference exported nested type from another package by FQN
+struct Polygon {
+    vertices: shapes.Container.Point[];
+}
+
+// Also have local types
+struct Bounds {
+    min: shapes.Container.Point;
+    max: shapes.Container.Point;
+}

@@ -1,0 +1,18 @@
+import "bebop/decorators.bop"
+
+message Msg { a(1): float32; b(2): float64; }
+/** other docs */
+message InnerM3 { x(1): int32; }
+mut struct InnerS3 { y: bool; }
+
+message OuterM3 {
+    @deprecated("reasons")
+    innerM(1): InnerM3;
+    /** some docs */
+    innerS(2): InnerS3;
+}
+
+mut struct OuterS3 {
+    innerM: InnerM3;
+    innerS: InnerS3;
+}

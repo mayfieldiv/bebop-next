@@ -1,0 +1,17 @@
+###############################################################################
+# Bazel now uses Bzlmod by default to manage external dependencies.
+# Please consider migrating your external dependencies from WORKSPACE to MODULE.bazel.
+#
+# For more details, please check https://github.com/bazelbuild/bazel/issues/18958
+###############################################################################
+
+module(name = "cwisstable")
+
+# Abseil C++ - use the latest stable version
+bazel_dep(name = "abseil-cpp", version = "20240722.0")
+
+# GoogleTest framework
+bazel_dep(name = "googletest", version = "1.15.2")
+
+# Google Benchmark
+bazel_dep(name = "google_benchmark", version = "1.9.0")

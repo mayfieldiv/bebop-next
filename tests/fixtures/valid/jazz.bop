@@ -1,0 +1,27 @@
+enum Instrument {
+    Sax = 0;
+    Trumpet = 1;
+    Clarinet = 2;
+}
+
+/* test */
+struct Musician {
+    /* a name */
+    name: string;
+	/* an instrument */
+    plays: Instrument;
+}
+
+message Song {
+    title(1): string;
+    year(2): uint16;
+    performers(3): Musician[];
+}
+
+mut struct Library {
+    songs: map[guid, Song];
+}
+
+struct AudioData {
+    samples: float32[];
+}

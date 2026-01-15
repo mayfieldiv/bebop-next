@@ -1,0 +1,9 @@
+// Decorator definitions in the "validators" package
+package validators;
+
+/// Validates that a numeric field is within a range.
+#decorator(range) {
+    targets = FIELD
+    param min!: float64
+    param max?: float64
+}

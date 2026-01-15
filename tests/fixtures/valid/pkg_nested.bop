@@ -1,0 +1,22 @@
+// Test nested types with packages
+package shapes;
+
+struct Container {
+    id: int32;
+
+    // Exported nested type - accessible as shapes.Container.Point
+    export struct Point {
+        x: float32;
+        y: float32;
+    }
+
+    // Local nested type - not accessible outside this file
+    struct Internal {
+        data: string;
+    }
+}
+
+// Reference nested type within same package
+struct Drawing {
+    points: Container.Point[];
+}

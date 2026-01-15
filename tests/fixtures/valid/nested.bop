@@ -1,0 +1,84 @@
+edition = "2026"
+import "bebop/decorators.bop"
+
+// Test nested type definitions inside struct/message/union bodies
+
+// Struct with nested types
+struct Container {
+    id: int32;
+    name: string;
+
+    // Nested struct (local by default)
+    struct Metadata {
+        key: string;
+        value: string;
+    }
+
+    // Exported nested struct (accessible as Container.Point)
+    export struct Point {
+        x: float32;
+        y: float32;
+    }
+
+    // Nested enum
+    enum Status {
+        Unknown = 0;
+        Active = 1;
+        Inactive = 2;
+    }
+}
+
+// Message with nested types
+message Event {
+    type(1): string;
+    timestamp(2): int64;
+
+    // Nested message
+    message Payload {
+        data(1): string;
+    }
+
+    // Nested struct
+    struct Header {
+        name: string;
+        value: string;
+    }
+}
+
+// Union with nested types (in addition to branch definitions)
+union Result {
+    Success(1): {
+        value: string;
+    }
+    Error(2): {
+        code: int32;
+        errorMessage: string;
+    }
+
+    // Additional nested type (not a branch)
+    export enum StatusCode {
+        Ok = 0;
+        Fail = 1;
+    }
+}
+
+// Reference nested types using qualified names
+struct UsesNested {
+    point: Container.Point;
+    status: Container.Status;
+    resultStatus: Result.StatusCode;
+}
+
+// Decorated nested type
+struct WithDecoratedNested {
+    value: int32;
+
+    @deprecated("use NewInner instead")
+    struct OldInner {
+        data: string;
+    }
+
+    struct NewInner {
+        data: int32;
+    }
+}

@@ -1,0 +1,606 @@
+edition = "2026"
+package codegen.all
+
+import "bebop/decorators.bop"
+import "codegen_base.bop"
+
+// =============================================================================
+// Constants - all literal types
+// =============================================================================
+
+const byte CONST_BYTE = 0xFF;
+const int32 CONST_INT32 = -2147483647;
+const uint64 CONST_UINT64 = 0x123ffffffff;
+const float64 CONST_FLOAT64 = 3.14159265358979;
+const float64 CONST_INF = inf;
+const float64 CONST_NEG_INF = -inf;
+const float64 CONST_NAN = nan;
+const bool CONST_TRUE = true;
+const bool CONST_FALSE = false;
+const string emoji = "Hello, \u{1F600}!";
+const string CONST_STRING = "hello ""world""
+with newlines";
+const guid CONST_UUID = "550e8400-e29b-41d4-a716-446655440000";
+
+local const int32 LOCAL_CONST = 42;
+
+// =============================================================================
+// Enums - all base types
+// =============================================================================
+
+enum EnumByte : byte {
+    Zero = 0;
+    One = 1;
+    Max = 255;
+}
+
+enum EnumUint8 : uint8 {
+    Zero = 0;
+    Max = 255;
+}
+
+enum EnumInt8 : int8 {
+    Min = -128;
+    Zero = 0;
+    Max = 127;
+}
+
+enum EnumInt16 : int16 {
+    Min = -32768;
+    Zero = 0;
+    Max = 32767;
+}
+
+enum EnumUint16 : uint16 {
+    Zero = 0;
+    Max = 65535;
+}
+
+enum EnumInt32 : int32 {
+    Min = -2147483648;
+    Zero = 0;
+    Max = 2147483647;
+}
+
+enum EnumUint32 : uint32 {
+    Zero = 0;
+    Max = 4294967295;
+}
+
+enum EnumInt64 : int64 {
+    Min = -0x7FFFFFFFFFFFFFFF;
+    Zero = 0;
+    Max = 0x7FFFFFFFFFFFFFFF;
+}
+
+enum EnumUint64 : uint64 {
+    Zero = 0;
+    Large = 0x7FFFFFFFFFFFFFFF;
+}
+
+/// Bitflag enum with expressions.
+@flags
+enum Permissions : uint32 {
+    None = 0;
+    Read = 0x0001;
+    Write = 1 << 1;
+    Execute = 1 << 2;
+    ReadWrite = Read | Write;
+    All = Read | Write | Execute;
+}
+
+@flags
+enum FileFlags : byte {
+    None = 0;
+    Hidden = 1;
+    ReadOnly = 2;
+    System = 4;
+}
+
+/// Enum with deprecated members.
+enum DeprecatedMembers {
+    @deprecated("use NewValue instead")
+    OldValue = 0;
+    NewValue = 1;
+    @deprecated
+    AnotherOld = 2;
+}
+
+local enum LocalEnum {
+    A = 0;
+    B = 1;
+}
+
+// =============================================================================
+// Structs - all scalar types
+// =============================================================================
+
+/// All scalar primitive types.
+struct AllScalars {
+    f_bool: bool;
+    f_byte: byte;
+    f_int8: int8;
+    f_uint8: uint8;
+    f_int16: int16;
+    f_uint16: uint16;
+    f_int32: int32;
+    f_uint32: uint32;
+    f_int64: int64;
+    f_uint64: uint64;
+    f_int128: int128;
+    f_uint128: uint128;
+    f_float16: float16;
+    f_float32: float32;
+    f_float64: float64;
+    f_string: string;
+    f_uuid: guid;
+    f_timestamp: timestamp;
+    f_duration: duration;
+}
+
+struct EmptyStruct {
+}
+
+mut struct MutableStruct {
+    value: int32;
+    name: string;
+}
+
+@deprecated("use NewStruct instead")
+struct DeprecatedStruct {
+    x: int32;
+}
+
+local struct LocalStruct {
+    hidden: int32;
+}
+
+/// Struct using imported types.
+struct UsesImported {
+    point: base.Point;
+    color: base.Color;
+    status: base.StatusCode;
+    msg: base.SimpleMessage;
+}
+
+/// Struct with enum fields.
+struct EnumFields {
+    e_byte: EnumByte;
+    e_int32: EnumInt32;
+    e_uint64: EnumUint64;
+    perms: Permissions;
+    flags: FileFlags;
+}
+
+// =============================================================================
+// Arrays - dynamic
+// =============================================================================
+
+struct DynamicArrays {
+    arr_bool: bool[];
+    arr_byte: byte[];
+    arr_int8: int8[];
+    arr_uint8: uint8[];
+    arr_int16: int16[];
+    arr_uint16: uint16[];
+    arr_int32: int32[];
+    arr_uint32: uint32[];
+    arr_int64: int64[];
+    arr_uint64: uint64[];
+    arr_int128: int128[];
+    arr_uint128: uint128[];
+    arr_float16: float16[];
+    arr_float32: float32[];
+    arr_float64: float64[];
+    arr_string: string[];
+    arr_uuid: guid[];
+    arr_timestamp: timestamp[];
+    arr_duration: duration[];
+}
+
+struct ComplexArrays {
+    points: base.Point[];
+    colors: base.Color[];
+    enums: EnumByte[];
+    records: AllScalars[];
+}
+
+struct NestedArrays {
+    matrix: int32[][];
+    table: string[][];
+    point_grid: base.Point[][];
+}
+
+// =============================================================================
+// Arrays - fixed
+// =============================================================================
+
+struct FixedScalarArrays {
+    arr_bool: bool[4];
+    arr_byte: byte[16];
+    arr_int8: int8[8];
+    arr_uint8: uint8[32];
+    arr_int16: int16[3];
+    arr_uint16: uint16[6];
+    arr_int32: int32[10];
+    arr_uint32: uint32[5];
+    arr_int64: int64[2];
+    arr_uint64: uint64[4];
+    arr_int128: int128[2];
+    arr_uint128: uint128[2];
+    arr_float16: float16[8];
+    arr_float32: float32[3];
+    arr_float64: float64[2];
+    arr_string: string[3];
+    arr_uuid: guid[2];
+    arr_timestamp: timestamp[4];
+    arr_duration: duration[2];
+}
+
+struct FixedComplexArrays {
+    triangle: base.Point[3];
+    corners: base.Color[4];
+    statuses: EnumByte[5];
+}
+
+struct NestedFixedArrays {
+    matrix: int32[3][2];
+    tensor: float64[4][3];
+    cube: byte[8][4][2];
+}
+
+struct MixedArrays {
+    dynamic_of_fixed: byte[10][];
+    fixed_of_dynamic: int32[][3];
+    dynamic_of_fixed_strings: string[2][];
+}
+
+struct SingleElementArrays {
+    solo: int32[1];
+    single_str: string[1];
+}
+
+// =============================================================================
+// Maps
+// =============================================================================
+
+struct PrimitiveMaps {
+    m_bool: map[bool, bool];
+    m_int_str: map[int32, string];
+    m_str_int: map[string, int32];
+    m_uuid_str: map[guid, string];
+    m_int64_bool: map[int64, bool];
+    m_uint_float: map[uint32, float64];
+}
+
+struct ComplexValueMaps {
+    m_str_point: map[string, base.Point];
+    m_int_color: map[int32, base.Color];
+    m_uuid_record: map[guid, AllScalars];
+    m_str_enum: map[string, EnumByte];
+}
+
+struct ArrayValueMaps {
+    m_str_int_arr: map[string, int32[]];
+    m_int_str_arr: map[int32, string[]];
+    m_str_point_arr: map[string, base.Point[]];
+}
+
+struct NestedMaps {
+    nested: map[string, map[string, string]];
+    deep: map[int32, map[bool, base.Point][]][];
+    arr_of_maps: map[string, float32[]][];
+}
+
+struct MapWithFixedArrays {
+    labeled_values: map[string, int32[5]];
+    hash_lookup: map[uint32, byte[16]];
+}
+
+// =============================================================================
+// Messages
+// =============================================================================
+
+/// Message with all optional scalar types.
+message AllOptionalScalars {
+    f_bool(1): bool;
+    f_byte(2): byte;
+    f_int8(3): int8;
+    f_uint8(4): uint8;
+    f_int16(5): int16;
+    f_uint16(6): uint16;
+    f_int32(7): int32;
+    f_uint32(8): uint32;
+    f_int64(9): int64;
+    f_uint64(10): uint64;
+    f_int128(11): int128;
+    f_uint128(12): uint128;
+    f_float16(13): float16;
+    f_float32(14): float32;
+    f_float64(15): float64;
+    f_string(16): string;
+    f_uuid(17): guid;
+    f_timestamp(18): timestamp;
+    f_duration(19): duration;
+}
+
+message EmptyMessage {
+}
+
+/// Message with sparse field indices.
+message SparseIndices {
+    first(1): string;
+    tenth(10): string;
+    fiftieth(50): string;
+    hundredth(100): string;
+    last(255): string;
+}
+
+/// Message with deprecated fields.
+message DeprecatedFields {
+    current(1): string;
+    @deprecated
+    old_field(2): string;
+    @deprecated("Use new_name instead")
+    legacy_name(3): string;
+    new_name(4): string;
+    @deprecated("Removed in v2.0")
+    obsolete_count(5): int32;
+}
+
+message ComplexOptionals {
+    position(1): base.Point;
+    color(2): base.Color;
+    numbers(3): int32[];
+    lookup(4): map[string, int32];
+    status(5): EnumByte;
+    record(6): AllScalars;
+    fixed_arr(7): byte[16];
+}
+
+message FixedArrayMessage {
+    signature(1): byte[32];
+    dimensions(2): int32[4];
+    tags(3): string[2];
+    single_uuid(4): guid[1];
+}
+
+local message LocalMessage {
+    secret(1): int32;
+}
+
+// =============================================================================
+// Unions - inline and external references
+// =============================================================================
+
+/// Union with inline struct definitions.
+union InlineStructUnion {
+    Circle(1): {
+        radius: float32;
+        center: base.Point;
+    }
+    Rectangle(2): {
+        width: float32;
+        height: float32;
+        top_left: base.Point;
+    }
+    Triangle(3): {
+        a: base.Point;
+        b: base.Point;
+        c: base.Point;
+    }
+}
+
+/// Union with inline message definitions.
+union InlineMessageUnion {
+    Request(1): message {
+        method(1): string;
+        path(2): string;
+        headers(3): map[string, string];
+    }
+    Response(2): message {
+        status_code(1): int32;
+        body(2): string;
+    }
+    Error(3): message {
+        code(1): int32;
+        details(2): string;
+    }
+}
+
+/// Union with type references.
+union TypeRefUnion {
+    Point(1): base.Point
+    Color(2): base.Color
+    Scalars(3): AllScalars
+    Empty(4): EmptyStruct
+}
+
+/// Union mixing inline and external.
+union MixedUnion {
+    Point(1): base.Point
+    Custom(2): {
+        name: string;
+        value: int32;
+    }
+    Color(3): base.Color
+    MutableBranch(4): mut {
+        flag: bool;
+        amount: float64;
+    }
+}
+
+/// Union with export/local branches.
+union VisibilityUnion {
+    LocalBranch(1): {
+        value: string;
+    }
+    export ExportedBranch(2): {
+        code: int32;
+        details: string;
+    }
+    MutBranch(3): mut {
+        flag: bool;
+    }
+    export MutExportBranch(4): mut {
+        data: int32;
+    }
+}
+
+/// Union with complex content in branches.
+union ComplexContentUnion {
+    WithArrays(1): {
+        values: int32[];
+        points: base.Point[];
+        lookup: map[string, int32];
+    }
+    WithMaps(2): {
+        point_map: map[string, base.Point];
+        indexed_strings: map[int32, string[]];
+    }
+    WithFixed(3): {
+        hash: byte[16];
+        quad: int32[4];
+    }
+}
+
+// =============================================================================
+// Nested definitions
+// =============================================================================
+
+/// Struct with nested types.
+struct OuterStruct {
+    id: int32;
+    name: string;
+
+    struct InnerStruct {
+        key: string;
+        value: string;
+    }
+
+    export struct ExportedInner {
+        x: float32;
+        y: float32;
+    }
+
+    enum InnerEnum {
+        Unknown = 0;
+        Active = 1;
+        Inactive = 2;
+    }
+
+    struct Level1 {
+        struct Level2 {
+            struct Level3 {
+                deep_value: int32;
+            }
+            level_3: Level3;
+        }
+        level_2: Level2;
+    }
+}
+
+/// Message with nested types.
+message OuterMessage {
+    type(1): string;
+    timestamp(2): int64;
+
+    message InnerMessage {
+        data(1): string;
+    }
+
+    struct InnerStruct {
+        name: string;
+        value: string;
+    }
+
+    enum InnerEnum {
+        None = 0;
+        Some = 1;
+    }
+}
+
+/// Union with additional nested types.
+union UnionWithNested {
+    Success(1): {
+        value: string;
+    }
+    Failure(2): {
+        code: int32;
+        msg: string;
+    }
+
+    enum ResultCode {
+        Ok = 0;
+        Error = 1;
+    }
+}
+
+/// Using qualified names for nested types.
+struct UsesNestedTypes {
+    point: OuterStruct.ExportedInner;
+    status: OuterStruct.InnerEnum;
+}
+
+// =============================================================================
+// Services
+// =============================================================================
+
+service EchoService {
+    Ping(base.SimpleMessage): base.SimpleMessage;
+    GetPoint(base.SimpleMessage): base.Point;
+    SetValue(AllScalars): EmptyMessage;
+}
+
+service StreamService : EchoService {
+    Watch(base.SimpleMessage): stream base.Point;
+    Upload(stream AllScalars): base.SimpleMessage;
+    Chat(stream base.SimpleMessage): stream base.SimpleMessage;
+}
+
+// =============================================================================
+// Kitchen sink - combines everything
+// =============================================================================
+
+struct KitchenSink {
+    scalars: AllScalars;
+    empty: EmptyStruct;
+    enums: EnumFields;
+    dynamic_arrays: DynamicArrays;
+    fixed_arrays: FixedScalarArrays;
+    complex_arrays: ComplexArrays;
+    primitive_maps: PrimitiveMaps;
+    complex_maps: ComplexValueMaps;
+    imported: UsesImported;
+    inline_union: InlineStructUnion;
+    ref_union: TypeRefUnion;
+    nested: OuterStruct;
+}
+
+message KitchenSinkMessage {
+    scalars(1): AllScalars;
+    empty(2): EmptyStruct;
+    enums(3): EnumFields;
+    dynamic_arrays(4): DynamicArrays;
+    fixed_arrays(5): FixedScalarArrays;
+    primitive_maps(6): PrimitiveMaps;
+    imported(7): UsesImported;
+    inline_union(8): InlineStructUnion;
+    nested(9): OuterStruct;
+}
+
+/// Node in a tree (no self-reference - use guid to link).
+struct TreeNode {
+    id: guid;
+    name: string;
+    value: int32;
+    child_ids: guid[];
+}
+
+/// Graph-like structure.
+struct GraphNode {
+    id: guid;
+    label: string;
+    adjacent_ids: guid[];
+    named_edges: map[string, guid];
+}

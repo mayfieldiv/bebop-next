@@ -1,0 +1,69 @@
+struct ScalarFixedArrays {
+    flags: bool[4];
+    hash: byte[16];
+    offsets: int8[8];
+    raw: uint8[32];
+    shorts: int16[3];
+    halves: uint16[6];
+    values: int32[10];
+    ids: uint32[5];
+    bigNums: int64[2];
+    timestamps: uint64[4];
+    halfFloats: float16[8];
+    positions: float32[3];
+    coordinates: float64[2];
+    largeInts: int128[2];
+    largeUints: uint128[2];
+    names: string[3];
+    identifiers: guid[2];
+    events: timestamp[4];
+    intervals: duration[2];
+}
+
+struct NestedFixedArrays {
+    matrix: int32[3][2];
+    tensor: float64[4][3];
+    cube: byte[8][4][2];
+}
+
+struct MixedArrays {
+    dynamicOfFixed: byte[10][];
+    fixedOfDynamic: int32[][3];
+    dynamicOfFixedStrings: string[2][];
+}
+
+struct MapWithFixedArrays {
+    labeledValues: map[string, int32[5]];
+    hashLookup: map[uint32, byte[16]];
+}
+
+struct Point {
+    xyz: float32[3];
+}
+
+struct UsesDefinedType {
+    corners: Point[4];
+    dynamicPoints: Point[];
+    pointGrid: Point[2][3];
+}
+
+message FixedArrayMessage {
+    signature(1): byte[32];
+    dimensions(2): int32[4];
+    tags(3): string[2];
+    singleGuid(4): guid[1];
+}
+
+mut struct MutableFixedArrays {
+    data: int32[10];
+    buffer: byte[256];
+}
+
+struct MaxSizeFixedArray {
+    maxBuffer: byte[65535];
+}
+
+struct SingleElementFixed {
+    solo: int32[1];
+    singleStr: string[1];
+}

@@ -1,0 +1,128 @@
+// any.bop
+//
+// Copyright 2026 6OVER3 INSTITUTE. All rights reserved.
+//
+// Any wraps a serialized Bebop record with a URL identifying its type. The
+// receiver decodes based on type_url, so sender and receiver don't need to
+// agree on a single type at compile time.
+//
+//
+// PACKING AND UNPACKING
+//
+// Runtime libraries provide pack/unpack utilities. API varies by language:
+//
+//   C:
+//     ChatMessage msg = { .sender = "alice", .text = "hello" };
+//     bebop_Any any;
+//     bebop_any_pack(&any, &msg, ChatMessage_encode, BEBOP_TYPE_URL_PREFIX);
+//     ...
+//     ChatMessage unpacked;
+//     if (bebop_any_unpack(&any, &unpacked, ChatMessage_decode)) { ... }
+//
+//   TypeScript:
+//     const msg: ChatMessage = { sender: "alice", text: "hello" };
+//     const any = Any.pack(msg, ChatMessage);
+//     ...
+//     if (any.is(ChatMessage)) {
+//       const unpacked = any.unpack(ChatMessage);
+//     }
+//
+//   Rust:
+//     let msg = ChatMessage { sender: "alice", text: "hello" };
+//     let any = Any::pack(&msg)?;
+//     ...
+//     if any.is::<ChatMessage>() {
+//       let unpacked: ChatMessage = any.unpack()?;
+//     }
+//
+//
+// TYPE URL FORMAT
+//
+// The type_url field contains a URL-like identifier:
+//
+//   {prefix}/{fully.qualified.TypeName}
+//
+// Examples:
+//   type.bebop.sh/myapp.ChatMessage
+//   type.bebop.sh/myapp.events.UserCreated
+//   mycompany.com/internal.Payload
+//
+// The prefix is configurable per-call to pack(). The default is TYPE_URL_PREFIX.
+// Unpack extracts the type name by finding the last "/" and comparing
+// everything after it to the target type's fully qualified name.
+//
+// Requirements:
+//   - Must contain at least one "/" character
+//   - The segment after the last "/" must be the fully qualified type name
+//   - The type name should be in canonical form (no leading ".")
+//
+//
+// TYPE RESOLUTION
+//
+// When unpacking, the runtime maps type names to decoders. Two approaches:
+//
+// 1. Static registration: Types register at startup. Unpack looks up the
+//    decoder by type name. This is the common case when all types are known
+//    at compile time.
+//
+// 2. Dynamic lookup: The type_url can point to a schema registry that returns
+//    a DescriptorSet. The runtime uses the descriptor to decode dynamically.
+//    This enables processing records whose types weren't known at compile time.
+//
+// Most applications use static registration. Dynamic lookup is optional and
+// implementation-specific.
+//
+//
+// JSON REPRESENTATION
+//
+// When serialized to JSON, Any uses the embedded record's JSON form with an
+// additional "@type" field:
+//
+//   {
+//     "@type": "type.bebop.sh/myapp.ChatMessage",
+//     "sender": "alice",
+//     "text": "hello"
+//   }
+//
+// For types with custom JSON representations (like timestamp or duration
+// if represented as strings), the value appears in a "value" field:
+//
+//   {
+//     "@type": "type.bebop.sh/bebop.Timestamp",
+//     "value": "2026-01-15T10:30:00Z"
+//   }
+
+edition = "2026"
+package bebop
+
+/// Default type URL prefix for Bebop types.
+///
+/// Pack functions use this prefix when no custom prefix is specified.
+/// The trailing slash is included, so usage is `TYPE_URL_PREFIX + fqn`:
+///
+/// ```
+/// type_url = TYPE_URL_PREFIX + "myapp.ChatMessage"
+/// // Result: "type.bebop.sh/myapp.ChatMessage"
+/// ```
+const string TYPE_URL_PREFIX = "type.bebop.sh/";
+
+/// Holds any Bebop record (struct, message, or union) with its type URL.
+///
+/// ```bebop
+/// import "bebop/any.bop"
+///
+/// message Event {
+///   payload(1): bebop.Any;
+/// }
+/// ```
+///
+/// Pack a record into Any, then unpack on the other side using `type_url`
+/// to select the right decoder.
+struct Any {
+    /// Format: `{prefix}/{fqn}` (e.g., `type.bebop.sh/myapp.ChatMessage`).
+    /// Unpack matches the part after the last `/` against the target type.
+    type_url: string;
+
+    /// Wire-encoded record. Decode using the type indicated by `type_url`.
+    value: byte[];
+}

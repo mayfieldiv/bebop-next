@@ -1,0 +1,10 @@
+edition = "2026"
+
+import "other.bop"
+
+// Error: package must come before imports
+package my.package;
+
+struct Foo {
+    x: int32;
+}

@@ -1,0 +1,23 @@
+import "bebop/decorators.bop"
+
+enum FurnitureFamily {
+    Bed = 0;
+    Table = 1;
+    Shoe = 2;
+}
+
+struct Furniture {
+    name: string;
+    price: uint32;
+	family: FurnitureFamily;
+}
+
+message RequestCatalog {
+    family(1): FurnitureFamily;
+	@deprecated("Nobody react to what I'm about to say...")
+	secretTunnel(2): string;
+}
+
+struct RequestResponse {
+    availableFurniture: Furniture[];
+}

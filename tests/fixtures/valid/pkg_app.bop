@@ -1,0 +1,29 @@
+// Application schema that imports from types package
+package app;
+
+import "pkg_types.bop"
+
+// Reference imported types by FQN
+struct Rectangle {
+    origin: types.Point;
+    size: types.Size;
+    color: types.Color;
+}
+
+// Local type with same simple name as imported type (no conflict due to packages)
+struct Point {
+    latitude: float64;
+    longitude: float64;
+}
+
+// Use local Point (simple name resolves to current package first)
+struct Location {
+    coords: Point;           // Resolves to app.Point
+    screen: types.Point;     // Resolves to types.Point
+}
+
+message Sprite {
+    position(1): types.Point;
+    dimensions(2): types.Size;
+    tint(3): types.Color;
+}

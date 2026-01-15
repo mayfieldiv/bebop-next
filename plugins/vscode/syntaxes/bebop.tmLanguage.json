@@ -1,0 +1,558 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Bebop",
+	"scopeName": "source.bebop",
+	"patterns": [
+		{ "include": "#comments" },
+		{ "include": "#decorator-definition" },
+		{ "include": "#decorator-usage" },
+		{ "include": "#edition" },
+		{ "include": "#package" },
+		{ "include": "#import" },
+		{ "include": "#const" },
+		{ "include": "#enum" },
+		{ "include": "#struct" },
+		{ "include": "#message" },
+		{ "include": "#union" },
+		{ "include": "#service" }
+	],
+	"repository": {
+		"comments": {
+			"patterns": [
+				{
+					"name": "comment.line.documentation.bebop",
+					"match": "///.*$"
+				},
+				{
+					"name": "comment.line.double-slash.bebop",
+					"match": "//.*$"
+				},
+				{
+					"name": "comment.block.bebop",
+					"begin": "/\\*",
+					"end": "\\*/"
+				}
+			]
+		},
+		"edition": {
+			"match": "\\b(edition)\\s*=\\s*(\"[^\"]*\")",
+			"captures": {
+				"1": { "name": "keyword.other.edition.bebop" },
+				"2": { "name": "string.quoted.double.bebop" }
+			}
+		},
+		"package": {
+			"match": "\\b(package)\\s+([a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*)",
+			"captures": {
+				"1": { "name": "keyword.other.package.bebop" },
+				"2": { "name": "entity.name.namespace.bebop" }
+			}
+		},
+		"import": {
+			"match": "\\b(import)\\s+(\"[^\"]*\"|'[^']*')",
+			"captures": {
+				"1": { "name": "keyword.control.import.bebop" },
+				"2": { "name": "string.quoted.bebop" }
+			}
+		},
+		"decorator-definition": {
+			"begin": "(#decorator)\\s*\\(\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\)\\s*\\{",
+			"end": "\\}",
+			"beginCaptures": {
+				"1": { "name": "keyword.other.decorator-def.bebop" },
+				"2": { "name": "entity.name.function.decorator.bebop" }
+			},
+			"patterns": [
+				{ "include": "#comments" },
+				{ "include": "#decorator-targets" },
+				{ "include": "#decorator-param" },
+				{ "include": "#lua-block" }
+			]
+		},
+		"decorator-targets": {
+			"match": "\\b(targets)\\s*=\\s*([A-Z_][A-Z_]*(\\s*\\|\\s*[A-Z_][A-Z_]*)*)",
+			"captures": {
+				"1": { "name": "keyword.other.targets.bebop" },
+				"2": { "name": "constant.language.target.bebop" }
+			}
+		},
+		"decorator-param": {
+			"match": "\\b(param)\\s+([a-zA-Z_][a-zA-Z0-9_]*)([!?])\\s*:\\s*([a-zA-Z_][a-zA-Z0-9_]*)",
+			"captures": {
+				"1": { "name": "keyword.other.param.bebop" },
+				"2": { "name": "variable.parameter.bebop" },
+				"3": { "name": "keyword.operator.bebop" },
+				"4": { "name": "support.type.bebop" }
+			}
+		},
+		"lua-block": {
+			"name": "meta.embedded.block.lua",
+			"begin": "\\b(validate|export)\\s*(\\[\\[)",
+			"end": "\\]\\]",
+			"beginCaptures": {
+				"1": { "name": "keyword.other.bebop" },
+				"2": { "name": "punctuation.section.embedded.begin.bebop" }
+			},
+			"endCaptures": {
+				"0": { "name": "punctuation.section.embedded.end.bebop" }
+			},
+			"contentName": "source.lua",
+			"patterns": [
+				{ "include": "source.lua" }
+			]
+		},
+		"decorator-usage": {
+			"patterns": [
+				{
+					"name": "meta.decorator.bebop",
+					"begin": "(@)([a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*)\\s*(\\()",
+					"end": "\\)",
+					"beginCaptures": {
+						"1": { "name": "keyword.operator.decorator.bebop" },
+						"2": { "name": "entity.name.function.decorator.bebop" },
+						"4": { "name": "punctuation.parenthesis.open.bebop" }
+					},
+					"endCaptures": {
+						"0": { "name": "punctuation.parenthesis.close.bebop" }
+					},
+					"patterns": [
+						{ "include": "#decorator-args" }
+					]
+				},
+				{
+					"match": "(@)([a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*)",
+					"captures": {
+						"1": { "name": "keyword.operator.decorator.bebop" },
+						"2": { "name": "entity.name.function.decorator.bebop" }
+					}
+				}
+			]
+		},
+		"decorator-args": {
+			"patterns": [
+				{ "include": "#strings" },
+				{ "include": "#numbers" },
+				{ "include": "#constants" },
+				{
+					"match": "([a-zA-Z_][a-zA-Z0-9_]*)\\s*:",
+					"captures": {
+						"1": { "name": "variable.parameter.bebop" }
+					}
+				}
+			]
+		},
+		"const": {
+			"begin": "\\b(local\\s+)?(const)\\s+",
+			"end": ";",
+			"beginCaptures": {
+				"1": { "name": "storage.modifier.local.bebop" },
+				"2": { "name": "keyword.other.const.bebop" }
+			},
+			"patterns": [
+				{ "include": "#type" },
+				{
+					"match": "([a-zA-Z_][a-zA-Z0-9_]*)\\s*=",
+					"captures": {
+						"1": { "name": "variable.other.constant.bebop" }
+					}
+				},
+				{ "include": "#strings" },
+				{ "include": "#byte-literal" },
+				{ "include": "#numbers" },
+				{ "include": "#constants" }
+			]
+		},
+		"enum": {
+			"begin": "\\b(local\\s+)?(enum)\\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\\s*:\\s*([a-zA-Z_][a-zA-Z0-9_]*))?\\s*\\{",
+			"end": "\\}",
+			"beginCaptures": {
+				"1": { "name": "storage.modifier.local.bebop" },
+				"2": { "name": "keyword.other.enum.bebop" },
+				"3": { "name": "entity.name.type.enum.bebop" },
+				"4": { "name": "support.type.bebop" }
+			},
+			"patterns": [
+				{ "include": "#comments" },
+				{ "include": "#decorator-usage" },
+				{ "include": "#enum-member" }
+			]
+		},
+		"enum-member": {
+			"match": "([A-Za-z_][A-Za-z0-9_]*)\\s*=\\s*([^;]+);",
+			"captures": {
+				"1": { "name": "variable.other.enummember.bebop" },
+				"2": {
+					"patterns": [
+						{ "include": "#numbers" },
+						{ "include": "#enum-value-expr" }
+					]
+				}
+			}
+		},
+		"enum-value-expr": {
+			"patterns": [
+				{
+					"match": "\\(",
+					"name": "punctuation.parenthesis.open.bebop"
+				},
+				{
+					"match": "\\)",
+					"name": "punctuation.parenthesis.close.bebop"
+				},
+				{
+					"match": "[A-Za-z_][A-Za-z0-9_]*",
+					"name": "variable.other.enummember.bebop"
+				},
+				{
+					"match": "[|&~]|<<|>>",
+					"name": "keyword.operator.bitwise.bebop"
+				},
+				{
+					"match": "[+\\-]",
+					"name": "keyword.operator.arithmetic.bebop"
+				}
+			]
+		},
+		"struct": {
+			"begin": "\\b(local\\s+)?(export\\s+)?(mut\\s+)?(struct)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\{",
+			"end": "\\}",
+			"beginCaptures": {
+				"1": { "name": "storage.modifier.local.bebop" },
+				"2": { "name": "storage.modifier.export.bebop" },
+				"3": { "name": "storage.modifier.mut.bebop" },
+				"4": { "name": "keyword.other.struct.bebop" },
+				"5": { "name": "entity.name.type.struct.bebop" }
+			},
+			"patterns": [
+				{ "include": "#comments" },
+				{ "include": "#decorator-usage" },
+				{ "include": "#nested-enum" },
+				{ "include": "#nested-struct" },
+				{ "include": "#nested-message" },
+				{ "include": "#nested-union" },
+				{ "include": "#field" }
+			]
+		},
+		"nested-struct": {
+			"begin": "\\b(export\\s+)?(mut\\s+)?(struct)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\{",
+			"end": "\\}",
+			"beginCaptures": {
+				"1": { "name": "storage.modifier.export.bebop" },
+				"2": { "name": "storage.modifier.mut.bebop" },
+				"3": { "name": "keyword.other.struct.bebop" },
+				"4": { "name": "entity.name.type.struct.bebop" }
+			},
+			"patterns": [
+				{ "include": "#comments" },
+				{ "include": "#decorator-usage" },
+				{ "include": "#nested-enum" },
+				{ "include": "#nested-struct" },
+				{ "include": "#nested-message" },
+				{ "include": "#nested-union" },
+				{ "include": "#field" }
+			]
+		},
+		"nested-enum": {
+			"begin": "\\b(export\\s+)?(enum)\\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\\s*:\\s*([a-zA-Z_][a-zA-Z0-9_]*))?\\s*\\{",
+			"end": "\\}",
+			"beginCaptures": {
+				"1": { "name": "storage.modifier.export.bebop" },
+				"2": { "name": "keyword.other.enum.bebop" },
+				"3": { "name": "entity.name.type.enum.bebop" },
+				"4": { "name": "support.type.bebop" }
+			},
+			"patterns": [
+				{ "include": "#comments" },
+				{ "include": "#decorator-usage" },
+				{ "include": "#enum-member" }
+			]
+		},
+		"nested-message": {
+			"begin": "\\b(export\\s+)?(message)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\{",
+			"end": "\\}",
+			"beginCaptures": {
+				"1": { "name": "storage.modifier.export.bebop" },
+				"2": { "name": "keyword.other.message.bebop" },
+				"3": { "name": "entity.name.type.message.bebop" }
+			},
+			"patterns": [
+				{ "include": "#comments" },
+				{ "include": "#decorator-usage" },
+				{ "include": "#nested-enum" },
+				{ "include": "#nested-struct" },
+				{ "include": "#nested-message" },
+				{ "include": "#nested-union" },
+				{ "include": "#message-field" }
+			]
+		},
+		"nested-union": {
+			"begin": "\\b(export\\s+)?(union)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\{",
+			"end": "\\}",
+			"beginCaptures": {
+				"1": { "name": "storage.modifier.export.bebop" },
+				"2": { "name": "keyword.other.union.bebop" },
+				"3": { "name": "entity.name.type.union.bebop" }
+			},
+			"patterns": [
+				{ "include": "#comments" },
+				{ "include": "#decorator-usage" },
+				{ "include": "#nested-enum" },
+				{ "include": "#nested-struct" },
+				{ "include": "#nested-message" },
+				{ "include": "#nested-union" },
+				{ "include": "#union-branch" }
+			]
+		},
+		"message": {
+			"begin": "\\b(local\\s+)?(export\\s+)?(message)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\{",
+			"end": "\\}",
+			"beginCaptures": {
+				"1": { "name": "storage.modifier.local.bebop" },
+				"2": { "name": "storage.modifier.export.bebop" },
+				"3": { "name": "keyword.other.message.bebop" },
+				"4": { "name": "entity.name.type.message.bebop" }
+			},
+			"patterns": [
+				{ "include": "#comments" },
+				{ "include": "#decorator-usage" },
+				{ "include": "#nested-enum" },
+				{ "include": "#nested-struct" },
+				{ "include": "#nested-message" },
+				{ "include": "#nested-union" },
+				{ "include": "#message-field" }
+			]
+		},
+		"union": {
+			"begin": "\\b(local\\s+)?(export\\s+)?(union)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\{",
+			"end": "\\}",
+			"beginCaptures": {
+				"1": { "name": "storage.modifier.local.bebop" },
+				"2": { "name": "storage.modifier.export.bebop" },
+				"3": { "name": "keyword.other.union.bebop" },
+				"4": { "name": "entity.name.type.union.bebop" }
+			},
+			"patterns": [
+				{ "include": "#comments" },
+				{ "include": "#decorator-usage" },
+				{ "include": "#nested-enum" },
+				{ "include": "#nested-struct" },
+				{ "include": "#nested-message" },
+				{ "include": "#nested-union" },
+				{ "include": "#union-branch" }
+			]
+		},
+		"union-branch": {
+			"patterns": [
+				{
+					"begin": "\\b(export\\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(\\s*(\\d+)\\s*\\)\\s*:\\s*(mut\\s+)?\\{",
+					"end": "\\}",
+					"beginCaptures": {
+						"1": { "name": "storage.modifier.export.bebop" },
+						"2": { "name": "entity.name.type.branch.bebop" },
+						"3": { "name": "constant.numeric.bebop" },
+						"4": { "name": "storage.modifier.mut.bebop" }
+					},
+					"patterns": [
+						{ "include": "#comments" },
+						{ "include": "#decorator-usage" },
+						{ "include": "#nested-enum" },
+						{ "include": "#nested-struct" },
+						{ "include": "#nested-message" },
+						{ "include": "#nested-union" },
+						{ "include": "#field" }
+					]
+				},
+				{
+					"begin": "\\b(export\\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(\\s*(\\d+)\\s*\\)\\s*:\\s*(message)\\s*\\{",
+					"end": "\\}",
+					"beginCaptures": {
+						"1": { "name": "storage.modifier.export.bebop" },
+						"2": { "name": "entity.name.type.branch.bebop" },
+						"3": { "name": "constant.numeric.bebop" },
+						"4": { "name": "keyword.other.message.bebop" }
+					},
+					"patterns": [
+						{ "include": "#comments" },
+						{ "include": "#decorator-usage" },
+						{ "include": "#nested-enum" },
+						{ "include": "#nested-struct" },
+						{ "include": "#nested-message" },
+						{ "include": "#nested-union" },
+						{ "include": "#message-field" }
+					]
+				},
+				{
+					"match": "\\b(export\\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(\\s*(\\d+)\\s*\\)\\s*:\\s*([a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*)",
+					"captures": {
+						"1": { "name": "storage.modifier.export.bebop" },
+						"2": { "name": "entity.name.type.branch.bebop" },
+						"3": { "name": "constant.numeric.bebop" },
+						"4": { "name": "entity.name.type.bebop" }
+					}
+				}
+			]
+		},
+		"service": {
+			"begin": "\\b(local\\s+)?(service)\\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\\s+(with)\\s+([a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*(\\s*,\\s*[a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*)*))?\\s*\\{",
+			"end": "\\}",
+			"beginCaptures": {
+				"1": { "name": "storage.modifier.local.bebop" },
+				"2": { "name": "keyword.other.service.bebop" },
+				"3": { "name": "entity.name.type.service.bebop" },
+				"4": { "name": "keyword.other.with.bebop" },
+				"5": { "patterns": [{ "include": "#mixin-types" }] }
+			},
+			"patterns": [
+				{ "include": "#comments" },
+				{ "include": "#decorator-usage" },
+				{ "include": "#service-method" }
+			]
+		},
+		"service-method": {
+			"match": "([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(([^)]*)\\)\\s*:\\s*(stream\\s+)?([^;]+);",
+			"captures": {
+				"1": { "name": "entity.name.function.method.bebop" },
+				"2": {
+					"patterns": [
+						{
+							"match": "\\bstream\\b",
+							"name": "keyword.other.stream.bebop"
+						},
+						{ "include": "#type" }
+					]
+				},
+				"3": { "name": "keyword.other.stream.bebop" },
+				"4": { "patterns": [{ "include": "#type" }] }
+			}
+		},
+		"field": {
+			"match": "([a-zA-Z_][a-zA-Z0-9_]*)\\s*:\\s*([^;]+);",
+			"captures": {
+				"1": { "name": "variable.other.field.bebop" },
+				"2": { "patterns": [{ "include": "#type" }] }
+			}
+		},
+		"message-field": {
+			"match": "([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(\\s*(\\d+)\\s*\\)\\s*:\\s*([^;]+);",
+			"captures": {
+				"1": { "name": "variable.other.field.bebop" },
+				"2": { "name": "constant.numeric.tag.bebop" },
+				"3": { "patterns": [{ "include": "#type" }] }
+			}
+		},
+		"mixin-types": {
+			"patterns": [
+				{
+					"match": "[a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*",
+					"name": "entity.name.type.mixin.bebop"
+				}
+			]
+		},
+		"type": {
+			"patterns": [
+				{
+					"match": "\\b(bool|byte|uint8|int8|int16|uint16|int32|uint32|int64|uint64|int128|uint128|float16|float32|float64|bfloat16|half|bf16|string|uuid|guid|timestamp|duration)\\b",
+					"name": "support.type.primitive.bebop"
+				},
+				{
+					"begin": "\\b(map)\\s*\\[",
+					"end": "\\]",
+					"beginCaptures": {
+						"1": { "name": "keyword.other.map.bebop" }
+					},
+					"patterns": [
+						{ "include": "#type" }
+					]
+				},
+				{
+					"match": "\\[\\s*(\\d+)?\\s*\\]",
+					"name": "punctuation.definition.array.bebop"
+				},
+				{
+					"match": "\\b([a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*)\\b",
+					"name": "entity.name.type.bebop"
+				}
+			]
+		},
+		"strings": {
+			"patterns": [
+				{
+					"name": "string.quoted.double.bebop",
+					"begin": "\"",
+					"end": "\"",
+					"patterns": [
+						{ "include": "#string-escapes" }
+					]
+				},
+				{
+					"name": "string.quoted.single.bebop",
+					"begin": "'",
+					"end": "'",
+					"patterns": [
+						{ "include": "#string-escapes" }
+					]
+				}
+			]
+		},
+		"byte-literal": {
+			"name": "string.quoted.byte.bebop",
+			"begin": "b\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"match": "\\\\x[0-9a-fA-F]{2}",
+					"name": "constant.character.escape.hex.bebop"
+				},
+				{ "include": "#string-escapes" }
+			]
+		},
+		"string-escapes": {
+			"patterns": [
+				{
+					"match": "\\\\u\\{[0-9a-fA-F]{1,6}\\}",
+					"name": "constant.character.escape.unicode.bebop"
+				},
+				{
+					"match": "\\\\[\\\\nrt0\"']",
+					"name": "constant.character.escape.bebop"
+				},
+				{
+					"match": "\"\"",
+					"name": "constant.character.escape.quote.bebop"
+				},
+				{
+					"match": "''",
+					"name": "constant.character.escape.quote.bebop"
+				},
+				{
+					"match": "\\$\\([A-Z_][A-Z0-9_]*\\)",
+					"name": "variable.other.envvar.bebop"
+				}
+			]
+		},
+		"numbers": {
+			"patterns": [
+				{
+					"match": "-?0[xX][0-9a-fA-F]+",
+					"name": "constant.numeric.hex.bebop"
+				},
+				{
+					"match": "-?\\d+\\.\\d+([eE][+-]?\\d+)?",
+					"name": "constant.numeric.float.bebop"
+				},
+				{
+					"match": "-?\\d+[eE][+-]?\\d+",
+					"name": "constant.numeric.float.bebop"
+				},
+				{
+					"match": "-?\\d+",
+					"name": "constant.numeric.integer.bebop"
+				}
+			]
+		},
+		"constants": {
+			"match": "\\b(true|false|inf|nan)\\b",
+			"name": "constant.language.bebop"
+		}
+	}
+}

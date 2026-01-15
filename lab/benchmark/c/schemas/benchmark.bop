@@ -1,0 +1,117 @@
+struct Person {
+    id: int32;
+    name: string;
+    email: string;
+    age: int32;
+}
+
+struct Order {
+    order_id: int64;
+    customer_id: int64;
+    item_ids: int64[];
+    quantities: int32[];
+    total: float64;
+    timestamp: int64;
+}
+
+struct Event {
+    id: int64;
+    type: string;
+    source: string;
+    timestamp: int64;
+    payload: byte[];
+}
+
+message TreeNode {
+    value(1): int32;
+    children(2): TreeNode[];
+}
+
+struct JsonNull {}
+
+union JsonValue {
+    Null(1): JsonNull
+    Bool(2): message { value(1): bool; }
+    Number(3): message { value(1): float64; }
+    String(4): message { value(1): string; }
+    List(5): message { values(1): JsonValue[]; }
+    Object(6): message { fields(1): map[string, JsonValue]; }
+}
+
+message Document {
+    title(1): string;
+    body(2): string;
+    metadata(3): map[string, JsonValue];
+}
+
+enum ChunkKind : uint8 {
+    Unknown = 0;
+    Paragraph = 1;
+    Chapter = 2;
+    Heading = 3;
+}
+
+struct TextSpan {
+    start: uint32;
+    len: uint32;
+    kind: ChunkKind;
+}
+
+struct ChunkedText {
+    source: string;
+    spans: TextSpan[];
+}
+
+mut struct EmbeddingBF16 {
+    id: uuid;
+    vector: bfloat16[];
+}
+
+mut struct EmbeddingF32 {
+    id: uuid;
+    vector: float32[];
+}
+
+mut struct EmbeddingBatch {
+    model: string;
+    embeddings: EmbeddingBF16[];
+    usage_tokens: uint32;
+}
+
+mut struct TokenLogprob {
+    token: string;
+    token_id: uint32;
+    logprob: float32;
+}
+
+mut struct TokenAlternatives {
+    top_tokens: TokenLogprob[];
+}
+
+mut struct LLMStreamChunk {
+    chunk_id: uint32;
+    tokens: string[];
+    logprobs: TokenAlternatives[];
+    finish_reason: string;
+}
+
+mut struct TensorShard {
+    name: string;
+    shape: uint32[];
+    dtype: string;
+    data: bfloat16[];
+    offset: uint64;
+    total_elements: uint64;
+}
+
+mut struct InferenceTiming {
+    queue_time: duration;
+    inference_time: duration;
+    tokens_per_second: float32;
+}
+
+mut struct InferenceResponse {
+    request_id: uuid;
+    embeddings: EmbeddingBF16[];
+    timing: InferenceTiming;
+}

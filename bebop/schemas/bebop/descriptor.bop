@@ -1,0 +1,594 @@
+// descriptor.bop
+//
+// Copyright 2026 6OVER3 INSTITUTE. All rights reserved.
+//
+// Wire-format schema for compiled Bebop descriptors.
+//
+// A descriptor is a serialized representation of parsed, linked, and validated
+// .bop source files. Code generators consume descriptors to emit target-language
+// types. Runtimes consume descriptors for reflection.
+//
+// Descriptors serialize with Bebop's own wire format. Any runtime that can read
+// a Bebop record can read a descriptor.
+//
+//
+// GLOSSARY
+//
+//   FQN             Fully-qualified name. Package + parent scopes + name,
+//                   dot-separated: "mypackage.Outer.Inner"
+//
+//   Wire tag        Field index byte in a message. Range 1-255. Zero terminates.
+//
+//   Discriminator   Byte identifying a union branch on the wire. Range 1-255.
+//
+//   Topological order
+//                   Definitions sorted so each appears after its dependencies.
+//                   A struct referencing an enum appears after that enum.
+//                   Generators can emit types in a single forward pass.
+//
+//   Source code info
+//                   Optional metadata mapping descriptor elements to source
+//                   positions and comments. Increases descriptor size; omitted
+//                   unless requested.
+//
+//   Fixed size      Struct where every field has compile-time-known byte size.
+//                   Wire encoding is concatenated field bytes, no length prefix.
+//                   A struct with two int32 fields has fixed_size = 8.
+//                   A struct containing a string has fixed_size = 0 (variable).
+//
+//
+// EXAMPLE
+//
+// Given this source file (chat.bop):
+//
+//   edition = "2026"
+//   package myapp
+//
+//   enum Role : uint8 { USER = 1; ADMIN = 2; }
+//
+//   struct ChatMessage {
+//     sender: string;
+//     text: string;
+//     timestamp: uint64;
+//   }
+//
+// The compiled DescriptorSet contains:
+//
+//   schemas[0].path = "chat.bop"
+//   schemas[0].package = "myapp"
+//   schemas[0].edition = EDITION_2026 (1000)
+//   schemas[0].definitions[0].kind = ENUM
+//   schemas[0].definitions[0].name = "Role"
+//   schemas[0].definitions[0].fqn = "myapp.Role"
+//   schemas[0].definitions[0].enum_def.base_type = UINT8 (2)
+//   schemas[0].definitions[0].enum_def.members[0] = {name:"USER", value:1}
+//   schemas[0].definitions[0].enum_def.members[1] = {name:"ADMIN", value:2}
+//   schemas[0].definitions[1].kind = STRUCT
+//   schemas[0].definitions[1].name = "ChatMessage"
+//   schemas[0].definitions[1].fqn = "myapp.ChatMessage"
+//   schemas[0].definitions[1].struct_def.fixed_size = 0 (has string fields)
+//   schemas[0].definitions[1].struct_def.fields[0] = {name:"sender", type:{kind:STRING}}
+//   schemas[0].definitions[1].struct_def.fields[1] = {name:"text", type:{kind:STRING}}
+//   schemas[0].definitions[1].struct_def.fields[2] = {name:"timestamp", type:{kind:UINT64}}
+//
+// Role appears before ChatMessage (topological order).
+
+edition = "2026"
+package bebop
+
+import "bebop/decorators.bop"
+
+/// Scalar and compound type kinds.
+///
+/// Scalars (1-18) encode as fixed-size little-endian bytes. `BOOL` is 1 byte
+/// (0x00 = false, nonzero = true). `INT16` is 2 bytes. `UUID` is 16 bytes.
+///
+/// Compound types (19-23) use additional TypeDescriptor fields:
+/// - `ARRAY`: element type in `array_element`
+/// - `FIXED_ARRAY`: element type + size in `fixed_array_element`, `fixed_array_size`
+/// - `MAP`: key and value types in `map_key`, `map_value`
+/// - `DEFINED`: referenced type FQN in `defined_fqn`
+///
+/// Value 0 is a sentinel. A valid TypeDescriptor never has `kind == UNKNOWN`.
+enum TypeKind : uint8 {
+    UNKNOWN = 0;
+    BOOL = 1;
+    BYTE = 2;
+    INT8 = 3;
+    INT16 = 4;
+    UINT16 = 5;
+    INT32 = 6;
+    UINT32 = 7;
+    INT64 = 8;
+    UINT64 = 9;
+    INT128 = 10;
+    UINT128 = 11;
+    FLOAT16 = 12;
+    FLOAT32 = 13;
+    FLOAT64 = 14;
+    BFLOAT16 = 15;
+    STRING = 16;
+    UUID = 17;
+    TIMESTAMP = 18;
+    DURATION = 19;
+    ARRAY = 20;
+    FIXED_ARRAY = 21;
+    MAP = 22;
+    DEFINED = 23;
+}
+
+/// Named definition kinds.
+///
+/// Each DefinitionDescriptor has one kind, which determines which body field
+/// is populated. A definition with `kind == STRUCT` has `struct_def` set;
+/// other body fields are absent.
+enum DefinitionKind : uint8 {
+    UNKNOWN = 0;
+    ENUM = 1;
+    STRUCT = 2;
+    MESSAGE = 3;
+    UNION = 4;
+    SERVICE = 5;
+    CONST = 6;
+    DECORATOR = 7;
+}
+
+/// Service method streaming modes.
+///
+/// Corresponds to `stream` keyword placement in method declarations:
+///
+/// ```bebop
+/// Ping(Req): Res;               // UNARY
+/// Watch(Req): stream Res;       // SERVER_STREAM
+/// Upload(stream Chunk): Res;    // CLIENT_STREAM
+/// Chat(stream Msg): stream Msg; // DUPLEX_STREAM
+/// ```
+enum MethodType : uint8 {
+    UNKNOWN = 0;
+    UNARY = 1;
+    SERVER_STREAM = 2;
+    CLIENT_STREAM = 3;
+    DUPLEX_STREAM = 4;
+}
+
+/// Definition visibility.
+///
+/// Controls whether a definition is accessible from importing schemas.
+/// Top-level definitions default to `EXPORT`. Nested definitions default
+/// to `LOCAL` (visible only within the parent scope).
+///
+/// The `export` keyword on a nested definition makes it reachable as
+/// `Parent.Child` from other schemas. Local definitions still appear in
+/// descriptors because exported types may reference them.
+enum Visibility : uint8 {
+    DEFAULT = 0;
+    EXPORT = 1;
+    LOCAL = 2;
+}
+
+/// Literal value kinds.
+///
+/// Discriminates which value field of LiteralValue is set.
+enum LiteralKind : uint8 {
+    UNKNOWN = 0;
+    BOOL = 1;
+    INT = 2;
+    FLOAT = 3;
+    STRING = 4;
+    UUID = 5;
+    BYTES = 6;
+    TIMESTAMP = 7;
+    DURATION = 8;
+}
+
+/// Decorator target bitmask.
+///
+/// A decorator definition declares which element kinds it can decorate.
+/// Multiple targets combine with bitwise OR:
+///
+/// ```
+/// targets = STRUCT | MESSAGE  // applies to structs and messages
+/// ```
+///
+/// `ALL` (0xFF) means the decorator can decorate any element kind.
+@flags
+enum DecoratorTarget : uint8 {
+    NONE    = 0;
+    ENUM    = 1 << 0;
+    STRUCT  = 1 << 1;
+    MESSAGE = 1 << 2;
+    UNION   = 1 << 3;
+    FIELD   = 1 << 4;
+    SERVICE = 1 << 5;
+    METHOD  = 1 << 6;
+    BRANCH  = 1 << 7;
+    ALL     = 0xFF;
+}
+
+/// Schema edition markers.
+///
+/// Edition values are ordered for comparison. Higher values are later editions.
+/// A compiler rejects source files declaring an edition it does not support.
+enum Edition : int32 {
+    UNKNOWN = 0;
+    EDITION_2026 = 1000;
+    MAX = 0x7FFFFFFF;
+}
+
+/// Type reference.
+///
+/// Every field type, const type, method parameter, array element, map key,
+/// and map value in a descriptor is a TypeDescriptor. The `kind` field
+/// determines which other fields are present:
+///
+/// - Scalars (`BOOL`..`DURATION`): no additional fields
+/// - `ARRAY`: `array_element` is the element type
+/// - `FIXED_ARRAY`: `fixed_array_element` + `fixed_array_size`
+/// - `MAP`: `map_key` + `map_value`
+/// - `DEFINED`: `defined_fqn` names the referenced type
+///
+/// TypeDescriptor is recursive. An array of maps:
+///
+/// ```
+/// kind=ARRAY
+/// array_element.kind=MAP
+/// array_element.map_key.kind=STRING
+/// array_element.map_value.kind=DEFINED
+/// array_element.map_value.defined_fqn="mypackage.Item"
+/// ```
+message TypeDescriptor {
+    /// Discriminates which fields below are populated.
+    kind(1): TypeKind;
+    /// Element type when `kind == ARRAY`.
+    array_element(2): TypeDescriptor;
+    /// Element type when `kind == FIXED_ARRAY`.
+    fixed_array_element(3): TypeDescriptor;
+    /// Element count when `kind == FIXED_ARRAY`. Range 1-65535.
+    fixed_array_size(4): uint32;
+    /// Key type when `kind == MAP`. Must be hashable (bool, integers, string, uuid).
+    map_key(5): TypeDescriptor;
+    /// Value type when `kind == MAP`.
+    map_value(6): TypeDescriptor;
+    /// FQN when `kind == DEFINED`. Always fully qualified after linking.
+    defined_fqn(7): string;
+}
+
+/// Concrete value.
+///
+/// Used in const definitions, decorator arguments, and decorator parameter
+/// defaults/constraints. One typed value field is set, determined by `kind`.
+/// The `raw_value` field preserves pre-expansion text for constants using
+/// environment variable substitution (`$(...)`).
+message LiteralValue {
+    kind(1): LiteralKind;
+    bool_value(2): bool;
+    int_value(3): int64;
+    float_value(4): float64;
+    string_value(5): string;
+    uuid_value(6): uuid;
+    /// Original source text before `$(...)` expansion. Only set for string
+    /// literals that contained environment variable references.
+    raw_value(7): string;
+    /// When `kind == BYTES`.
+    bytes_value(8): byte[];
+    /// When `kind == TIMESTAMP`.
+    timestamp_value(9): timestamp;
+    /// When `kind == DURATION`.
+    duration_value(10): duration;
+}
+
+/// Named or positional argument in a decorator usage.
+///
+/// Positional arguments have an empty string for `name`.
+struct DecoratorArg {
+    name: string;
+    value: LiteralValue;
+}
+
+/// Decorator applied to a definition, field, enum member, branch, or method.
+///
+/// The `fqn` identifies which decorator definition this usage corresponds to.
+/// Always fully qualified after linking.
+///
+/// The `export_data` map holds key-value pairs from executing the decorator's
+/// Lua export block. Generators read these to access decorator-computed
+/// metadata without re-running Lua.
+message DecoratorUsage {
+    /// FQN of the decorator definition (e.g., `validators.range`).
+    fqn(1): string;
+    /// Arguments passed at the usage site, in declaration order.
+    args(2): DecoratorArg[];
+    /// Results from the decorator's export block.
+    export_data(3): map[string, LiteralValue];
+}
+
+/// Field in a struct or message.
+///
+/// Struct and message fields share this type, distinguished by `index`:
+/// - Struct fields: `index == 0` (positional encoding, no tag byte)
+/// - Message fields: `index` 1-255 (wire tag from source)
+///
+/// Struct fields encode in declaration order with no separators. Message
+/// fields encode as (tag, value) pairs in any order, terminated by 0.
+message FieldDescriptor {
+    name(1): string;
+    /// Text from preceding `///` comments in source.
+    documentation(2): string;
+    type(3): TypeDescriptor;
+    /// Wire tag: 0 for struct fields, 1-255 for message fields.
+    index(4): uint32;
+    decorators(5): DecoratorUsage[];
+}
+
+/// Enum member (name + integer value).
+///
+/// The `value` is stored as uint64 regardless of the enum's base type.
+/// For signed base types, sign-extend from the base type's bit width.
+/// A member with value 0xFFFFFFFFFFFFFFFF in an int8-based enum is -1.
+message EnumMemberDescriptor {
+    name(1): string;
+    documentation(2): string;
+    /// Stored unsigned. Reinterpret per the parent enum's `base_type`.
+    value(3): uint64;
+    decorators(4): DecoratorUsage[];
+    /// Original expression text (e.g., `1 << 3`). Absent for simple literals.
+    value_expr(5): string;
+}
+
+/// Union branch.
+///
+/// Each branch has a discriminator byte (1-255) written before the payload.
+/// Two modes:
+///
+/// **Inline branch**: body declared in the union.
+///
+/// ```bebop
+/// union Shape { Circle(1): { radius: float32; } }
+/// ```
+///
+/// Sets `inline_fqn = "mypackage.Shape.Circle"`. The inline definition
+/// lives in the parent's `nested` array.
+///
+/// **Type-reference branch**: references an existing type.
+///
+/// ```bebop
+/// union Shape { rect(2): Rect }
+/// ```
+///
+/// Sets `type_ref_fqn = "mypackage.Rect"` and `name = "rect"`.
+message UnionBranchDescriptor {
+    /// Wire discriminator byte. Range 1-255.
+    discriminator(1): byte;
+    documentation(2): string;
+    /// FQN of inline definition. Mutually exclusive with `type_ref_fqn`.
+    inline_fqn(3): string;
+    /// FQN of referenced type. Mutually exclusive with `inline_fqn`.
+    type_ref_fqn(4): string;
+    /// Branch name for type-reference branches.
+    name(5): string;
+    decorators(6): DecoratorUsage[];
+}
+
+/// Service method.
+///
+/// The `id` is MurmurHash3 of `/ServiceName/MethodName`, computed at compile
+/// time. Gives a stable 32-bit routing key without transmitting the full name.
+message MethodDescriptor {
+    name(1): string;
+    documentation(2): string;
+    request_type(3): TypeDescriptor;
+    response_type(4): TypeDescriptor;
+    method_type(5): MethodType;
+    /// MurmurHash3 of `/ServiceName/MethodName`.
+    id(6): uint32;
+    decorators(7): DecoratorUsage[];
+}
+
+/// Enum definition body.
+///
+/// The `base_type` indicates the declared integer width (e.g., `: uint8`).
+/// Defaults to `UINT32` when no suffix is specified. Valid base types:
+/// `BYTE`, `INT8`, `INT16`, `UINT16`, `INT32`, `UINT32`, `INT64`, `UINT64`.
+///
+/// Member values are stored as uint64 and reinterpreted per `base_type`.
+message EnumDef {
+    base_type(1): TypeKind;
+    members(2): EnumMemberDescriptor[];
+    /// True when `@flags` is applied. Members are bit positions for OR.
+    is_flags(3): bool;
+}
+
+/// Struct definition body.
+///
+/// Fields encode positionally: bytes concatenated in declaration order,
+/// no tags, no length prefix (for fixed-size structs). Variable-size structs
+/// get a u32 byte-length prefix.
+message StructDef {
+    fields(1): FieldDescriptor[];
+    /// True when declared with `mut`. Mutable structs allow field reassignment.
+    is_mutable(2): bool;
+    /// Total wire bytes when all fields are fixed-size. Zero when any field
+    /// is variable-size. Generators use this to pre-allocate buffers.
+    fixed_size(3): uint32;
+}
+
+/// Message definition body.
+///
+/// Fields encode as tagged pairs (index, value), terminated by zero byte.
+/// Fields can be added or removed without breaking existing decoders.
+message MessageDef {
+    fields(1): FieldDescriptor[];
+}
+
+/// Union definition body.
+///
+/// Wire encoding: u32 byte_length, discriminator byte, branch payload.
+/// Decoders read the length to skip unknown discriminators.
+message UnionDef {
+    branches(1): UnionBranchDescriptor[];
+}
+
+/// Service definition body.
+message ServiceDef {
+    methods(1): MethodDescriptor[];
+}
+
+/// Const definition body.
+///
+/// Constants are evaluated at parse time. String constants support
+/// environment variable substitution:
+///
+/// ```bebop
+/// const API_KEY : string = $(API_KEY);
+/// ```
+///
+/// The LiteralValue's `raw_value` preserves `$(API_KEY)` while `string_value`
+/// holds the expanded result.
+message ConstDef {
+    type(1): TypeDescriptor;
+    value(2): LiteralValue;
+}
+
+/// Decorator parameter definition.
+///
+/// Defines the schema for one argument a decorator accepts:
+///
+/// ```bebop
+/// #decorator(validate) {
+///   param min!: float64       // required, no default
+///   param max?: float64 = 100 // optional, default 100
+///   param mode?: string in ["strict", "lenient"]
+/// }
+/// ```
+message DecoratorParamDef {
+    name(1): string;
+    /// Description from the `///` comment preceding this param.
+    description(2): string;
+    /// Must be a scalar TypeKind.
+    type(3): TypeKind;
+    /// True for required (`!`) params, false for optional (`?`).
+    required(4): bool;
+    /// Default value for optional params. Absent for required params.
+    default_value(5): LiteralValue;
+    /// Allowed-value constraint from `in [...]`. When non-empty, arguments
+    /// must match one of these values.
+    allowed_values(6): LiteralValue[];
+}
+
+/// Decorator definition body.
+///
+/// Describes the decorator contract: which elements it can target, what
+/// parameters it accepts, and optional Lua source for validate/export.
+message DecoratorDef {
+    /// Bitmask of DecoratorTarget values this decorator may apply to.
+    targets(1): DecoratorTarget;
+    /// When true, the decorator can appear multiple times on the same target.
+    allow_multiple(2): bool;
+    params(3): DecoratorParamDef[];
+    /// Lua source for validate block. Runs at compile time to reject invalid
+    /// usages. Absent when the decorator has no validate block.
+    validate_source(4): string;
+    /// Lua source for export block. Produces key-value metadata stored in
+    /// DecoratorUsage.export_data. Absent when no export block.
+    export_source(5): string;
+}
+
+/// Named definition.
+///
+/// Container for all definition kinds. The `kind` field selects which body
+/// field is populated. Exactly one body is present per definition.
+///
+/// The `name` field is the simple identifier from source (`ChatMessage`).
+/// The `fqn` includes package and parent scopes (`myapp.Outer.ChatMessage`).
+///
+/// Nested definitions (types declared inside struct/message/union bodies)
+/// live in the `nested` array. Inline union branch definitions also appear
+/// there. Each nested definition has its own FQN encoding the full path.
+message DefinitionDescriptor {
+    kind(1): DefinitionKind;
+    /// Simple name as declared in source.
+    name(2): string;
+    /// Fully-qualified name including package and parent scopes.
+    fqn(3): string;
+    /// Text from preceding `///` comments in source.
+    documentation(4): string;
+    visibility(5): Visibility;
+    decorators(6): DecoratorUsage[];
+    /// Types declared inside this definition's body.
+    nested(7): DefinitionDescriptor[];
+
+    // Body fields. Exactly one is set, determined by kind.
+    enum_def(8): EnumDef;
+    struct_def(9): StructDef;
+    message_def(10): MessageDef;
+    union_def(11): UnionDef;
+    service_def(12): ServiceDef;
+    const_def(13): ConstDef;
+    decorator_def(14): DecoratorDef;
+}
+
+/// Source location for a descriptor element.
+///
+/// Maps descriptor elements to source positions and comments. Used for
+/// error reporting, documentation extraction, and IDE features.
+message Location {
+    /// Path into the descriptor tree. Encoded as pairs of (field_tag, index):
+    ///
+    /// ```
+    /// [5, 0]       -> schema.definitions[0]
+    /// [5, 0, 1, 2] -> schema.definitions[0].fields[2]
+    /// [5, 1, 2, 0] -> schema.definitions[1].members[0]
+    /// ```
+    ///
+    /// Field tags correspond to definition body field indices
+    /// (StructDef.fields = 1, EnumDef.members = 2, etc.).
+    path(1): int32[];
+    /// Source span as `[start_line, start_col, end_line, end_col]`.
+    /// All values 1-based. Columns count characters, tabs advance to
+    /// next multiple of 4.
+    span(2): int32[4];
+    /// Comments on adjacent preceding lines with no blank line separation.
+    leading_comments(3): string;
+    /// Comment on the same line after the element or after an opening brace.
+    trailing_comments(4): string;
+    /// Comment groups separated from the element by blank lines.
+    detached_comments(5): string[];
+}
+
+/// Source code info for a schema.
+///
+/// One Location entry per locatable element. Includes definitions, fields,
+/// enum members, union branches, and service methods. Not every element
+/// has a location.
+message SourceCodeInfo {
+    locations(1): Location[];
+}
+
+/// Descriptor for a single .bop source file.
+///
+/// Each source file produces one SchemaDescriptor. Definitions are
+/// topologically sorted: every type appears after the types it depends on.
+/// Generators can emit types in array order without forward declarations.
+message SchemaDescriptor {
+    /// File path as provided to the compiler.
+    path(1): string;
+    /// Package declaration from source. Absent when no package is declared.
+    package(2): string;
+    edition(3): Edition;
+    /// Import paths in source declaration order.
+    imports(4): string[];
+    /// All definitions in topological dependency order.
+    definitions(5): DefinitionDescriptor[];
+    /// Source code info. Only present when requested during compilation.
+    source_code_info(6): SourceCodeInfo;
+}
+
+/// Root container for compiled schemas.
+///
+/// Written to .bop.bin files or passed to code generators. Schemas are
+/// ordered so imported schemas appear before schemas that import them.
+/// Processing schemas[0..N] in order encounters dependencies before
+/// they are referenced.
+message DescriptorSet {
+    schemas(1): SchemaDescriptor[];
+}

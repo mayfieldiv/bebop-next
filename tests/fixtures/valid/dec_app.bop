@@ -1,0 +1,9 @@
+// Application schema that imports decorators from validators package
+package app;
+
+import "dec_validators.bop"
+
+message Measurement {
+    @range(min: 0.0)
+    value(1): float64;
+}

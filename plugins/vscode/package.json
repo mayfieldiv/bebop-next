@@ -1,0 +1,252 @@
+{
+  "name": "bebop",
+  "displayName": "Bebop",
+  "description": "Language support for Bebop schema files",
+  "author": "6OVER3 INSTITUTE",
+  "license": "Apache-2.0",
+  "version": "0.1.0-dev+207c412",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/6over3/bebop"
+  },
+  "homepage": "https://bebop.sh",
+  "bugs": {
+    "url": "https://github.com/6over3/bebop/issues"
+  },
+  "publisher": "6O3",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "categories": [
+    "Programming Languages",
+    "Formatters",
+    "Linters",
+    "Snippets"
+  ],
+  "keywords": [
+    "bebop",
+    "schema",
+    "serialization",
+    "binary",
+    "rpc",
+    "codegen"
+  ],
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "activationEvents": [
+    "onLanguage:bebop",
+    "workspaceContains:**/bebop.yml",
+    "workspaceContains:**/bebop.yaml"
+  ],
+  "main": "./client/out/extension",
+  "contributes": {
+    "languages": [
+      {
+        "id": "bebop",
+        "aliases": [
+          "Bebop",
+          "bebop"
+        ],
+        "extensions": [
+          ".bop"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./images/bebop-file-light.svg",
+          "dark": "./images/bebop-file-dark.svg"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "bebop",
+        "scopeName": "source.bebop",
+        "path": "./syntaxes/bebop.tmLanguage.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.lua": "lua"
+        }
+      }
+    ],
+    "snippets": [
+      {
+        "language": "bebop",
+        "path": "./snippets/bebop.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "bebop.build",
+        "title": "Build",
+        "category": "Bebop",
+        "icon": "$(play)"
+      },
+      {
+        "command": "bebop.watch",
+        "title": "Watch",
+        "category": "Bebop",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "bebop.init",
+        "title": "Initialize Project (Create bebop.yml)",
+        "category": "Bebop",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "bebop.restartServer",
+        "title": "Restart Language Server",
+        "category": "Bebop",
+        "icon": "$(debug-restart)"
+      },
+      {
+        "command": "bebop.showOutput",
+        "title": "Show Output",
+        "category": "Bebop",
+        "icon": "$(output)"
+      },
+      {
+        "command": "bebop.openDocs",
+        "title": "Open Documentation",
+        "category": "Bebop",
+        "icon": "$(book)"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "bebop.build",
+          "when": "bebop.hasConfig"
+        },
+        {
+          "command": "bebop.watch",
+          "when": "bebop.hasConfig"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "bebop.build",
+          "when": "resourceLangId == bebop && bebop.hasConfig",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "bebop.build",
+          "when": "resourceLangId == bebop && bebop.hasConfig",
+          "group": "bebop@1"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "bebop.init",
+          "when": "explorerResourceIsFolder && !bebop.hasConfig",
+          "group": "bebop@1"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "bebop.build",
+        "key": "ctrl+shift+b",
+        "mac": "cmd+shift+b",
+        "when": "resourceLangId == bebop && bebop.hasConfig"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Bebop",
+      "properties": {
+        "bebop.compiler.path": {
+          "scope": "machine-overridable",
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Path to `bebopc` executable. If empty, searches PATH."
+        },
+        "bebop.compiler.configPath": {
+          "scope": "resource",
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Path to `bebop.yml` config file. If empty, uses auto-detection."
+        },
+        "bebop.compiler.includePaths": {
+          "scope": "resource",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional include paths for import resolution."
+        },
+        "bebop.editor.formatOnSave": {
+          "scope": "resource",
+          "type": "boolean",
+          "default": true,
+          "description": "Format Bebop files on save."
+        },
+        "bebop.trace.server": {
+          "scope": "window",
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Traces communication between VS Code and the language server."
+        }
+      }
+    },
+    "taskDefinitions": [
+      {
+        "type": "bebop",
+        "required": [],
+        "properties": {
+          "command": {
+            "type": "string",
+            "enum": [
+              "build",
+              "watch"
+            ],
+            "default": "build",
+            "description": "The bebopc command to run."
+          },
+          "config": {
+            "type": "string",
+            "description": "Path to bebop.yml config file."
+          }
+        }
+      }
+    ],
+    "problemMatchers": [
+      {
+        "name": "bebopc",
+        "owner": "bebop",
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}"
+        ],
+        "pattern": {
+          "regexp": "^(Error|Warning)\\[([A-Z0-9]+)\\]:\\s+(.+)$",
+          "severity": 1,
+          "code": 2,
+          "message": 3
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -b",
+    "watch": "tsc -b -w",
+    "lint": "eslint",
+    "postinstall": "cd client && npm install",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@vscode/vsce": "^2.22.0",
+    "typescript": "^5.3.0"
+  }
+}

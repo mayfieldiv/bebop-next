@@ -1,0 +1,9 @@
+// Tests qualified decorator name resolution (@validators.range)
+package app;
+
+import "dec_validators.bop"
+
+message Score {
+    @validators.range(min: 1.0, max: 100.0)
+    value(1): float64;
+}

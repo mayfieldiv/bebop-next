@@ -1,0 +1,10 @@
+mut struct Toposort7 { x: Toposort6; }
+mut struct Toposort2 { x: Toposort1; }
+mut struct Toposort9 { x: Toposort8; }
+mut struct Toposort0 { x: int32; }
+mut struct Toposort5 { x: Toposort4; }
+mut struct Toposort1 { x: Toposort0; }
+mut struct Toposort6 { x: Toposort5; }
+mut struct Toposort4 { x: Toposort3; }
+mut struct Toposort3 { x: Toposort2; }
+mut struct Toposort8 { x: Toposort7; }

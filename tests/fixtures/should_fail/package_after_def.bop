@@ -1,0 +1,8 @@
+edition = "2026"
+
+struct Foo {
+    x: int32;
+}
+
+// Error: package must come before definitions
+package my.package;

@@ -1,0 +1,103 @@
+// json.bop
+//
+// Copyright 2026 6OVER3 INSTITUTE. All rights reserved.
+//
+// Dynamic JSON values. Use when schema is unknown at compile time.
+//
+// For typed data, define proper Bebop records instead. These types are for:
+//   - Storing arbitrary user-provided JSON
+//   - Bridging untyped external APIs
+//   - Configuration or metadata blobs
+//
+//
+// WIRE FORMAT
+//
+// Value is a union with discriminator byte:
+//   1 = null (empty, 0 bytes)
+//   2 = bool (1 byte)
+//   3 = number (8 bytes, float64)
+//   4 = string (length-prefixed UTF-8)
+//   5 = array (length-prefixed array of Value)
+//   6 = object (length-prefixed map)
+//
+//
+// JSON REPRESENTATION
+//
+// These types serialize to JSON as native JSON values:
+//
+//   Bebop Value           JSON
+//   ───────────────────────────────
+//   Null{}                null
+//   Bool{true}            true
+//   Number{3.14}          3.14
+//   String{"hello"}       "hello"
+//   List{[...]}           [...]
+//   Map{{"a": ...}}       {"a": ...}
+//
+//
+// EXAMPLE
+//
+//   message Config {
+//     name(1): string;
+//     settings(2): bebop.Object;  // arbitrary JSON object
+//   }
+
+edition = "2026"
+package bebop
+
+/// JSON null. Empty struct, zero bytes on wire.
+struct Null {}
+
+/// Dynamic JSON value.
+///
+/// Represents any JSON value: null, boolean, number, string, array, or object.
+/// Use for dynamic data when the schema is unknown at compile time.
+///
+/// ```bebop
+/// message Event {
+///   type(1): string;
+///   payload(2): bebop.Value;  // arbitrary JSON
+/// }
+/// ```
+union Value {
+    /// JSON null.
+    Null(1): Null
+
+    /// JSON boolean.
+    Bool(2): message { value(1): bool; }
+
+    /// JSON number. Stored as float64 (IEEE 754 double).
+    /// Integers up to 2^53 are exact. Larger integers lose precision.
+    Number(3): message { value(1): float64; }
+
+    /// JSON string. UTF-8 encoded.
+    String(4): message { value(1): string; }
+
+    /// JSON array. Ordered list of values.
+    List(5): message { values(1): Value[]; }
+
+    /// JSON object. Unordered string-keyed map.
+    Map(6): message { fields(1): map[string, Value]; }
+}
+
+/// JSON object. Unordered map of string keys to dynamic values.
+///
+/// Equivalent to `Value.Map` but as a standalone type. Use when you know
+/// the value is an object (not null, bool, number, string, or list).
+///
+/// ```bebop
+/// message Request {
+///   headers(1): bebop.Object;  // {"Content-Type": "application/json", ...}
+/// }
+/// ```
+message Object {
+    fields(1): map[string, Value];
+}
+
+/// JSON array. Ordered list of dynamic values.
+///
+/// Equivalent to `Value.List` but as a standalone type. Use when you know
+/// the value is an array.
+message List {
+    values(1): Value[];
+}

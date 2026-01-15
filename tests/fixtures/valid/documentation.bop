@@ -1,0 +1,46 @@
+import "bebop/decorators.bop"
+
+enum DepE {
+    UNSPECIFIED = 0;
+    @deprecated("X in DepE")
+    X = 1;
+}
+
+message DepM {
+    @deprecated("x in DepM")
+    x(1): int32;
+}
+
+/* Documented enum */
+enum DocE {
+    /* Zero value */
+    UNSPECIFIED = 0;
+    /* Documented constant */
+    X = 1;
+
+    @deprecated("Y in DocE")
+    Y = 2;
+
+    /* Deprecated, documented constant */
+    @deprecated("Z in DocE")
+    Z = 3;
+}
+
+/* Documented message */
+message DocM {
+    /* Documented field */
+    x(1): int32;
+
+    @deprecated("y in DocM")
+    y(2): int32;
+
+    /* Deprecated, documented field */
+    @deprecated("z in DocM")
+    z(3): int32;
+}
+
+/* Documented struct */
+mut struct DocS {
+    /* Documented field */
+    x: int32;
+}

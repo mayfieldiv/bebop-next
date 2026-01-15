@@ -1,0 +1,19 @@
+// Common types in the "types" package
+package types;
+
+struct Point {
+    x: int32;
+    y: int32;
+}
+
+struct Size {
+    width: int32;
+    height: int32;
+}
+
+message Color {
+    r(1): uint8;
+    g(2): uint8;
+    b(3): uint8;
+    a(4): uint8;
+}

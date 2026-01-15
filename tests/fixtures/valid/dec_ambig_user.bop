@@ -1,0 +1,9 @@
+package app
+
+import "dec_ambig_a.bop"
+import "dec_ambig_b.bop"
+
+@check
+struct Foo {
+    x: int32;
+}

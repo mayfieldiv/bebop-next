@@ -1,0 +1,59 @@
+/**
+ * Option B: an "encodedData" field, that "decode" is called a second time on.
+ */
+mut struct UnionPerfB {
+    protocolVersion: uint32;
+    incomingOpcode: uint32;
+    encodedData: byte[];
+}
+
+mut struct B1 { i1: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B2 { i2: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B3 { i3: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B4 { i4: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B5 { i5: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B6 { i6: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B7 { i7: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B8 { i8: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B9 { i9: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B10 { i10: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B11 { i11: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B12 { i12: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B13 { i13: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B14 { i14: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B15 { i15: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B16 { i16: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B17 { i17: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B18 { i18: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B19 { i19: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B20 { i20: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B21 { i21: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B22 { i22: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B23 { i23: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B24 { i24: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B25 { i25: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B26 { i26: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B27 { i27: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B28 { i28: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B29 { i29: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B30 { i30: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B31 { i31: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B32 { i32: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B33 { i33: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B34 { i34: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B35 { i35: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B36 { i36: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B37 { i37: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B38 { i38: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B39 { i39: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B40 { i40: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B41 { i41: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B42 { i42: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B43 { i43: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B44 { i44: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B45 { i45: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B46 { i46: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B47 { i47: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B48 { i48: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B49 { i49: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }
+mut struct B50 { i50: int32; u: uint64; f: float64; s: string; g: guid; b: bool; }

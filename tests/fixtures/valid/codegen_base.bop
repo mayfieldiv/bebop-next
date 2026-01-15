@@ -1,0 +1,32 @@
+edition = "2026"
+package base
+
+/// Coordinate in 2D space.
+struct Point {
+    x: float32;
+    y: float32;
+}
+
+/// RGB color value.
+struct Color {
+    r: uint8;
+    g: uint8;
+    b: uint8;
+}
+
+/// Status codes for external reference testing.
+enum StatusCode : uint16 {
+    Unknown = 0;
+    Success = 1;
+    Failure = 2;
+    Pending = 3;
+}
+
+/// Empty struct for edge case testing.
+struct EmptyBase {
+}
+
+/// Message with a single optional field.
+message SimpleMessage {
+    value(1): string;
+}

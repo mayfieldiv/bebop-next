@@ -1,0 +1,17 @@
+{
+	"name": "bebop-client",
+	"description": "VS Code language client for Bebop",
+	"author": "Betwixt Labs",
+	"license": "MIT",
+	"version": "0.1.0",
+	"publisher": "betwixt-labs",
+	"engines": {
+		"vscode": "^1.75.0"
+	},
+	"dependencies": {
+		"vscode-languageclient": "^9.0.1"
+	},
+	"devDependencies": {
+		"@types/vscode": "^1.75.0"
+	}
+}

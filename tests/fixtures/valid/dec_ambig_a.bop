@@ -1,0 +1,5 @@
+package ambig_a
+
+#decorator(check) {
+    targets = ALL
+}

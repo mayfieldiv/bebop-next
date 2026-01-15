@@ -1,0 +1,39 @@
+name: Reusable Codegen Test
+
+on:
+  workflow_call:
+    inputs:
+      artifact:
+        required: true
+        type: string
+      generator:
+        required: true
+        type: string
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download bebopc
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact }}
+          path: bin
+
+      - name: Make bebopc executable
+        run: chmod +x bin/bebopc bin/bebopc-gen-*
+
+      - name: Generate code
+        run: |
+          mkdir -p generated
+          bin/bebopc build tests/fixtures/valid/codegen_base.bop tests/fixtures/valid/codegen_all.bop --${{ inputs.generator }}_out=generated
+
+      - name: Compile (C)
+        if: inputs.generator == 'c'
+        run: |
+          gcc -c -Wall -Wextra -Werror -pedantic -std=c11 \
+            -Wno-deprecated-declarations \
+            -I bebop/include \
+            generated/*.c

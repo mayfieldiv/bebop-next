@@ -1,0 +1,7 @@
+import "jazz.bop" // can I comment here?
+import "documentation.bop"
+import "toposort.bop"
+import "basic_arrays.bop"
+
+mut struct Band { members: Musician[]; }
+mut struct Something { imported: DocE; }

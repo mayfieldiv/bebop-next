@@ -1,0 +1,29 @@
+# Build outputs
+build/
+cmake-build-*/
+build-*/
+dist/
+node_modules/
+out
+
+# Release artifacts
+bebop-*.tar.gz
+*.vsix
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.dSYM/
+
+# Compile commands (generated)
+compile_commands.json
+.cache
+fuzz/corpus/
+.astro/

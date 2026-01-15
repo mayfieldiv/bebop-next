@@ -1,0 +1,47 @@
+union Whattheheck {
+  Sxxxx(f): mut { xxxx: bool; }
+  Syyyx(2x): mut { yy: bool; }
+}
+
+message BadFields {
+  x: int32;
+  y(2): int32;
+  z(3): wtf;
+}
+
+mut struct NastyStruct {
+  x: int24;
+}
+
+mesage Nah {
+
+}
+
+mut struct Wrong {
+    m1: map[bool[], bool];
+}
+
+union Empty {
+
+}
+
+readonly message Whoops {
+    a(1): uint32;
+}
+
+union Z {
+    A(1): message { b(1): uint32; }
+    /**
+     * This branch is, too!
+     */
+    B(2): mut { c: bool; }
+    C(1): mut { }
+}
+
+union U {
+  S(1): mut { x: int32; }
+}
+
+mut struct Ox {
+  y: S;
+}

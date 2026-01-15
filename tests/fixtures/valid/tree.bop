@@ -1,0 +1,4 @@
+message TreeNode {
+    value(1): int32;
+    children(2): TreeNode[];
+}
