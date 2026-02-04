@@ -48,6 +48,16 @@ jobs:
         if: runner.os == 'Windows'
         run: cmake --build build/cmake --config ${{ inputs.build-type }} --parallel
 
+      - name: Setup ASAN (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          $msvcPath = Get-ChildItem "$vsPath\VC\Tools\MSVC" | Sort-Object Name -Descending | Select-Object -First 1
+          $arch = if ("${{ inputs.arch }}" -eq "arm64") { "Hostarm64\arm64" } else { "Hostx64\x64" }
+          $binPath = "$($msvcPath.FullName)\bin\$arch"
+          echo "$binPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
       - name: Test
         if: runner.os != 'macOS' || inputs.arch == 'x64' || runner.arch == 'ARM64'
         working-directory: build/cmake
