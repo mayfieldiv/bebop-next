@@ -30,6 +30,13 @@
 #endif
 #endif
 
+#if defined(_MSC_VER) && !defined(__cplusplus)
+typedef struct {
+  long long __max_align_ll;
+  long double __max_align_ld;
+} max_align_t;
+#endif
+
 #if defined(_MSC_VER)
 #define BEBOP_MAX_ALIGN __alignof(max_align_t)
 #else
