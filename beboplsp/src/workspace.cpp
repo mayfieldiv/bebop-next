@@ -221,9 +221,9 @@ void Workspace::parseDocument(OpenDocument& doc)
     if (!doc.ctx) {
         doc.diagnostics.push_back({
             .range = {{0, 0}, {0, 0}},
+            .message = "Failed to create bebop context",
             .severity = lsp::DiagnosticSeverity::Error,
-            .source = "bebop",
-            .message = "Failed to create bebop context"
+            .source = "bebop"
         });
         return;
     }
@@ -240,11 +240,11 @@ void Workspace::parseDocument(OpenDocument& doc)
     if (status == BEBOP_FATAL) {
         doc.diagnostics.push_back({
             .range = {{0, 0}, {0, 0}},
-            .severity = lsp::DiagnosticSeverity::Error,
-            .source = "bebop",
             .message = bebop_context_error_message(doc.ctx)
                 ? bebop_context_error_message(doc.ctx)
-                : "Fatal parse error"
+                : "Fatal parse error",
+            .severity = lsp::DiagnosticSeverity::Error,
+            .source = "bebop"
         });
         return;
     }

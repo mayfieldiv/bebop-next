@@ -1,5 +1,6 @@
 #include "server.hpp"
 #include <algorithm>
+#include <cstring>
 #include <filesystem>
 #include <map>
 #include <set>
@@ -114,13 +115,13 @@ lsp::requests::Initialize::Result Server::onInitialize(
             .referencesProvider = true,
             .documentHighlightProvider = true,
             .documentSymbolProvider = true,
+            .codeActionProvider = true,
+            .documentLinkProvider = lsp::DocumentLinkOptions{},
+            .workspaceSymbolProvider = true,
             .documentFormattingProvider = true,
             .documentRangeFormattingProvider = true,
-            .foldingRangeProvider = true,
             .renameProvider = lsp::RenameOptions{.prepareProvider = true},
-            .documentLinkProvider = lsp::DocumentLinkOptions{},
-            .codeActionProvider = true,
-            .workspaceSymbolProvider = true,
+            .foldingRangeProvider = true,
         },
         .serverInfo = lsp::InitializeResultServerInfo{
             .name = "beboplsp",

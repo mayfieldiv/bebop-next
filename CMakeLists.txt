@@ -63,11 +63,14 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     add_compile_options(
         -Wall -Wextra -Wpedantic -Werror
         -Wconversion -Wsign-conversion -Wdouble-promotion
-        -Wformat=2 -Wundef -Wshadow
+        -Wformat=2 -Wundef
         -Wcast-qual -Wcast-align
-        -Wstrict-prototypes -Wmissing-prototypes
         -Wredundant-decls -Wnull-dereference
     )
+
+    add_compile_options($<$<COMPILE_LANGUAGE:C>:-Wstrict-prototypes>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C>:-Wmissing-prototypes>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C>:-Wshadow>)
     if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
         add_compile_options(-Wno-format-zero-length)
     endif()
