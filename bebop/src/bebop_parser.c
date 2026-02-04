@@ -489,7 +489,7 @@ static bool bebop__parse_is_integer_type(const bebop_type_kind_t kind)
   }
 }
 
-__attribute__((unused)) static uint32_t bebop__parse_scalar_wire_size(const bebop_type_kind_t kind)
+BEBOP_MAYBE_UNUSED static uint32_t bebop__parse_scalar_wire_size(const bebop_type_kind_t kind)
 {
   switch (kind) {
 #define X(name, str, size, is_int) \

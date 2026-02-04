@@ -18,10 +18,17 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <math.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+#ifdef _WIN32
+#ifndef PATH_MAX
+#define PATH_MAX 260
+#endif
+#endif
 
 #include "bebop.h"
 
@@ -39,6 +46,9 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"
 #pragma GCC diagnostic ignored "-Wpedantic"
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4127)
 #endif
 
 #include "cwisstable.h"
@@ -47,6 +57,8 @@
 #pragma clang diagnostic pop
 #elif defined(__GNUC__)
 #pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#pragma warning(pop)
 #endif
 
 #include <lauxlib.h>
@@ -73,9 +85,11 @@
 #if defined(__GNUC__) || defined(__clang__)
 #define BEBOP_LIKELY(x) __builtin_expect(!!(x), 1)
 #define BEBOP_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#define BEBOP_MAYBE_UNUSED __attribute__((unused))
 #else
 #define BEBOP_LIKELY(x) (x)
 #define BEBOP_UNLIKELY(x) (x)
+#define BEBOP_MAYBE_UNUSED
 #endif
 
 #define BEBOP_DISCARD_CONST(type, ptr) ((type)(uintptr_t)(ptr))
