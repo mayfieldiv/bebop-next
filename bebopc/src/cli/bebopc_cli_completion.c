@@ -12,7 +12,7 @@ static void _generate_bash(FILE* out)
         "    # Commands\n"
         "    local commands=\"");
 
-#define X(N, n, a, o, d) fprintf(out, "%s ", n);
+#define X(N, n, a, o, d, h) fprintf(out, "%s ", n);
   BEBOPC_COMMANDS(X)
 #undef X
 
@@ -79,7 +79,7 @@ static void _generate_zsh(FILE* out)
         "    local -a commands\n"
         "    commands=(\n");
 
-#define X(N, n, a, o, d) fprintf(out, "        '%s:%s'\n", n, d);
+#define X(N, n, a, o, d, h) fprintf(out, "        '%s:%s'\n", n, d);
   BEBOPC_COMMANDS(X)
 #undef X
 
@@ -141,7 +141,7 @@ static void _generate_fish(FILE* out)
   fprintf(out, "complete -c bebopc -f\n\n");
 
   fprintf(out, "# Commands\n");
-#define X(N, n, a, o, d) \
+#define X(N, n, a, o, d, h) \
   fprintf(out, "complete -c bebopc -n __fish_use_subcommand -a %s -d '%s'\n", n, d);
   BEBOPC_COMMANDS(X)
 #undef X
@@ -170,7 +170,7 @@ static void _generate_fish(FILE* out)
 #undef X
 
   fprintf(out, "\n# Help command arguments\n");
-#define X(N, n, a, o, d) \
+#define X(N, n, a, o, d, h) \
   fprintf(out, "complete -c bebopc -n '__fish_seen_subcommand_from help' -a %s -d " "'%s'\n", n, d);
   BEBOPC_COMMANDS(X)
 #undef X
@@ -186,7 +186,7 @@ static void _generate_powershell(FILE* out)
 {
   fprintf(out, "# bebopc PowerShell completion\n" "\n" "$script:commands = @(\n");
 
-#define X(N, n, a, o, d) fprintf(out, "    @{ Name = '%s'; Description = '%s' }\n", n, d);
+#define X(N, n, a, o, d, h) fprintf(out, "    @{ Name = '%s'; Description = '%s' }\n", n, d);
   BEBOPC_COMMANDS(X)
 #undef X
 

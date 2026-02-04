@@ -1,7 +1,9 @@
 #ifndef BEBOP_FSW_INTERNAL_H
 #define BEBOP_FSW_INTERNAL_H
 
+#ifndef _WIN32
 #include <pthread.h>
+#endif
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

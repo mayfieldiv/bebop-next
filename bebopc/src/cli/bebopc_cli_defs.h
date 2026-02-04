@@ -44,22 +44,7 @@
     "build", \
     "<files...> --<gen>_out=<dir>", \
     true, \
-    "Compile schemas and generate code") \
-  X(WATCH, "watch", "", true, "Watch for changes and recompile") \
-  X(INIT, "init", "", false, "Create bebop.yml config template") \
-  X(CHECK, "check", "<files...>", true, "Validate schemas without codegen") \
-  X(FMT, "fmt", "<files...>", true, "Format schema files") \
-  X(LSP, "lsp", "", false, "Start LSP server for editor integration") \
-  X(COMPLETION, \
-    "completion", \
-    "<shell>", \
-    false, \
-    "Generate shell completion script") \
-  X(HELP, "help", "[command]", false, "Show help for a command") \
-  X(VERSION, "version", "", false, "Show version information")
-
-#define BEBOPC_COMMAND_HELP(X) \
-  X(BUILD, \
+    "Compile schemas and generate code", \
     "\nExamples:\n" \
     "  bebopc build schema.bop --c_out=./generated\n" \
     "  bebopc build *.bop --c_out=./out --ts_out=./out\n" \
@@ -68,20 +53,24 @@
     "\nPlugins are discovered as bebopc-gen-<name> in PATH or next to bebopc.\n" \
     "Use --plugin to specify an explicit path.\n" \
     "Use -I/--include to add directories for resolving imports.") \
-  X(WATCH, "Uses sources/exclude patterns from bebop.yml config.") \
-  X(INIT, "Creates a bebop.yml template in the current directory.") \
-  X(CHECK, "Parses and validates without generating code.") \
-  X(FMT, \
+  X(WATCH, "watch", "", true, "Watch for changes and recompile", \
+    "Uses sources/exclude patterns from bebop.yml config.") \
+  X(INIT, "init", "", false, "Create bebop.yml config template", \
+    "Creates a bebop.yml template in the current directory.") \
+  X(CHECK, "check", "<files...>", true, "Validate schemas without codegen", \
+    "Parses and validates without generating code.") \
+  X(FMT, "fmt", "<files...>", true, "Format schema files", \
     "\nExamples:\n" \
     "  bebopc fmt schema.bop          # Format and write in-place\n" \
     "  bebopc fmt *.bop               # Format all .bop files\n" \
     "  bebopc fmt --check *.bop       # Check formatting (exit 1 if unformatted)\n" \
     "  bebopc fmt --diff schema.bop   # Show diff without writing\n" \
     "\nBy default, formats files in-place. Use --check in CI to verify formatting.") \
-  X(LSP, "Communicates via stdin/stdout using the Language Server Protocol.") \
-  X(COMPLETION, NULL) \
-  X(HELP, NULL) \
-  X(VERSION, NULL)
+  X(LSP, "lsp", "", false, "Start LSP server for editor integration", \
+    "Communicates via stdin/stdout using the Language Server Protocol.") \
+  X(COMPLETION, "completion", "<shell>", false, "Generate shell completion script", NULL) \
+  X(HELP, "help", "[command]", false, "Show help for a command", NULL) \
+  X(VERSION, "version", "", false, "Show version information", NULL)
 
 #define BEBOPC_SHELLS(X) \
   X(BASH, "bash", "Bash completion script") \
@@ -97,7 +86,7 @@ typedef enum {
 } cli_opt_t;
 
 typedef enum {
-#define X(N, n, a, o, d) CLI_CMD_##N,
+#define X(N, n, a, o, d, h) CLI_CMD_##N,
   BEBOPC_COMMANDS(X)
 #undef X
   CLI_CMD_COUNT,
@@ -140,12 +129,8 @@ static const cli_opt_def_t cli_options[] = {
 #undef X
 };
 
-#define X(N, h) h,
-static const char* const cli_command_help[] = {BEBOPC_COMMAND_HELP(X)};
-#undef X
-
 static const cli_cmd_def_t cli_commands[] = {
-#define X(N, n, a, o, d) {n, a, o, d, cli_command_help[CLI_CMD_##N]},
+#define X(N, n, a, o, d, h) {n, a, o, d, h},
     BEBOPC_COMMANDS(X)
 #undef X
 };

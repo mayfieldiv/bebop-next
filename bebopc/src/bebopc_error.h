@@ -4,6 +4,13 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#if defined(__GNUC__) || defined(__clang__)
+  #define BEBOPC_PRINTF_ATTR(fmt_idx, args_idx) \
+    __attribute__((format(printf, fmt_idx, args_idx)))
+#else
+  #define BEBOPC_PRINTF_ATTR(fmt_idx, args_idx)
+#endif
+
 typedef enum {
   BEBOPC_OK = 0,
   BEBOPC_ERR_OUT_OF_MEMORY,
@@ -39,12 +46,12 @@ void bebopc_error_add(bebopc_error_ctx_t* ctx,
                       const char* file,
                       int line,
                       const char* fmt,
-                      ...) __attribute__((format(printf, 5, 6)));
+                      ...) BEBOPC_PRINTF_ATTR(5, 6);
 
 void bebopc_error_addf(bebopc_error_ctx_t* ctx,
                        bebopc_error_code_t code,
                        const char* fmt,
-                       ...) __attribute__((format(printf, 3, 4)));
+                       ...) BEBOPC_PRINTF_ATTR(3, 4);
 
 #define BEBOPC_ERROR(ctx, code, ...) \
   bebopc_error_add((ctx), (code), __FILE__, __LINE__, __VA_ARGS__)
