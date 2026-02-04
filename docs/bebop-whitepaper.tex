@@ -213,7 +213,7 @@ Machine learning infrastructure moves data between GPUs, across networks, and th
 
 \vspace{0.15in}
 
-This paper presents Bebop, a schema-driven binary format where every type has a fixed wire size. The schema compiler generates encode and decode routines without data-dependent branches. On modern hardware, throughput is limited by memory bandwidth rather than CPU compute. The generated code does little more than pointer arithmetic and bounds checking.
+This paper presents Bebop, a schema-driven binary format where every type has a fixed wire size. The schema compiler generates encode and decode routines without data-dependent branches. On modern hardware, decode throughput is limited by memory bandwidth rather than CPU. The generated code does little more than pointer arithmetic and bounds checks.
 
 \vspace{0.15in}
 
@@ -248,9 +248,9 @@ This paper makes the following contributions:
 
 \begin{enumerate}[leftmargin=2em,itemsep=4pt,topsep=8pt]
 \item A wire format specification optimized for decode throughput rather than wire compactness
-\item Empirical comparison against Protocol Buffers, MessagePack, and simdjson across 19 workloads representing ML inference, event streaming, and recursive data structures
+\item Empirical comparison against Protocol Buffers, MessagePack, and simdjson across 23 workloads representing ML inference, event streaming, and recursive data structures
 \item A schema language with compile-time extensibility through embedded Lua scripting
-\item Reference implementations in C demonstrating terabyte-per-second decode throughput
+\item Reference implementations in C achieving 86\% memory bandwidth utilization during decode
 \end{enumerate}
 \end{minipage}
 
@@ -402,7 +402,21 @@ Messages also distinguish ``not set'' from ``set to default value.'' Proto3 remo
 
 \subsection{Schema Evolution}
 
-Messages support forward and backward compatibility. Old code ignores unknown tags; new code uses defaults for missing tags. Adding a field with a new tag number is always safe. Removing a field is safe if readers handle missing tags. Reusing a tag number with a different type breaks compatibility.
+Messages support forward and backward compatibility through tagged fields. The rules are:
+
+\begin{itemize}[leftmargin=2em,itemsep=4pt,topsep=6pt]
+\item \textbf{Adding fields}: Always safe. Use a new tag number. Old readers ignore unknown tags.
+\item \textbf{Removing fields}: Safe if readers handle missing tags (they get default values). The tag number should not be reused.
+\item \textbf{Renaming fields}: Safe. Field names are not part of the wire format.
+\item \textbf{Changing field types}: Breaking. Never reuse a tag with a different type.
+\item \textbf{Changing tag numbers}: Breaking. Equivalent to removing the old field and adding a new one.
+\end{itemize}
+
+\textbf{Structs have no evolution support.} Any change to a struct's fields---adding, removing, reordering, or changing types---is a breaking change. Struct fields are positionally encoded with no tags or length prefix. If you need to evolve a struct, create a new versioned type (\texttt{PointV2}) or convert it to a message.
+
+\textbf{Unions}: Adding branches is safe. Removing branches causes decode failures for old data using that branch. Changing a branch's type is breaking.
+
+\textbf{Enums}: Adding values is safe. Removing values may cause issues if old data contains those values. Changing the underlying type (\texttt{uint8} to \texttt{uint32}) is breaking.
 
 
 \newpage
@@ -741,7 +755,7 @@ We evaluated four systems: Bebop (C runtime), protobuf-c 1.5, msgpack-c 6.1, and
 
 \subsection{Benchmark Workloads}
 
-19 schemas in five categories:
+23 schemas in five categories:
 
 \textbf{ML Inference:} Embedding768/1536 (single vector, bfloat16), EmbeddingBatch (32 vectors), TensorShard (64KB model weight slice), InferenceResponse (batch + metadata).
 
@@ -755,7 +769,7 @@ We evaluated four systems: Bebop (C runtime), protobuf-c 1.5, msgpack-c 6.1, and
 
 \subsection{Decode Performance}
 
-Table~\ref{tab:decode} presents decode latency and throughput across all workloads. Bebop decoded faster than Protocol Buffers on all 19 workloads and faster than MessagePack on 18 of 19.
+Table~\ref{tab:decode} presents decode latency and throughput across all workloads. Bebop decoded faster than Protocol Buffers on all 23 workloads and faster than MessagePack on 21 of 23.
 
 \begin{table}[ht]
 \centering
@@ -804,33 +818,30 @@ Embedding vectors decode in under 3 nanoseconds regardless of dimension. The bfl
 
 \subsection{Throughput and Memory Bandwidth}
 
-Table~\ref{tab:throughput} shows decode throughput across workloads.
+Bebop's decode performance is bounded by memory bandwidth, not CPU compute. Figure~\ref{fig:bandwidth-utilization} shows bandwidth utilization across record sizes. On cold-cache workloads (data fetched from DRAM), Bebop achieves \textbf{86\% of peak memory bandwidth} on records above 64KB. This is the meaningful metric for production workloads where data doesn't fit in cache.
+
+Table~\ref{tab:throughput} shows measured throughput. Values above 819 GB/s (M3 Ultra memory bandwidth~\cite{m3-ultra}) indicate cache-resident data from benchmark iterations---useful for understanding overhead but not representative of cold-cache production loads.
 
 \begin{table}[ht]
 \centering
-\begin{tabular}{@{}lrr@{}}
+\begin{tabular}{@{}lrrr@{}}
 \toprule
-\textbf{Workload} & \textbf{Throughput} & \textbf{Notes} \\
+\textbf{Workload} & \textbf{Throughput} & \textbf{Cache} & \textbf{Notes} \\
 \midrule
-TensorShardLarge & 9.58 TB/s & 64KB bfloat16 array \\
-Embedding1536 & 1.10 TB/s & 1536-dim embedding vector \\
-EmbeddingBatch & 964.13 GB/s & Batch of 32 embeddings \\
-EventLarge & 644.35 GB/s & 4KB payload, minimal framing \\
-Embedding768 & 534.90 GB/s & 768-dim embedding vector \\
-InferenceResponse & 355.51 GB/s & Complete inference result \\
-OrderLarge & 212.50 GB/s & Nested arrays \\
-ChunkedText & 48.56 GB/s & 1000 text spans \\
-DocumentLarge & 41.96 GB/s & 2KB text with metadata \\
-PersonMedium & 30.88 GB/s & Typical API record \\
+TensorShardLarge & 9.58 TB/s & L2 & 64KB fits in L2 \\
+Embedding1536 & 1.10 TB/s & L2 & 3KB vector \\
+EmbeddingBatch & 964.13 GB/s & L2 & Batch of 32 \\
+EventLarge & 644.35 GB/s & L2/DRAM & 4KB payload \\
+Embedding768 & 534.90 GB/s & L2 & 1.5KB vector \\
+InferenceResponse & 355.51 GB/s & L2 & Mixed content \\
+OrderLarge & 212.50 GB/s & L2 & Nested arrays \\
 \bottomrule
 \end{tabular}
-\caption{Bebop decode throughput on selected workloads.}
+\caption{Bebop decode throughput. Values above 819 GB/s indicate L2-resident data.}
 \label{tab:throughput}
 \end{table}
 
-The M3 Ultra delivers 819 GB/s memory bandwidth~\cite{m3-ultra}. Throughput above this (e.g., TensorShardLarge at 9.58 TB/s) indicates cache-resident data from benchmark iterations. For DRAM-fetched data, decode throughput tracks memory bandwidth. Bebop's decode path does minimal computation: bounds checking, pointer arithmetic, occasional type conversion. Most ``decode'' operations are pointer assignments.
-
-Figure~\ref{fig:bandwidth-utilization} shows measured throughput as a fraction of peak cache/memory bandwidth at each level of the hierarchy.
+Bebop's decode path does minimal computation: bounds checking, pointer arithmetic, occasional type conversion. Most ``decode'' operations are pointer assignments.
 
 \begin{figure}[ht]
 \centering
@@ -891,11 +902,23 @@ Figure~\ref{fig:bandwidth-utilization} shows measured throughput as a fraction o
 
 The gap at small record sizes reflects fixed per-record overhead. Records under 256 bytes spend more time in function prologues and bounds checks than in actual data access. Records above 4KB achieve over 90\% bandwidth utilization when cache-resident.
 
-SIMD could reduce per-field overhead further, and systems with higher memory bandwidth would see proportionally higher throughput.
+\subsubsection{Alignment and SIMD Considerations}
+
+Bebop does not enforce alignment beyond natural type boundaries. A \texttt{float32} is 4-byte aligned within its containing struct, but the struct itself may start at any byte offset. This differs from Cap'n Proto, which aligns all objects to 8-byte boundaries.
+
+For CPU decode, unaligned access is typically fast on modern x86 and ARM processors. However, GPU and TPU memory transfers often require specific alignment (typically 16, 32, or 128 bytes) for efficient DMA. When using Bebop for ML inference pipelines that transfer data to accelerators:
+
+\begin{itemize}[leftmargin=2em,itemsep=2pt,topsep=4pt]
+\item Embedding vectors and tensor data should be placed in fixed arrays, which encode contiguously
+\item The containing message or buffer should be allocated with appropriate alignment
+\item Consider padding schemas to match accelerator requirements
+\end{itemize}
+
+SIMD optimization of the decode path is possible but not implemented in the reference runtime. The primary opportunity is parallel bounds checking and pointer arithmetic for arrays of fixed-size elements. For large \texttt{bfloat16[]} arrays, decode is already a single pointer assignment; SIMD would not help. For arrays of small structs, SIMD could reduce loop overhead.
 
 \subsection{Encode Performance}
 
-Encode margins are smaller than decode. Bebop beat Protocol Buffers on all 22 workloads (1.4--12.6$\times$) and MessagePack on 15 of 19 (1.2--19.4$\times$). MessagePack was faster on JsonSmall, JsonLarge, ChunkedText, and DocumentLarge.
+Encode margins are smaller than decode. Bebop beat Protocol Buffers on all 23 workloads (1.4--12.6$\times$) and MessagePack on 19 of 23 (1.2--19.4$\times$). MessagePack was faster on JsonSmall, JsonLarge, ChunkedText, and DocumentLarge.
 
 Encoding requires traversing data structures and computing lengths, which involve allocation and branching regardless of wire format.
 
@@ -903,7 +926,7 @@ Encoding requires traversing data structures and computing lengths, which involv
 
 We included simdjson~\cite{simdjson}, the fastest general-purpose JSON parser, as a reference. Simdjson uses SIMD to accelerate JSON tokenization, achieving 2--6~GB/s on typical workloads.
 
-On the same data serialized as JSON, Bebop decode outperformed simdjson parse on 17 of 19 workloads (1.2--5741$\times$). The largest gaps occurred on numeric arrays: parsing ``[1.5, 2.5, ...]'' as JSON requires character-by-character float conversion, while Bebop reads IEEE 754 values directly. Simdjson was faster on JsonLarge (4.25$\times$) and JsonSmall (1.70$\times$), where JSON's native format requires no conversion.
+On the same data serialized as JSON, Bebop decode outperformed simdjson parse on 21 of 23 workloads (1.2--5741$\times$). The largest gaps occurred on numeric arrays: parsing ``[1.5, 2.5, ...]'' as JSON requires character-by-character float conversion, while Bebop reads IEEE 754 values directly. Simdjson was faster on JsonLarge (4.25$\times$) and JsonSmall (1.70$\times$), where JSON's native format requires no conversion.
 
 \begin{table}[ht]
 \centering
@@ -950,37 +973,41 @@ TreeDeep & 8.97 $\mu$s & 68.93 $\mu$s & 7.7$\times$ \\
 
 \begin{table}[ht]
 \centering
-\begin{tabular}{l r r r}
+\small
+\begin{tabular}{l r r r r}
 \toprule
-\textbf{Workload} & \textbf{Bebop} & \textbf{Protocol Buffers} & \textbf{Bebop + brotli} \\
- & (bytes) & (bytes) & (bytes) \\
+\textbf{Workload} & \textbf{Bebop} & \textbf{Protobuf} & \textbf{Bebop+brotli} & \textbf{Protobuf+brotli} \\
 \midrule
-\multicolumn{4}{l}{\textit{API payloads (small integer fields)}} \\
-PersonSmall & 28 & 19 & --- \\
-PersonMedium & 130 & 124 & 101 \\
-OrderSmall & 76 & 34 & 62 \\
-OrderLarge & 1,240 & 423 & 514 \\
+\multicolumn{5}{l}{\textit{API payloads (small integer fields)}} \\
+PersonSmall & 28 & 19 & --- & --- \\
+PersonMedium & 130 & 124 & 101 & 101 \\
+OrderSmall & 76 & 34 & 62 & --- \\
+OrderLarge & 1,240 & 423 & 514 & 376 \\
 \midrule
-\multicolumn{4}{l}{\textit{Event payloads (byte arrays)}} \\
-EventSmall & 42 & 29 & --- \\
-EventLarge & 4,170 & 4,158 & --- \\
+\multicolumn{5}{l}{\textit{Event payloads (byte arrays)}} \\
+EventSmall & 42 & 29 & --- & --- \\
+EventLarge & 4,170 & 4,158 & --- & --- \\
 \midrule
-\multicolumn{4}{l}{\textit{ML inference (bfloat16 arrays)}} \\
-Embedding768 & 1,556 & 1,573 & 1,167 \\
-Embedding1536 & 3,092 & 3,109 & 2,219 \\
-TensorShardSmall & 2,132 & 2,108 & 1,574 \\
-TensorShardLarge & 65,624 & 65,605 & 44,711 \\
+\multicolumn{5}{l}{\textit{ML inference (bfloat16 arrays)}} \\
+Embedding768 & 1,556 & 1,573 & 1,167 & 1,193 \\
+Embedding1536 & 3,092 & 3,109 & 2,219 & 2,214 \\
+TensorShardSmall & 2,132 & 2,108 & 1,574 & 1,576 \\
+TensorShardLarge & 65,624 & 65,605 & 44,711 & 44,720 \\
 \bottomrule
 \end{tabular}
-\caption{Wire size in bytes. --- indicates brotli increased size.}
+\caption{Wire size in bytes. --- indicates compression increased size.}
 \label{tab:wire-size}
 \end{table}
 
-The results confirm the predictions from Equation~\ref{eq:varint-expected}. OrderLarge contains arrays of 100 small integers; varint encodes these in 1--2 bytes each while fixed-width requires 4--8 bytes, producing a 2.93$\times$ size difference.
+The results confirm the predictions from Equation~\ref{eq:varint-expected}. OrderLarge contains arrays of 100 small integers; varint encodes these in 1--2 bytes each while fixed-width requires 4--8 bytes, producing a 2.93$\times$ uncompressed size difference.
 
-EventLarge is dominated by a 4KB random byte payload; neither format compresses it. The ML workloads write bfloat16 arrays as raw bytes with a length prefix; the formats produce nearly identical uncompressed output.
+\textbf{Compression narrows the gap on most workloads.} On ML payloads (embedding vectors, tensor shards), compressed Bebop and compressed Protocol Buffers produce nearly identical wire sizes---within 0.5\%. The bfloat16 data dominates; framing overhead becomes negligible after compression.
 
-Compression changes the tradeoff. TensorShardLarge compresses to 44,711 bytes (brotli), 32\% smaller than uncompressed Protocol Buffers. For ML workloads, Bebop with compression produces smaller wire sizes than Protocol Buffers alone.
+On API payloads with small integers (OrderLarge), compressed Protocol Buffers remains smaller (376 vs 514 bytes). Varint's compact representation of small values survives compression better than fixed-width padding zeros.
+
+EventLarge is dominated by a 4KB random byte payload; neither format benefits from compression.
+
+With compression enabled, wire size differences between formats largely disappear. The decode performance gap does not.
 
 
 \newpage

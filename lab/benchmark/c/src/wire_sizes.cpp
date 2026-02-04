@@ -63,8 +63,10 @@ struct WireSize {
   const char* category;
   size_t bebop_size;
   size_t protobuf_size;
-  size_t best_compressed_size;
-  const char* best_compressor;
+  size_t bebop_compressed_size;
+  const char* bebop_compressor;
+  size_t protobuf_compressed_size;
+  const char* protobuf_compressor;
 };
 
 static std::vector<WireSize> g_sizes;
@@ -132,16 +134,26 @@ static void get_writer_buf(uint8_t** buf, size_t* len)
   Bebop_Writer_Buf(g_writer, buf, len);
 }
 
-static void record(const char* cat, const char* name, size_t protobuf)
+static std::vector<uint8_t> g_proto_buf;
+
+static void record(const char* cat, const char* name, size_t protobuf_size, const uint8_t* proto_data)
 {
   uint8_t* buf;
   size_t bebop;
   get_writer_buf(&buf, &bebop);
 
-  const char* compressor;
-  size_t compressed = try_compress(buf, bebop, &compressor);
+  const char* bebop_compressor;
+  size_t bebop_compressed = try_compress(buf, bebop, &bebop_compressor);
 
-  g_sizes.push_back({name, cat, bebop, protobuf, compressed, compressor});
+  const char* proto_compressor;
+  size_t proto_compressed = protobuf_size;
+  if (proto_data && protobuf_size > 0) {
+    proto_compressed = try_compress(proto_data, protobuf_size, &proto_compressor);
+  } else {
+    proto_compressor = "none";
+  }
+
+  g_sizes.push_back({name, cat, bebop, protobuf_size, bebop_compressed, bebop_compressor, proto_compressed, proto_compressor});
 }
 
 //
@@ -214,20 +226,23 @@ static void bebop_tensor_shard(const TestTensorShard& t)
 
 #ifdef BENCH_PROTOBUF
 //
-// Protobuf-c encoders
+// Protobuf-c encoders - return size and fill buffer for compression
 //
 
-static size_t proto_person(const TestPerson& p)
+static size_t proto_person(const TestPerson& p, std::vector<uint8_t>& out)
 {
   Benchmark__Person person = BENCHMARK__PERSON__INIT;
   person.id = p.id;
   person.name = const_cast<char*>(p.name.c_str());
   person.email = const_cast<char*>(p.email.c_str());
   person.age = p.age;
-  return benchmark__person__get_packed_size(&person);
+  size_t size = benchmark__person__get_packed_size(&person);
+  out.resize(size);
+  benchmark__person__pack(&person, out.data());
+  return size;
 }
 
-static size_t proto_order(const TestOrder& o)
+static size_t proto_order(const TestOrder& o, std::vector<uint8_t>& out)
 {
   Benchmark__Order order = BENCHMARK__ORDER__INIT;
   order.order_id = o.order_id;
@@ -238,10 +253,13 @@ static size_t proto_order(const TestOrder& o)
   order.quantities = const_cast<int32_t*>(o.quantities.data());
   order.total = o.total;
   order.timestamp = o.timestamp;
-  return benchmark__order__get_packed_size(&order);
+  size_t size = benchmark__order__get_packed_size(&order);
+  out.resize(size);
+  benchmark__order__pack(&order, out.data());
+  return size;
 }
 
-static size_t proto_event(const TestEvent& e)
+static size_t proto_event(const TestEvent& e, std::vector<uint8_t>& out)
 {
   Benchmark__Event event = BENCHMARK__EVENT__INIT;
   event.id = e.id;
@@ -250,13 +268,15 @@ static size_t proto_event(const TestEvent& e)
   event.timestamp = e.timestamp;
   event.payload.data = const_cast<uint8_t*>(e.payload.data());
   event.payload.len = e.payload.size();
-  return benchmark__event__get_packed_size(&event);
+  size_t size = benchmark__event__get_packed_size(&event);
+  out.resize(size);
+  benchmark__event__pack(&event, out.data());
+  return size;
 }
 
-static size_t proto_embedding_bf16(const TestEmbeddingBF16& e)
+static size_t proto_embedding_bf16(const TestEmbeddingBF16& e, std::vector<uint8_t>& out)
 {
   Benchmark__EmbeddingBF16 emb = BENCHMARK__EMBEDDING_BF16__INIT;
-  // id is a string in proto schema, encode uuid as hex or raw bytes
   static char id_str[33];
   snprintf(id_str, sizeof(id_str), "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
            e.id.bytes[0], e.id.bytes[1], e.id.bytes[2], e.id.bytes[3],
@@ -266,10 +286,13 @@ static size_t proto_embedding_bf16(const TestEmbeddingBF16& e)
   emb.id = id_str;
   emb.vector.data = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(e.vector.data()));
   emb.vector.len = e.vector.size() * sizeof(uint16_t);
-  return benchmark__embedding_bf16__get_packed_size(&emb);
+  size_t size = benchmark__embedding_bf16__get_packed_size(&emb);
+  out.resize(size);
+  benchmark__embedding_bf16__pack(&emb, out.data());
+  return size;
 }
 
-static size_t proto_tensor_shard(const TestTensorShard& t)
+static size_t proto_tensor_shard(const TestTensorShard& t, std::vector<uint8_t>& out)
 {
   Benchmark__TensorShard ts = BENCHMARK__TENSOR_SHARD__INIT;
   ts.name = const_cast<char*>(t.name.c_str());
@@ -280,46 +303,57 @@ static size_t proto_tensor_shard(const TestTensorShard& t)
   ts.data.len = t.data.size() * sizeof(uint16_t);
   ts.offset = t.offset;
   ts.total_elements = t.total_elements;
-  return benchmark__tensor_shard__get_packed_size(&ts);
+  size_t size = benchmark__tensor_shard__get_packed_size(&ts);
+  out.resize(size);
+  benchmark__tensor_shard__pack(&ts, out.data());
+  return size;
 }
 #endif
 
 int main()
 {
 #ifdef BENCH_PROTOBUF
+  std::vector<uint8_t> proto_buf;
+
   // API Payloads
   bebop_person(GetSmallPerson());
-  record("API", "PersonSmall", proto_person(GetSmallPerson()));
+  record("API", "PersonSmall", proto_person(GetSmallPerson(), proto_buf), proto_buf.data());
   bebop_person(GetMediumPerson());
-  record("API", "PersonMedium", proto_person(GetMediumPerson()));
+  record("API", "PersonMedium", proto_person(GetMediumPerson(), proto_buf), proto_buf.data());
   bebop_order(GetSmallOrder());
-  record("API", "OrderSmall", proto_order(GetSmallOrder()));
+  record("API", "OrderSmall", proto_order(GetSmallOrder(), proto_buf), proto_buf.data());
   bebop_order(GetLargeOrder());
-  record("API", "OrderLarge", proto_order(GetLargeOrder()));
+  record("API", "OrderLarge", proto_order(GetLargeOrder(), proto_buf), proto_buf.data());
 
   // Event Telemetry
   bebop_event(GetSmallEvent());
-  record("Event", "EventSmall", proto_event(GetSmallEvent()));
+  record("Event", "EventSmall", proto_event(GetSmallEvent(), proto_buf), proto_buf.data());
   bebop_event(GetLargeEvent());
-  record("Event", "EventLarge", proto_event(GetLargeEvent()));
+  record("Event", "EventLarge", proto_event(GetLargeEvent(), proto_buf), proto_buf.data());
 
   // ML Inference
   bebop_embedding_bf16(GetEmbedding768());
-  record("ML", "Embedding768", proto_embedding_bf16(GetEmbedding768()));
+  record("ML", "Embedding768", proto_embedding_bf16(GetEmbedding768(), proto_buf), proto_buf.data());
   bebop_embedding_bf16(GetEmbedding1536());
-  record("ML", "Embedding1536", proto_embedding_bf16(GetEmbedding1536()));
+  record("ML", "Embedding1536", proto_embedding_bf16(GetEmbedding1536(), proto_buf), proto_buf.data());
   bebop_tensor_shard(GetTensorShardSmall());
-  record("ML", "TensorShardSmall", proto_tensor_shard(GetTensorShardSmall()));
+  record("ML", "TensorShardSmall", proto_tensor_shard(GetTensorShardSmall(), proto_buf), proto_buf.data());
   bebop_tensor_shard(GetTensorShardLarge());
-  record("ML", "TensorShardLarge", proto_tensor_shard(GetTensorShardLarge()));
+  record("ML", "TensorShardLarge", proto_tensor_shard(GetTensorShardLarge(), proto_buf), proto_buf.data());
 
   // Output JSON
   printf("{\n");
   printf("  \"wire_sizes\": [\n");
   for (size_t i = 0; i < g_sizes.size(); i++) {
     const auto& s = g_sizes[i];
-    printf("    {\"category\": \"%s\", \"name\": \"%s\", \"bebop\": %zu, \"protobuf\": %zu, \"compressed\": %zu, \"compressor\": \"%s\"}%s\n",
-           s.category, s.name, s.bebop_size, s.protobuf_size, s.best_compressed_size, s.best_compressor,
+    printf("    {\"category\": \"%s\", \"name\": \"%s\", "
+           "\"bebop\": %zu, \"protobuf\": %zu, "
+           "\"bebop_compressed\": %zu, \"bebop_compressor\": \"%s\", "
+           "\"protobuf_compressed\": %zu, \"protobuf_compressor\": \"%s\"}%s\n",
+           s.category, s.name,
+           s.bebop_size, s.protobuf_size,
+           s.bebop_compressed_size, s.bebop_compressor,
+           s.protobuf_compressed_size, s.protobuf_compressor,
            i < g_sizes.size() - 1 ? "," : "");
   }
   printf("  ]\n");
