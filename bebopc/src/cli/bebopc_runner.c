@@ -499,7 +499,11 @@ char* bebopc_find_plugin(const char* name)
       const char* sep = ":";
 #endif
       char* save_ptr = NULL;
+#ifdef _WIN32
+      char* dir = strtok_s(path_copy, sep, &save_ptr);
+#else
       char* dir = strtok_r(path_copy, sep, &save_ptr);
+#endif
       while (dir) {
         char* full = bebopc_path_join(dir, plugin_name);
         if (full && bebopc_file_is_file(full)) {
@@ -508,7 +512,11 @@ char* bebopc_find_plugin(const char* name)
           return full;
         }
         free(full);
+#ifdef _WIN32
+        dir = strtok_s(NULL, sep, &save_ptr);
+#else
         dir = strtok_r(NULL, sep, &save_ptr);
+#endif
       }
       free(path_copy);
     }
