@@ -26,7 +26,7 @@ target_include_directories(bebop
 target_link_libraries(bebop PRIVATE lua)
 
 if(WIN32)
-    target_compile_definitions(bebop PRIVATE BEBOP_BUILDING)
+    target_compile_definitions(bebop PUBLIC BEBOP_STATIC_LIB)
 endif()
 
 if(MSVC)

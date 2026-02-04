@@ -14,6 +14,8 @@ extern "C" {
 #ifndef BEBOP_API
 #ifdef BEBOP_STATIC
 #define BEBOP_API static
+#elif defined(BEBOP_STATIC_LIB)
+#define BEBOP_API
 #elif defined(_WIN32)
 #ifdef BEBOP_BUILDING
 #define BEBOP_API __declspec(dllexport)
@@ -1266,9 +1268,7 @@ _Static_assert(sizeof(Bebop_Duration) == 12, "sizeof(Bebop_Duration) should be 1
 //   BBM_END()
 //
 
-#if (defined(__GNUC__) || defined(__clang__)) && !defined(__cplusplus)
-
-// Generic init - derives hash/eq from key type
+// Generic init - derives hash/eq from key type (C11 _Generic)
 #define BBM_INIT(m, ctx, KT) \
   _Generic( \
       (KT) {0}, \
@@ -1310,6 +1310,8 @@ _Static_assert(sizeof(Bebop_Duration) == 12, "sizeof(Bebop_Duration) should be 1
 // String creation helpers
 #define BBM_STR(s) ((Bebop_Str) {.data = (s), .length = (uint32_t)strlen(s)})
 #define BBM_STRLIT(s) ((Bebop_Str) {.data = ("" s ""), .length = sizeof(s) - 1})
+
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(__cplusplus)
 
 // Internal helpers - take void* so all _Generic branches type-check
 static inline void _bbm_put_str(
@@ -1463,7 +1465,100 @@ static inline bool _bbm_del_any(Bebop_Map* m, const void* kptr)
 #pragma GCC diagnostic pop
 #endif
 
-#endif  // __GNUC__ || __clang__
+#elif defined(_MSC_VER)  // MSVC version - no statement expressions
+
+static inline void _bbm_put_str_msvc(
+    Bebop_Map* m, Bebop_WireCtx* c, const char* str, const void* v, size_t vsz
+)
+{
+  Bebop_Str* kp = (Bebop_Str*)Bebop_WireCtx_Alloc(c, sizeof(Bebop_Str));
+  void* vp = Bebop_WireCtx_Alloc(c, vsz);
+  if (kp && vp) {
+    kp->data = str;
+    kp->length = (uint32_t)strlen(str);
+    memcpy(vp, v, vsz);
+    Bebop_Map_Put(m, kp, vp);
+  }
+}
+
+static inline void _bbm_put_any_msvc(
+    Bebop_Map* m, Bebop_WireCtx* c, const void* kptr, size_t ksz, const void* v, size_t vsz
+)
+{
+  void* kp = Bebop_WireCtx_Alloc(c, ksz);
+  void* vp = Bebop_WireCtx_Alloc(c, vsz);
+  if (kp && vp) {
+    memcpy(kp, kptr, ksz);
+    memcpy(vp, v, vsz);
+    Bebop_Map_Put(m, kp, vp);
+  }
+}
+
+static inline void* _bbm_get_str_msvc(Bebop_Map* m, const char* s)
+{
+  Bebop_Str key;
+  key.data = s;
+  key.length = (uint32_t)strlen(s);
+  return Bebop_Map_Get(m, &key);
+}
+
+static inline bool _bbm_has_str_msvc(Bebop_Map* m, const char* s)
+{
+  return _bbm_get_str_msvc(m, s) != NULL;
+}
+
+static inline bool _bbm_del_str_msvc(Bebop_Map* m, const char* s)
+{
+  Bebop_Str key;
+  key.data = s;
+  key.length = (uint32_t)strlen(s);
+  return Bebop_Map_Del(m, &key);
+}
+
+#define BBM_PUT(k, ...) \
+  do { \
+    __typeof__((0, (k))) _k = (k); \
+    _bbV _v = ((_bbVW) {__VA_ARGS__}).w; \
+    _Generic((0, (k)), \
+        char*: _bbm_put_str_msvc(_bbm, _bbc, _k, &_v, sizeof(_v)), \
+        const char*: _bbm_put_str_msvc(_bbm, _bbc, _k, &_v, sizeof(_v)), \
+        default: _bbm_put_any_msvc(_bbm, _bbc, &((_bbKW){_k}).w, sizeof(_bbK), &_v, sizeof(_v)) \
+    ); \
+  } while (0)
+
+#define BBM_GET(k) \
+  ((_bbV*)_Generic((0,(k)), \
+      char*: _bbm_get_str_msvc(_bbm, (k)), \
+      const char*: _bbm_get_str_msvc(_bbm, (k)), \
+      default: Bebop_Map_Get(_bbm, &((_bbKW){(k)}).w)))
+
+#define BBM_HAS(k) \
+  (_Generic((0,(k)), \
+      char*: _bbm_has_str_msvc(_bbm, (k)), \
+      const char*: _bbm_has_str_msvc(_bbm, (k)), \
+      default: (Bebop_Map_Get(_bbm, &((_bbKW){(k)}).w) != NULL)))
+
+#define BBM_DEL(k) \
+  _Generic((0,(k)), \
+      char*: _bbm_del_str_msvc(_bbm, (k)), \
+      const char*: _bbm_del_str_msvc(_bbm, (k)), \
+      default: Bebop_Map_Del(_bbm, &((_bbKW){(k)}).w))
+
+#define BBM_LEN() (_bbm->length)
+
+#define BBM_EACH(kvar, vvar) \
+  for (_bbK* kvar = NULL, **_kpp = &kvar; _kpp; _kpp = NULL) \
+    for (_bbV* vvar = NULL, **_vpp = &vvar; _vpp; _vpp = NULL) \
+      for (Bebop_MapIter _it = {_bbm, 0}; \
+           Bebop_MapIter_Next(&_it, (void**)_kpp, (void**)_vpp);)
+
+#define BBM_FOREACH(m, KT, kvar, VT, vvar) \
+  for (KT* kvar = NULL, **_kpp = &kvar; _kpp; _kpp = NULL) \
+    for (VT* vvar = NULL, **_vpp = &vvar; _vpp; _vpp = NULL) \
+      for (Bebop_MapIter _it = {m, 0}; \
+           Bebop_MapIter_Next(&_it, (void**)_kpp, (void**)_vpp);)
+
+#endif  // _MSC_VER
 
 // #endregion
 
