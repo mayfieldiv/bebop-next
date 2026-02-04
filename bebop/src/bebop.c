@@ -30,6 +30,12 @@
 #endif
 #endif
 
+#if defined(_MSC_VER)
+#define BEBOP_MAX_ALIGN 8
+#else
+#define BEBOP_MAX_ALIGN _Alignof(max_align_t)
+#endif
+
 #include "bebop.h"
 
 #ifdef __APPLE__
@@ -48,7 +54,7 @@
 #pragma GCC diagnostic ignored "-Wpedantic"
 #elif defined(_MSC_VER)
 #pragma warning(push)
-#pragma warning(disable : 4127)
+#pragma warning(disable : 4127 4309)
 #endif
 
 #include "cwisstable.h"

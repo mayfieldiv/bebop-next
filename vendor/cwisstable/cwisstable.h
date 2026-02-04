@@ -706,7 +706,7 @@ typedef __m128i CWISS_Group;
 static inline CWISS_Group CWISS_mm_cmpgt_epi8_fixed(CWISS_Group a,
                                                     CWISS_Group b) {
   if (CWISS_IS_GCC && CHAR_MIN == 0) {  // std::is_unsigned_v<char>
-    const CWISS_Group mask = _mm_set1_epi8((char)0x80);
+    const CWISS_Group mask = _mm_set1_epi8(-128);
     const CWISS_Group diff = _mm_subs_epi8(b, a);
     return _mm_cmpeq_epi8(_mm_and_si128(diff, mask), mask);
   }

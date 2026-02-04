@@ -203,7 +203,7 @@ char* bebop_arena_strndup(bebop_arena_t* arena, const char* str, size_t len)
 
 void* bebop_arena_malloc(bebop_arena_t* arena, const size_t size)
 {
-  return bebop_arena_alloc(arena, size, _Alignof(max_align_t));
+  return bebop_arena_alloc(arena, size, BEBOP_MAX_ALIGN);
 }
 
 void* bebop_arena_realloc(
