@@ -706,7 +706,7 @@ static inline CWISS_Group CWISS_mm_cmpgt_epi8_fixed(CWISS_Group a,
 }
 
 static inline CWISS_Group CWISS_Group_new(const CWISS_ControlByte* pos) {
-  return _mm_loadu_si128((const CWISS_Group*)pos);
+  return _mm_loadu_si128((const CWISS_Group*)(const void*)pos);
 }
 
 // Returns a bitmask representing the positions of slots that match hash.
@@ -753,7 +753,7 @@ static inline void CWISS_Group_ConvertSpecialToEmptyAndFullToDeleted(
   CWISS_Group special_mask = CWISS_mm_cmpgt_epi8_fixed(zero, *self);
   CWISS_Group res = _mm_or_si128(msbs, _mm_andnot_si128(special_mask, x126));
   #endif
-  _mm_storeu_si128((CWISS_Group*)dst, res);
+  _mm_storeu_si128((CWISS_Group*)(void*)dst, res);
 }
 
 #elif CWISS_HAVE_NEON

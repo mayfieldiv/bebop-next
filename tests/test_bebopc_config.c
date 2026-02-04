@@ -184,7 +184,8 @@ void test_load_no_config(void)
   TEST_ASSERT_NULL(cfg.config_path);
 
   if (orig_cwd) {
-    chdir(orig_cwd);
+    int rc2 = chdir(orig_cwd);
+    TEST_ASSERT_EQUAL(0, rc2);
     free(orig_cwd);
   }
 }
