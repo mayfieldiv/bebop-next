@@ -2682,7 +2682,7 @@ static inline uint64_t bebop__map_clear_match(uint64_t match, size_t offset)
   return (shift < 64) ? (match & ~((1ULL << shift) - 1)) : 0;
 }
 
-inline void Bebop_Map_Init(Bebop_Map* m, Bebop_WireCtx* ctx, Bebop_MapHashFn hash, Bebop_MapEqFn eq)
+void Bebop_Map_Init(Bebop_Map* m, Bebop_WireCtx* ctx, Bebop_MapHashFn hash, Bebop_MapEqFn eq)
 {
   m->ctrl = NULL;
   m->slots = NULL;
@@ -2845,7 +2845,7 @@ void Bebop_Map_Clear(Bebop_Map* m)
   }
 }
 
-inline void Bebop_MapIter_Init(Bebop_MapIter* it, const Bebop_Map* m)
+void Bebop_MapIter_Init(Bebop_MapIter* it, const Bebop_Map* m)
 {
   it->map = m;
   it->index = 0;
