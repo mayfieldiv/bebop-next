@@ -730,7 +730,7 @@ static inline CWISS_BitMask CWISS_Group_MatchEmpty(const CWISS_Group* self) {
   // This only works because ctrl_t::kEmpty is -128.
   return CWISS_Group_BitMask(_mm_movemask_epi8(_mm_sign_epi8(*self, *self)));
   #else
-  return CWISS_Group_Match(self, CWISS_kEmpty);
+  return CWISS_Group_Match(self, (CWISS_h2_t)CWISS_kEmpty);
   #endif
 }
 
@@ -2287,12 +2287,15 @@ typedef struct {
       (slot_get, kPolicy_##_NodeSlotGet)
 
 static inline void* CWISS_DefaultMalloc(size_t size, size_t align, void* ctx) {
+  (void)align;
   (void)ctx;
   void* p = malloc(size);  // TODO: Check alignment.
   CWISS_CHECK(p != NULL, "malloc() returned null");
   return p;
 }
 static inline void CWISS_DefaultFree(void* array, size_t size, size_t align, void* ctx) {
+  (void)size;
+  (void)align;
   (void)ctx;
   free(array);
 }
