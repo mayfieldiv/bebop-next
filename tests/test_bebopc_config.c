@@ -178,7 +178,16 @@ void test_load_no_config(void)
 {
   char* orig_cwd = bebopc_getcwd();
 
-  int rc = chdir("/tmp");
+#ifdef _WIN32
+  const char* tmpdir = getenv("TEMP");
+  if (!tmpdir)
+    tmpdir = getenv("TMP");
+  if (!tmpdir)
+    tmpdir = "C:\\Windows\\Temp";
+#else
+  const char* tmpdir = "/tmp";
+#endif
+  int rc = chdir(tmpdir);
   TEST_ASSERT_EQUAL(0, rc);
 
   bebopc_error_code_t err = bebopc_config_load(&cfg, &ctx, NULL);
