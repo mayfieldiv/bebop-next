@@ -45,7 +45,11 @@ struct Bebop_Writer {
 };
 
 #define BEBOP_ARENA_OVERHEAD (sizeof(bebop_wire_arena_block_impl_t))
-#define BEBOP_ARENA_ALIGN (sizeof(void*))
+#if defined(_MSC_VER)
+#define BEBOP_ARENA_ALIGN __alignof(max_align_t)
+#else
+#define BEBOP_ARENA_ALIGN _Alignof(max_align_t)
+#endif
 
 static size_t bebop_wire_align_size(size_t size, size_t alignment)
 {

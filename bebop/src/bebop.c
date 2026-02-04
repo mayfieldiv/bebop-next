@@ -31,7 +31,7 @@
 #endif
 
 #if defined(_MSC_VER)
-#define BEBOP_MAX_ALIGN 8
+#define BEBOP_MAX_ALIGN __alignof(max_align_t)
 #else
 #define BEBOP_MAX_ALIGN _Alignof(max_align_t)
 #endif
@@ -238,7 +238,7 @@ _Noreturn static inline void bebop__assert_fail_msg(
 #endif
 
 #define BEBOP_ARENA_CHUNK_SIZE (64 * 1024)
-#define BEBOP_ARENA_MIN_ALIGN 8
+#define BEBOP_ARENA_MIN_ALIGN BEBOP_MAX_ALIGN
 
 typedef struct bebop__chunk bebop__chunk_t;
 
