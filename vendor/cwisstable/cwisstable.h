@@ -2794,6 +2794,7 @@ static inline void CWISS_RawTable_rehash_and_grow_if_necessary(
 static inline void CWISS_RawTable_PrefetchHeapBlock(
     const CWISS_Policy* policy, const CWISS_RawTable* self) {
   (void)policy;
+  (void)self;
   CWISS_PREFETCH(self->ctrl_, 1);
 }
 
