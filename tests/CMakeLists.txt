@@ -138,31 +138,24 @@ if(APPLE)
 endif()
 add_test(NAME bebopc_runner COMMAND test_bebopc_runner)
 
-# File system watcher test
-add_executable(test_bebop_fsw test_bebop_fsw.c
-    ${CMAKE_SOURCE_DIR}/bebopc/src/bebopc_utils.c
-    ${CMAKE_SOURCE_DIR}/bebopc/src/bebopc_error.c
-    ${CMAKE_SOURCE_DIR}/bebopc/src/bebopc_dir.c
-    ${CMAKE_SOURCE_DIR}/bebopc/src/bebopc_glob.c
-    ${CMAKE_SOURCE_DIR}/bebopc/src/watcher/bebop_fsw.c
-)
-target_link_libraries(test_bebop_fsw PRIVATE unity bebop::bebop)
-target_include_directories(test_bebop_fsw PRIVATE
-    ${CMAKE_SOURCE_DIR}/bebopc/src
-    ${CMAKE_SOURCE_DIR}/bebopc/src/watcher
-)
-target_compile_definitions(test_bebop_fsw PRIVATE ${BEBOPC_PLATFORM_DEFS})
-if(WIN32)
-    target_sources(test_bebop_fsw PRIVATE ${CMAKE_SOURCE_DIR}/bebopc/src/watcher/bebop_fsw_windows.c)
-elseif(APPLE)
-    target_sources(test_bebop_fsw PRIVATE ${CMAKE_SOURCE_DIR}/bebopc/src/watcher/bebop_fsw_darwin.c)
-    target_link_libraries(test_bebop_fsw PRIVATE "-framework CoreServices" "-framework Security")
-elseif(CMAKE_SYSTEM_NAME MATCHES ".*BSD")
-    target_sources(test_bebop_fsw PRIVATE ${CMAKE_SOURCE_DIR}/bebopc/src/watcher/bebop_fsw_bsd.c)
-elseif(UNIX)
-    target_sources(test_bebop_fsw PRIVATE ${CMAKE_SOURCE_DIR}/bebopc/src/watcher/bebop_fsw_linux.c)
+# File system watcher test (only on macOS for now, Linux/Windows not implemented)
+if(APPLE)
+    add_executable(test_bebop_fsw test_bebop_fsw.c
+        ${CMAKE_SOURCE_DIR}/bebopc/src/bebopc_utils.c
+        ${CMAKE_SOURCE_DIR}/bebopc/src/bebopc_error.c
+        ${CMAKE_SOURCE_DIR}/bebopc/src/bebopc_dir.c
+        ${CMAKE_SOURCE_DIR}/bebopc/src/bebopc_glob.c
+        ${CMAKE_SOURCE_DIR}/bebopc/src/watcher/bebop_fsw.c
+        ${CMAKE_SOURCE_DIR}/bebopc/src/watcher/bebop_fsw_darwin.c
+    )
+    target_link_libraries(test_bebop_fsw PRIVATE unity bebop::bebop "-framework CoreServices" "-framework Security")
+    target_include_directories(test_bebop_fsw PRIVATE
+        ${CMAKE_SOURCE_DIR}/bebopc/src
+        ${CMAKE_SOURCE_DIR}/bebopc/src/watcher
+    )
+    target_compile_definitions(test_bebop_fsw PRIVATE ${BEBOPC_PLATFORM_DEFS})
+    add_test(NAME bebop_fsw COMMAND test_bebop_fsw)
 endif()
-add_test(NAME bebop_fsw COMMAND test_bebop_fsw)
 
 # JSON wire test
 add_executable(test_json_wire test_json_wire.c generated/document.bb.c generated/bebop/json.bb.c)
