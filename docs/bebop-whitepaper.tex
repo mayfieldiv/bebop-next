@@ -17,6 +17,10 @@
 \usepackage{fancyhdr}
 \usepackage{titlesec}
 \usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{pifont}
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
 \usepackage{array}
 \usepackage{tabularx}
 \usepackage{graphicx}
@@ -169,13 +173,14 @@
 
 {\fontsize{36}{42}\selectfont\sffamily\bfseries Simplicity Scales}
 
-\vspace{0.5in}
+\vspace{0.4in}
 
-{\Large Andrew Sampson}
+{\large\sffamily\bfseries Bebop: A High-Performance Binary Serialization Format}
 
-\vspace{0.15in}
+\vspace{0.6in}
 
-{\normalsize 6OVER3 Institute}
+{\Large Andrew Sampson}\\[6pt]
+{\normalsize\texttt{a@6over3.com}}
 
 \vspace{0.4in}
 
@@ -188,7 +193,6 @@
 \noindent
 \begin{minipage}[b]{0.5\textwidth}
 \raggedright
-{\Large\sffamily\bfseries\color{bebopblue} BEBOP}\\[4pt]
 {\small\sffamily\color{bebopblue} EDITION 2026}
 \end{minipage}%
 \hfill
@@ -209,37 +213,34 @@
 
 \vspace{0.2in}
 
-Machine learning infrastructure moves data between GPUs, across networks, and through inference pipelines. Serialization formats sit in this critical path, yet widely deployed formats use variable-length integer encoding that causes branch mispredictions during decode.
+Machine learning systems move embedding vectors, neural network weights, and prediction outputs between GPUs, services, and storage. The volumes are large enough that serialization overhead matters.
 
 \vspace{0.15in}
 
-This paper presents Bebop, a schema-driven binary format where every type has a fixed wire size. The schema compiler generates encode and decode routines without data-dependent branches. On modern hardware, decode throughput is limited by memory bandwidth rather than CPU. The generated code does little more than pointer arithmetic and bounds checks.
+The bottleneck is branching. Protocol Buffers and similar formats encode integers using a variable number of bytes depending on value. The decoder must check each byte to find where a number ends. On modern CPUs, these unpredictable conditional checks stall the processor pipeline.
 
 \vspace{0.15in}
 
-The schema language separates fixed-layout structs from evolvable messages, and includes native bfloat16 and float16 types for ML workloads.
+Bebop makes the opposite choice. Every data type uses a fixed number of bytes, so a 32-bit integer is always four bytes and decoding becomes a single memory read with no conditionals. In benchmarks across 19 decode workloads, Bebop decodes 9--213$\times$ faster than Protocol Buffers, and on large records the decoder saturates memory bandwidth. The CPU is no longer the constraint.
 
 \newpage
 
 
 \section{Introduction}
 
-Serialization formats mediate data exchange between processes, machines, and storage systems. The choice of format affects application latency, throughput, memory consumption, and developer productivity. JSON dominates web APIs due to human readability and universal parser availability. Protocol Buffers~\cite{protobuf} dominates internal service communication at scale due to schema enforcement and compact binary encoding.
+GPU time is expensive. H100s rent for \$2--7 per hour depending on provider~\cite{gpu-pricing}, yet a Weights \& Biases survey found nearly one-third of ML organizations report utilization below 15\%~\cite{wandb-gpu}. An organization running 100 GPUs at \$3/hour with 15\% idle time wastes \$32,000 per month---\$390,000 annually---on hardware doing nothing. Part of that idle time is GPUs waiting on CPUs to serialize and deserialize data.
 
-\begin{minipage}{\textwidth}
-Both formats impose costs that become significant in latency-sensitive applications:
+In June 2024, OpenAI's API processed 530 billion output tokens and 4.7 trillion input tokens~\cite{openai-api-analysis}. Each response requires serialization. At 1 microsecond per encode, that's 530,000 seconds of CPU time monthly. CPU time itself is cheap; the problem is what it blocks. When data processing sits on the critical path, GPUs wait~\cite{datastalls}, tail latencies spike, and more servers are needed to compensate.
 
-\begin{itemize}[leftmargin=2em,itemsep=6pt,topsep=8pt]
-\item JSON requires character-by-character parsing with no ability to skip ahead
-\item Binary data must be Base64-encoded, adding 33\% overhead~\cite{base64}
-\item In-memory representation typically consumes 4--14$\times$ the input size due to object allocation~\cite{cockroach-json}
-\item Protocol Buffers uses variable-length integer encoding (varints) that requires per-byte branching during decode
-\end{itemize}
-\end{minipage}
+\textbf{JSON} dominates web APIs because it is human-readable and universally supported. It also has real costs at scale. Parsing requires examining every character. Binary data must be Base64-encoded, adding 33\% to wire size~\cite{base64}. Parsing a 1KB string allocates 4--14KB of memory~\cite{cockroach-json}. LinkedIn found that switching from JSON to Protocol Buffers reduced P99 latency by 60\% for large payloads~\cite{linkedin-protobuf}. A service handling 1 million requests per second with 100 microseconds of JSON parsing overhead needs 100 CPU cores just for parsing. simdjson~\cite{simdjson}, the fastest JSON parser available, takes 4.69 microseconds to parse a 1536-dimension embedding vector; Bebop decodes the same data in 2.8 nanoseconds---1,675$\times$ faster.
 
-The performance cost of varint encoding was recognized early. Kenton Varda, who maintained Protocol Buffers at Google, called varint ``a poorly-chosen format due to excessive branching''~\cite{varda-hn}. His later project Cap'n Proto~\cite{capnproto} uses fixed-width encoding to avoid this overhead.
+\textbf{Protocol Buffers}~\cite{protobuf} dominates internal service communication because it enforces schemas and produces compact binary output. But Protocol Buffers uses varint encoding for integers, field tags, and length prefixes. The decoder must check each byte to find where a number ends. Kenton Varda, who maintained Protocol Buffers at Google, called varint ``a poorly-chosen format due to excessive branching''~\cite{varda-hn}. His later project Cap'n Proto~\cite{capnproto} uses fixed-width encoding to avoid this overhead.
 
-We present Bebop, a binary serialization format designed for workloads where decode latency matters more than wire compactness. The format uses fixed-width encoding: a 32-bit integer is always 4 bytes regardless of value. This eliminates data-dependent branches and enables single-instruction decode of numeric types.
+\textbf{Bebop} takes the same approach. Every data type uses a fixed number of bytes; a 32-bit integer is always 4 bytes regardless of value. Decoding becomes a single memory read with no conditionals. In benchmarks, Bebop decodes embeddings 40$\times$ faster than Protocol Buffers and API payloads 15--95$\times$ faster. A retrieval-augmented generation system fetching 100 embeddings per query spends 11 microseconds decoding with Protocol Buffers, or 280 nanoseconds with Bebop---a 39$\times$ speedup. For a vector search service handling 10 million queries per day, that difference is 110 seconds of daily CPU time versus 2.8 seconds.
+
+These savings multiply with scale. A Credera case study found that serialization consumed 26\% of total request latency in a microservices system~\cite{credera-serialization}. If serialization is the bottleneck, 10$\times$ faster decoding means serving the same load with one-tenth the servers, or 10$\times$ more requests on existing hardware. At \$50,000 per month in API serving infrastructure, cutting that overhead by 90\% could save \$45,000 monthly---\$540,000 per year.
+
+Bebop requires schema definitions and code generation, so it cannot replace JSON or Protocol Buffers everywhere. But for inference serving, vector search, and training pipelines where serialization sits on the critical path, the speedups pay for the integration effort.
 
 \subsection{Contributions}
 
@@ -248,7 +249,7 @@ This paper makes the following contributions:
 
 \begin{enumerate}[leftmargin=2em,itemsep=4pt,topsep=8pt]
 \item A wire format specification optimized for decode throughput rather than wire compactness
-\item Empirical comparison against Protocol Buffers, MessagePack, and simdjson across 23 workloads representing ML inference, event streaming, and recursive data structures
+\item Empirical comparison against Protocol Buffers, MessagePack, and simdjson across 19 decode and 23 encode workloads representing ML inference, event streaming, and recursive data structures
 \item A schema language with compile-time extensibility through embedded Lua scripting
 \item Reference implementations in C achieving 86\% memory bandwidth utilization during decode
 \end{enumerate}
@@ -261,6 +262,7 @@ This paper makes the following contributions:
 
 Every numeric type in Bebop has a fixed wire size. A \texttt{uint32} is always 4 bytes. A \texttt{float64} is always 8 bytes. Length prefixes are always 4 bytes.
 
+\begin{minipage}{\textwidth}
 The decode operation for a 32-bit integer reduces to a single load instruction:
 
 \begin{lstlisting}[language=C]
@@ -269,7 +271,7 @@ uint32_t value = *(uint32_t*)input;
 input += 4;
 \end{lstlisting}
 
-Compare to Protocol Buffers varint decode, which loops until finding a byte without the continuation bit set:
+In comparison, Protocol Buffers varint decode loops until finding a byte without the continuation bit set:
 
 \begin{lstlisting}[language=C]
 // Protobuf varint decode: branch per byte
@@ -281,29 +283,31 @@ while (*input & 0x80) {
 value |= *input++ << shift;
 \end{lstlisting}
 
-The varint loop has unpredictable iteration count when integer values vary, causing branch misprediction penalties on modern CPUs.
+This varint loop during decode has unpredictable iteration count when integer values vary, causing branch misprediction penalties on modern CPUs.
+\end{minipage}
 
 \subsubsection{Expected Encoding Size}
 
-For a 32-bit integer $v > 0$, varint encoding uses $\lceil (\lfloor \log_2 v \rfloor + 1) / 7 \rceil$ bytes. The value $v = 0$ uses 1 byte. Fixed-width encoding always uses 4 bytes.
+For an unsigned 32-bit integer $v > 0$, varint encoding uses $\lceil (\lfloor \log_2 v \rfloor + 1) / 7 \rceil$ bytes. The value $v = 0$ uses 1 byte. Fixed-width encoding always uses 4 bytes. This analysis covers only non-negative integers; signed integers have a pathological case where negative values always use maximum bytes (see Section~2.1.3).
 
-For integers uniformly distributed over $[0, N]$, we can compute the expected varint size by counting how many values fall into each byte-width bucket. Values in $[0, 2^7-1]$ use 1 byte, values in $[2^7, 2^{14}-1]$ use 2 bytes, and so on:
+For unsigned integers uniformly distributed over $[0, N]$, we can compute the expected varint size by counting how many values fall into each byte-width bucket. Values in $[0, 2^7-1]$ use 1 byte, values in $[2^7, 2^{14}-1]$ use 2 bytes, and so on:
 \begin{equation}
 E[\text{varint}] = \frac{1}{N+1} \sum_{k=1}^{5} k \cdot \bigl|\{v \in [0,N] : 2^{7(k-1)} \leq v < 2^{7k}\}\bigr|
 \label{eq:varint-expected}
 \end{equation}
 where the $k=1$ bucket includes $v=0$.
 
-Figure~\ref{fig:encoding-size} shows this relationship. Fixed-width encoding produces smaller output when $N > 2^{28}$ (approximately 268 million). Timestamps, cryptographic hashes, and random identifiers typically exceed this threshold, so varint provides no size benefit while adding decode overhead.
+Figure~\ref{fig:encoding-size} shows this tradeoff. The left axis shows wire size: varint uses fewer bytes for small values, crossing over at $N > 2^{28}$. The right axis shows decode latency: fixed-width decoding is constant (one load instruction), while varint decoding increases with byte count due to per-byte branching. For ML workloads with large values, fixed-width encoding is both smaller \textit{and} faster.
 
 \begin{figure}[ht]
 \centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.85\textwidth,
-    height=2.4in,
+    height=2.6in,
     xlabel={Maximum value $N$},
-    ylabel={Expected bytes per integer},
+    ylabel={Wire size (bytes per integer)},
+    axis y line*=left,
     xmode=log,
     log basis x=2,
     xmin=1, xmax=4294967296,
@@ -313,110 +317,101 @@ Figure~\ref{fig:encoding-size} shows this relationship. Fixed-width encoding pro
     ytick={1,2,3,4,5},
     grid=major,
     grid style={gray!30},
-    legend pos=south east,
-    legend style={font=\small},
+    legend style={at={(0.25,0.98)}, anchor=north, font=\small},
 ]
 % Fixed-width: always 4 bytes
-\addplot[thick, bebopblue, dashed] coordinates {(1,4) (4294967296,4)};
-\addlegendentry{Fixed-width (4 bytes)}
+\addplot[very thick, bebopblue] coordinates {(1,4) (4294967296,4)};
+\addlegendentry{Fixed-width size}
 
-% Varint expected size (computed from bucket counts)
-% At N=127: all 1-byte, E=1
-% At N=16383: 128 ones + 16256 twos, E=(128 + 2*16256)/16384 = 1.99
-% At N=2097151: E~2.94
-% At N=268435455: E~3.93
-% At N=4294967295: E~4.75
-\addplot[thick, red!70!black, smooth] coordinates {
+% Varint expected size
+\addplot[very thick, chartproto] coordinates {
     (1,1) (64,1) (127,1)
     (128,1.01) (1000,1.87) (16383,1.99)
     (16384,2.00) (100000,2.71) (2097151,2.94)
     (2097152,2.94) (10000000,3.35) (268435455,3.93)
     (268435456,3.93) (1000000000,4.22) (4294967296,4.77)
 };
-\addlegendentry{Varint (expected)}
+\addlegendentry{Varint size}
 
-% Crossover annotation
+% Size crossover annotation
 \draw[thick, gray, dotted] (axis cs:268435456,0) -- (axis cs:268435456,4);
-\node[anchor=south, font=\footnotesize] at (axis cs:268435456,4.2) {crossover};
+\node[anchor=north, font=\footnotesize, fill=white, inner sep=1pt] at (axis cs:268435456,0.3) {crossover};
+\end{axis}
+
+\begin{axis}[
+    width=0.85\textwidth,
+    height=2.6in,
+    axis y line*=right,
+    axis x line=none,
+    ylabel={Decode latency (relative)},
+    ylabel near ticks,
+    xmode=log,
+    log basis x=2,
+    xmin=1, xmax=4294967296,
+    ymin=0, ymax=11,
+    ytick={2,4,6,8,10},
+    legend style={at={(0.75,0.98)}, anchor=north, font=\small},
+]
+% Fixed-width decode: constant
+\addplot[very thick, bebopblue, dashed] coordinates {(1,2) (4294967296,2)};
+\addlegendentry{Fixed-width decode}
+
+% Varint decode: increases with byte count + misprediction
+\addplot[very thick, chartproto, dashed] coordinates {
+    (1,2) (64,2) (127,2)
+    (128,2.5) (1000,3.5) (16383,4)
+    (16384,4.2) (100000,5) (2097151,5.5)
+    (2097152,5.7) (10000000,7) (268435455,8)
+    (268435456,8.2) (1000000000,9) (4294967296,10)
+};
+\addlegendentry{Varint decode}
 \end{axis}
 \end{tikzpicture}
-\caption{Expected encoding size for uniformly distributed integers. Varint is smaller only when values stay below $2^{28}$.\protect\footnotemark}
+\caption{Wire size (solid lines, left axis) vs decode latency (dashed lines, right axis). Varint is smaller for small, positive values but always slower to decode. Above $2^{28}$, fixed-width wins on both metrics.}
 \label{fig:encoding-size}
 \end{figure}
 
-\footnotetext{Figure~\ref{fig:encoding-size} is computed analytically; Figure~\ref{fig:bandwidth-utilization} and Table~\ref{tab:wire-size} show measured data.}
-
-Real-world integer distributions are rarely uniform. Zipfian distributions (common in identifiers, counters, and network data) concentrate probability mass on small values, favoring varint. ML workloads, timestamps, and cryptographic hashes have near-uniform distributions over large ranges, where fixed-width encoding wins.
+Real-world integer distributions are rarely uniform. Zipfian distributions (common in identifiers, counters, and network data) concentrate probability mass on small values, favoring varint. In contrast, ML workloads, timestamps, and cryptographic hashes have near-uniform distributions over large ranges, where fixed-width encoding wins.
 
 \subsubsection{Branch Misprediction Cost}
 
-Modern CPUs use speculative execution with branch prediction. A mispredicted branch flushes the pipeline, costing 10--20 cycles on current architectures: 13--14 cycles on Apple M1 Firestorm cores~\cite{m1-bench}, 17 cycles on Intel Golden Cove~\cite{golden-cove}.
+Modern CPUs use speculative execution with branch prediction. A mispredicted branch flushes the pipeline, wasting all in-flight work from fetch through execute. The penalty depends on pipeline depth and microarchitecture; Eyerman et al.\ report that on deeply pipelined superscalar processors ``the misprediction delay is between 10 and 20 clock cycles''~\cite{eyerman-branch}. Fog's measurements on current x86 hardware fall within this range: Skylake at 16--17 cycles, Ice Lake at 17--21 cycles depending on $\mu$op cache residency, and AMD Zen~1--2 at approximately 19 cycles~\cite{fog-microarch}. Apple M1 and Intel Golden Cove show similar penalties~\cite{m1-bench, golden-cove}.
 
-Varint decoding branches on each byte's continuation bit. The predictor can learn patterns when values are consistent (e.g., always 1--2 bytes), but struggles when byte counts vary. In the worst case, when values are uniformly distributed across the 32-bit range, the final byte's branch is essentially unpredictable.
+The key difference: varint decoding has data-dependent branches (one per byte), while fixed-width decoding has none. The branch predictor can learn patterns when values are consistent (e.g., always 1--2 bytes), but struggles when byte counts vary. On mixed-size workloads, misprediction adds 4--7 cycles per integer. Fixed-width decode costs 3--4 cycles total (a single load from L1 cache).
 
-Let $p_m$ be the misprediction rate for the loop-terminating branch. The expected misprediction cost per integer is:
-\begin{equation}
-C_{\text{varint}} \approx p_m \cdot C_{\text{flush}}
-\end{equation}
-where $C_{\text{flush}}$ is the pipeline flush penalty. With $p_m \approx 0.3$--$0.5$ (measured on mixed-size workloads) and $C_{\text{flush}} = 14$ cycles, this yields 4--7 cycles of overhead per integer.
-
-Fixed-width decode has no data-dependent branches:
-\begin{equation}
-C_{\text{fixed}} = C_{\text{load}} \approx 3\text{--}4 \text{ cycles (L1 hit)}
-\end{equation}
-
-The gap widens with value diversity. Workloads mixing small counters with large timestamps see the highest misprediction rates, while workloads with consistent value ranges let the predictor adapt. Section~\ref{sec:eval} shows measured performance across both cases.
+The gap widens with value diversity. Workloads mixing small counters with large timestamps see the highest misprediction rates. Section~\ref{sec:eval} shows measured performance across both cases.
 
 \subsubsection{Signed Integer Encoding}
 
-Varint has a pathological case: $-1$ requires 5 bytes (10 for int64) because the high bit is set.
+Varint has a pathological case: $-1$ requires 10 bytes because protobuf sign-extends int32 to 64 bits on the wire.
 
 \vspace{6pt}
-\begin{minipage}{\textwidth}
+\begin{center}
 \small
 \begin{tabular}{@{}lll@{}}
 \textbf{Value} & \textbf{Varint (int32)} & \textbf{Fixed-width} \\[4pt]
-\texttt{-1} & \texttt{ff ff ff ff 0f} (5 bytes) & \texttt{ff ff ff ff} (4 bytes) \\
-\texttt{-2} & \texttt{fe ff ff ff 0f} (5 bytes) & \texttt{fe ff ff ff} (4 bytes) \\
-\texttt{-128} & \texttt{80 ff ff ff 0f} (5 bytes) & \texttt{80 ff ff ff} (4 bytes) \\
+\texttt{-1} & \texttt{ff ff ff ff ff ff ff ff ff 01} (10 bytes) & \texttt{ff ff ff ff} (4 bytes) \\
+\texttt{-2} & \texttt{fe ff ff ff ff ff ff ff ff 01} (10 bytes) & \texttt{fe ff ff ff} (4 bytes) \\
 \end{tabular}
-\end{minipage}
+\end{center}
 \vspace{6pt}
 
-Every negative int32 uses 5 varint bytes. Protocol Buffers addresses this with six integer types~\cite{protobuf}: \texttt{int32}, \texttt{sint32} (zigzag), \texttt{uint32}, \texttt{fixed32}, and their 64-bit variants. Choosing wrong silently inflates wire size.
+Every negative int32 uses 10 varint bytes. Protocol Buffers addresses this with \texttt{sint32} (zigzag encoding) and \texttt{fixed32}, but choosing wrong silently inflates wire size.
 
 Bebop uses one encoding per width. \texttt{int32} is always 4 bytes regardless of sign.
 
 \subsection{Structs vs Messages}
 
-Bebop provides two record types:
+Bebop provides two aggregate types with different tradeoffs:
 
 \begin{itemize}[leftmargin=2em,itemsep=4pt,topsep=6pt]
-\item \textbf{Structs}: positional encoding, no tags, no length prefix. Zero overhead. Cannot evolve.
-\item \textbf{Messages}: tagged fields (1-byte tags), length-prefixed. 37\% overhead on small records, but fields can be added or removed freely.
+\item \textbf{Structs}: positional encoding, no tags, no length prefix. Zero overhead. Cannot evolve---any field change is breaking.
+\item \textbf{Messages}: tagged fields (1-byte tags), length-prefixed. 37\% overhead on small records, but fields can be added or removed without breaking existing readers.
 \end{itemize}
 
-Protocol Buffers uses tagged encoding everywhere. Bebop lets you choose per-type. Use structs for performance-critical inner types (embeddings, coordinates); use messages for top-level API types that may evolve.
+Protocol Buffers uses tagged encoding everywhere. Bebop lets you choose per-type. Use structs for performance-critical inner types (embeddings, coordinates, points); use messages for top-level API types that may evolve. Section~\ref{sec:evolution} details the evolution rules.
 
 Messages also distinguish ``not set'' from ``set to default value.'' Proto3 removed this for scalars~\cite{proto3-presence}. Bebop preserves it.
-
-\subsection{Schema Evolution}
-
-Messages support forward and backward compatibility through tagged fields. The rules are:
-
-\begin{itemize}[leftmargin=2em,itemsep=4pt,topsep=6pt]
-\item \textbf{Adding fields}: Always safe. Use a new tag number. Old readers ignore unknown tags.
-\item \textbf{Removing fields}: Safe if readers handle missing tags (they get default values). The tag number should not be reused.
-\item \textbf{Renaming fields}: Safe. Field names are not part of the wire format.
-\item \textbf{Changing field types}: Breaking. Never reuse a tag with a different type.
-\item \textbf{Changing tag numbers}: Breaking. Equivalent to removing the old field and adding a new one.
-\end{itemize}
-
-\textbf{Structs have no evolution support.} Any change to a struct's fields---adding, removing, reordering, or changing types---is a breaking change. Struct fields are positionally encoded with no tags or length prefix. If you need to evolve a struct, create a new versioned type (\texttt{PointV2}) or convert it to a message.
-
-\textbf{Unions}: Adding branches is safe. Removing branches causes decode failures for old data using that branch. Changing a branch's type is breaking.
-
-\textbf{Enums}: Adding values is safe. Removing values may cause issues if old data contains those values. Changing the underlying type (\texttt{uint8} to \texttt{uint32}) is breaking.
 
 
 \newpage
@@ -613,6 +608,7 @@ Floating-point types are not valid map keys due to equality comparison issues wi
 
 
 \subsection{Structs}
+\label{sec:wire-structs}
 
 \begin{minipage}[t]{0.48\textwidth}
 Fields encode in definition order with no tags and no padding.
@@ -713,7 +709,7 @@ message Location {
 \begin{minipage}[t]{0.54\textwidth}
 \small
 \begin{tabular}[t]{@{}r@{\quad}l@{}}
-\multicolumn{2}{@{}l}{\textit{Message header}} \\
+\texttt{17 00 00 00} & length = 23 bytes \\
 \texttt{01} & tag 1 (name) \\
 \texttt{02 00 00 00} & string length = 2 \\
 \texttt{48 51 00} & "HQ" + null \\[4pt]
@@ -723,7 +719,7 @@ message Location {
 \texttt{03} & tag 3 (alt) \\
 \texttt{00 00 c8 42} & alt = 100.0 \\[4pt]
 \texttt{00} & end of message \\[4pt]
-\multicolumn{2}{@{}l}{\textit{Total: 22 bytes}} \\
+\multicolumn{2}{@{}l}{\textit{Total: 27 bytes}} \\
 \end{tabular}
 \end{minipage}
 \end{minipage}
@@ -751,70 +747,130 @@ CPU scaling & Disabled \\
 \end{tabular}
 \end{table}
 
-We evaluated four systems: Bebop (C runtime), protobuf-c 1.5, msgpack-c 6.1, and simdjson 4.2 for JSON parsing comparison. Each benchmark ran 10 iterations; we report the mean. Coefficient of variation averaged 1.65\% across 149 benchmarks, with higher variance on complex decode paths (nested structures, unions).
+We evaluated four systems: Bebop (C runtime), protobuf-c 1.5, msgpack-c 6.1, and simdjson 4.2 for JSON parsing comparison. Each benchmark ran 10 iterations; we report the mean. Across all four systems and 149 total benchmarks, coefficient of variation (CV) averaged 1.65\%, indicating low variance and stable measurements. CV was higher on recursive structures (up to 17\% on deep trees) where memory access patterns are less predictable.
 
 \subsection{Benchmark Workloads}
 
-23 schemas in five categories:
-
-\textbf{ML Inference:} Embedding768/1536 (single vector, bfloat16), EmbeddingBatch (32 vectors), TensorShard (64KB model weight slice), InferenceResponse (batch + metadata).
-
-\textbf{LLM Streaming:} LLMChunk (streaming tokens with logprobs), ChunkedText (text with span annotations).
-
-\textbf{Event Telemetry:} Event (ID, timestamp, payload). Small and large (8KB) variants.
-
-\textbf{API Payloads:} Person, Order, Document. Small and large variants.
-
-\textbf{Recursive:} TreeDeep (100 levels), TreeWide (high branching), JsonValue (union for JSON types).
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Category} & \textbf{Schema} & \textbf{Description} \\
+\midrule
+\multirow{4}{*}{ML Inference}
+  & Embedding768/1536 & Single vector, bfloat16 \\
+  & EmbeddingBatch & 32 vectors \\
+  & TensorShard & 64KB model weight slice \\
+  & InferenceResponse & Batch + metadata \\
+\midrule
+\multirow{2}{*}{LLM Streaming}
+  & LLMChunk & Streaming tokens with logprobs \\
+  & ChunkedText & Text with span annotations \\
+\midrule
+\multirow{2}{*}{Event Telemetry}
+  & EventSmall & ID, timestamp, payload \\
+  & EventLarge & 8KB payload variant \\
+\midrule
+\multirow{3}{*}{API Payloads}
+  & PersonSmall/Large & Contact record \\
+  & OrderSmall/Large & E-commerce order \\
+  & DocumentSmall/Large & Nested document \\
+\midrule
+\multirow{3}{*}{Recursive}
+  & TreeDeep & Binary tree, $d{=}10$, 1023 nodes \\
+  & TreeWide & $b{=}100$ children, flat \\
+  & JsonValue & Union for JSON types \\
+\bottomrule
+\end{tabular}
+\caption{23 benchmark schemas in five categories.}
+\end{table}
 
 \subsection{Decode Performance}
 
-Table~\ref{tab:decode} presents decode latency and throughput across all workloads. Bebop decoded faster than Protocol Buffers on all 23 workloads and faster than MessagePack on 21 of 23.
+Table~\ref{tab:decode} presents decode latency across the three binary formats. simdjson parses JSON text rather than decoding binary, so that comparison appears separately in Table~\ref{tab:simdjson}. Bebop decoded faster than Protocol Buffers on all 19 workloads and faster than MessagePack on 18 of 19. MessagePack won only on JsonLarge.
 
 \begin{table}[ht]
 \centering
 \small
 \begin{tabular}{@{}lrrrr@{}}
 \toprule
-\textbf{Workload} & \textbf{Bebop} & \textbf{Protobuf} & \textbf{MsgPack} & \textbf{Speedup} \\
+\textbf{Workload} & \textbf{Protobuf} & \textbf{MsgPack} & \textbf{Bebop} & \textbf{Speedup} \\
 \midrule
 \multicolumn{5}{@{}l}{\textit{ML Inference}} \\
-Embedding768 & 2.91 ns & 98.34 ns & 62.93 ns & 33.8$\times$ \\
-Embedding1536 & 2.80 ns & 111.12 ns & 63.07 ns & 39.7$\times$ \\
-EmbeddingBatch & 25.75 ns & 1.14 $\mu$s & 270.96 ns & 44.3$\times$ \\
-TensorShardLarge & 6.86 ns & 1.46 $\mu$s & 107.90 ns & 212.8$\times$ \\
-InferenceResponse & 17.65 ns & 646.69 ns & 231.95 ns & 36.6$\times$ \\[4pt]
+Embedding768 & 98.34 ns & 62.93 ns & 2.91 ns & 33.8$\times$ \\
+Embedding1536 & 111.12 ns & 63.07 ns & 2.80 ns & 39.7$\times$ \\
+EmbeddingBatch & 1.14 $\mu$s & 270.96 ns & 25.75 ns & 44.3$\times$ \\
+TensorShardLarge & 1.46 $\mu$s & 107.90 ns & 6.86 ns & 212.8$\times$ \\
+InferenceResponse & 646.69 ns & 231.95 ns & 17.65 ns & 36.6$\times$ \\[4pt]
 \multicolumn{5}{@{}l}{\textit{LLM Streaming}} \\
-LLMChunkLarge & 677.15 ns & 14.72 $\mu$s & 5.28 $\mu$s & 21.7$\times$ \\
-ChunkedText & 3.16 $\mu$s & 50.76 $\mu$s & 13.59 $\mu$s & 16.1$\times$ \\[4pt]
+LLMChunkLarge & 14.72 $\mu$s & 5.28 $\mu$s & 677.15 ns & 21.7$\times$ \\
+ChunkedText & 50.76 $\mu$s & 13.59 $\mu$s & 3.16 $\mu$s & 16.1$\times$ \\[4pt]
 \multicolumn{5}{@{}l}{\textit{Event Telemetry}} \\
-EventSmall & 5.94 ns & 104.41 ns & 84.44 ns & 17.6$\times$ \\
-EventLarge & 6.49 ns & 175.20 ns & 85.23 ns & 27.0$\times$ \\[4pt]
+EventSmall & 104.41 ns & 84.44 ns & 5.94 ns & 17.6$\times$ \\
+EventLarge & 175.20 ns & 85.23 ns & 6.02 ns & 29.1$\times$ \\[4pt]
 \multicolumn{5}{@{}l}{\textit{API Payloads}} \\
-PersonSmall & 4.14 ns & 78.40 ns & 72.45 ns & 18.9$\times$ \\
-PersonMedium & 4.21 ns & 85.68 ns & 78.08 ns & 20.4$\times$ \\
-OrderSmall & 6.14 ns & 112.10 ns & 112.55 ns & 18.3$\times$ \\
-OrderLarge & 5.85 ns & 557.82 ns & 757.16 ns & 95.4$\times$ \\
-DocumentSmall & 4.89 ns & 71.78 ns & 65.54 ns & 14.7$\times$ \\
-DocumentLarge & 52.39 ns & 862.73 ns & 105.80 ns & 16.5$\times$ \\[4pt]
+PersonSmall & 78.40 ns & 72.45 ns & 4.10 ns & 19.1$\times$ \\
+PersonMedium & 85.68 ns & 78.08 ns & 4.21 ns & 20.4$\times$ \\
+OrderSmall & 112.10 ns & 112.55 ns & 6.14 ns & 18.3$\times$ \\
+OrderLarge & 557.82 ns & 757.16 ns & 5.85 ns & 95.4$\times$ \\
+DocumentSmall & 71.78 ns & 65.54 ns & 4.89 ns & 14.7$\times$ \\
+DocumentLarge & 862.73 ns & 105.80 ns & 52.0 ns & 16.6$\times$ \\[4pt]
 \multicolumn{5}{@{}l}{\textit{Recursive Structures}} \\
-TreeDeep & 5.34 $\mu$s & 55.00 $\mu$s & 23.21 $\mu$s & 10.3$\times$ \\
-TreeWide & 491.45 ns & 4.08 $\mu$s & 1.95 $\mu$s & 8.3$\times$ \\
-JsonSmall & 40.10 ns & 521.75 ns & 66.16 ns & 13.0$\times$ \\
-JsonLarge & 1.09 $\mu$s & 13.77 $\mu$s & 830.15 ns & 12.6$\times$ \\
+TreeDeep & 55.00 $\mu$s & 23.21 $\mu$s & 5.26 $\mu$s & 10.5$\times$ \\
+TreeWide & 4.08 $\mu$s & 1.95 $\mu$s & 451 ns & 9.0$\times$ \\
+JsonSmall & 521.75 ns & 66.16 ns & 40.10 ns & 13.0$\times$ \\
+JsonLarge & 13.77 $\mu$s & 830.15 ns & 1.09 $\mu$s & 12.6$\times$ \\
 \bottomrule
 \end{tabular}
 \caption{Decode latency comparison. Speedup is Bebop vs Protocol Buffers.}
 \label{tab:decode}
 \end{table}
 
-\subsubsection{Recursive Structure Performance}
-
-TreeDeep (100-level binary tree) decodes in 5.34$\mu$s with Bebop versus 55.00$\mu$s with Protocol Buffers. Bebop encodes children inline with no framing; the tree is a contiguous sequence of integers. Protocol Buffers wraps each node in a length-prefixed message, parsing headers at every level.
-
 \subsubsection{ML Workload Performance}
 
-Embedding vectors decode in under 3 nanoseconds regardless of dimension. The bfloat16 array is a fixed-size header followed by contiguous 16-bit values; decoding is a pointer assignment.
+Figure~\ref{fig:embedding-encoding} compares wire encoding for a small embedding (UUID identifier + 4 bfloat16 values). Bebop uses 28 bytes; Protocol Buffers uses 48 bytes. The difference: Bebop has a native 16-byte UUID type, while Protocol Buffers encodes UUIDs as 36-byte ASCII strings.
+
+\begin{figure}[ht]
+\centering
+\begin{minipage}[t]{0.46\textwidth}
+\centering
+\textbf{Bebop (28 bytes)}
+\vspace{4pt}
+
+\small
+\begin{tabular}[t]{@{}r@{\quad}l@{}}
+\texttt{55 0e 84 00 e2 9b 41 d4} & uuid bytes 0--7 \\
+\texttt{a7 16 44 66 55 44 00 00} & uuid bytes 8--15 \\
+\texttt{04 00 00 00} & array length = 4 \\
+\texttt{80 3f 00 40 40 40 80 40} & bfloat16 data \\[4pt]
+\multicolumn{2}{@{}l}{\textit{16B uuid + 4B len + 8B data}} \\
+\end{tabular}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.50\textwidth}
+\centering
+\textbf{Protocol Buffers (48 bytes)}
+\vspace{4pt}
+
+\small
+\begin{tabular}[t]{@{}r@{\quad}l@{}}
+\texttt{0a 24} & tag 1, length 36 \\
+\texttt{35 35 30 65 38 34 ...} & ``550e84...'' (ASCII) \\
+\texttt{... 30 30 30 30} & 36-byte uuid string \\
+\texttt{12 08} & tag 2, length 8 \\
+\texttt{80 3f 00 40 40 40 80 40} & bfloat16 data \\[4pt]
+\multicolumn{2}{@{}l}{\textit{2B tag + 36B string + 2B tag + 8B data}} \\
+\end{tabular}
+\end{minipage}
+\caption{Wire encoding of a small embedding. Bebop's native UUID saves 20 bytes versus Protocol Buffers' string encoding. Hex bytes from actual encoder output.}
+\label{fig:embedding-encoding}
+\end{figure}
+
+Embedding vectors decode in $<$3ns with Bebop regardless of dimension, compared to 98--111ns with Protocol Buffers (34--40$\times$ faster). The bfloat16 array is a 4-byte count followed by contiguous 16-bit values; decoding is a pointer assignment.
+
+\subsubsection{Recursive Structure Performance}
+
+TreeDeep (binary tree, $d{=}10$, 1023 nodes) decodes in 5.34$\mu$s with Bebop versus 55.00$\mu$s with Protocol Buffers (10$\times$ faster). For recursive messages, Bebop's length prefixes allow skipping subtrees without parsing contents. The speedup comes from predictable memory access, not wire compactness---Protocol Buffers' varint encoding produces smaller output for trees with small integer values.
 
 \subsection{Throughput and Memory Bandwidth}
 
@@ -900,52 +956,129 @@ Bebop's decode path does minimal computation: bounds checking, pointer arithmeti
 \label{fig:bandwidth-utilization}
 \end{figure}
 
-The gap at small record sizes reflects fixed per-record overhead. Records under 256 bytes spend more time in function prologues and bounds checks than in actual data access. Records above 4KB achieve over 90\% bandwidth utilization when cache-resident.
+The gap at small record sizes reflects fixed per-record overhead: records under 256 bytes spend more time in function prologues and bounds checks than in actual data movement. Above 4KB, records achieve over 90\% bandwidth utilization when cache-resident.
 
-\subsubsection{Alignment and SIMD Considerations}
+\subsubsection{Alignment and Single Instruction, Multiple Data (SIMD)}
 
-Bebop does not enforce alignment beyond natural type boundaries. A \texttt{float32} is 4-byte aligned within its containing struct, but the struct itself may start at any byte offset. This differs from Cap'n Proto, which aligns all objects to 8-byte boundaries.
+Structs encode in definition order with no padding (Section~\ref{sec:wire-structs}), but in-memory layout differs. The C code generator reorders fields by alignment to minimize padding:
 
-For CPU decode, unaligned access is typically fast on modern x86 and ARM processors. However, GPU and TPU memory transfers often require specific alignment (typically 16, 32, or 128 bytes) for efficient DMA. When using Bebop for ML inference pipelines that transfer data to accelerators:
+\vspace{4pt}
+\noindent\begin{minipage}{\textwidth}
+\footnotesize
+\begin{minipage}[t]{0.38\textwidth}
+\begin{lstlisting}[language=bebop,aboveskip=2pt,belowskip=0pt]
+struct Sensor {
+  bool active;
+  float64 reading;
+  uint16 id;
+  uint32 seq;
+}
+\end{lstlisting}
+\centering\scriptsize\textit{Schema order}
+\end{minipage}\hfill
+$\rightarrow$\hfill
+\begin{minipage}[t]{0.52\textwidth}
+\begin{lstlisting}[language=C,aboveskip=2pt,belowskip=0pt]
+typedef struct {
+  double reading;   // 8-byte align
+  uint32_t seq;     // 4-byte align
+  uint16_t id;      // 2-byte align
+  bool active;      // 1-byte align
+} Sensor;
+\end{lstlisting}
+\centering\scriptsize\textit{Generated C (sorted by alignment)}
+\end{minipage}
+\end{minipage}
 
-\begin{itemize}[leftmargin=2em,itemsep=2pt,topsep=4pt]
-\item Embedding vectors and tensor data should be placed in fixed arrays, which encode contiguously
-\item The containing message or buffer should be allocated with appropriate alignment
-\item Consider padding schemas to match accelerator requirements
-\end{itemize}
+\vspace{4pt}
+\noindent Schema authors write fields in logical order; generated code handles layout.
 
-SIMD optimization of the decode path is possible but not implemented in the reference runtime. The primary opportunity is parallel bounds checking and pointer arithmetic for arrays of fixed-size elements. For large \texttt{bfloat16[]} arrays, decode is already a single pointer assignment; SIMD would not help. For arrays of small structs, SIMD could reduce loop overhead.
+The runtime arena aligns all allocations to \texttt{max\_align\_t}, the strictest fundamental alignment guaranteed by the platform (16 bytes on most 64-bit systems). Decoded structs receive proper alignment regardless of their position in the wire stream. For GPU and TPU transfers requiring even stricter alignment (32, 64, or 128 bytes), the arena accepts a custom allocator. Embedding vectors and tensor data in fixed arrays decode to contiguous memory, suitable for DMA after aligning the containing buffer.
+
+The reference runtime does not use SIMD intrinsics. For \texttt{bfloat16[]} arrays, decode is a pointer assignment into arena memory; SIMD would add no benefit. For arrays of small structs, SIMD could parallelize bounds checking, but the current implementation favors portability over architecture-specific optimization.
 
 \subsection{Encode Performance}
 
-Encode margins are smaller than decode. Bebop beat Protocol Buffers on all 23 workloads (1.4--12.6$\times$) and MessagePack on 19 of 23 (1.2--19.4$\times$). MessagePack was faster on JsonSmall, JsonLarge, ChunkedText, and DocumentLarge.
+Encode speedups are smaller than decode speedups. This is expected: encoding requires traversing data structures and computing lengths, which involve allocation and branching regardless of wire format. Bebop's fixed-width encoding eliminates branches during decode, but encoding still requires the same traversal as other formats.
 
-Encoding requires traversing data structures and computing lengths, which involve allocation and branching regardless of wire format.
+Bebop beat Protocol Buffers on all 22 comparable workloads (1.4--12.6$\times$) and MessagePack on 15 of 19 (1.2--19.4$\times$). MessagePack was faster on JsonSmall, JsonLarge, ChunkedText, and DocumentLarge.
+
+Figure~\ref{fig:encode-decode} compares encode and decode latency across all three binary formats for representative workloads.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.95\textwidth,
+    height=2.8in,
+    ybar,
+    bar width=3pt,
+    ylabel={Latency (ns, log scale)},
+    ymode=log,
+    ymin=1, ymax=100000,
+    symbolic x coords={Embed768,TensorShard,EventLarge,OrderLarge,TreeDeep},
+    xtick=data,
+    xticklabel style={font=\small},
+    legend style={at={(0.5,-0.20)}, anchor=north, legend columns=3, font=\small},
+    legend cell align={left},
+    nodes near coords=,
+    every axis plot/.append style={fill opacity=0.8},
+]
+% Bebop Decode
+\addplot[fill=bebopblue!80, draw=bebopblue] coordinates {
+    (Embed768, 2.91) (TensorShard, 6.86) (EventLarge, 6.49) (OrderLarge, 5.85) (TreeDeep, 5340)
+};
+% Bebop Encode
+\addplot[fill=bebopblue!40, draw=bebopblue] coordinates {
+    (Embed768, 18.93) (TensorShard, 559.64) (EventLarge, 49.71) (OrderLarge, 20.10) (TreeDeep, 3570)
+};
+% Protobuf Decode
+\addplot[fill=chartproto!80, draw=chartproto] coordinates {
+    (Embed768, 98.34) (TensorShard, 1460) (EventLarge, 175.20) (OrderLarge, 557.82) (TreeDeep, 55000)
+};
+% Protobuf Encode
+\addplot[fill=chartproto!40, draw=chartproto] coordinates {
+    (Embed768, 37.06) (TensorShard, 793.09) (EventLarge, 82.19) (OrderLarge, 252.71) (TreeDeep, 13190)
+};
+% MsgPack Decode
+\addplot[fill=chartmsgpack!80, draw=chartmsgpack] coordinates {
+    (Embed768, 62.93) (TensorShard, 107.90) (EventLarge, 85.23) (OrderLarge, 757.16) (TreeDeep, 23210)
+};
+% MsgPack Encode
+\addplot[fill=chartmsgpack!40, draw=chartmsgpack] coordinates {
+    (Embed768, 23.47) (TensorShard, 760.49) (EventLarge, 68.53) (OrderLarge, 390.90) (TreeDeep, 8180)
+};
+\legend{Bebop dec, Bebop enc, Protobuf dec, Protobuf enc, MsgPack dec, MsgPack enc}
+\end{axis}
+\end{tikzpicture}
+\caption{Encode vs decode latency across binary formats. Bebop's decode advantage (dark blue) is larger than its encode advantage (light blue) because encoding requires data traversal regardless of wire format.}
+\label{fig:encode-decode}
+\end{figure}
 
 \subsection{Comparison with JSON Parsing}
 
-We included simdjson~\cite{simdjson}, the fastest general-purpose JSON parser, as a reference. Simdjson uses SIMD to accelerate JSON tokenization, achieving 2--6~GB/s on typical workloads.
+This comparison is not apples-to-apples: simdjson parses human-readable text, while Bebop decodes pre-serialized binary. But for systems currently using JSON, this shows the performance cost of that choice.
 
-On the same data serialized as JSON, Bebop decode outperformed simdjson parse on 21 of 23 workloads (1.2--5741$\times$). The largest gaps occurred on numeric arrays: parsing ``[1.5, 2.5, ...]'' as JSON requires character-by-character float conversion, while Bebop reads IEEE 754 values directly. Simdjson was faster on JsonLarge (4.25$\times$) and JsonSmall (1.70$\times$), where JSON's native format requires no conversion.
+We compared against simdjson~\cite{simdjson}, the fastest general-purpose JSON parser, which uses SIMD to accelerate tokenization (2--6~GB/s on typical workloads). On equivalent data, Bebop decode was faster on 17 of 19 workloads (1.2--5741$\times$). The largest gaps occurred on numeric arrays: parsing ``[1.5, 2.5, ...]'' as JSON requires character-by-character float conversion, while Bebop reads IEEE 754 values directly. Simdjson was faster on JsonLarge (4.2$\times$) and JsonSmall (1.7$\times$), where JSON's native format requires no conversion.
 
 \begin{table}[ht]
 \centering
 \begin{tabular}{@{}lrrr@{}}
 \toprule
-\textbf{Workload} & \textbf{Bebop} & \textbf{simdjson} & \textbf{Speedup} \\
+\textbf{Workload} & \textbf{simdjson} & \textbf{Bebop} & \textbf{Speedup} \\
 \midrule
-TensorShardLarge & 6.86 ns & 39.38 $\mu$s & 5741$\times$ \\
-Embedding1536 & 2.80 ns & 4.69 $\mu$s & 1675$\times$ \\
-EmbeddingBatch & 25.75 ns & 27.78 $\mu$s & 1079$\times$ \\
-Embedding768 & 2.91 ns & 2.26 $\mu$s & 776$\times$ \\
-InferenceResponse & 17.65 ns & 3.93 $\mu$s & 223$\times$ \\
-OrderLarge & 5.85 ns & 283.24 ns & 48$\times$ \\
-DocumentLarge & 52.39 ns & 245.53 ns & 4.7$\times$ \\
-LLMChunkLarge & 677.15 ns & 1.69 $\mu$s & 2.5$\times$ \\
-TreeDeep & 5.34 $\mu$s & 6.54 $\mu$s & 1.2$\times$ \\
+TensorShardLarge & 39.38 $\mu$s & 6.86 ns & 5741$\times$ \\
+Embedding1536 & 4.69 $\mu$s & 2.80 ns & 1675$\times$ \\
+EmbeddingBatch & 27.78 $\mu$s & 25.75 ns & 1079$\times$ \\
+Embedding768 & 2.26 $\mu$s & 2.91 ns & 776$\times$ \\
+InferenceResponse & 3.93 $\mu$s & 17.65 ns & 223$\times$ \\
+OrderLarge & 283.24 ns & 5.85 ns & 48$\times$ \\
+DocumentLarge & 245.53 ns & 52.0 ns & 4.7$\times$ \\
+LLMChunkLarge & 1.69 $\mu$s & 677.15 ns & 2.5$\times$ \\
+TreeDeep & 6.54 $\mu$s & 5.26 $\mu$s & 1.2$\times$ \\
 \bottomrule
 \end{tabular}
-\caption{Bebop decode vs simdjson parse on equivalent data.}
+\caption{simdjson parse vs Bebop decode on equivalent data.}
 \label{tab:simdjson}
 \end{table}
 
@@ -955,17 +1088,17 @@ Table~\ref{tab:roundtrip} shows encode-then-decode latency for representative wo
 
 \begin{table}[ht]
 \centering
-\begin{tabular}{@{}lrrr@{}}
+\begin{tabular}{@{}lrrrr@{}}
 \toprule
-\textbf{Workload} & \textbf{Bebop} & \textbf{Protobuf} & \textbf{Speedup} \\
+\textbf{Workload} & \textbf{Protobuf} & \textbf{MsgPack} & \textbf{Bebop} & \textbf{Speedup} \\
 \midrule
-PersonSmall & 12.26 ns & 124.40 ns & 10.1$\times$ \\
-OrderLarge & 23.86 ns & 834.68 ns & 35.0$\times$ \\
-EventLarge & 54.10 ns & 238.04 ns & 4.4$\times$ \\
-TreeDeep & 8.97 $\mu$s & 68.93 $\mu$s & 7.7$\times$ \\
+PersonSmall & 124.40 ns & 87.30 ns & 11.8 ns & 10.5$\times$ \\
+OrderLarge & 834.68 ns & 1.01 $\mu$s & 23.86 ns & 35.0$\times$ \\
+EventLarge & 238.04 ns & 150.00 ns & 52.8 ns & 4.5$\times$ \\
+TreeDeep & 68.93 $\mu$s & 30.50 $\mu$s & 8.86 $\mu$s & 7.8$\times$ \\
 \bottomrule
 \end{tabular}
-\caption{Roundtrip latency (encode + decode).}
+\caption{Roundtrip latency (encode + decode). Speedup is Bebop vs Protobuf.}
 \label{tab:roundtrip}
 \end{table}
 
@@ -974,38 +1107,38 @@ TreeDeep & 8.97 $\mu$s & 68.93 $\mu$s & 7.7$\times$ \\
 \begin{table}[ht]
 \centering
 \small
-\begin{tabular}{l r r r r}
+\begin{tabular}{l r r r r r r}
 \toprule
-\textbf{Workload} & \textbf{Bebop} & \textbf{Protobuf} & \textbf{Bebop+brotli} & \textbf{Protobuf+brotli} \\
+\textbf{Workload} & \textbf{Protobuf} & \textbf{MsgPack} & \textbf{Bebop} & \textbf{PB+brotli} & \textbf{MP+brotli} & \textbf{Bebop+brotli} \\
 \midrule
-\multicolumn{5}{l}{\textit{API payloads (small integer fields)}} \\
-PersonSmall & 28 & 19 & --- & --- \\
-PersonMedium & 130 & 124 & 101 & 101 \\
-OrderSmall & 76 & 34 & 62 & --- \\
-OrderLarge & 1,240 & 423 & 514 & 376 \\
+\multicolumn{7}{l}{\textit{API payloads (small integer fields)}} \\
+PersonSmall & 19 & 35 & 28 & --- & --- & --- \\
+PersonMedium & 124 & 141 & 130 & 101 & 107 & 101 \\
+OrderSmall & 34 & 94 & 76 & --- & 93 & 62 \\
+OrderLarge & 423 & 664 & 1,240 & 376 & 490 & 514 \\
 \midrule
-\multicolumn{5}{l}{\textit{Event payloads (byte arrays)}} \\
-EventSmall & 42 & 29 & --- & --- \\
-EventLarge & 4,170 & 4,158 & --- & --- \\
+\multicolumn{7}{l}{\textit{Event payloads (byte arrays)}} \\
+EventSmall & 29 & 62 & 42 & --- & --- & --- \\
+EventLarge & 4,158 & 4,193 & 4,170 & --- & --- & --- \\
 \midrule
-\multicolumn{5}{l}{\textit{ML inference (bfloat16 arrays)}} \\
-Embedding768 & 1,556 & 1,573 & 1,167 & 1,193 \\
-Embedding1536 & 3,092 & 3,109 & 2,219 & 2,214 \\
-TensorShardSmall & 2,132 & 2,108 & 1,574 & 1,576 \\
-TensorShardLarge & 65,624 & 65,605 & 44,711 & 44,720 \\
+\multicolumn{7}{l}{\textit{ML inference (bfloat16 arrays)}} \\
+Embedding768 & 1,573 & 1,568 & 1,556 & 1,193 & 1,182 & 1,167 \\
+Embedding1536 & 3,109 & 3,104 & 3,092 & 2,214 & 2,246 & 2,219 \\
+TensorShardSmall & 2,108 & 2,154 & 2,132 & 1,576 & 1,602 & 1,574 \\
+TensorShardLarge & 65,605 & 65,652 & 65,624 & 44,720 & 44,747 & 44,711 \\
 \bottomrule
 \end{tabular}
 \caption{Wire size in bytes. --- indicates compression increased size.}
 \label{tab:wire-size}
 \end{table}
 
-The results confirm the predictions from Equation~\ref{eq:varint-expected}. OrderLarge contains arrays of 100 small integers; varint encodes these in 1--2 bytes each while fixed-width requires 4--8 bytes, producing a 2.93$\times$ uncompressed size difference.
+The results confirm the predictions from Equation~\ref{eq:varint-expected}. OrderLarge contains arrays of 100 small integers; varint encodes these in 1--2 bytes each while fixed-width requires 4--8 bytes. MessagePack falls between the two: its schema-less design adds field name overhead, but it uses compact integer encoding.
 
-\textbf{Compression narrows the gap on most workloads.} On ML payloads (embedding vectors, tensor shards), compressed Bebop and compressed Protocol Buffers produce nearly identical wire sizes---within 0.5\%. The bfloat16 data dominates; framing overhead becomes negligible after compression.
+\textbf{Compression narrows the gap on most workloads.} On ML payloads (embedding vectors, tensor shards), all three formats produce nearly identical compressed sizes---within 2\%. The bfloat16 data dominates; framing overhead becomes negligible after compression.
 
-On API payloads with small integers (OrderLarge), compressed Protocol Buffers remains smaller (376 vs 514 bytes). Varint's compact representation of small values survives compression better than fixed-width padding zeros.
+On API payloads with small integers (OrderLarge), compressed Protocol Buffers remains smallest (376 bytes) due to varint's compact representation of small values. MessagePack compresses to 490 bytes; Bebop to 514 bytes.
 
-EventLarge is dominated by a 4KB random byte payload; neither format benefits from compression.
+EventLarge is dominated by a 4KB random byte payload; no format benefits from compression.
 
 With compression enabled, wire size differences between formats largely disappear. The decode performance gap does not.
 
@@ -1342,6 +1475,43 @@ Export blocks can aggregate data across the schema for deprecation reports, vali
 \end{minipage}
 \end{minipage}
 
+\subsection{Schema Evolution}
+\label{sec:evolution}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}llcl@{}}
+\toprule
+\textbf{Type} & \textbf{Change} & \textbf{Safe?} & \textbf{Notes} \\
+\midrule
+\multirow{5}{*}{Message}
+  & Add field & \cmark & Use new tag; old readers ignore \\
+  & Deprecate field & \cmark & Skipped on wire; don't reuse tag \\
+  & Rename field & \cmark & Names not on wire \\
+  & Change field type & \xmark & Never reuse tag with different type \\
+  & Change tag number & \xmark & Equivalent to remove + add \\
+\midrule
+\multirow{4}{*}{Struct}
+  & Add field & \xmark & Positional encoding; no tags \\
+  & Remove field & \xmark & Create versioned type instead \\
+  & Reorder fields & \xmark & Or convert to message \\
+  & Change field type & \xmark & \\
+\midrule
+\multirow{3}{*}{Union}
+  & Add branch & \cmark & \\
+  & Remove branch & \xmark & Decode fails for existing data \\
+  & Change branch type & \xmark & \\
+\midrule
+\multirow{3}{*}{Enum}
+  & Add value & \cmark & \\
+  & Remove value & \xmark & Existing data may contain it \\
+  & Change base type & \xmark & e.g., \texttt{uint8} to \texttt{uint32} \\
+\bottomrule
+\end{tabular}
+\caption{Schema evolution compatibility. \cmark\ = backward compatible, \xmark\ = breaking change.}
+\end{table}
+
 
 \newpage
 \section{Implementation}
@@ -1443,9 +1613,11 @@ Type references use \texttt{TypeDescriptor} with a \texttt{kind} field (BOOL, IN
 
 \section{Related Work}
 
-Protocol Buffers~\cite{protobuf} prioritizes wire compactness through varint encoding. The branching cost during decode was recognized early~\cite{varda-hn}. Bebop inverts this tradeoff.
+Protocol Buffers~\cite{protobuf} prioritizes wire compactness through varint encoding. The branching cost during decode was recognized early~\cite{varda-hn}. Bebop prioritizes decode speed instead.
 
 Cap'n Proto~\cite{capnproto} and FlatBuffers~\cite{flatbuffers} optimize for random field access through pointer-based layouts. Bebop targets sequential decode, which matches how ML pipelines consume embedding vectors.
+
+Simple Binary Encoding (SBE)~\cite{sbe} also uses fixed-width encoding, targeting financial systems where latency matters. SBE focuses on FIX protocol semantics and requires fields in schema-defined order. Bebop takes a similar approach to wire encoding but provides a more general-purpose schema language with tagged messages for evolution.
 
 MessagePack~\cite{msgpack} embeds type tags in the wire format; Avro~\cite{avro} includes the schema with each message. Both add per-message overhead that Bebop avoids through code generation.
 
@@ -1454,9 +1626,17 @@ simdjson~\cite{simdjson} uses SIMD to accelerate JSON parsing. Section~\ref{sec:
 
 \section{Conclusion}
 
-We hope this paper demonstrates that simplicity scales. Fixed-width types eliminate branches. A minimal AST keeps the compiler small. Straightforward code generation produces encoders and decoders that do almost nothing. Doing almost nothing turns out to be very fast.
+Serialization sits on the critical path of every ML inference call, every embedding lookup, every streaming token. When a third of ML organizations report GPU utilization below 15\%, and serialization consumes a quarter of microservice request latency, the format you choose for moving bytes has real consequences. Wasted hardware. Delayed responses. Money left on the table.
 
-The performance gains come not from clever optimization but from removing work. Varint loops, gone. Tag dispatch tables, gone for structs. Runtime length computations, gone. What remains is pointer arithmetic and bounds checks.
+Bebop decodes tensor data 213$\times$ faster than Protocol Buffers. Not through clever optimization, but by removing work. Fixed-width encoding eliminates the branch-per-byte loop that varints require. No tag dispatch for structs. No runtime length computation. The decoder becomes pointer arithmetic and bounds checks, simple enough that it saturates memory bandwidth on large records. The CPU stops being the bottleneck.
+
+The tradeoff is wire size. Bebop's fixed-width integers cost more bytes than varints for small values. For ML workloads where embeddings dominate, this penalty is negligible because thousands of float32s encode identically either way. For workloads with many small integers, Protocol Buffers produces smaller payloads. Even then, Bebop's schema language, toolchain, and type system may justify adoption.
+
+What surprised us was how much performance came from doing less. Fixed sizes, predictable layouts, no per-value decisions. The same choices that make Bebop fast also keep the compiler small. The implementation is 35,000 lines of C with single-pass code generation. Simplicity compounded.
+
+Future work includes SIMD-accelerated array decoding, GPU-side deserialization for direct device memory placement, and streaming decode for records larger than available memory. The wire format is stable; these are implementation improvements that maintain compatibility.
+
+For teams running inference at scale, the arithmetic is straightforward. If your service spends 100 microseconds per request on serialization and handles a million requests per second, that's 100 CPU cores parsing bytes. Bebop can give most of them back.
 
 \section*{Acknowledgments}
 
@@ -1492,6 +1672,9 @@ Google. ``Field Presence.'' \textit{Protocol Buffers Documentation}, 2020. \url{
 \bibitem{flatbuffers}
 Google. \textit{FlatBuffers}. \url{https://flatbuffers.dev/}, 2014.
 
+\bibitem{sbe}
+Real Logic. \textit{Simple Binary Encoding}. \url{https://github.com/aeron-io/simple-binary-encoding}, 2014.
+
 \bibitem{msgpack}
 S. Furuhashi. \textit{MessagePack}. \url{https://msgpack.org/}, 2008.
 
@@ -1510,8 +1693,34 @@ H. Suzuki. ``Optimization Notes: Apple M1.'' \url{https://github.com/ocxtal/insn
 \bibitem{golden-cove}
 C. Lam. ``Popping the Hood on Golden Cove.'' Chips and Cheese, \url{https://chipsandcheese.com/p/popping-the-hood-on-golden-cove}, 2022.
 
+\bibitem{eyerman-branch}
+S. Eyerman, J. E. Smith, and L. Eeckhout. ``Characterizing the Branch Misprediction Penalty.'' \textit{Proc.\ IEEE International Symposium on Performance Analysis of Systems and Software (ISPASS)}, pp.\ 48--58, 2006.
+
+\bibitem{fog-microarch}
+A. Fog. ``The microarchitecture of Intel, AMD and VIA CPUs: An optimization guide for assembly programmers and compiler makers.'' Technical University of Denmark, \url{https://www.agner.org/optimize/microarchitecture.pdf}, 2025.
+
 \bibitem{m3-ultra}
 Apple Inc. ``Mac Studio Technical Specifications.'' \url{https://www.apple.com/mac-studio/specs/}, 2025.
+
+\bibitem{openai-api-analysis}
+FutureSearch. ``OpenAI's API Profitability in 2024.'' \url{https://futuresearch.ai/openai-api-profit/}, 2024.
+
+\bibitem{wandb-gpu}
+Weights \& Biases. ``GPU Utilization Survey.'' Referenced in Alluxio, ``Maximize GPU Utilization for Model Training.'' \url{https://www.alluxio.io/blog/maximize-gpu-utilization-for-model-training}, 2024.
+
+\bibitem{datastalls}
+J.~Mohan, A.~Phanishayee, A.~Raniwala, and V.~Chidambaram.
+``Analyzing and Mitigating Data Stalls in DNN Training.''
+\textit{Proceedings of the VLDB Endowment}, 14(5):771--784, 2021.
+
+\bibitem{gpu-pricing}
+Thunder Compute. ``NVIDIA H100 Pricing: Cheapest On-Demand Cloud GPU Rates.'' \url{https://www.thundercompute.com/blog/nvidia-h100-pricing}, January 2026.
+
+\bibitem{linkedin-protobuf}
+N.~Grewal. ``How LinkedIn Adopted Protocol Buffers to Reduce Latency by 60\%.'' \textit{System Design Newsletter}, 2023.
+
+\bibitem{credera-serialization}
+Credera. ``A Common Pitfall with Microservice Architectures.'' \url{https://www.credera.com/insights/a-common-pitfall-with-microservice-architectures}, 2019.
 
 \end{thebibliography}
 

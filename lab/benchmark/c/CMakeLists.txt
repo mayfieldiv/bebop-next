@@ -163,7 +163,7 @@ add_custom_target(bench-json
 )
 
 # Wire size comparison tool
-if(BENCH_BEBOP AND BENCH_PROTOBUF)
+if(BENCH_BEBOP AND BENCH_PROTOBUF AND BENCH_MSGPACK)
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(ZSTD libzstd)
   pkg_check_modules(LZ4 liblz4)
@@ -175,8 +175,9 @@ if(BENCH_BEBOP AND BENCH_PROTOBUF)
     bench_harness
     bebop_runtime
     protobuf_generated
+    msgpack-c
   )
-  target_compile_definitions(wire_sizes PRIVATE BENCH_BEBOP=1 BENCH_PROTOBUF=1)
+  target_compile_definitions(wire_sizes PRIVATE BENCH_BEBOP=1 BENCH_PROTOBUF=1 BENCH_MSGPACK=1)
 
   if(ZSTD_FOUND)
     target_compile_definitions(wire_sizes PRIVATE USE_ZSTD=1)

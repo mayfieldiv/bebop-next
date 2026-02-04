@@ -1192,6 +1192,126 @@ static void BM_Msgpack_Decode_InferenceResponse(benchmark::State& state)
   state.SetBytesProcessed(state.iterations() * g_encoded_inference.size());
 }
 
+static void BM_Msgpack_Roundtrip_PersonSmall(benchmark::State& state)
+{
+  init_msgpack_data();
+  const auto& p = GetSmallPerson();
+  for (auto _ : state) {
+    msgpack_sbuffer_clear(&g_sbuf);
+    msgpack_pack_map(&g_pk, 4);
+    msgpack_pack_str(&g_pk, 2);
+    msgpack_pack_str_body(&g_pk, "id", 2);
+    msgpack_pack_int32(&g_pk, p.id);
+    msgpack_pack_str(&g_pk, 4);
+    msgpack_pack_str_body(&g_pk, "name", 4);
+    msgpack_pack_str(&g_pk, p.name.size());
+    msgpack_pack_str_body(&g_pk, p.name.c_str(), p.name.size());
+    msgpack_pack_str(&g_pk, 5);
+    msgpack_pack_str_body(&g_pk, "email", 5);
+    msgpack_pack_str(&g_pk, p.email.size());
+    msgpack_pack_str_body(&g_pk, p.email.c_str(), p.email.size());
+    msgpack_pack_str(&g_pk, 3);
+    msgpack_pack_str_body(&g_pk, "age", 3);
+    msgpack_pack_int32(&g_pk, p.age);
+
+    msgpack_unpacked result;
+    msgpack_unpacked_init(&result);
+    msgpack_unpack_next(&result, g_sbuf.data, g_sbuf.size, nullptr);
+    benchmark::DoNotOptimize(result.data.via.map.size);
+    msgpack_unpacked_destroy(&result);
+  }
+}
+
+static void BM_Msgpack_Roundtrip_OrderLarge(benchmark::State& state)
+{
+  init_msgpack_data();
+  const auto& o = GetLargeOrder();
+  for (auto _ : state) {
+    msgpack_sbuffer_clear(&g_sbuf);
+    msgpack_pack_map(&g_pk, 6);
+    msgpack_pack_str(&g_pk, 8);
+    msgpack_pack_str_body(&g_pk, "order_id", 8);
+    msgpack_pack_int64(&g_pk, o.order_id);
+    msgpack_pack_str(&g_pk, 11);
+    msgpack_pack_str_body(&g_pk, "customer_id", 11);
+    msgpack_pack_int64(&g_pk, o.customer_id);
+    msgpack_pack_str(&g_pk, 8);
+    msgpack_pack_str_body(&g_pk, "item_ids", 8);
+    msgpack_pack_array(&g_pk, o.item_ids.size());
+    for (auto id : o.item_ids) {
+      msgpack_pack_int64(&g_pk, id);
+    }
+    msgpack_pack_str(&g_pk, 10);
+    msgpack_pack_str_body(&g_pk, "quantities", 10);
+    msgpack_pack_array(&g_pk, o.quantities.size());
+    for (auto q : o.quantities) {
+      msgpack_pack_int32(&g_pk, q);
+    }
+    msgpack_pack_str(&g_pk, 5);
+    msgpack_pack_str_body(&g_pk, "total", 5);
+    msgpack_pack_double(&g_pk, o.total);
+    msgpack_pack_str(&g_pk, 9);
+    msgpack_pack_str_body(&g_pk, "timestamp", 9);
+    msgpack_pack_int64(&g_pk, o.timestamp);
+
+    msgpack_unpacked result;
+    msgpack_unpacked_init(&result);
+    msgpack_unpack_next(&result, g_sbuf.data, g_sbuf.size, nullptr);
+    benchmark::DoNotOptimize(result.data.via.map.size);
+    msgpack_unpacked_destroy(&result);
+  }
+}
+
+static void BM_Msgpack_Roundtrip_EventLarge(benchmark::State& state)
+{
+  init_msgpack_data();
+  const auto& e = GetLargeEvent();
+  for (auto _ : state) {
+    msgpack_sbuffer_clear(&g_sbuf);
+    msgpack_pack_map(&g_pk, 5);
+    msgpack_pack_str(&g_pk, 2);
+    msgpack_pack_str_body(&g_pk, "id", 2);
+    msgpack_pack_int64(&g_pk, e.id);
+    msgpack_pack_str(&g_pk, 4);
+    msgpack_pack_str_body(&g_pk, "type", 4);
+    msgpack_pack_str(&g_pk, e.type.size());
+    msgpack_pack_str_body(&g_pk, e.type.c_str(), e.type.size());
+    msgpack_pack_str(&g_pk, 6);
+    msgpack_pack_str_body(&g_pk, "source", 6);
+    msgpack_pack_str(&g_pk, e.source.size());
+    msgpack_pack_str_body(&g_pk, e.source.c_str(), e.source.size());
+    msgpack_pack_str(&g_pk, 9);
+    msgpack_pack_str_body(&g_pk, "timestamp", 9);
+    msgpack_pack_int64(&g_pk, e.timestamp);
+    msgpack_pack_str(&g_pk, 7);
+    msgpack_pack_str_body(&g_pk, "payload", 7);
+    msgpack_pack_bin(&g_pk, e.payload.size());
+    msgpack_pack_bin_body(&g_pk, reinterpret_cast<const char*>(e.payload.data()), e.payload.size());
+
+    msgpack_unpacked result;
+    msgpack_unpacked_init(&result);
+    msgpack_unpack_next(&result, g_sbuf.data, g_sbuf.size, nullptr);
+    benchmark::DoNotOptimize(result.data.via.map.size);
+    msgpack_unpacked_destroy(&result);
+  }
+}
+
+static void BM_Msgpack_Roundtrip_TreeDeep(benchmark::State& state)
+{
+  init_msgpack_data();
+  const auto& t = GetDeepTree();
+  for (auto _ : state) {
+    msgpack_sbuffer_clear(&g_sbuf);
+    encode_tree_recursive(t);
+
+    msgpack_unpacked result;
+    msgpack_unpacked_init(&result);
+    msgpack_unpack_next(&result, g_sbuf.data, g_sbuf.size, nullptr);
+    benchmark::DoNotOptimize(result.data.via.map.size);
+    msgpack_unpacked_destroy(&result);
+  }
+}
+
 void RegisterMsgpackBenchmarks()
 {
   BENCHMARK(BM_Msgpack_Encode_PersonSmall);
@@ -1238,4 +1358,9 @@ void RegisterMsgpackBenchmarks()
   BENCHMARK(BM_Msgpack_Decode_LLMChunkLarge);
   BENCHMARK(BM_Msgpack_Decode_TensorShardLarge);
   BENCHMARK(BM_Msgpack_Decode_InferenceResponse);
+
+  BENCHMARK(BM_Msgpack_Roundtrip_PersonSmall);
+  BENCHMARK(BM_Msgpack_Roundtrip_OrderLarge);
+  BENCHMARK(BM_Msgpack_Roundtrip_EventLarge);
+  BENCHMARK(BM_Msgpack_Roundtrip_TreeDeep);
 }

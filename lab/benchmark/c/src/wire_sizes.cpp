@@ -16,6 +16,22 @@ extern "C" {
 }
 #endif
 
+#ifdef BENCH_MSGPACK
+#include <msgpack.h>
+static msgpack_sbuffer g_msgpack_sbuf;
+static msgpack_packer g_msgpack_pk;
+static bool g_msgpack_initialized = false;
+
+static void ensure_msgpack()
+{
+  if (!g_msgpack_initialized) {
+    msgpack_sbuffer_init(&g_msgpack_sbuf);
+    msgpack_packer_init(&g_msgpack_pk, &g_msgpack_sbuf, msgpack_sbuffer_write);
+    g_msgpack_initialized = true;
+  }
+}
+#endif
+
 #ifdef USE_ZSTD
 #include <zstd.h>
 #endif
@@ -63,10 +79,13 @@ struct WireSize {
   const char* category;
   size_t bebop_size;
   size_t protobuf_size;
+  size_t msgpack_size;
   size_t bebop_compressed_size;
   const char* bebop_compressor;
   size_t protobuf_compressed_size;
   const char* protobuf_compressor;
+  size_t msgpack_compressed_size;
+  const char* msgpack_compressor;
 };
 
 static std::vector<WireSize> g_sizes;
@@ -136,7 +155,9 @@ static void get_writer_buf(uint8_t** buf, size_t* len)
 
 static std::vector<uint8_t> g_proto_buf;
 
-static void record(const char* cat, const char* name, size_t protobuf_size, const uint8_t* proto_data)
+static void record(const char* cat, const char* name,
+                   size_t protobuf_size, const uint8_t* proto_data,
+                   size_t msgpack_size, const uint8_t* msgpack_data)
 {
   uint8_t* buf;
   size_t bebop;
@@ -153,7 +174,18 @@ static void record(const char* cat, const char* name, size_t protobuf_size, cons
     proto_compressor = "none";
   }
 
-  g_sizes.push_back({name, cat, bebop, protobuf_size, bebop_compressed, bebop_compressor, proto_compressed, proto_compressor});
+  const char* msgpack_compressor;
+  size_t msgpack_compressed = msgpack_size;
+  if (msgpack_data && msgpack_size > 0) {
+    msgpack_compressed = try_compress(msgpack_data, msgpack_size, &msgpack_compressor);
+  } else {
+    msgpack_compressor = "none";
+  }
+
+  g_sizes.push_back({name, cat, bebop, protobuf_size, msgpack_size,
+                     bebop_compressed, bebop_compressor,
+                     proto_compressed, proto_compressor,
+                     msgpack_compressed, msgpack_compressor});
 }
 
 //
@@ -310,36 +342,271 @@ static size_t proto_tensor_shard(const TestTensorShard& t, std::vector<uint8_t>&
 }
 #endif
 
+#ifdef BENCH_MSGPACK
+static size_t msgpack_person(const TestPerson& p, std::vector<uint8_t>& out)
+{
+  ensure_msgpack();
+  msgpack_sbuffer_clear(&g_msgpack_sbuf);
+  msgpack_pack_map(&g_msgpack_pk, 4);
+  msgpack_pack_str(&g_msgpack_pk, 2);
+  msgpack_pack_str_body(&g_msgpack_pk, "id", 2);
+  msgpack_pack_int32(&g_msgpack_pk, p.id);
+  msgpack_pack_str(&g_msgpack_pk, 4);
+  msgpack_pack_str_body(&g_msgpack_pk, "name", 4);
+  msgpack_pack_str(&g_msgpack_pk, p.name.size());
+  msgpack_pack_str_body(&g_msgpack_pk, p.name.c_str(), p.name.size());
+  msgpack_pack_str(&g_msgpack_pk, 5);
+  msgpack_pack_str_body(&g_msgpack_pk, "email", 5);
+  msgpack_pack_str(&g_msgpack_pk, p.email.size());
+  msgpack_pack_str_body(&g_msgpack_pk, p.email.c_str(), p.email.size());
+  msgpack_pack_str(&g_msgpack_pk, 3);
+  msgpack_pack_str_body(&g_msgpack_pk, "age", 3);
+  msgpack_pack_int32(&g_msgpack_pk, p.age);
+  out.assign(reinterpret_cast<uint8_t*>(g_msgpack_sbuf.data),
+             reinterpret_cast<uint8_t*>(g_msgpack_sbuf.data) + g_msgpack_sbuf.size);
+  return g_msgpack_sbuf.size;
+}
+
+static size_t msgpack_order(const TestOrder& o, std::vector<uint8_t>& out)
+{
+  ensure_msgpack();
+  msgpack_sbuffer_clear(&g_msgpack_sbuf);
+  msgpack_pack_map(&g_msgpack_pk, 6);
+  msgpack_pack_str(&g_msgpack_pk, 8);
+  msgpack_pack_str_body(&g_msgpack_pk, "order_id", 8);
+  msgpack_pack_int64(&g_msgpack_pk, o.order_id);
+  msgpack_pack_str(&g_msgpack_pk, 11);
+  msgpack_pack_str_body(&g_msgpack_pk, "customer_id", 11);
+  msgpack_pack_int64(&g_msgpack_pk, o.customer_id);
+  msgpack_pack_str(&g_msgpack_pk, 8);
+  msgpack_pack_str_body(&g_msgpack_pk, "item_ids", 8);
+  msgpack_pack_array(&g_msgpack_pk, o.item_ids.size());
+  for (auto id : o.item_ids) {
+    msgpack_pack_int64(&g_msgpack_pk, id);
+  }
+  msgpack_pack_str(&g_msgpack_pk, 10);
+  msgpack_pack_str_body(&g_msgpack_pk, "quantities", 10);
+  msgpack_pack_array(&g_msgpack_pk, o.quantities.size());
+  for (auto q : o.quantities) {
+    msgpack_pack_int32(&g_msgpack_pk, q);
+  }
+  msgpack_pack_str(&g_msgpack_pk, 5);
+  msgpack_pack_str_body(&g_msgpack_pk, "total", 5);
+  msgpack_pack_double(&g_msgpack_pk, o.total);
+  msgpack_pack_str(&g_msgpack_pk, 9);
+  msgpack_pack_str_body(&g_msgpack_pk, "timestamp", 9);
+  msgpack_pack_int64(&g_msgpack_pk, o.timestamp);
+  out.assign(reinterpret_cast<uint8_t*>(g_msgpack_sbuf.data),
+             reinterpret_cast<uint8_t*>(g_msgpack_sbuf.data) + g_msgpack_sbuf.size);
+  return g_msgpack_sbuf.size;
+}
+
+static size_t msgpack_event(const TestEvent& e, std::vector<uint8_t>& out)
+{
+  ensure_msgpack();
+  msgpack_sbuffer_clear(&g_msgpack_sbuf);
+  msgpack_pack_map(&g_msgpack_pk, 5);
+  msgpack_pack_str(&g_msgpack_pk, 2);
+  msgpack_pack_str_body(&g_msgpack_pk, "id", 2);
+  msgpack_pack_int64(&g_msgpack_pk, e.id);
+  msgpack_pack_str(&g_msgpack_pk, 4);
+  msgpack_pack_str_body(&g_msgpack_pk, "type", 4);
+  msgpack_pack_str(&g_msgpack_pk, e.type.size());
+  msgpack_pack_str_body(&g_msgpack_pk, e.type.c_str(), e.type.size());
+  msgpack_pack_str(&g_msgpack_pk, 6);
+  msgpack_pack_str_body(&g_msgpack_pk, "source", 6);
+  msgpack_pack_str(&g_msgpack_pk, e.source.size());
+  msgpack_pack_str_body(&g_msgpack_pk, e.source.c_str(), e.source.size());
+  msgpack_pack_str(&g_msgpack_pk, 9);
+  msgpack_pack_str_body(&g_msgpack_pk, "timestamp", 9);
+  msgpack_pack_int64(&g_msgpack_pk, e.timestamp);
+  msgpack_pack_str(&g_msgpack_pk, 7);
+  msgpack_pack_str_body(&g_msgpack_pk, "payload", 7);
+  msgpack_pack_bin(&g_msgpack_pk, e.payload.size());
+  msgpack_pack_bin_body(&g_msgpack_pk, reinterpret_cast<const char*>(e.payload.data()), e.payload.size());
+  out.assign(reinterpret_cast<uint8_t*>(g_msgpack_sbuf.data),
+             reinterpret_cast<uint8_t*>(g_msgpack_sbuf.data) + g_msgpack_sbuf.size);
+  return g_msgpack_sbuf.size;
+}
+
+static size_t msgpack_embedding_bf16(const TestEmbeddingBF16& e, std::vector<uint8_t>& out)
+{
+  ensure_msgpack();
+  msgpack_sbuffer_clear(&g_msgpack_sbuf);
+  msgpack_pack_map(&g_msgpack_pk, 2);
+  msgpack_pack_str(&g_msgpack_pk, 2);
+  msgpack_pack_str_body(&g_msgpack_pk, "id", 2);
+  msgpack_pack_bin(&g_msgpack_pk, 16);
+  msgpack_pack_bin_body(&g_msgpack_pk, reinterpret_cast<const char*>(e.id.bytes), 16);
+  msgpack_pack_str(&g_msgpack_pk, 6);
+  msgpack_pack_str_body(&g_msgpack_pk, "vector", 6);
+  msgpack_pack_bin(&g_msgpack_pk, e.vector.size() * 2);
+  msgpack_pack_bin_body(&g_msgpack_pk, reinterpret_cast<const char*>(e.vector.data()), e.vector.size() * 2);
+  out.assign(reinterpret_cast<uint8_t*>(g_msgpack_sbuf.data),
+             reinterpret_cast<uint8_t*>(g_msgpack_sbuf.data) + g_msgpack_sbuf.size);
+  return g_msgpack_sbuf.size;
+}
+
+static size_t msgpack_tensor_shard(const TestTensorShard& t, std::vector<uint8_t>& out)
+{
+  ensure_msgpack();
+  msgpack_sbuffer_clear(&g_msgpack_sbuf);
+  msgpack_pack_map(&g_msgpack_pk, 6);
+  msgpack_pack_str(&g_msgpack_pk, 4);
+  msgpack_pack_str_body(&g_msgpack_pk, "name", 4);
+  msgpack_pack_str(&g_msgpack_pk, t.name.size());
+  msgpack_pack_str_body(&g_msgpack_pk, t.name.c_str(), t.name.size());
+  msgpack_pack_str(&g_msgpack_pk, 5);
+  msgpack_pack_str_body(&g_msgpack_pk, "shape", 5);
+  msgpack_pack_array(&g_msgpack_pk, t.shape.size());
+  for (uint32_t s : t.shape) {
+    msgpack_pack_uint32(&g_msgpack_pk, s);
+  }
+  msgpack_pack_str(&g_msgpack_pk, 5);
+  msgpack_pack_str_body(&g_msgpack_pk, "dtype", 5);
+  msgpack_pack_str(&g_msgpack_pk, t.dtype.size());
+  msgpack_pack_str_body(&g_msgpack_pk, t.dtype.c_str(), t.dtype.size());
+  msgpack_pack_str(&g_msgpack_pk, 4);
+  msgpack_pack_str_body(&g_msgpack_pk, "data", 4);
+  msgpack_pack_bin(&g_msgpack_pk, t.data.size() * 2);
+  msgpack_pack_bin_body(&g_msgpack_pk, reinterpret_cast<const char*>(t.data.data()), t.data.size() * 2);
+  msgpack_pack_str(&g_msgpack_pk, 6);
+  msgpack_pack_str_body(&g_msgpack_pk, "offset", 6);
+  msgpack_pack_uint64(&g_msgpack_pk, t.offset);
+  msgpack_pack_str(&g_msgpack_pk, 14);
+  msgpack_pack_str_body(&g_msgpack_pk, "total_elements", 14);
+  msgpack_pack_uint64(&g_msgpack_pk, t.total_elements);
+  out.assign(reinterpret_cast<uint8_t*>(g_msgpack_sbuf.data),
+             reinterpret_cast<uint8_t*>(g_msgpack_sbuf.data) + g_msgpack_sbuf.size);
+  return g_msgpack_sbuf.size;
+}
+#endif
+
+static void print_hex(const char* label, const uint8_t* data, size_t len)
+{
+  printf("%s (%zu bytes): ", label, len);
+  for (size_t i = 0; i < len; i++) {
+    printf("%02x ", data[i]);
+  }
+  printf("\n");
+}
+
+static void test_small_embedding()
+{
+  printf("\n=== Small Embedding (4 bfloat16 values) ===\n\n");
+
+  ensure_ctx();
+
+  uint16_t vec[4] = {0x3f80, 0x4000, 0x4040, 0x4080};
+  uint8_t id[16] = {0x55, 0x0e, 0x84, 0x00, 0xe2, 0x9b, 0x41, 0xd4,
+                    0xa7, 0x16, 0x44, 0x66, 0x55, 0x44, 0x00, 0x00};
+
+  EmbeddingBF16 emb = {
+      .id = *reinterpret_cast<Bebop_UUID*>(id),
+      .vector = {.data = (Bebop_BFloat16*)vec, .length = 4}};
+
+  Bebop_Writer_Reset(g_writer);
+  EmbeddingBF16_Encode(g_writer, &emb);
+
+  uint8_t* bebop_buf;
+  size_t bebop_len;
+  Bebop_Writer_Buf(g_writer, &bebop_buf, &bebop_len);
+
+  print_hex("Bebop", bebop_buf, bebop_len);
+
+#ifdef BENCH_PROTOBUF
+  Benchmark__EmbeddingBF16 emb_pb = BENCHMARK__EMBEDDING_BF16__INIT;
+  emb_pb.id = (char*)"550e8400-e29b-41d4-a716-446655440000";
+  emb_pb.vector.data = reinterpret_cast<uint8_t*>(vec);
+  emb_pb.vector.len = 8;
+
+  size_t proto_size = benchmark__embedding_bf16__get_packed_size(&emb_pb);
+  std::vector<uint8_t> proto_buf(proto_size);
+  benchmark__embedding_bf16__pack(&emb_pb, proto_buf.data());
+
+  print_hex("Protobuf", proto_buf.data(), proto_size);
+#endif
+
+#ifdef BENCH_MSGPACK
+  ensure_msgpack();
+  msgpack_sbuffer_clear(&g_msgpack_sbuf);
+  msgpack_pack_map(&g_msgpack_pk, 2);
+  msgpack_pack_str(&g_msgpack_pk, 2);
+  msgpack_pack_str_body(&g_msgpack_pk, "id", 2);
+  msgpack_pack_bin(&g_msgpack_pk, 16);
+  msgpack_pack_bin_body(&g_msgpack_pk, reinterpret_cast<const char*>(id), 16);
+  msgpack_pack_str(&g_msgpack_pk, 6);
+  msgpack_pack_str_body(&g_msgpack_pk, "vector", 6);
+  msgpack_pack_bin(&g_msgpack_pk, 8);
+  msgpack_pack_bin_body(&g_msgpack_pk, reinterpret_cast<const char*>(vec), 8);
+
+  print_hex("MsgPack", reinterpret_cast<uint8_t*>(g_msgpack_sbuf.data), g_msgpack_sbuf.size);
+#endif
+
+  printf("\nSummary:\n");
+  printf("  Bebop:    %zu bytes\n", bebop_len);
+#ifdef BENCH_PROTOBUF
+  printf("  Protobuf: %zu bytes\n", proto_size);
+#endif
+#ifdef BENCH_MSGPACK
+  printf("  MsgPack:  %zu bytes\n", g_msgpack_sbuf.size);
+#endif
+  printf("\n");
+}
+
 int main()
 {
-#ifdef BENCH_PROTOBUF
+  test_small_embedding();
+
+#if defined(BENCH_PROTOBUF) && defined(BENCH_MSGPACK)
   std::vector<uint8_t> proto_buf;
+  std::vector<uint8_t> msgpack_buf;
 
   // API Payloads
   bebop_person(GetSmallPerson());
-  record("API", "PersonSmall", proto_person(GetSmallPerson(), proto_buf), proto_buf.data());
+  record("API", "PersonSmall",
+         proto_person(GetSmallPerson(), proto_buf), proto_buf.data(),
+         msgpack_person(GetSmallPerson(), msgpack_buf), msgpack_buf.data());
   bebop_person(GetMediumPerson());
-  record("API", "PersonMedium", proto_person(GetMediumPerson(), proto_buf), proto_buf.data());
+  record("API", "PersonMedium",
+         proto_person(GetMediumPerson(), proto_buf), proto_buf.data(),
+         msgpack_person(GetMediumPerson(), msgpack_buf), msgpack_buf.data());
   bebop_order(GetSmallOrder());
-  record("API", "OrderSmall", proto_order(GetSmallOrder(), proto_buf), proto_buf.data());
+  record("API", "OrderSmall",
+         proto_order(GetSmallOrder(), proto_buf), proto_buf.data(),
+         msgpack_order(GetSmallOrder(), msgpack_buf), msgpack_buf.data());
   bebop_order(GetLargeOrder());
-  record("API", "OrderLarge", proto_order(GetLargeOrder(), proto_buf), proto_buf.data());
+  record("API", "OrderLarge",
+         proto_order(GetLargeOrder(), proto_buf), proto_buf.data(),
+         msgpack_order(GetLargeOrder(), msgpack_buf), msgpack_buf.data());
 
   // Event Telemetry
   bebop_event(GetSmallEvent());
-  record("Event", "EventSmall", proto_event(GetSmallEvent(), proto_buf), proto_buf.data());
+  record("Event", "EventSmall",
+         proto_event(GetSmallEvent(), proto_buf), proto_buf.data(),
+         msgpack_event(GetSmallEvent(), msgpack_buf), msgpack_buf.data());
   bebop_event(GetLargeEvent());
-  record("Event", "EventLarge", proto_event(GetLargeEvent(), proto_buf), proto_buf.data());
+  record("Event", "EventLarge",
+         proto_event(GetLargeEvent(), proto_buf), proto_buf.data(),
+         msgpack_event(GetLargeEvent(), msgpack_buf), msgpack_buf.data());
 
   // ML Inference
   bebop_embedding_bf16(GetEmbedding768());
-  record("ML", "Embedding768", proto_embedding_bf16(GetEmbedding768(), proto_buf), proto_buf.data());
+  record("ML", "Embedding768",
+         proto_embedding_bf16(GetEmbedding768(), proto_buf), proto_buf.data(),
+         msgpack_embedding_bf16(GetEmbedding768(), msgpack_buf), msgpack_buf.data());
   bebop_embedding_bf16(GetEmbedding1536());
-  record("ML", "Embedding1536", proto_embedding_bf16(GetEmbedding1536(), proto_buf), proto_buf.data());
+  record("ML", "Embedding1536",
+         proto_embedding_bf16(GetEmbedding1536(), proto_buf), proto_buf.data(),
+         msgpack_embedding_bf16(GetEmbedding1536(), msgpack_buf), msgpack_buf.data());
   bebop_tensor_shard(GetTensorShardSmall());
-  record("ML", "TensorShardSmall", proto_tensor_shard(GetTensorShardSmall(), proto_buf), proto_buf.data());
+  record("ML", "TensorShardSmall",
+         proto_tensor_shard(GetTensorShardSmall(), proto_buf), proto_buf.data(),
+         msgpack_tensor_shard(GetTensorShardSmall(), msgpack_buf), msgpack_buf.data());
   bebop_tensor_shard(GetTensorShardLarge());
-  record("ML", "TensorShardLarge", proto_tensor_shard(GetTensorShardLarge(), proto_buf), proto_buf.data());
+  record("ML", "TensorShardLarge",
+         proto_tensor_shard(GetTensorShardLarge(), proto_buf), proto_buf.data(),
+         msgpack_tensor_shard(GetTensorShardLarge(), msgpack_buf), msgpack_buf.data());
 
   // Output JSON
   printf("{\n");
@@ -347,19 +614,21 @@ int main()
   for (size_t i = 0; i < g_sizes.size(); i++) {
     const auto& s = g_sizes[i];
     printf("    {\"category\": \"%s\", \"name\": \"%s\", "
-           "\"bebop\": %zu, \"protobuf\": %zu, "
+           "\"protobuf\": %zu, \"msgpack\": %zu, \"bebop\": %zu, "
            "\"bebop_compressed\": %zu, \"bebop_compressor\": \"%s\", "
-           "\"protobuf_compressed\": %zu, \"protobuf_compressor\": \"%s\"}%s\n",
+           "\"protobuf_compressed\": %zu, \"protobuf_compressor\": \"%s\", "
+           "\"msgpack_compressed\": %zu, \"msgpack_compressor\": \"%s\"}%s\n",
            s.category, s.name,
-           s.bebop_size, s.protobuf_size,
+           s.protobuf_size, s.msgpack_size, s.bebop_size,
            s.bebop_compressed_size, s.bebop_compressor,
            s.protobuf_compressed_size, s.protobuf_compressor,
+           s.msgpack_compressed_size, s.msgpack_compressor,
            i < g_sizes.size() - 1 ? "," : "");
   }
   printf("  ]\n");
   printf("}\n");
 #else
-  fprintf(stderr, "Error: Protobuf support not compiled in. Build with -DBENCH_PROTOBUF=ON\n");
+  fprintf(stderr, "Error: Build with -DBENCH_PROTOBUF=ON -DBENCH_MSGPACK=ON\n");
   return 1;
 #endif
 
