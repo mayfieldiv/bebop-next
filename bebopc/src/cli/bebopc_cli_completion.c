@@ -1,5 +1,10 @@
 #include "bebopc_cli_completion.h"
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4127)
+#endif
+
 static void _generate_bash(FILE* out)
 {
   fprintf(out,
@@ -275,3 +280,7 @@ void cli_generate_completion(cli_shell_t shell, FILE* out)
       break;
   }
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
