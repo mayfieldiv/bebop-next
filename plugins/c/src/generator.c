@@ -346,7 +346,7 @@ static uint32_t fnv1a(const char* s)
 
 static void type_set_init(gen_type_set_t* set)
 {
-  memset(set->fqns, 0, sizeof(set->fqns));
+  memset((void*)set->fqns, 0, sizeof(set->fqns));
   memset(set->hashes, 0, sizeof(set->hashes));
   set->count = 0;
 }

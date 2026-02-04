@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 
 file(READ "${CMAKE_SOURCE_DIR}/VERSION" BEBOP_VERSION)
 string(STRIP "${BEBOP_VERSION}" BEBOP_VERSION)
+string(REGEX REPLACE "[\r\n]+" "" BEBOP_VERSION "${BEBOP_VERSION}")
 
 project(bebop-vnext
     VERSION ${BEBOP_VERSION}
@@ -80,13 +81,13 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         add_link_options(-fsanitize=address,undefined)
     endif()
 elseif(MSVC)
-    add_compile_options(/W4 /WX /utf-8)
+    add_compile_options(/W4 /WX /utf-8 /FS)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
-    add_compile_options($<$<COMPILE_LANGUAGE:C>:/experimental:c11atomics>)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /std:c11 /experimental:c11atomics")
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
         add_compile_options(/O2)
     else()
-        add_compile_options(/Od /Zi /fsanitize=address)
+        add_compile_options(/Od /Z7 /fsanitize=address)
     endif()
 endif()
 

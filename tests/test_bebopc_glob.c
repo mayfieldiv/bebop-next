@@ -213,7 +213,11 @@ void test_glob_fixture_valid_only(void)
   TEST_ASSERT_TRUE(result->count > 0);
 
   for (size_t i = 0; i < result->count; i++) {
+#ifdef _WIN32
+    TEST_ASSERT_TRUE(_contains(result->matches[i].path, "valid\\"));
+#else
     TEST_ASSERT_TRUE(_contains(result->matches[i].path, "valid/"));
+#endif
     TEST_ASSERT_TRUE(_ends_with(result->matches[i].path, ".bop"));
   }
 

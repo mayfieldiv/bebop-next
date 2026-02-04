@@ -2832,7 +2832,7 @@ bool Bebop_Map_Del(Bebop_Map* m, const void* key)
   }
 }
 
-inline void Bebop_Map_Clear(Bebop_Map* m)
+void Bebop_Map_Clear(Bebop_Map* m)
 {
   if (m && m->ctrl) {
     memset(m->ctrl, CTRL_EMPTY, m->capacity);

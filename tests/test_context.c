@@ -97,6 +97,10 @@ typedef struct {
   size_t total_bytes;
 } alloc_tracker_t;
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4702) // unreachable code
+#endif
 static void* tracking_alloc(void* ptr, size_t old_size, size_t new_size, void* user_ctx)
 {
   alloc_tracker_t* tracker = (alloc_tracker_t*)user_ctx;
@@ -114,7 +118,7 @@ static void* tracking_alloc(void* ptr, size_t old_size, size_t new_size, void* u
       }
     }
     TEST_FAIL_MESSAGE("free called with untracked pointer");
-    return NULL;
+    BEBOP_UNREACHABLE();
   }
 
   // Malloc case
@@ -144,8 +148,11 @@ static void* tracking_alloc(void* ptr, size_t old_size, size_t new_size, void* u
     }
   }
   TEST_FAIL_MESSAGE("realloc called with untracked pointer");
-  return NULL;
+  BEBOP_UNREACHABLE();
 }
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 void test_context_custom_allocator(void)
 {

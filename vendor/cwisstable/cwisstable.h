@@ -426,9 +426,27 @@ typedef struct {
 
 /// Computes a double-width multiplication operation.
 static inline CWISS_U128 CWISS_Mul128(uint64_t a, uint64_t b) {
-#if CWISS_IS_MSVC
+#if CWISS_IS_MSVC && defined(_M_X64)
   CWISS_U128 result;
   result.lo = _umul128(a, b, &result.hi);
+  return result;
+#elif CWISS_IS_MSVC && defined(_M_ARM64)
+  CWISS_U128 result;
+  result.lo = a * b;
+  result.hi = __umulh(a, b);
+  return result;
+#elif CWISS_IS_MSVC
+  // 32-bit MSVC fallback
+  CWISS_U128 result;
+  uint64_t a_lo = (uint32_t)a, a_hi = a >> 32;
+  uint64_t b_lo = (uint32_t)b, b_hi = b >> 32;
+  uint64_t p0 = a_lo * b_lo;
+  uint64_t p1 = a_lo * b_hi;
+  uint64_t p2 = a_hi * b_lo;
+  uint64_t p3 = a_hi * b_hi;
+  uint64_t carry = ((p0 >> 32) + (uint32_t)p1 + (uint32_t)p2) >> 32;
+  result.lo = a * b;
+  result.hi = p3 + (p1 >> 32) + (p2 >> 32) + carry;
   return result;
 #else
   __uint128_t p = a;

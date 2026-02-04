@@ -110,6 +110,22 @@ void test_file_is_file(void)
 
 void test_path_join(void)
 {
+#ifdef _WIN32
+  char* p1 = bebopc_path_join("C:\\foo", "bar");
+  TEST_ASSERT_NOT_NULL(p1);
+  TEST_ASSERT_EQUAL_STRING("C:\\foo\\bar", p1);
+  free(p1);
+
+  char* p2 = bebopc_path_join("C:\\foo\\", "bar");
+  TEST_ASSERT_NOT_NULL(p2);
+  TEST_ASSERT_EQUAL_STRING("C:\\foo\\bar", p2);
+  free(p2);
+
+  char* p3 = bebopc_path_join(".", "file.txt");
+  TEST_ASSERT_NOT_NULL(p3);
+  TEST_ASSERT_EQUAL_STRING(".\\file.txt", p3);
+  free(p3);
+#else
   char* p1 = bebopc_path_join("/foo", "bar");
   TEST_ASSERT_NOT_NULL(p1);
   TEST_ASSERT_EQUAL_STRING("/foo/bar", p1);
@@ -124,6 +140,7 @@ void test_path_join(void)
   TEST_ASSERT_NOT_NULL(p3);
   TEST_ASSERT_EQUAL_STRING("./file.txt", p3);
   free(p3);
+#endif
 }
 
 void test_path_dirname(void)

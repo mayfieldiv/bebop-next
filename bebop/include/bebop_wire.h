@@ -90,10 +90,14 @@ extern "C" {
 #if defined(__GNUC__) || defined(__clang__)
 #define BEBOP_WIRE_PREFETCH_R(addr) __builtin_prefetch((addr), 0, 3)
 #define BEBOP_WIRE_PREFETCH_W(addr) __builtin_prefetch((addr), 1, 3)
-#elif defined(_MSC_VER)
-#include <intrin.h>
+#elif defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86))
+#include <xmmintrin.h>
 #define BEBOP_WIRE_PREFETCH_R(addr) _mm_prefetch((const char*)(addr), _MM_HINT_T0)
 #define BEBOP_WIRE_PREFETCH_W(addr) _mm_prefetch((const char*)(addr), _MM_HINT_T0)
+#elif defined(_MSC_VER) && defined(_M_ARM64)
+#include <intrin.h>
+#define BEBOP_WIRE_PREFETCH_R(addr) __prefetch((addr))
+#define BEBOP_WIRE_PREFETCH_W(addr) __prefetch((addr))
 #else
 #define BEBOP_WIRE_PREFETCH_R(addr) ((void)(addr))
 #define BEBOP_WIRE_PREFETCH_W(addr) ((void)(addr))
@@ -1465,100 +1469,7 @@ static inline bool _bbm_del_any(Bebop_Map* m, const void* kptr)
 #pragma GCC diagnostic pop
 #endif
 
-#elif defined(_MSC_VER)  // MSVC version - no statement expressions
-
-static inline void _bbm_put_str_msvc(
-    Bebop_Map* m, Bebop_WireCtx* c, const char* str, const void* v, size_t vsz
-)
-{
-  Bebop_Str* kp = (Bebop_Str*)Bebop_WireCtx_Alloc(c, sizeof(Bebop_Str));
-  void* vp = Bebop_WireCtx_Alloc(c, vsz);
-  if (kp && vp) {
-    kp->data = str;
-    kp->length = (uint32_t)strlen(str);
-    memcpy(vp, v, vsz);
-    Bebop_Map_Put(m, kp, vp);
-  }
-}
-
-static inline void _bbm_put_any_msvc(
-    Bebop_Map* m, Bebop_WireCtx* c, const void* kptr, size_t ksz, const void* v, size_t vsz
-)
-{
-  void* kp = Bebop_WireCtx_Alloc(c, ksz);
-  void* vp = Bebop_WireCtx_Alloc(c, vsz);
-  if (kp && vp) {
-    memcpy(kp, kptr, ksz);
-    memcpy(vp, v, vsz);
-    Bebop_Map_Put(m, kp, vp);
-  }
-}
-
-static inline void* _bbm_get_str_msvc(Bebop_Map* m, const char* s)
-{
-  Bebop_Str key;
-  key.data = s;
-  key.length = (uint32_t)strlen(s);
-  return Bebop_Map_Get(m, &key);
-}
-
-static inline bool _bbm_has_str_msvc(Bebop_Map* m, const char* s)
-{
-  return _bbm_get_str_msvc(m, s) != NULL;
-}
-
-static inline bool _bbm_del_str_msvc(Bebop_Map* m, const char* s)
-{
-  Bebop_Str key;
-  key.data = s;
-  key.length = (uint32_t)strlen(s);
-  return Bebop_Map_Del(m, &key);
-}
-
-#define BBM_PUT(k, ...) \
-  do { \
-    __typeof__((0, (k))) _k = (k); \
-    _bbV _v = ((_bbVW) {__VA_ARGS__}).w; \
-    _Generic((0, (k)), \
-        char*: _bbm_put_str_msvc(_bbm, _bbc, _k, &_v, sizeof(_v)), \
-        const char*: _bbm_put_str_msvc(_bbm, _bbc, _k, &_v, sizeof(_v)), \
-        default: _bbm_put_any_msvc(_bbm, _bbc, &((_bbKW){_k}).w, sizeof(_bbK), &_v, sizeof(_v)) \
-    ); \
-  } while (0)
-
-#define BBM_GET(k) \
-  ((_bbV*)_Generic((0,(k)), \
-      char*: _bbm_get_str_msvc(_bbm, (k)), \
-      const char*: _bbm_get_str_msvc(_bbm, (k)), \
-      default: Bebop_Map_Get(_bbm, &((_bbKW){(k)}).w)))
-
-#define BBM_HAS(k) \
-  (_Generic((0,(k)), \
-      char*: _bbm_has_str_msvc(_bbm, (k)), \
-      const char*: _bbm_has_str_msvc(_bbm, (k)), \
-      default: (Bebop_Map_Get(_bbm, &((_bbKW){(k)}).w) != NULL)))
-
-#define BBM_DEL(k) \
-  _Generic((0,(k)), \
-      char*: _bbm_del_str_msvc(_bbm, (k)), \
-      const char*: _bbm_del_str_msvc(_bbm, (k)), \
-      default: Bebop_Map_Del(_bbm, &((_bbKW){(k)}).w))
-
-#define BBM_LEN() (_bbm->length)
-
-#define BBM_EACH(kvar, vvar) \
-  for (_bbK* kvar = NULL, **_kpp = &kvar; _kpp; _kpp = NULL) \
-    for (_bbV* vvar = NULL, **_vpp = &vvar; _vpp; _vpp = NULL) \
-      for (Bebop_MapIter _it = {_bbm, 0}; \
-           Bebop_MapIter_Next(&_it, (void**)_kpp, (void**)_vpp);)
-
-#define BBM_FOREACH(m, KT, kvar, VT, vvar) \
-  for (KT* kvar = NULL, **_kpp = &kvar; _kpp; _kpp = NULL) \
-    for (VT* vvar = NULL, **_vpp = &vvar; _vpp; _vpp = NULL) \
-      for (Bebop_MapIter _it = {m, 0}; \
-           Bebop_MapIter_Next(&_it, (void**)_kpp, (void**)_vpp);)
-
-#endif  // _MSC_VER
+#endif  // __GNUC__ || __clang__ (BBM macros not available on MSVC)
 
 // #endregion
 

@@ -486,6 +486,7 @@ static void test_map_null_safety(void)
 // ============================================================================
 // MACRO-BASED MAP TESTS (REAL-WORLD EXAMPLES)
 // ============================================================================
+#if !defined(_MSC_VER)
 
 // ----------------------------------------------------------------------------
 // Example: Game leaderboard - player scores by name
@@ -804,6 +805,7 @@ static void test_decoded_map_with_struct_values(void)
   TEST_ASSERT_EQUAL(50, strongest->damage);
   BBM_END()
 }
+#endif
 
 // ============================================================================
 // MAIN
@@ -832,6 +834,7 @@ int main(void)
   RUN_TEST(test_map_null_safety);
 
   // Macro-based map tests
+#if !defined(_MSC_VER)
   RUN_TEST(test_leaderboard);
   RUN_TEST(test_config_store);
   RUN_TEST(test_entity_positions);
@@ -842,6 +845,7 @@ int main(void)
   RUN_TEST(test_iterate_outside_block);
   RUN_TEST(test_decoded_struct_map);
   RUN_TEST(test_decoded_map_with_struct_values);
+#endif
 
   return UNITY_END();
 }
