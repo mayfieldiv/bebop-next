@@ -57,10 +57,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bebopc-${{ inputs.os }}-${{ inputs.arch }}
-          path: |
-            build/bin
-            build/lib
-            build/include
-            build/share
+          path: build
           if-no-files-found: error
           retention-days: 7
