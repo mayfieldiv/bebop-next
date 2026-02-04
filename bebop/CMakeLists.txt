@@ -29,6 +29,10 @@ if(WIN32)
     target_compile_definitions(bebop PRIVATE BEBOP_BUILDING)
 endif()
 
+if(MSVC)
+    target_compile_options(bebop PRIVATE /std:c11 /experimental:c11atomics)
+endif()
+
 # IDE support for unity build (clangd)
 if(CMAKE_EXPORT_COMPILE_COMMANDS AND CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     set(BEBOP_IMPL_FILES

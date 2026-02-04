@@ -1,4 +1,3 @@
-#include <sys/syslimits.h>
 #if defined(__linux__) || defined(__ANDROID__)
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE

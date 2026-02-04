@@ -38,6 +38,9 @@ function(bebop_add_internal_test name)
         ${CMAKE_SOURCE_DIR}/vendor/cwisstable
         ${CMAKE_SOURCE_DIR}/vendor/lua
     )
+    if(MSVC)
+        target_compile_options(test_${name} PRIVATE /std:c11 /experimental:c11atomics)
+    endif()
     add_test(NAME ${name} COMMAND test_${name})
 endfunction()
 
