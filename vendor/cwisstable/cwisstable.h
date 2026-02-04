@@ -38,6 +38,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(_MSC_VER)
+#include <intrin.h>
+#endif
 
 /// cwisstable/internal/base.h /////////////////////////////////////////////////
 /// Feature detection and basic helper macros.
@@ -423,10 +426,15 @@ typedef struct {
 
 /// Computes a double-width multiplication operation.
 static inline CWISS_U128 CWISS_Mul128(uint64_t a, uint64_t b) {
-  // TODO: de-intrinsics-ize this.
+#if CWISS_IS_MSVC
+  CWISS_U128 result;
+  result.lo = _umul128(a, b, &result.hi);
+  return result;
+#else
   __uint128_t p = a;
   p *= b;
   return (CWISS_U128){(uint64_t)p, (uint64_t)(p >> 64)};
+#endif
 }
 
 /// Loads an unaligned u32.

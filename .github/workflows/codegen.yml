@@ -28,7 +28,9 @@ jobs:
       - name: Generate code
         run: |
           mkdir -p generated
-          bin/bebopc build tests/fixtures/valid/codegen_base.bop tests/fixtures/valid/codegen_all.bop --${{ inputs.generator }}_out=generated
+          bin/bebopc build tests/fixtures/valid/codegen_base.bop tests/fixtures/valid/codegen_all.bop \
+            -I tests/fixtures/valid \
+            --${{ inputs.generator }}_out=generated
 
       - name: Compile (C)
         if: inputs.generator == 'c'

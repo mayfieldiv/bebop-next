@@ -26,43 +26,37 @@ jobs:
 
       - name: Configure (macOS)
         if: runner.os == 'macOS'
-        run: cmake -B build -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCMAKE_OSX_ARCHITECTURES=${{ inputs.arch == 'x64' && 'x86_64' || inputs.arch }}
+        run: cmake -B build/cmake -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCMAKE_OSX_ARCHITECTURES=${{ inputs.arch == 'x64' && 'x86_64' || inputs.arch }}
 
       - name: Configure (Linux)
         if: runner.os == 'Linux'
-        run: cmake -B build -DCMAKE_BUILD_TYPE=${{ inputs.build-type }}
+        run: cmake -B build/cmake -DCMAKE_BUILD_TYPE=${{ inputs.build-type }}
 
       - name: Configure (Windows x64)
         if: runner.os == 'Windows' && inputs.arch == 'x64'
-        run: cmake -B build -G "Visual Studio 17 2022" -A x64
+        run: cmake -B build/cmake -G "Visual Studio 17 2022" -A x64
 
       - name: Configure (Windows ARM64)
         if: runner.os == 'Windows' && inputs.arch == 'arm64'
-        run: cmake -B build -G "Visual Studio 17 2022" -A ARM64
+        run: cmake -B build/cmake -G "Visual Studio 17 2022" -A ARM64
 
       - name: Build (Unix)
         if: runner.os != 'Windows'
-        run: cmake --build build -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
+        run: cmake --build build/cmake -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
 
       - name: Build (Windows)
         if: runner.os == 'Windows'
-        run: cmake --build build --config ${{ inputs.build-type }} --parallel
+        run: cmake --build build/cmake --config ${{ inputs.build-type }} --parallel
 
       - name: Test
         if: runner.os != 'macOS' || inputs.arch == 'x64' || runner.arch == 'ARM64'
-        working-directory: build
+        working-directory: build/cmake
         run: ctest --output-on-failure -C ${{ inputs.build-type }}
 
       - name: Upload bebopc
         uses: actions/upload-artifact@v4
         with:
           name: bebopc-${{ inputs.os }}-${{ inputs.arch }}
-          path: |
-            build/bebopc/bebopc
-            build/bebopc/bebopc-gen-c
-            build/bebopc/bebopc.exe
-            build/bebopc/bebopc-gen-c.exe
-            build/bebopc/${{ inputs.build-type }}/bebopc.exe
-            build/bebopc/${{ inputs.build-type }}/bebopc-gen-c.exe
+          path: build/bin/*
           if-no-files-found: error
           retention-days: 7

@@ -1,41 +1,33 @@
 cmake_minimum_required(VERSION 3.25)
+
+file(READ "${CMAKE_SOURCE_DIR}/VERSION" BEBOP_VERSION)
+string(STRIP "${BEBOP_VERSION}" BEBOP_VERSION)
+
 project(bebop-vnext
-    VERSION 0.1.0
+    VERSION ${BEBOP_VERSION}
     DESCRIPTION "Bebop schema compiler"
     LANGUAGES C CXX
 )
 
 include(GNUInstallDirs)
 
+set(BEBOP_OUTPUT_DIR ${CMAKE_BINARY_DIR}/..)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BEBOP_OUTPUT_DIR}/bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${BEBOP_OUTPUT_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${BEBOP_OUTPUT_DIR}/lib)
+
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Version can be set externally via -DBEBOP_VERSION_*, otherwise detect from git/project
 if(NOT DEFINED BEBOP_VERSION_MAJOR)
-    find_package(Git QUIET)
-    if(GIT_FOUND)
-        execute_process(
-            COMMAND ${GIT_EXECUTABLE} describe --tags --match "v*" --abbrev=0
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-            OUTPUT_VARIABLE GIT_TAG
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            ERROR_QUIET
-            RESULT_VARIABLE GIT_TAG_RESULT
-        )
-        if(GIT_TAG_RESULT EQUAL 0 AND GIT_TAG MATCHES "^v([0-9]+)\\.([0-9]+)\\.([0-9]+)(-(.+))?$")
-            set(BEBOP_VERSION_MAJOR ${CMAKE_MATCH_1})
-            set(BEBOP_VERSION_MINOR ${CMAKE_MATCH_2})
-            set(BEBOP_VERSION_PATCH ${CMAKE_MATCH_3})
-            set(BEBOP_VERSION_SUFFIX "${CMAKE_MATCH_5}")
-        endif()
-    endif()
-
-    if(NOT DEFINED BEBOP_VERSION_MAJOR)
-        set(BEBOP_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
-        set(BEBOP_VERSION_MINOR ${PROJECT_VERSION_MINOR})
-        set(BEBOP_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+    set(BEBOP_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+    set(BEBOP_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+    set(BEBOP_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+    if(BEBOP_VERSION MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+-(.+)$")
+        set(BEBOP_VERSION_SUFFIX "${CMAKE_MATCH_1}")
+    else()
         set(BEBOP_VERSION_SUFFIX "")
     endif()
 endif()

@@ -552,7 +552,7 @@ service EchoService {
     SetValue(AllScalars): EmptyMessage;
 }
 
-service StreamService : EchoService {
+service StreamService with EchoService {
     Watch(base.SimpleMessage): stream base.Point;
     Upload(stream AllScalars): base.SimpleMessage;
     Chat(stream base.SimpleMessage): stream base.SimpleMessage;

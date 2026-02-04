@@ -7,11 +7,25 @@ Rewrite of the Bebop compiler in C. New schema language and wire format for the 
 Requires CMake 3.25+ and a C11/C++20 compiler.
 
 ```sh
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
+make            # Release build
+make debug      # Debug build with sanitizers
+make test       # Run tests
+make publish    # Create release archive
+make clean      # Clean build artifacts
 ```
 
-The compiler will be at `build/bebopc/bebopc`.
+Output structure:
+```
+build/
+├── bin/        # bebopc, bebopc-gen-*
+├── lib/        # libbebop.a
+├── include/    # bebop.h, bebop_wire.h
+└── share/      # standard library schemas
+```
+
+For development/testing:
+- Generated C code: just include `bebop_wire.h` and link `bebop_wire.c`
+- Embedding the compiler: include `bebop.h` and link `bebop.c` (unity build)
 
 ## What is Bebop?
 

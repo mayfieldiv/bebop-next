@@ -35,13 +35,4 @@ elseif(UNIX)
     target_link_libraries(bebopc PRIVATE m)
 endif()
 
-# Copy schemas to build directory next to bebopc for development
-add_custom_command(TARGET bebopc POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory
-        $<TARGET_FILE_DIR:bebopc>/include
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/bebop/schemas/bebop
-        $<TARGET_FILE_DIR:bebopc>/include/bebop
-)
-
 install(TARGETS bebopc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

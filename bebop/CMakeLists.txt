@@ -62,9 +62,15 @@ if(CMAKE_EXPORT_COMPILE_COMMANDS AND CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 
 add_custom_command(TARGET bebop POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${BEBOP_OUTPUT_DIR}/include
+    COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/bebop.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/bebop_wire.h
+        ${BEBOP_OUTPUT_DIR}/include/
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${BEBOP_OUTPUT_DIR}/share/bebop
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/schemas/bebop
-        ${CMAKE_BINARY_DIR}/schemas/bebop
+        ${BEBOP_OUTPUT_DIR}/share/bebop
 )
 
 install(TARGETS bebop
