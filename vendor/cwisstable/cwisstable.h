@@ -2536,6 +2536,7 @@ static inline void CWISS_RawTable_EraseMetaOnly(const CWISS_Policy* policy,
 /// `self_`.
 static inline void CWISS_RawTable_ResetGrowthLeft(const CWISS_Policy* policy,
                                                   CWISS_RawTable* self) {
+  (void)policy;
   self->growth_left_ = CWISS_CapacityToGrowth(self->capacity_) - self->size_;
 }
 
@@ -2792,6 +2793,7 @@ static inline void CWISS_RawTable_rehash_and_grow_if_necessary(
 /// key.
 static inline void CWISS_RawTable_PrefetchHeapBlock(
     const CWISS_Policy* policy, const CWISS_RawTable* self) {
+  (void)policy;
   CWISS_PREFETCH(self->ctrl_, 1);
 }
 
@@ -2803,13 +2805,16 @@ static inline void CWISS_RawTable_PrefetchHeapBlock(
 static inline void CWISS_RawTable_Prefetch(const CWISS_Policy* policy,
                                            const CWISS_RawTable* self,
                                            const void* key) {
-  (void)key;
 #if CWISS_HAVE_PREFETCH
   CWISS_RawTable_PrefetchHeapBlock(policy, self);
   CWISS_ProbeSeq seq = CWISS_ProbeSeq_Start(self->ctrl_, policy->key->hash(key),
                                             self->capacity_);
   CWISS_PREFETCH(self->ctrl_ + seq.offset_, 3);
   CWISS_PREFETCH(self->ctrl_ + seq.offset_ * policy->slot->size, 3);
+#else
+  (void)policy;
+  (void)self;
+  (void)key;
 #endif
 }
 
@@ -2949,12 +2954,14 @@ static inline void CWISS_RawTable_destroy(const CWISS_Policy* policy,
 /// Returns whether the table is empty.
 static inline bool CWISS_RawTable_empty(const CWISS_Policy* policy,
                                         const CWISS_RawTable* self) {
+  (void)policy;
   return !self->size_;
 }
 
 /// Returns the number of elements in the table.
 static inline size_t CWISS_RawTable_size(const CWISS_Policy* policy,
                                          const CWISS_RawTable* self) {
+  (void)policy;
   return self->size_;
 }
 
@@ -2962,6 +2969,7 @@ static inline size_t CWISS_RawTable_size(const CWISS_Policy* policy,
 /// of elements that would cause it to get resized.
 static inline size_t CWISS_RawTable_capacity(const CWISS_Policy* policy,
                                              const CWISS_RawTable* self) {
+  (void)policy;
   return self->capacity_;
 }
 

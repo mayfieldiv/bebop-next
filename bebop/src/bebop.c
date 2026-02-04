@@ -184,11 +184,17 @@ typedef struct {
 #define BEBOP_INITIAL_ARRAY_CAPACITY 16
 #define BEBOP_INITIAL_SMALL_CAPACITY 4
 
+#if defined(_MSC_VER)
+#define BEBOP_BUILTIN_UNREACHABLE() __assume(0)
+#else
+#define BEBOP_BUILTIN_UNREACHABLE() __builtin_unreachable()
+#endif
+
 #if defined(BEBOP_DISABLE_ASSERTS) || defined(NDEBUG)
 
 #define BEBOP_ASSERT(cond) ((void)0)
 #define BEBOP_ASSERT_MSG(cond, msg) ((void)0)
-#define BEBOP_UNREACHABLE() __builtin_unreachable()
+#define BEBOP_UNREACHABLE() BEBOP_BUILTIN_UNREACHABLE()
 
 #else
 
@@ -209,7 +215,7 @@ typedef struct {
 #define BEBOP_UNREACHABLE() \
   do { \
     bebop__assert_fail("unreachable", bebop__SRC_LOC); \
-    __builtin_unreachable(); \
+    BEBOP_BUILTIN_UNREACHABLE(); \
   } while (0)
 
 _Noreturn static inline void bebop__assert_fail(const char* cond, const bebop__src_loc_t loc)
@@ -286,6 +292,9 @@ static inline void bebop__cwiss_free(void* ptr, const size_t size, const size_t 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"
 #pragma GCC diagnostic ignored "-Wpedantic"
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4100 4127 4098)
 #endif
 
 CWISS_DECLARE_FLAT_MAP_POLICY(
@@ -319,6 +328,8 @@ CWISS_DECLARE_HASHMAP_WITH(bebop_idxmap, uint32_t, uint32_t, bebop_idxmap_kPolic
 #pragma clang diagnostic pop
 #elif defined(__GNUC__)
 #pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#pragma warning(pop)
 #endif
 
 typedef struct {

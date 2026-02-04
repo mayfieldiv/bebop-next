@@ -2603,8 +2603,8 @@ void* Bebop_WireCtx_Realloc(Bebop_WireCtx* context, void* ptr, size_t old_size, 
 #define BEBOP_MAP_LOAD_FACTOR 7  // 7/8 = 87.5%
 
 // Control byte values
-#define CTRL_EMPTY ((int8_t)0x80)  // 0b10000000 - slot never used
-#define CTRL_DELETED ((int8_t)0xFE)  // 0b11111110 - tombstone
+#define CTRL_EMPTY ((int8_t)-128)  // 0b10000000 - slot never used
+#define CTRL_DELETED ((int8_t)-2)  // 0b11111110 - tombstone
 
 // Extract H1 (upper 57 bits) and H2 (lower 7 bits) from hash
 #define H1(hash) ((hash) >> 7)
