@@ -38,7 +38,7 @@ jobs:
       - name: Compile (C)
         if: inputs.generator == 'c'
         run: |
-          gcc -c -Wall -Wextra -Werror -pedantic -std=c23 \
+          gcc -c -Wall -Wextra -Werror -pedantic -std=c2x \
             -Wno-deprecated-declarations \
             -I dist/include \
             generated/*.c
