@@ -12,33 +12,33 @@ typedef struct {
   uint32_t trivia_capacity;
 
   bebop_error_t error;
-} _bebop_scanner_t;
+} bebop__scanner_t;
 
 typedef struct {
   const char* keyword;
   bebop_token_kind_t kind;
-} _bebop_keyword_t;
+} bebop__keyword_t;
 
-static const _bebop_keyword_t _bebop_keywords[] = {
+static const bebop__keyword_t bebop__keywords[] = {
 #define X(name, str) {str, BEBOP_TOKEN_##name},
     BEBOP_KEYWORDS(X)
 #undef X
 };
 
-#define BEBOP_KEYWORD_COUNT BEBOP_COUNTOF(_bebop_keywords)
+#define BEBOP_KEYWORD_COUNT BEBOP_COUNTOF(bebop__keywords)
 
-static bebop_token_kind_t _bebop_scan_lookup_keyword(const char* str, const size_t len)
+static bebop_token_kind_t bebop__scan_lookup_keyword(const char* str, const size_t len)
 {
   for (size_t i = 0; i < BEBOP_KEYWORD_COUNT; i++) {
-    const char* kw = _bebop_keywords[i].keyword;
+    const char* kw = bebop__keywords[i].keyword;
     if (bebop_streqn(kw, str, len)) {
-      return _bebop_keywords[i].kind;
+      return bebop__keywords[i].kind;
     }
   }
   return BEBOP_TOKEN_IDENTIFIER;
 }
 
-static inline char _bebop_scan_peek_char(const _bebop_scanner_t* s)
+static inline char bebop__scan_peek_char(const bebop__scanner_t* s)
 {
   if (s->pos >= s->source_len) {
     return '\0';
@@ -46,7 +46,7 @@ static inline char _bebop_scan_peek_char(const _bebop_scanner_t* s)
   return s->source[s->pos];
 }
 
-static inline char _bebop_scan_peek_char_at(const _bebop_scanner_t* s, const size_t offset)
+static inline char bebop__scan_peek_char_at(const bebop__scanner_t* s, const size_t offset)
 {
   if (s->pos + offset >= s->source_len) {
     return '\0';
@@ -54,7 +54,7 @@ static inline char _bebop_scan_peek_char_at(const _bebop_scanner_t* s, const siz
   return s->source[s->pos + offset];
 }
 
-static inline void _bebop_scan_advance(_bebop_scanner_t* s)
+static inline void bebop__scan_advance(bebop__scanner_t* s)
 {
   if (s->pos >= s->source_len) {
     return;
@@ -78,8 +78,8 @@ static inline void _bebop_scan_advance(_bebop_scanner_t* s)
   }
 }
 
-static inline bebop_span_t _bebop_scan_make_span(
-    const _bebop_scanner_t* s,
+static inline bebop_span_t bebop__scan_make_span(
+    const bebop__scanner_t* s,
     const size_t start_pos,
     const uint32_t start_line,
     const uint32_t start_col
@@ -97,8 +97,8 @@ static inline bebop_span_t _bebop_scan_make_span(
 
 #define BEBOP_TRIVIA_INITIAL_CAPACITY 8
 
-static void _bebop_scan_trivia_push(
-    _bebop_scanner_t* s, const bebop_trivia_kind_t kind, const bebop_span_t span
+static void bebop__scan_trivia_push(
+    bebop__scanner_t* s, const bebop_trivia_kind_t kind, const bebop_span_t span
 )
 {
   if (s->error != BEBOP_ERR_NONE) {
@@ -111,7 +111,7 @@ static void _bebop_scan_trivia_push(
     bebop_trivia_t* new_buf = bebop_arena_new(BEBOP_ARENA(s->ctx), bebop_trivia_t, new_cap);
     if (!new_buf) {
       s->error = BEBOP_ERR_OUT_OF_MEMORY;
-      _bebop_context_set_error(s->ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate trivia buffer");
+      bebop__context_set_error(s->ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate trivia buffer");
       return;
     }
     if (s->trivia_buf && s->trivia_count > 0) {
@@ -123,7 +123,7 @@ static void _bebop_scan_trivia_push(
   s->trivia_buf[s->trivia_count++] = (bebop_trivia_t) {.kind = kind, .span = span};
 }
 
-static bebop_trivia_list_t _bebop_scan_trivia_finalize(_bebop_scanner_t* s)
+static bebop_trivia_list_t bebop__scan_trivia_finalize(bebop__scanner_t* s)
 {
   bebop_trivia_list_t list = {0};
   if (s->error != BEBOP_ERR_NONE) {
@@ -134,7 +134,7 @@ static bebop_trivia_list_t _bebop_scan_trivia_finalize(_bebop_scanner_t* s)
     list.items = bebop_arena_new(BEBOP_ARENA(s->ctx), bebop_trivia_t, s->trivia_count);
     if (!list.items) {
       s->error = BEBOP_ERR_OUT_OF_MEMORY;
-      _bebop_context_set_error(s->ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate trivia list");
+      bebop__context_set_error(s->ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate trivia list");
       s->trivia_count = 0;
       return list;
     }
@@ -145,26 +145,26 @@ static bebop_trivia_list_t _bebop_scan_trivia_finalize(_bebop_scanner_t* s)
   return list;
 }
 
-static void _bebop_scan_skip_whitespace(_bebop_scanner_t* s)
+static void bebop__scan_skip_whitespace(bebop__scanner_t* s)
 {
   const size_t start = s->pos;
   const uint32_t start_line = s->line;
   const uint32_t start_col = s->col;
 
-  while (BEBOP_IS_WHITESPACE(_bebop_scan_peek_char(s))) {
-    _bebop_scan_advance(s);
+  while (BEBOP_IS_WHITESPACE(bebop__scan_peek_char(s))) {
+    bebop__scan_advance(s);
   }
 
   if (s->pos > start) {
-    _bebop_scan_trivia_push(
-        s, BEBOP_TRIVIA_WHITESPACE, _bebop_scan_make_span(s, start, start_line, start_col)
+    bebop__scan_trivia_push(
+        s, BEBOP_TRIVIA_WHITESPACE, bebop__scan_make_span(s, start, start_line, start_col)
     );
   }
 }
 
-static bool _bebop_scan_skip_newline(_bebop_scanner_t* s)
+static bool bebop__scan_skip_newline(bebop__scanner_t* s)
 {
-  if (!BEBOP_IS_NEWLINE(_bebop_scan_peek_char(s))) {
+  if (!BEBOP_IS_NEWLINE(bebop__scan_peek_char(s))) {
     return false;
   }
 
@@ -172,17 +172,17 @@ static bool _bebop_scan_skip_newline(_bebop_scanner_t* s)
   const uint32_t start_line = s->line;
   const uint32_t start_col = s->col;
 
-  _bebop_scan_advance(s);
+  bebop__scan_advance(s);
 
-  _bebop_scan_trivia_push(
-      s, BEBOP_TRIVIA_NEWLINE, _bebop_scan_make_span(s, start, start_line, start_col)
+  bebop__scan_trivia_push(
+      s, BEBOP_TRIVIA_NEWLINE, bebop__scan_make_span(s, start, start_line, start_col)
   );
   return true;
 }
 
-static bool _bebop_scan_skip_line_comment(_bebop_scanner_t* s)
+static bool bebop__scan_skip_line_comment(bebop__scanner_t* s)
 {
-  if (_bebop_scan_peek_char(s) != '/' || _bebop_scan_peek_char_at(s, 1) != '/') {
+  if (bebop__scan_peek_char(s) != '/' || bebop__scan_peek_char_at(s, 1) != '/') {
     return false;
   }
 
@@ -190,23 +190,23 @@ static bool _bebop_scan_skip_line_comment(_bebop_scanner_t* s)
   const uint32_t start_line = s->line;
   const uint32_t start_col = s->col;
 
-  const bool is_doc = _bebop_scan_peek_char_at(s, 2) == '/';
+  const bool is_doc = bebop__scan_peek_char_at(s, 2) == '/';
 
-  _bebop_scan_advance(s);
-  _bebop_scan_advance(s);
+  bebop__scan_advance(s);
+  bebop__scan_advance(s);
 
-  while (_bebop_scan_peek_char(s) != '\0' && !BEBOP_IS_NEWLINE(_bebop_scan_peek_char(s))) {
-    _bebop_scan_advance(s);
+  while (bebop__scan_peek_char(s) != '\0' && !BEBOP_IS_NEWLINE(bebop__scan_peek_char(s))) {
+    bebop__scan_advance(s);
   }
 
   const bebop_trivia_kind_t kind = is_doc ? BEBOP_TRIVIA_DOC_COMMENT : BEBOP_TRIVIA_LINE_COMMENT;
-  _bebop_scan_trivia_push(s, kind, _bebop_scan_make_span(s, start, start_line, start_col));
+  bebop__scan_trivia_push(s, kind, bebop__scan_make_span(s, start, start_line, start_col));
   return true;
 }
 
-static bool _bebop_scan_skip_block_comment(_bebop_scanner_t* s)
+static bool bebop__scan_skip_block_comment(bebop__scanner_t* s)
 {
-  if (_bebop_scan_peek_char(s) != '/' || _bebop_scan_peek_char_at(s, 1) != '*') {
+  if (bebop__scan_peek_char(s) != '/' || bebop__scan_peek_char_at(s, 1) != '*') {
     return false;
   }
 
@@ -215,26 +215,26 @@ static bool _bebop_scan_skip_block_comment(_bebop_scanner_t* s)
   const uint32_t start_col = s->col;
 
   const bool is_doc =
-      _bebop_scan_peek_char_at(s, 2) == '*' && _bebop_scan_peek_char_at(s, 3) != '/';
+      bebop__scan_peek_char_at(s, 2) == '*' && bebop__scan_peek_char_at(s, 3) != '/';
 
-  _bebop_scan_advance(s);
-  _bebop_scan_advance(s);
+  bebop__scan_advance(s);
+  bebop__scan_advance(s);
 
-  while (_bebop_scan_peek_char(s) != '\0') {
-    if (_bebop_scan_peek_char(s) == '*' && _bebop_scan_peek_char_at(s, 1) == '/') {
-      _bebop_scan_advance(s);
-      _bebop_scan_advance(s);
+  while (bebop__scan_peek_char(s) != '\0') {
+    if (bebop__scan_peek_char(s) == '*' && bebop__scan_peek_char_at(s, 1) == '/') {
+      bebop__scan_advance(s);
+      bebop__scan_advance(s);
       goto done;
     }
-    _bebop_scan_advance(s);
+    bebop__scan_advance(s);
   }
 
   if (s->schema) {
-    _bebop_schema_add_diagnostic(
+    bebop__schema_add_diagnostic(
         s->schema,
-        (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR,
+        (bebop__diag_loc_t) {BEBOP_DIAG_ERROR,
                              BEBOP_DIAG_UNTERMINATED_COMMENT,
-                             _bebop_scan_make_span(s, start, start_line, start_col)},
+                             bebop__scan_make_span(s, start, start_line, start_col)},
         "Unterminated block comment",
         NULL
     );
@@ -242,22 +242,22 @@ static bool _bebop_scan_skip_block_comment(_bebop_scanner_t* s)
 
 done:;
   const bebop_trivia_kind_t kind = is_doc ? BEBOP_TRIVIA_DOC_COMMENT : BEBOP_TRIVIA_BLOCK_COMMENT;
-  _bebop_scan_trivia_push(s, kind, _bebop_scan_make_span(s, start, start_line, start_col));
+  bebop__scan_trivia_push(s, kind, bebop__scan_make_span(s, start, start_line, start_col));
   return true;
 }
 
-static void _bebop_scan_skip_leading_trivia(_bebop_scanner_t* s)
+static void bebop__scan_skip_leading_trivia(bebop__scanner_t* s)
 {
   for (;;) {
-    _bebop_scan_skip_whitespace(s);
+    bebop__scan_skip_whitespace(s);
 
-    if (_bebop_scan_skip_newline(s)) {
+    if (bebop__scan_skip_newline(s)) {
       continue;
     }
-    if (_bebop_scan_skip_line_comment(s)) {
+    if (bebop__scan_skip_line_comment(s)) {
       continue;
     }
-    if (_bebop_scan_skip_block_comment(s)) {
+    if (bebop__scan_skip_block_comment(s)) {
       continue;
     }
 
@@ -265,86 +265,86 @@ static void _bebop_scan_skip_leading_trivia(_bebop_scanner_t* s)
   }
 }
 
-static bebop_trivia_list_t _bebop_scan_collect_trailing_trivia(_bebop_scanner_t* s)
+static bebop_trivia_list_t bebop__scan_collect_trailing_trivia(bebop__scanner_t* s)
 {
   s->trivia_count = 0;
 
   for (;;) {
-    _bebop_scan_skip_whitespace(s);
+    bebop__scan_skip_whitespace(s);
 
-    if (_bebop_scan_skip_line_comment(s)) {
+    if (bebop__scan_skip_line_comment(s)) {
       continue;
     }
-    if (_bebop_scan_skip_block_comment(s)) {
+    if (bebop__scan_skip_block_comment(s)) {
       continue;
     }
 
-    if (_bebop_scan_skip_newline(s)) {
+    if (bebop__scan_skip_newline(s)) {
       break;
     }
 
     break;
   }
 
-  return _bebop_scan_trivia_finalize(s);
+  return bebop__scan_trivia_finalize(s);
 }
 
-static bebop_token_t _bebop_scan_identifier(_bebop_scanner_t* s)
+static bebop_token_t bebop__scan_identifier(bebop__scanner_t* s)
 {
   const size_t start = s->pos;
   const uint32_t start_line = s->line;
   const uint32_t start_col = s->col;
 
-  while (BEBOP_IS_IDENT_CHAR(_bebop_scan_peek_char(s))) {
-    _bebop_scan_advance(s);
+  while (BEBOP_IS_IDENT_CHAR(bebop__scan_peek_char(s))) {
+    bebop__scan_advance(s);
   }
 
   const size_t len = s->pos - start;
-  const bebop_token_kind_t kind = _bebop_scan_lookup_keyword(s->source + start, len);
+  const bebop_token_kind_t kind = bebop__scan_lookup_keyword(s->source + start, len);
 
   const bebop_token_t tok = {
       .kind = kind,
-      .span = _bebop_scan_make_span(s, start, start_line, start_col),
+      .span = bebop__scan_make_span(s, start, start_line, start_col),
       .lexeme = bebop_intern_n(BEBOP_INTERN(s->ctx), s->source + start, len),
   };
   return tok;
 }
 
-static bebop_token_t _bebop_scan_number(_bebop_scanner_t* s)
+static bebop_token_t bebop__scan_number(bebop__scanner_t* s)
 {
   const size_t start = s->pos;
   const uint32_t start_line = s->line;
   const uint32_t start_col = s->col;
 
-  while (BEBOP_IS_IDENT_CHAR(_bebop_scan_peek_char(s)) || _bebop_scan_peek_char(s) == '.'
-         || _bebop_scan_peek_char(s) == '-')
+  while (BEBOP_IS_IDENT_CHAR(bebop__scan_peek_char(s)) || bebop__scan_peek_char(s) == '.'
+         || bebop__scan_peek_char(s) == '-')
   {
-    if (_bebop_scan_peek_char(s) == '-') {
+    if (bebop__scan_peek_char(s) == '-') {
       const char prev = s->pos > 0 ? s->source[s->pos - 1] : '\0';
       if (prev != 'e' && prev != 'E') {
         break;
       }
     }
-    _bebop_scan_advance(s);
+    bebop__scan_advance(s);
   }
 
   const size_t len = s->pos - start;
 
   const bebop_token_t tok = {
       .kind = BEBOP_TOKEN_NUMBER,
-      .span = _bebop_scan_make_span(s, start, start_line, start_col),
+      .span = bebop__scan_make_span(s, start, start_line, start_col),
       .lexeme = bebop_intern_n(BEBOP_INTERN(s->ctx), s->source + start, len),
   };
   return tok;
 }
 
-static bool _bebop_scan_grow_buf(_bebop_scanner_t* s, char** buf, size_t* buf_cap, size_t buf_len)
+static bool bebop__scan_grow_buf(bebop__scanner_t* s, char** buf, size_t* buf_cap, size_t buf_len)
 {
   const size_t new_cap = *buf_cap == 0 ? 64 : *buf_cap * 2;
   char* new_buf = bebop_arena_new(BEBOP_ARENA(s->ctx), char, new_cap);
   if (!new_buf) {
     s->error = BEBOP_ERR_OUT_OF_MEMORY;
-    _bebop_context_set_error(s->ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate string buffer");
+    bebop__context_set_error(s->ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate string buffer");
     return false;
   }
   if (*buf && buf_len > 0) {
@@ -355,47 +355,47 @@ static bool _bebop_scan_grow_buf(_bebop_scanner_t* s, char** buf, size_t* buf_ca
   return true;
 }
 
-static bebop_token_t _bebop_scan_bytes(_bebop_scanner_t* s)
+static bebop_token_t bebop__scan_bytes(bebop__scanner_t* s)
 {
   const size_t start = s->pos;
   const uint32_t start_line = s->line;
   const uint32_t start_col = s->col;
 
-  _bebop_scan_advance(s);
+  bebop__scan_advance(s);
 
-  const char quote = _bebop_scan_peek_char(s);
+  const char quote = bebop__scan_peek_char(s);
   if (quote != '"' && quote != '\'') {
     return (bebop_token_t) {
         .kind = BEBOP_TOKEN_ERROR,
-        .span = _bebop_scan_make_span(s, start, start_line, start_col),
+        .span = bebop__scan_make_span(s, start, start_line, start_col),
     };
   }
-  _bebop_scan_advance(s);
+  bebop__scan_advance(s);
 
   char* buf = NULL;
   size_t buf_len = 0;
   size_t buf_cap = 0;
 
-  while (_bebop_scan_peek_char(s) != '\0' && s->error == BEBOP_ERR_NONE) {
-    const char c = _bebop_scan_peek_char(s);
+  while (bebop__scan_peek_char(s) != '\0' && s->error == BEBOP_ERR_NONE) {
+    const char c = bebop__scan_peek_char(s);
 
     if (c == quote) {
-      if (_bebop_scan_peek_char_at(s, 1) == quote) {
-        _bebop_scan_advance(s);
-        _bebop_scan_advance(s);
-        if (buf_len >= buf_cap && !_bebop_scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
+      if (bebop__scan_peek_char_at(s, 1) == quote) {
+        bebop__scan_advance(s);
+        bebop__scan_advance(s);
+        if (buf_len >= buf_cap && !bebop__scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
           break;
         }
         buf[buf_len++] = quote;
       } else {
-        _bebop_scan_advance(s);
+        bebop__scan_advance(s);
         goto done_bytes;
       }
     } else if (c == '\\') {
       const size_t esc_start = s->pos;
       const uint32_t esc_line = s->line;
       const uint32_t esc_col = s->col;
-      _bebop_scan_advance(s);
+      bebop__scan_advance(s);
 
       const size_t remaining = s->source_len - s->pos;
       char esc_out[4];
@@ -405,11 +405,11 @@ static bebop_token_t _bebop_scan_bytes(_bebop_scanner_t* s)
 
       if (consumed == 0) {
         if (s->schema) {
-          _bebop_schema_add_diagnostic(
+          bebop__schema_add_diagnostic(
               s->schema,
-              (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR,
+              (bebop__diag_loc_t) {BEBOP_DIAG_ERROR,
                                    BEBOP_DIAG_INVALID_ESCAPE,
-                                   _bebop_scan_make_span(s, esc_start, esc_line, esc_col)},
+                                   bebop__scan_make_span(s, esc_start, esc_line, esc_col)},
               "Invalid escape sequence",
               NULL
           );
@@ -418,7 +418,7 @@ static bebop_token_t _bebop_scan_bytes(_bebop_scanner_t* s)
       }
 
       while (buf_len + (size_t)esc_out_len > buf_cap) {
-        if (!_bebop_scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
+        if (!bebop__scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
           break;
         }
       }
@@ -429,31 +429,31 @@ static bebop_token_t _bebop_scan_bytes(_bebop_scanner_t* s)
         buf[buf_len++] = esc_out[i];
       }
       for (int i = 0; i < consumed; i++) {
-        _bebop_scan_advance(s);
+        bebop__scan_advance(s);
       }
-    } else if (c == '\r' && _bebop_scan_peek_char_at(s, 1) == '\n') {
-      if (buf_len >= buf_cap && !_bebop_scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
+    } else if (c == '\r' && bebop__scan_peek_char_at(s, 1) == '\n') {
+      if (buf_len >= buf_cap && !bebop__scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
         break;
       }
       buf[buf_len++] = '\n';
-      _bebop_scan_advance(s);
-      _bebop_scan_advance(s);
+      bebop__scan_advance(s);
+      bebop__scan_advance(s);
       s->line++;
       s->col = 1;
     } else if (BEBOP_IS_NEWLINE(c)) {
-      if (buf_len >= buf_cap && !_bebop_scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
+      if (buf_len >= buf_cap && !bebop__scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
         break;
       }
       buf[buf_len++] = '\n';
-      _bebop_scan_advance(s);
+      bebop__scan_advance(s);
       s->line++;
       s->col = 1;
     } else {
-      if (buf_len >= buf_cap && !_bebop_scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
+      if (buf_len >= buf_cap && !bebop__scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
         break;
       }
       buf[buf_len++] = c;
-      _bebop_scan_advance(s);
+      bebop__scan_advance(s);
     }
   }
 
@@ -461,7 +461,7 @@ done_bytes:
   if (s->error != BEBOP_ERR_NONE) {
     return (bebop_token_t) {
         .kind = BEBOP_TOKEN_ERROR,
-        .span = _bebop_scan_make_span(s, start, start_line, start_col),
+        .span = bebop__scan_make_span(s, start, start_line, start_col),
     };
   }
 
@@ -470,10 +470,10 @@ done_bytes:
     char* new_buf = bebop_arena_new(BEBOP_ARENA(s->ctx), char, final_cap);
     if (!new_buf) {
       s->error = BEBOP_ERR_OUT_OF_MEMORY;
-      _bebop_context_set_error(s->ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate bytes buffer");
+      bebop__context_set_error(s->ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate bytes buffer");
       return (bebop_token_t) {
           .kind = BEBOP_TOKEN_ERROR,
-          .span = _bebop_scan_make_span(s, start, start_line, start_col),
+          .span = bebop__scan_make_span(s, start, start_line, start_col),
       };
     }
     if (buf && buf_len > 0) {
@@ -487,58 +487,58 @@ done_bytes:
 
   return (bebop_token_t) {
       .kind = BEBOP_TOKEN_BYTES,
-      .span = _bebop_scan_make_span(s, start, start_line, start_col),
+      .span = bebop__scan_make_span(s, start, start_line, start_col),
       .lexeme = bebop_intern_n(BEBOP_INTERN(s->ctx), buf ? buf : "", buf_len),
   };
 
 skip_bytes_to_end:
-  while (_bebop_scan_peek_char(s) != '\0') {
-    const char c = _bebop_scan_peek_char(s);
-    if (c == quote && _bebop_scan_peek_char_at(s, 1) != quote) {
-      _bebop_scan_advance(s);
+  while (bebop__scan_peek_char(s) != '\0') {
+    const char c = bebop__scan_peek_char(s);
+    if (c == quote && bebop__scan_peek_char_at(s, 1) != quote) {
+      bebop__scan_advance(s);
       break;
     }
-    _bebop_scan_advance(s);
+    bebop__scan_advance(s);
   }
   return (bebop_token_t) {
       .kind = BEBOP_TOKEN_ERROR,
-      .span = _bebop_scan_make_span(s, start, start_line, start_col),
+      .span = bebop__scan_make_span(s, start, start_line, start_col),
   };
 }
 
-static bebop_token_t _bebop_scan_string(_bebop_scanner_t* s)
+static bebop_token_t bebop__scan_string(bebop__scanner_t* s)
 {
   const size_t start = s->pos;
   const uint32_t start_line = s->line;
   const uint32_t start_col = s->col;
 
-  const char quote = _bebop_scan_peek_char(s);
-  _bebop_scan_advance(s);
+  const char quote = bebop__scan_peek_char(s);
+  bebop__scan_advance(s);
 
   char* buf = NULL;
   size_t buf_len = 0;
   size_t buf_cap = 0;
 
-  while (_bebop_scan_peek_char(s) != '\0' && s->error == BEBOP_ERR_NONE) {
-    const char c = _bebop_scan_peek_char(s);
+  while (bebop__scan_peek_char(s) != '\0' && s->error == BEBOP_ERR_NONE) {
+    const char c = bebop__scan_peek_char(s);
 
     if (c == quote) {
-      if (_bebop_scan_peek_char_at(s, 1) == quote) {
-        _bebop_scan_advance(s);
-        _bebop_scan_advance(s);
-        if (buf_len >= buf_cap && !_bebop_scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
+      if (bebop__scan_peek_char_at(s, 1) == quote) {
+        bebop__scan_advance(s);
+        bebop__scan_advance(s);
+        if (buf_len >= buf_cap && !bebop__scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
           break;
         }
         buf[buf_len++] = quote;
       } else {
-        _bebop_scan_advance(s);
+        bebop__scan_advance(s);
         goto done;
       }
     } else if (c == '\\') {
       const size_t esc_start = s->pos;
       const uint32_t esc_line = s->line;
       const uint32_t esc_col = s->col;
-      _bebop_scan_advance(s);
+      bebop__scan_advance(s);
 
       const size_t remaining = s->source_len - s->pos;
       char esc_out[4];
@@ -548,11 +548,11 @@ static bebop_token_t _bebop_scan_string(_bebop_scanner_t* s)
 
       if (consumed == 0) {
         if (s->schema) {
-          _bebop_schema_add_diagnostic(
+          bebop__schema_add_diagnostic(
               s->schema,
-              (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR,
+              (bebop__diag_loc_t) {BEBOP_DIAG_ERROR,
                                    BEBOP_DIAG_INVALID_ESCAPE,
-                                   _bebop_scan_make_span(s, esc_start, esc_line, esc_col)},
+                                   bebop__scan_make_span(s, esc_start, esc_line, esc_col)},
               "Invalid escape sequence",
               NULL
           );
@@ -561,7 +561,7 @@ static bebop_token_t _bebop_scan_string(_bebop_scanner_t* s)
       }
 
       while (buf_len + (size_t)esc_out_len > buf_cap) {
-        if (!_bebop_scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
+        if (!bebop__scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
           break;
         }
       }
@@ -572,31 +572,31 @@ static bebop_token_t _bebop_scan_string(_bebop_scanner_t* s)
         buf[buf_len++] = esc_out[i];
       }
       for (int i = 0; i < consumed; i++) {
-        _bebop_scan_advance(s);
+        bebop__scan_advance(s);
       }
-    } else if (c == '\r' && _bebop_scan_peek_char_at(s, 1) == '\n') {
-      if (buf_len >= buf_cap && !_bebop_scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
+    } else if (c == '\r' && bebop__scan_peek_char_at(s, 1) == '\n') {
+      if (buf_len >= buf_cap && !bebop__scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
         break;
       }
       buf[buf_len++] = '\n';
-      _bebop_scan_advance(s);
-      _bebop_scan_advance(s);
+      bebop__scan_advance(s);
+      bebop__scan_advance(s);
       s->line++;
       s->col = 1;
     } else if (BEBOP_IS_NEWLINE(c)) {
-      if (buf_len >= buf_cap && !_bebop_scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
+      if (buf_len >= buf_cap && !bebop__scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
         break;
       }
       buf[buf_len++] = '\n';
-      _bebop_scan_advance(s);
+      bebop__scan_advance(s);
       s->line++;
       s->col = 1;
     } else {
-      if (buf_len >= buf_cap && !_bebop_scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
+      if (buf_len >= buf_cap && !bebop__scan_grow_buf(s, &buf, &buf_cap, buf_len)) {
         break;
       }
       buf[buf_len++] = c;
-      _bebop_scan_advance(s);
+      bebop__scan_advance(s);
     }
   }
 
@@ -604,7 +604,7 @@ done:
   if (s->error != BEBOP_ERR_NONE) {
     return (bebop_token_t) {
         .kind = BEBOP_TOKEN_ERROR,
-        .span = _bebop_scan_make_span(s, start, start_line, start_col),
+        .span = bebop__scan_make_span(s, start, start_line, start_col),
     };
   }
 
@@ -613,10 +613,10 @@ done:
     char* new_buf = bebop_arena_new(BEBOP_ARENA(s->ctx), char, final_cap);
     if (!new_buf) {
       s->error = BEBOP_ERR_OUT_OF_MEMORY;
-      _bebop_context_set_error(s->ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate string buffer");
+      bebop__context_set_error(s->ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate string buffer");
       return (bebop_token_t) {
           .kind = BEBOP_TOKEN_ERROR,
-          .span = _bebop_scan_make_span(s, start, start_line, start_col),
+          .span = bebop__scan_make_span(s, start, start_line, start_col),
       };
     }
     if (buf && buf_len > 0) {
@@ -630,231 +630,231 @@ done:
 
   if (buf_len > 0 && !bebop_utf8_valid(buf, buf_len)) {
     if (s->schema) {
-      _bebop_schema_add_diagnostic(
+      bebop__schema_add_diagnostic(
           s->schema,
-          (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR,
+          (bebop__diag_loc_t) {BEBOP_DIAG_ERROR,
                                BEBOP_DIAG_INVALID_UTF8,
-                               _bebop_scan_make_span(s, start, start_line, start_col)},
+                               bebop__scan_make_span(s, start, start_line, start_col)},
           "Invalid UTF-8 encoding in string literal",
           NULL
       );
     }
     return (bebop_token_t) {
         .kind = BEBOP_TOKEN_ERROR,
-        .span = _bebop_scan_make_span(s, start, start_line, start_col),
+        .span = bebop__scan_make_span(s, start, start_line, start_col),
     };
   }
 
   return (bebop_token_t) {
       .kind = BEBOP_TOKEN_STRING,
-      .span = _bebop_scan_make_span(s, start, start_line, start_col),
+      .span = bebop__scan_make_span(s, start, start_line, start_col),
       .lexeme = bebop_intern_n(BEBOP_INTERN(s->ctx), buf ? buf : "", buf_len),
   };
 
 skip_to_end:
-  while (_bebop_scan_peek_char(s) != '\0') {
-    const char c = _bebop_scan_peek_char(s);
-    if (c == quote && _bebop_scan_peek_char_at(s, 1) != quote) {
-      _bebop_scan_advance(s);
+  while (bebop__scan_peek_char(s) != '\0') {
+    const char c = bebop__scan_peek_char(s);
+    if (c == quote && bebop__scan_peek_char_at(s, 1) != quote) {
+      bebop__scan_advance(s);
       break;
     }
-    _bebop_scan_advance(s);
+    bebop__scan_advance(s);
   }
   return (bebop_token_t) {
       .kind = BEBOP_TOKEN_ERROR,
-      .span = _bebop_scan_make_span(s, start, start_line, start_col),
+      .span = bebop__scan_make_span(s, start, start_line, start_col),
   };
 }
 
-static bebop_token_t _bebop_scan_token(_bebop_scanner_t* s)
+static bebop_token_t bebop__scan_token(bebop__scanner_t* s)
 {
   const size_t start = s->pos;
   const uint32_t start_line = s->line;
   const uint32_t start_col = s->col;
 
-  const char c = _bebop_scan_peek_char(s);
+  const char c = bebop__scan_peek_char(s);
 
   if (c == '\0') {
     return (bebop_token_t) {
         .kind = BEBOP_TOKEN_EOF,
-        .span = _bebop_scan_make_span(s, start, start_line, start_col),
+        .span = bebop__scan_make_span(s, start, start_line, start_col),
     };
   }
 
   if (BEBOP_IS_IDENT_START(c)) {
     if (c == 'b') {
-      const char next = _bebop_scan_peek_char_at(s, 1);
+      const char next = bebop__scan_peek_char_at(s, 1);
       if (next == '"' || next == '\'') {
-        return _bebop_scan_bytes(s);
+        return bebop__scan_bytes(s);
       }
     }
-    return _bebop_scan_identifier(s);
+    return bebop__scan_identifier(s);
   }
 
   if (BEBOP_IS_DIGIT(c)) {
-    return _bebop_scan_number(s);
+    return bebop__scan_number(s);
   }
 
   if (c == '"' || c == '\'') {
-    return _bebop_scan_string(s);
+    return bebop__scan_string(s);
   }
 
-  _bebop_scan_advance(s);
+  bebop__scan_advance(s);
 
   switch (c) {
     case '(':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_LPAREN,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case ')':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_RPAREN,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case '{':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_LBRACE,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case '}':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_RBRACE,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case '[':
-      if (_bebop_scan_peek_char(s) == '[') {
-        _bebop_scan_advance(s);
+      if (bebop__scan_peek_char(s) == '[') {
+        bebop__scan_advance(s);
         const size_t content_start = s->pos;
-        while (_bebop_scan_peek_char(s) != '\0') {
-          if (_bebop_scan_peek_char(s) == ']' && _bebop_scan_peek_char_at(s, 1) == ']') {
+        while (bebop__scan_peek_char(s) != '\0') {
+          if (bebop__scan_peek_char(s) == ']' && bebop__scan_peek_char_at(s, 1) == ']') {
             const size_t content_len = s->pos - content_start;
-            _bebop_scan_advance(s);
-            _bebop_scan_advance(s);
+            bebop__scan_advance(s);
+            bebop__scan_advance(s);
             return (bebop_token_t) {
                 .kind = BEBOP_TOKEN_RAW_BLOCK,
-                .span = _bebop_scan_make_span(s, start, start_line, start_col),
+                .span = bebop__scan_make_span(s, start, start_line, start_col),
                 .lexeme =
                     bebop_intern_n(BEBOP_INTERN(s->ctx), s->source + content_start, content_len),
             };
           }
-          _bebop_scan_advance(s);
+          bebop__scan_advance(s);
         }
 
         if (s->schema) {
-          _bebop_schema_add_diagnostic(
+          bebop__schema_add_diagnostic(
               s->schema,
-              (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR,
+              (bebop__diag_loc_t) {BEBOP_DIAG_ERROR,
                                    BEBOP_DIAG_INVALID_MACRO,
-                                   _bebop_scan_make_span(s, start, start_line, start_col)},
+                                   bebop__scan_make_span(s, start, start_line, start_col)},
               "Unterminated raw block: expected ']]'",
               NULL
           );
         }
         return (bebop_token_t) {
             .kind = BEBOP_TOKEN_ERROR,
-            .span = _bebop_scan_make_span(s, start, start_line, start_col),
+            .span = bebop__scan_make_span(s, start, start_line, start_col),
         };
       }
       return (bebop_token_t) {.kind = BEBOP_TOKEN_LBRACKET,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case ']':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_RBRACKET,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case '<':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_LANGLE,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case '>':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_RANGLE,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case ':':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_COLON,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case ';':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_SEMICOLON,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case ',':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_COMMA,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case '.':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_DOT,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case '?':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_QUESTION,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case '/':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_SLASH,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case '=':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_EQUALS,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case '@':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_AT,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case '#':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_HASH,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case '!':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_BANG,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case '$':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_DOLLAR,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case '\\':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_BACKSLASH,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case '`':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_BACKTICK,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case '~':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_TILDE,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case '&':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_AMPERSAND,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
     case '|':
       return (bebop_token_t) {.kind = BEBOP_TOKEN_PIPE,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
 
     case '-':
-      if (_bebop_scan_peek_char(s) == '>') {
-        _bebop_scan_advance(s);
+      if (bebop__scan_peek_char(s) == '>') {
+        bebop__scan_advance(s);
         return (bebop_token_t) {.kind = BEBOP_TOKEN_ARROW,
-                                .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                                .span = bebop__scan_make_span(s, start, start_line, start_col)};
       }
       return (bebop_token_t) {.kind = BEBOP_TOKEN_MINUS,
-                              .span = _bebop_scan_make_span(s, start, start_line, start_col)};
+                              .span = bebop__scan_make_span(s, start, start_line, start_col)};
 
     default:
       return (bebop_token_t) {
           .kind = BEBOP_TOKEN_ERROR,
-          .span = _bebop_scan_make_span(s, start, start_line, start_col),
+          .span = bebop__scan_make_span(s, start, start_line, start_col),
           .lexeme = bebop_intern_n(BEBOP_INTERN(s->ctx), s->source + start, 1),
       };
   }
 }
 
-static bebop_token_t _bebop_scan_next(_bebop_scanner_t* s)
+static bebop_token_t bebop__scan_next(bebop__scanner_t* s)
 {
   if (s->error != BEBOP_ERR_NONE) {
     return (bebop_token_t) {.kind = BEBOP_TOKEN_EOF};
   }
 
-  _bebop_scan_skip_leading_trivia(s);
+  bebop__scan_skip_leading_trivia(s);
   if (s->error != BEBOP_ERR_NONE) {
     return (bebop_token_t) {.kind = BEBOP_TOKEN_EOF};
   }
-  const bebop_trivia_list_t leading = _bebop_scan_trivia_finalize(s);
+  const bebop_trivia_list_t leading = bebop__scan_trivia_finalize(s);
 
-  bebop_token_t tok = _bebop_scan_token(s);
+  bebop_token_t tok = bebop__scan_token(s);
   tok.leading = leading;
 
   if (tok.kind != BEBOP_TOKEN_EOF && s->error == BEBOP_ERR_NONE) {
-    tok.trailing = _bebop_scan_collect_trailing_trivia(s);
+    tok.trailing = bebop__scan_collect_trailing_trivia(s);
   }
 
   return tok;
 }
 
-bebop_token_stream_t _bebop_scan_with_schema(
+bebop_token_stream_t bebop__scan_with_schema(
     bebop_context_t* ctx, const char* source, const size_t len, bebop_schema_t* schema
 )
 {
   BEBOP_ASSERT(ctx != NULL);
 
-  _bebop_scanner_t s = {
+  bebop__scanner_t s = {
       .source = source,
       .source_len = len,
       .pos = 0,
@@ -870,14 +870,14 @@ bebop_token_stream_t _bebop_scan_with_schema(
   uint32_t capacity = 0;
 
   while (s.error == BEBOP_ERR_NONE) {
-    const bebop_token_t tok = _bebop_scan_next(&s);
+    const bebop_token_t tok = bebop__scan_next(&s);
 
     if (count >= capacity) {
       const uint32_t new_cap = capacity == 0 ? 64 : capacity * 2;
       bebop_token_t* new_buf = bebop_arena_new(BEBOP_ARENA(ctx), bebop_token_t, new_cap);
       if (!new_buf) {
         s.error = BEBOP_ERR_OUT_OF_MEMORY;
-        _bebop_context_set_error(ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate token buffer");
+        bebop__context_set_error(ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate token buffer");
         break;
       }
       if (tokens && count > 0) {
@@ -902,7 +902,7 @@ bebop_token_stream_t _bebop_scan_with_schema(
 
 bebop_token_stream_t bebop_scan(bebop_context_t* ctx, const char* source, const size_t len)
 {
-  return _bebop_scan_with_schema(ctx, source, len, NULL);
+  return bebop__scan_with_schema(ctx, source, len, NULL);
 }
 
 const char* bebop_token_kind_name(const bebop_token_kind_t kind)

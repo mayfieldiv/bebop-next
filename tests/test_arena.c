@@ -5,9 +5,6 @@
 static bebop_arena_t arena;
 static bebop_host_allocator_t test_alloc;
 
-void setUp(void);
-void tearDown(void);
-
 void setUp(void)
 {
   memset(&arena, 0, sizeof(arena));

@@ -15,6 +15,9 @@
 
 #ifdef __GNUC__
 #define GEN_PRINTF(fmt, args) __attribute__((format(printf, fmt, args)))
+#if !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+#endif
 #else
 #define GEN_PRINTF(fmt, args)
 #endif
@@ -3208,12 +3211,14 @@ static void gen_encode_type_ex(gen_ctx_t* ctx,
         if (type_is_enum(ctx, w->type)) {
           bebop_type_kind_t base = enum_base_type(ctx, w->type);
           const type_info_t* bti = type_info(base);
-          emit(ctx,
-               "if (BEBOP_WIRE_UNLIKELY((r = %s(w, (%s)%s)) != BEBOP_WIRE_OK)) %s;",
-               bti->wire_set,
-               bti->ctype,
-               w->access,
-               ret);
+          if (bti) {
+            emit(ctx,
+                 "if (BEBOP_WIRE_UNLIKELY((r = %s(w, (%s)%s)) != BEBOP_WIRE_OK)) %s;",
+                 bti->wire_set,
+                 bti->ctype,
+                 w->access,
+                 ret);
+          }
         } else if (w->is_ptr) {
           emit(ctx,
                "if (BEBOP_WIRE_UNLIKELY((r = %s_Encode(w, %s)) != BEBOP_WIRE_OK)) %s;",
@@ -3643,18 +3648,20 @@ static void gen_decode_type_ex(gen_ctx_t* ctx,
         if (type_is_enum(ctx, w->type)) {
           bebop_type_kind_t base = enum_base_type(ctx, w->type);
           const type_info_t* bti = type_info(base);
-          const char* enum_type =
-              type_name(ctx, bebop_descriptor_type_fqn(w->type));
-          emit(ctx, "{");
-          ctx->indent++;
-          emit(ctx, "%s _tmp;", bti->ctype);
-          emit(ctx,
-               "if (BEBOP_WIRE_UNLIKELY((r = %s(rd, &_tmp)) != BEBOP_WIRE_OK)) %s;",
-               bti->wire_get,
-               ret);
-          emit_const_assign(ctx, enum_type, w->access, "(%s)_tmp", enum_type);
-          ctx->indent--;
-          emit(ctx, "}");
+          if (bti) {
+            const char* enum_type =
+                type_name(ctx, bebop_descriptor_type_fqn(w->type));
+            emit(ctx, "{");
+            ctx->indent++;
+            emit(ctx, "%s _tmp;", bti->ctype);
+            emit(ctx,
+                 "if (BEBOP_WIRE_UNLIKELY((r = %s(rd, &_tmp)) != BEBOP_WIRE_OK)) %s;",
+                 bti->wire_get,
+                 ret);
+            emit_const_assign(ctx, enum_type, w->access, "(%s)_tmp", enum_type);
+            ctx->indent--;
+            emit(ctx, "}");
+          }
         } else {
           const char* def_type =
               type_name(ctx, bebop_descriptor_type_fqn(w->type));

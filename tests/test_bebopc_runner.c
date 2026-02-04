@@ -37,9 +37,6 @@ static bool _test_file_exists(const char* path, void* udata)
   return false;
 }
 
-void setUp(void);
-void tearDown(void);
-
 void setUp(void)
 {
   bebopc_log_ctx_init(&log_ctx, false);

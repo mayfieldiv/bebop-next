@@ -210,9 +210,9 @@ typedef struct {
 // clang-format on
 
 #if defined(__GNUC__) || defined(__clang__)
-#define BEBOP_WIRE_EMPTY_STRUCT uint8_t _bebop_wire_empty : 1
+#define BEBOP_WIRE_EMPTY_STRUCT uint8_t bebop__wire_empty : 1
 #else
-#define BEBOP_WIRE_EMPTY_STRUCT uint8_t _bebop_wire_empty
+#define BEBOP_WIRE_EMPTY_STRUCT uint8_t bebop__wire_empty
 #endif
 
 // UUID (16 raw bytes, RFC 4122 compatible)
@@ -252,7 +252,9 @@ Bebop_Duration;
 #pragma pack(pop)
 #endif
 
-#if defined(__FLT16_MAX__)
+#if defined(__FLT16_MAX__) \
+    && (defined(__cplusplus) || (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L) \
+        || defined(__clang__) || !defined(__GNUC__))
 #define BEBOP_WIRE_HAS_F16 1
 typedef _Float16 Bebop_Float16;
 #else
@@ -1374,6 +1376,13 @@ static inline bool _bbm_del_any(Bebop_Map* m, const void* kptr)
   return Bebop_Map_Del(m, kptr);
 }
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Wunused-value"
+#pragma GCC diagnostic ignored "-Wmissing-braces"
+#endif
+
 // PUT: BBM_PUT(key, value) or BBM_PUT(key, {.x=1, .y=2})
 // String literals auto-convert to Bebop_Str keys
 #define BBM_PUT(k, ...) \
@@ -1449,6 +1458,10 @@ static inline bool _bbm_del_any(Bebop_Map* m, const void* kptr)
        _f._s && Bebop_MapIter_Next(&_f.it, (void**)&_f.k, (void**)&_f.v);) \
     for (KT* kvar = _f.k; kvar; kvar = NULL) \
       for (VT* vvar = _f.v; vvar; vvar = NULL)
+
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 #endif  // __GNUC__ || __clang__
 

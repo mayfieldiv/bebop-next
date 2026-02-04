@@ -2,12 +2,13 @@
 #include "test_common.h"
 #include "unity.h"
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+#endif
+
 #define FIXTURE(name) BEBOP_TEST_FIXTURES_DIR "/valid/" name
 
 static bebop_context_t* ctx;
-
-void setUp(void);
-void tearDown(void);
 
 static const char* test_include_paths[] = {BEBOP_TEST_FIXTURES_DIR "/valid", BEBOP_STD_DIR};
 
@@ -564,6 +565,7 @@ void test_macro_description(void)
   bebop_parse_result_t* result = parse_expect_success(src);
   bebop_schema_t* schema = get_schema(result);
   bebop_def_t* def = get_decorator_def(schema, 0);
+  TEST_ASSERT_NOT_NULL(def);
 
   TEST_ASSERT_FALSE(bebop_str_is_null(def->documentation));
   const char* desc = BEBOP_STR(ctx, def->documentation);
@@ -581,6 +583,7 @@ void test_macro_param_description(void)
   bebop_parse_result_t* result = parse_expect_success(src);
   bebop_schema_t* schema = get_schema(result);
   bebop_def_t* def = get_decorator_def(schema, 0);
+  TEST_ASSERT_NOT_NULL(def);
   bebop_macro_param_def_t* param = &def->decorator_def.params[0];
 
   TEST_ASSERT_FALSE(bebop_str_is_null(param->description));
@@ -932,7 +935,7 @@ void test_lua_wrap_no_params(void)
   const char* source = "print('hello')";
 
   const char* result =
-      _bebop_lua_wrap_function(&ctx->arena, (_bebop_str_view_t) {source, strlen(source)}, NULL, 0);
+      bebop__lua_wrap_function(&ctx->arena, (bebop__str_view_t) {source, strlen(source)}, NULL, 0);
   TEST_ASSERT_NOT_NULL(result);
   TEST_ASSERT_EQUAL_STRING("return function()\nprint('hello')\nend\n", result);
 }
@@ -942,8 +945,8 @@ void test_lua_wrap_with_params(void)
   const char* source = "return self.name";
   const char* params[] = {"self", "target", "min", "max"};
 
-  const char* result = _bebop_lua_wrap_function(
-      &ctx->arena, (_bebop_str_view_t) {source, strlen(source)}, params, 4
+  const char* result = bebop__lua_wrap_function(
+      &ctx->arena, (bebop__str_view_t) {source, strlen(source)}, params, 4
   );
   TEST_ASSERT_NOT_NULL(result);
   TEST_ASSERT_EQUAL_STRING(
@@ -956,8 +959,8 @@ void test_lua_wrap_multiline(void)
   const char* source = "if x > 0 then\n" "    return true\n" "end";
   const char* params[] = {"x"};
 
-  const char* result = _bebop_lua_wrap_function(
-      &ctx->arena, (_bebop_str_view_t) {source, strlen(source)}, params, 1
+  const char* result = bebop__lua_wrap_function(
+      &ctx->arena, (bebop__str_view_t) {source, strlen(source)}, params, 1
   );
   TEST_ASSERT_NOT_NULL(result);
 
@@ -971,10 +974,10 @@ void test_lua_wrap_null_source(void)
   const char* params[] = {"self"};
 
   const char* result =
-      _bebop_lua_wrap_function(&ctx->arena, (_bebop_str_view_t) {NULL, 0}, params, 1);
+      bebop__lua_wrap_function(&ctx->arena, (bebop__str_view_t) {NULL, 0}, params, 1);
   TEST_ASSERT_NULL(result);
 
-  result = _bebop_lua_wrap_function(&ctx->arena, (_bebop_str_view_t) {"x", 0}, params, 1);
+  result = bebop__lua_wrap_function(&ctx->arena, (bebop__str_view_t) {"x", 0}, params, 1);
   TEST_ASSERT_NULL(result);
 }
 
@@ -997,8 +1000,8 @@ void test_lua_wrap_decorator_validate(void)
   TEST_ASSERT_NOT_NULL(val_src);
 
   const char* params[] = {"self", "target", "min", "max"};
-  const char* wrapped = _bebop_lua_wrap_function(
-      &ctx->arena, (_bebop_str_view_t) {val_src, def->decorator_def.validate_span.len}, params, 4
+  const char* wrapped = bebop__lua_wrap_function(
+      &ctx->arena, (bebop__str_view_t) {val_src, def->decorator_def.validate_span.len}, params, 4
   );
 
   TEST_ASSERT_NOT_NULL(wrapped);
@@ -1025,8 +1028,8 @@ void test_lua_wrap_decorator_export(void)
   TEST_ASSERT_NOT_NULL(exp_src);
 
   const char* params[] = {"self", "target", "name"};
-  const char* wrapped = _bebop_lua_wrap_function(
-      &ctx->arena, (_bebop_str_view_t) {exp_src, def->decorator_def.export_span.len}, params, 3
+  const char* wrapped = bebop__lua_wrap_function(
+      &ctx->arena, (bebop__str_view_t) {exp_src, def->decorator_def.export_span.len}, params, 3
   );
 
   TEST_ASSERT_NOT_NULL(wrapped);
@@ -1069,9 +1072,9 @@ static bebop_decorator_t make_usage_uint32(
 
 void test_lua_eval_state_lifecycle(void)
 {
-  bebop_lua_state_t* state = _bebop_lua_state_create(ctx);
+  bebop_lua_state_t* state = bebop__lua_state_create(ctx);
   TEST_ASSERT_NOT_NULL(state);
-  _bebop_lua_state_destroy(state);
+  bebop__lua_state_destroy(state);
 }
 
 void test_lua_eval_sandbox_safe(void)
@@ -1090,15 +1093,15 @@ void test_lua_eval_sandbox_safe(void)
   bebop_schema_t* schema = get_schema(result);
   bebop_def_t* def = get_decorator_def(schema, 0);
 
-  bebop_lua_state_t* state = _bebop_lua_state_create(ctx);
-  _bebop_lua_compile_decorators(state, result);
+  bebop_lua_state_t* state = bebop__lua_state_create(ctx);
+  bebop__lua_compile_decorators(state, result);
   bebop_decorated_t target = {.kind = BEBOP_DECORATED_DEF};
   bebop_decorator_t usage = make_usage_no_args(def->name, schema);
 
-  bebop_status_t status = _bebop_lua_run_validate(state, def, &usage, target);
+  bebop_status_t status = bebop__lua_run_validate(state, def, &usage, target);
   TEST_ASSERT_EQUAL(BEBOP_OK, status);
 
-  _bebop_lua_state_destroy(state);
+  bebop__lua_state_destroy(state);
 }
 
 void test_lua_eval_sandbox_blocks_unsafe(void)
@@ -1114,16 +1117,16 @@ void test_lua_eval_sandbox_blocks_unsafe(void)
   bebop_schema_t* schema = get_schema(result);
   bebop_def_t* def = get_decorator_def(schema, 0);
 
-  bebop_lua_state_t* state = _bebop_lua_state_create(ctx);
-  _bebop_lua_compile_decorators(state, result);
+  bebop_lua_state_t* state = bebop__lua_state_create(ctx);
+  bebop__lua_compile_decorators(state, result);
   bebop_decorated_t target = {.kind = BEBOP_DECORATED_DEF};
   bebop_decorator_t usage = make_usage_no_args(def->name, schema);
 
-  bebop_status_t status = _bebop_lua_run_validate(state, def, &usage, target);
+  bebop_status_t status = bebop__lua_run_validate(state, def, &usage, target);
 
   TEST_ASSERT_EQUAL(BEBOP_ERROR, status);
 
-  _bebop_lua_state_destroy(state);
+  bebop__lua_state_destroy(state);
 }
 
 void test_lua_eval_constants(void)
@@ -1147,15 +1150,15 @@ void test_lua_eval_constants(void)
   bebop_schema_t* schema = get_schema(result);
   bebop_def_t* def = get_decorator_def(schema, 0);
 
-  bebop_lua_state_t* state = _bebop_lua_state_create(ctx);
-  _bebop_lua_compile_decorators(state, result);
+  bebop_lua_state_t* state = bebop__lua_state_create(ctx);
+  bebop__lua_compile_decorators(state, result);
   bebop_decorated_t target = {.kind = BEBOP_DECORATED_DEF};
   bebop_decorator_t usage = make_usage_no_args(def->name, schema);
 
-  bebop_status_t status = _bebop_lua_run_validate(state, def, &usage, target);
+  bebop_status_t status = bebop__lua_run_validate(state, def, &usage, target);
   TEST_ASSERT_EQUAL(BEBOP_OK, status);
 
-  _bebop_lua_state_destroy(state);
+  bebop__lua_state_destroy(state);
 }
 
 void test_lua_eval_error_emits_diagnostic(void)
@@ -1171,12 +1174,12 @@ void test_lua_eval_error_emits_diagnostic(void)
   bebop_schema_t* schema = get_schema(result);
   bebop_def_t* def = get_decorator_def(schema, 0);
 
-  bebop_lua_state_t* state = _bebop_lua_state_create(ctx);
-  _bebop_lua_compile_decorators(state, result);
+  bebop_lua_state_t* state = bebop__lua_state_create(ctx);
+  bebop__lua_compile_decorators(state, result);
   bebop_decorated_t target = {.kind = BEBOP_DECORATED_DEF};
   bebop_decorator_t usage = make_usage_no_args(def->name, schema);
 
-  bebop_status_t status = _bebop_lua_run_validate(state, def, &usage, target);
+  bebop_status_t status = bebop__lua_run_validate(state, def, &usage, target);
   TEST_ASSERT_EQUAL(BEBOP_ERROR, status);
 
   uint32_t diag_count = schema->diagnostic_count;
@@ -1193,7 +1196,7 @@ void test_lua_eval_error_emits_diagnostic(void)
   }
   TEST_ASSERT_TRUE_MESSAGE(found, "Expected MACRO_VALIDATE_ERROR diagnostic");
 
-  _bebop_lua_state_destroy(state);
+  bebop__lua_state_destroy(state);
 }
 
 void test_lua_eval_error_with_span(void)
@@ -1210,8 +1213,8 @@ void test_lua_eval_error_with_span(void)
   bebop_schema_t* schema = get_schema(result);
   bebop_def_t* def = get_decorator_def(schema, 0);
 
-  bebop_lua_state_t* state = _bebop_lua_state_create(ctx);
-  _bebop_lua_compile_decorators(state, result);
+  bebop_lua_state_t* state = bebop__lua_state_create(ctx);
+  bebop__lua_compile_decorators(state, result);
   bebop_decorated_t target = {.kind = BEBOP_DECORATED_DEF};
 
   bebop_str_t param_name = bebop_intern(BEBOP_INTERN(ctx), "value");
@@ -1228,7 +1231,7 @@ void test_lua_eval_error_with_span(void)
       .schema = schema,
   };
 
-  bebop_status_t status = _bebop_lua_run_validate(state, def, &usage, target);
+  bebop_status_t status = bebop__lua_run_validate(state, def, &usage, target);
   TEST_ASSERT_EQUAL(BEBOP_ERROR, status);
 
   bool found = false;
@@ -1245,7 +1248,7 @@ void test_lua_eval_error_with_span(void)
   }
   TEST_ASSERT_TRUE_MESSAGE(found, "Expected diagnostic at param span");
 
-  _bebop_lua_state_destroy(state);
+  bebop__lua_state_destroy(state);
 }
 
 void test_lua_eval_warn_with_span(void)
@@ -1261,8 +1264,8 @@ void test_lua_eval_warn_with_span(void)
   bebop_schema_t* schema = get_schema(result);
   bebop_def_t* def = get_decorator_def(schema, 0);
 
-  bebop_lua_state_t* state = _bebop_lua_state_create(ctx);
-  _bebop_lua_compile_decorators(state, result);
+  bebop_lua_state_t* state = bebop__lua_state_create(ctx);
+  bebop__lua_compile_decorators(state, result);
   bebop_decorated_t target = {.kind = BEBOP_DECORATED_DEF};
 
   bebop_decorator_t usage = {
@@ -1273,7 +1276,7 @@ void test_lua_eval_warn_with_span(void)
       .schema = schema,
   };
 
-  bebop_status_t status = _bebop_lua_run_validate(state, def, &usage, target);
+  bebop_status_t status = bebop__lua_run_validate(state, def, &usage, target);
   TEST_ASSERT_EQUAL(BEBOP_OK, status);
 
   bool found = false;
@@ -1290,7 +1293,7 @@ void test_lua_eval_warn_with_span(void)
   }
   TEST_ASSERT_TRUE_MESSAGE(found, "Expected diagnostic at usage span");
 
-  _bebop_lua_state_destroy(state);
+  bebop__lua_state_destroy(state);
 }
 
 void test_lua_eval_warn_emits_diagnostic(void)
@@ -1306,12 +1309,12 @@ void test_lua_eval_warn_emits_diagnostic(void)
   bebop_schema_t* schema = get_schema(result);
   bebop_def_t* def = get_decorator_def(schema, 0);
 
-  bebop_lua_state_t* state = _bebop_lua_state_create(ctx);
-  _bebop_lua_compile_decorators(state, result);
+  bebop_lua_state_t* state = bebop__lua_state_create(ctx);
+  bebop__lua_compile_decorators(state, result);
   bebop_decorated_t target = {.kind = BEBOP_DECORATED_DEF};
   bebop_decorator_t usage = make_usage_no_args(def->name, schema);
 
-  bebop_status_t status = _bebop_lua_run_validate(state, def, &usage, target);
+  bebop_status_t status = bebop__lua_run_validate(state, def, &usage, target);
   TEST_ASSERT_EQUAL(BEBOP_OK, status);
 
   bool found = false;
@@ -1325,7 +1328,7 @@ void test_lua_eval_warn_emits_diagnostic(void)
   }
   TEST_ASSERT_TRUE_MESSAGE(found, "Expected MACRO_VALIDATE_WARNING diagnostic");
 
-  _bebop_lua_state_destroy(state);
+  bebop__lua_state_destroy(state);
 }
 
 void test_lua_eval_validate_pass(void)
@@ -1341,15 +1344,15 @@ void test_lua_eval_validate_pass(void)
   bebop_schema_t* schema = get_schema(result);
   bebop_def_t* def = get_decorator_def(schema, 0);
 
-  bebop_lua_state_t* state = _bebop_lua_state_create(ctx);
-  _bebop_lua_compile_decorators(state, result);
+  bebop_lua_state_t* state = bebop__lua_state_create(ctx);
+  bebop__lua_compile_decorators(state, result);
   bebop_decorated_t target = {.kind = BEBOP_DECORATED_DEF};
   bebop_decorator_t usage = make_usage_no_args(def->name, schema);
 
-  bebop_status_t status = _bebop_lua_run_validate(state, def, &usage, target);
+  bebop_status_t status = bebop__lua_run_validate(state, def, &usage, target);
   TEST_ASSERT_EQUAL(BEBOP_OK, status);
 
-  _bebop_lua_state_destroy(state);
+  bebop__lua_state_destroy(state);
 }
 
 void test_lua_eval_validate_fail(void)
@@ -1368,17 +1371,17 @@ void test_lua_eval_validate_fail(void)
   bebop_schema_t* schema = get_schema(result);
   bebop_def_t* def = get_decorator_def(schema, 0);
 
-  bebop_lua_state_t* state = _bebop_lua_state_create(ctx);
-  _bebop_lua_compile_decorators(state, result);
+  bebop_lua_state_t* state = bebop__lua_state_create(ctx);
+  bebop__lua_compile_decorators(state, result);
   bebop_decorated_t target = {.kind = BEBOP_DECORATED_DEF};
 
   bebop_str_t param_name = bebop_intern(BEBOP_INTERN(ctx), "value");
   bebop_decorator_t usage = make_usage_uint32(def->name, param_name, 0, schema);
 
-  bebop_status_t status = _bebop_lua_run_validate(state, def, &usage, target);
+  bebop_status_t status = bebop__lua_run_validate(state, def, &usage, target);
   TEST_ASSERT_EQUAL(BEBOP_ERROR, status);
 
-  _bebop_lua_state_destroy(state);
+  bebop__lua_state_destroy(state);
 }
 
 void test_lua_eval_validate_with_params(void)
@@ -1397,17 +1400,17 @@ void test_lua_eval_validate_with_params(void)
   bebop_schema_t* schema = get_schema(result);
   bebop_def_t* def = get_decorator_def(schema, 0);
 
-  bebop_lua_state_t* state = _bebop_lua_state_create(ctx);
-  _bebop_lua_compile_decorators(state, result);
+  bebop_lua_state_t* state = bebop__lua_state_create(ctx);
+  bebop__lua_compile_decorators(state, result);
   bebop_decorated_t target = {.kind = BEBOP_DECORATED_DEF};
 
   bebop_str_t param_name = bebop_intern(BEBOP_INTERN(ctx), "value");
   bebop_decorator_t usage = make_usage_uint32(def->name, param_name, 50, schema);
 
-  bebop_status_t status = _bebop_lua_run_validate(state, def, &usage, target);
+  bebop_status_t status = bebop__lua_run_validate(state, def, &usage, target);
   TEST_ASSERT_EQUAL(BEBOP_OK, status);
 
-  _bebop_lua_state_destroy(state);
+  bebop__lua_state_destroy(state);
 }
 
 void test_lua_eval_export_returns_table(void)
@@ -1424,16 +1427,16 @@ void test_lua_eval_export_returns_table(void)
   bebop_schema_t* schema = get_schema(result);
   bebop_def_t* def = get_decorator_def(schema, 0);
 
-  bebop_lua_state_t* state = _bebop_lua_state_create(ctx);
-  _bebop_lua_compile_decorators(state, result);
+  bebop_lua_state_t* state = bebop__lua_state_create(ctx);
+  bebop__lua_compile_decorators(state, result);
 
   bebop_str_t param_name = bebop_intern(BEBOP_INTERN(ctx), "value");
   bebop_decorator_t usage = make_usage_uint32(def->name, param_name, 21, schema);
 
-  bebop_status_t status = _bebop_lua_run_export(state, def, &usage);
+  bebop_status_t status = bebop__lua_run_export(state, def, &usage);
   TEST_ASSERT_EQUAL(BEBOP_OK, status);
 
-  _bebop_lua_state_destroy(state);
+  bebop__lua_state_destroy(state);
 }
 
 void test_lua_eval_export_captures_data(void)
@@ -1571,15 +1574,15 @@ void test_lua_eval_bit_library(void)
   bebop_schema_t* schema = get_schema(result);
   bebop_def_t* def = get_decorator_def(schema, 0);
 
-  bebop_lua_state_t* state = _bebop_lua_state_create(ctx);
-  _bebop_lua_compile_decorators(state, result);
+  bebop_lua_state_t* state = bebop__lua_state_create(ctx);
+  bebop__lua_compile_decorators(state, result);
   bebop_decorated_t target = {.kind = BEBOP_DECORATED_DEF};
   bebop_decorator_t usage = make_usage_no_args(def->name, schema);
 
-  bebop_status_t status = _bebop_lua_run_validate(state, def, &usage, target);
+  bebop_status_t status = bebop__lua_run_validate(state, def, &usage, target);
   TEST_ASSERT_EQUAL(BEBOP_OK, status);
 
-  _bebop_lua_state_destroy(state);
+  bebop__lua_state_destroy(state);
 }
 
 void test_lua_eval_helpers(void)
@@ -1602,15 +1605,15 @@ void test_lua_eval_helpers(void)
   bebop_schema_t* schema = get_schema(result);
   bebop_def_t* def = get_decorator_def(schema, 0);
 
-  bebop_lua_state_t* state = _bebop_lua_state_create(ctx);
-  _bebop_lua_compile_decorators(state, result);
+  bebop_lua_state_t* state = bebop__lua_state_create(ctx);
+  bebop__lua_compile_decorators(state, result);
   bebop_decorated_t target = {.kind = BEBOP_DECORATED_DEF};
   bebop_decorator_t usage = make_usage_no_args(def->name, schema);
 
-  bebop_status_t status = _bebop_lua_run_validate(state, def, &usage, target);
+  bebop_status_t status = bebop__lua_run_validate(state, def, &usage, target);
   TEST_ASSERT_EQUAL(BEBOP_OK, status);
 
-  _bebop_lua_state_destroy(state);
+  bebop__lua_state_destroy(state);
 }
 
 void test_lua_compile_syntax_error(void)

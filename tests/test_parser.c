@@ -7,9 +7,6 @@
 
 static bebop_context_t* ctx;
 
-void setUp(void);
-void tearDown(void);
-
 static const char* test_include_paths[] = {BEBOP_TEST_FIXTURES_DIR "/valid", BEBOP_STD_DIR};
 
 void setUp(void)
@@ -1334,6 +1331,7 @@ void test_parse_const_timestamp_duration_bytes(void)
   TEST_ASSERT_EQUAL(BEBOP_LITERAL_BYTES, bebop_literal_kind(magic_val));
   size_t magic_len;
   const uint8_t* magic_data = bebop_literal_as_bytes(magic_val, &magic_len);
+  TEST_ASSERT_NOT_NULL(magic_data);
   TEST_ASSERT_EQUAL_UINT(6, magic_len);
   TEST_ASSERT_EQUAL_UINT8(0x89, magic_data[0]);
   TEST_ASSERT_EQUAL_UINT8('P', magic_data[1]);
@@ -1348,6 +1346,7 @@ void test_parse_const_timestamp_duration_bytes(void)
   const bebop_literal_t* hello_val = bebop_def_const_value(hello_def);
   size_t hello_len;
   const uint8_t* hello_data = bebop_literal_as_bytes(hello_val, &hello_len);
+  TEST_ASSERT_NOT_NULL(hello_data);
   TEST_ASSERT_EQUAL_UINT(5, hello_len);
   TEST_ASSERT_EQUAL_MEMORY("hello", hello_data, 5);
 

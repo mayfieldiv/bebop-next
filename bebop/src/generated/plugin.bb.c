@@ -101,7 +101,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_CodeGeneratorRequest_Encode(Bebop_Writer *
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->files_to_generate)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_CODE_GENERATOR_REQUEST_FILES_TO_GENERATE_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -269,7 +269,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_Diagnostic_Encode(Bebop_Writer *w, const B
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->severity)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_DIAGNOSTIC_SEVERITY_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -387,7 +387,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_GeneratedFile_Encode(Bebop_Writer *w, cons
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->name)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_GENERATED_FILE_NAME_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -496,7 +496,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_CodeGeneratorResponse_Encode(Bebop_Writer 
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->error)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_CODE_GENERATOR_RESPONSE_ERROR_TAG)) != BEBOP_WIRE_OK)) return r;

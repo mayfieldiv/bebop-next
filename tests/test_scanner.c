@@ -8,9 +8,6 @@ static bebop_context_t* ctx;
 static bebop_token_stream_t stream;
 static uint32_t tok_idx;
 
-void setUp(void);
-void tearDown(void);
-
 void setUp(void)
 {
   ctx = test_context_create();

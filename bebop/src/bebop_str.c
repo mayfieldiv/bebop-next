@@ -45,7 +45,7 @@ bool bebop_intern_init(bebop_intern_t* intern, bebop_arena_t* arena, uint32_t ca
   return true;
 }
 
-static bool _bebop_intern_grow(bebop_intern_t* intern)
+static bool bebop__intern_grow(bebop_intern_t* intern)
 {
   const uint32_t new_capacity = intern->capacity * 2;
 
@@ -90,7 +90,7 @@ bebop_str_t bebop_intern_n(bebop_intern_t* intern, const char* str, const size_t
   }
 
   if (intern->count >= intern->capacity) {
-    if (!_bebop_intern_grow(intern)) {
+    if (!bebop__intern_grow(intern)) {
       return BEBOP_STR_NULL;
     }
   }

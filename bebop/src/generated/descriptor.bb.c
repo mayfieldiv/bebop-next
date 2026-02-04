@@ -53,7 +53,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_TypeDescriptor_Encode(Bebop_Writer *w, con
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->kind)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_TYPE_DESCRIPTOR_KIND_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -222,7 +222,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_LiteralValue_Encode(Bebop_Writer *w, const
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->kind)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_LITERAL_VALUE_KIND_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -435,7 +435,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_DecoratorUsage_Encode(Bebop_Writer *w, con
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->fqn)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_DECORATOR_USAGE_FQN_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -573,7 +573,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_FieldDescriptor_Encode(Bebop_Writer *w, co
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->name)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_FIELD_DESCRIPTOR_NAME_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -710,7 +710,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_EnumMemberDescriptor_Encode(Bebop_Writer *
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->name)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_ENUM_MEMBER_DESCRIPTOR_NAME_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -849,7 +849,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_UnionBranchDescriptor_Encode(Bebop_Writer 
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->discriminator)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_UNION_BRANCH_DESCRIPTOR_DISCRIMINATOR_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -1001,7 +1001,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_MethodDescriptor_Encode(Bebop_Writer *w, c
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->name)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_METHOD_DESCRIPTOR_NAME_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -1154,7 +1154,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_EnumDef_Encode(Bebop_Writer *w, const Bebo
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->base_type)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_ENUM_DEF_BASE_TYPE_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -1267,7 +1267,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_StructDef_Encode(Bebop_Writer *w, const Be
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->fields)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_STRUCT_DEF_FIELDS_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -1368,7 +1368,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_MessageDef_Encode(Bebop_Writer *w, const B
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->fields)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_MESSAGE_DEF_FIELDS_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -1451,7 +1451,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_UnionDef_Encode(Bebop_Writer *w, const Beb
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->branches)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_UNION_DEF_BRANCHES_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -1534,7 +1534,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_ServiceDef_Encode(Bebop_Writer *w, const B
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->methods)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_SERVICE_DEF_METHODS_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -1618,7 +1618,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_ConstDef_Encode(Bebop_Writer *w, const Beb
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->type)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_CONST_DEF_TYPE_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -1720,7 +1720,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_DecoratorParamDef_Encode(Bebop_Writer *w, 
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->name)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_DECORATOR_PARAM_DEF_NAME_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -1870,7 +1870,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_DecoratorDef_Encode(Bebop_Writer *w, const
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->targets)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_DECORATOR_DEF_TARGETS_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -2048,7 +2048,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_DefinitionDescriptor_Encode(Bebop_Writer *
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->kind)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_DEFINITION_DESCRIPTOR_KIND_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -2302,7 +2302,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_Location_Encode(Bebop_Writer *w, const Beb
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->path)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_LOCATION_PATH_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -2428,7 +2428,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_SourceCodeInfo_Encode(Bebop_Writer *w, con
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->locations)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_SOURCE_CODE_INFO_LOCATIONS_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -2534,7 +2534,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_SchemaDescriptor_Encode(Bebop_Writer *w, c
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->path)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_SCHEMA_DESCRIPTOR_PATH_TAG)) != BEBOP_WIRE_OK)) return r;
@@ -2683,7 +2683,7 @@ BEBOP_WIRE_HOT Bebop_WireResult Bebop_DescriptorSet_Encode(Bebop_Writer *w, cons
     Bebop_WireResult r;
     size_t len_pos;
     if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetLen(w, &len_pos)) != BEBOP_WIRE_OK)) return r;
-    size_t start = Bebop_Writer_Len(w);
+    const size_t start = Bebop_Writer_Len(w);
 
     if (BEBOP_WIRE_IS_SOME(v->schemas)) {
         if (BEBOP_WIRE_UNLIKELY((r = Bebop_Writer_SetByte(w, BEBOP_DESCRIPTOR_SET_SCHEMAS_TAG)) != BEBOP_WIRE_OK)) return r;

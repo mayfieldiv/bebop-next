@@ -31,9 +31,6 @@ static Bebop_WireCtx* _test_ctx_new(void)
   return Bebop_WireCtx_New(&opts);
 }
 
-void setUp(void);
-void tearDown(void);
-
 void setUp(void) {}
 
 void tearDown(void) {}

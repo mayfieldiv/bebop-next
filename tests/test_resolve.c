@@ -8,9 +8,6 @@
 
 static bebop_context_t* ctx;
 
-void setUp(void);
-void tearDown(void);
-
 static const char* test_include_paths[] = {BEBOP_TEST_FIXTURES_DIR "/valid", BEBOP_STD_DIR};
 
 void setUp(void)

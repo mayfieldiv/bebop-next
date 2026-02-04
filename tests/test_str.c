@@ -6,9 +6,6 @@ static bebop_arena_t arena;
 static bebop_intern_t intern;
 static bebop_host_allocator_t alloc;
 
-void setUp(void);
-void tearDown(void);
-
 void setUp(void)
 {
   memset(&arena, 0, sizeof(arena));

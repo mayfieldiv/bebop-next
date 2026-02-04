@@ -3,9 +3,9 @@
 #define BEBOP_PARSE_CHECK(p, k) (BEBOP_PARSE_CURRENT(p)->kind == (k))
 #define BEBOP_PARSE_AT_END(p) BEBOP_PARSE_CHECK((p), BEBOP_TOKEN_EOF)
 #define BEBOP_PARSE_ADVANCE(p) \
-  (BEBOP_PARSE_AT_END(p) ? (void)0 : (void)(p)->current++, BEBOP_PARSE_PREVIOUS(p))
+  (BEBOP_PARSE_AT_END(p) ? BEBOP_PARSE_PREVIOUS(p) : ((p)->current++, BEBOP_PARSE_PREVIOUS(p)))
 
-static inline bebop_token_t* _bebop_parse_peek(const bebop_parser_t* p, const uint32_t n)
+static inline bebop_token_t* bebop__parse_peek(const bebop_parser_t* p, const uint32_t n)
 {
   if (BEBOP_UNLIKELY(p->stream.count == 0)) {
     return NULL;
@@ -16,37 +16,37 @@ static inline bebop_token_t* _bebop_parse_peek(const bebop_parser_t* p, const ui
   return &p->stream.tokens[idx];
 }
 
-static void _bebop_parse_fatal(bebop_parser_t* p, const bebop_error_t err, const char* msg)
+static void bebop__parse_fatal(bebop_parser_t* p, const bebop_error_t err, const char* msg)
 {
   p->flags |= BEBOP_PARSER_FATAL;
-  _bebop_context_set_error(p->ctx, err, msg);
+  bebop__context_set_error(p->ctx, err, msg);
 }
 
 #define BEBOP_PARSE_IS_FATAL(p) ((p)->flags & BEBOP_PARSER_FATAL)
 
-#define _bebop_PARSE_ERROR_FMT(p, tok, code, ...) \
+#define bebop__PARSE_ERROR_FMT(p, tok, code, ...) \
   do { \
-    char _bebop_msg[512]; \
-    snprintf(_bebop_msg, sizeof(_bebop_msg), __VA_ARGS__); \
-    _bebop_parse_error_at(p, tok, code, _bebop_msg); \
+    char bebop__msg[512]; \
+    snprintf(bebop__msg, sizeof(bebop__msg), __VA_ARGS__); \
+    bebop__parse_error_at(p, tok, code, bebop__msg); \
   } while (0)
 
-#define _bebop_PARSE_ERROR_HINT_FMT(p, tok, code, hint, ...) \
+#define bebop__PARSE_ERROR_HINT_FMT(p, tok, code, hint, ...) \
   do { \
     if (!((p)->flags & (BEBOP_PARSER_PANIC_MODE | BEBOP_PARSER_FATAL))) { \
       (p)->flags |= BEBOP_PARSER_HAD_ERROR | BEBOP_PARSER_PANIC_MODE; \
-      char _bebop_msg[512]; \
-      snprintf(_bebop_msg, sizeof(_bebop_msg), __VA_ARGS__); \
-      _bebop_schema_add_diagnostic( \
+      char bebop__msg[512]; \
+      snprintf(bebop__msg, sizeof(bebop__msg), __VA_ARGS__); \
+      bebop__schema_add_diagnostic( \
           (p)->schema, \
-          (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, (code), (tok)->span}, \
-          _bebop_msg, \
+          (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, (code), (tok)->span}, \
+          bebop__msg, \
           (hint) \
       ); \
     } \
   } while (0)
 
-static void _bebop_parse_error_at(
+static void bebop__parse_error_at(
     bebop_parser_t* p, const bebop_token_t* tok, const uint32_t code, const char* msg
 )
 {
@@ -56,48 +56,46 @@ static void _bebop_parse_error_at(
 
   p->flags |= BEBOP_PARSER_HAD_ERROR | BEBOP_PARSER_PANIC_MODE;
 
-  _bebop_schema_add_diagnostic(
-      p->schema, (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, code, tok->span}, msg, NULL
+  bebop__schema_add_diagnostic(
+      p->schema, (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, code, tok->span}, msg, NULL
   );
 }
 
 #define BEBOP_PARSE_ERROR_CURRENT(p, code, msg) \
-  _bebop_parse_error_at((p), BEBOP_PARSE_CURRENT(p), (code), (msg))
+  bebop__parse_error_at((p), BEBOP_PARSE_CURRENT(p), (code), (msg))
 
 #define BEBOP_PARSE_ERROR(p, code, msg) \
-  _bebop_parse_error_at((p), BEBOP_PARSE_PREVIOUS(p), (code), (msg))
+  bebop__parse_error_at((p), BEBOP_PARSE_PREVIOUS(p), (code), (msg))
 
 #define BEBOP_PARSE_WARNING(p, tok, code, msg) \
-  _bebop_schema_add_diagnostic( \
-      (p)->schema, (_bebop_diag_loc_t) {BEBOP_DIAG_WARNING, (code), (tok)->span}, (msg), NULL \
+  bebop__schema_add_diagnostic( \
+      (p)->schema, (bebop__diag_loc_t) {BEBOP_DIAG_WARNING, (code), (tok)->span}, (msg), NULL \
   )
 
 #define BEBOP_PARSE_CONSUME(p, k, msg) \
   (BEBOP_PARSE_CHECK((p), (k)) \
-       ? BEBOP_PARSE_ADVANCE(p) \
-       : (BEBOP_PARSE_ERROR_CURRENT((p), BEBOP_DIAG_UNEXPECTED_TOKEN, (msg)), \
-          (bebop_token_t*)NULL))
+       ? (BEBOP_PARSE_ADVANCE(p), true) \
+       : (BEBOP_PARSE_ERROR_CURRENT((p), BEBOP_DIAG_UNEXPECTED_TOKEN, (msg)), false))
 
 #define BEBOP_PARSE_CONSUME_AFTER(p, k, msg) \
   (BEBOP_PARSE_CHECK((p), (k)) \
-       ? BEBOP_PARSE_ADVANCE(p) \
-       : (BEBOP_PARSE_ERROR((p), BEBOP_DIAG_UNEXPECTED_TOKEN, (msg)), (bebop_token_t*)NULL))
+       ? (BEBOP_PARSE_ADVANCE(p), true) \
+       : (BEBOP_PARSE_ERROR((p), BEBOP_DIAG_UNEXPECTED_TOKEN, (msg)), false))
 
 #define BEBOP_PARSE_MATCH(p, k) \
   (BEBOP_PARSE_CHECK((p), (k)) ? (BEBOP_PARSE_ADVANCE(p), true) : false)
 
-static inline bool _bebop_token_is_ident_or_keyword(bebop_token_kind_t kind)
+static inline bool bebop__token_is_ident_or_keyword(bebop_token_kind_t kind)
 {
   return kind == BEBOP_TOKEN_IDENTIFIER || (kind >= BEBOP_TOKEN_ENUM && kind <= BEBOP_TOKEN_CONST);
 }
 
 #define BEBOP_PARSE_CONSUME_NAME(p, msg) \
-  (_bebop_token_is_ident_or_keyword(BEBOP_PARSE_CURRENT(p)->kind) \
-       ? BEBOP_PARSE_ADVANCE(p) \
-       : (BEBOP_PARSE_ERROR_CURRENT((p), BEBOP_DIAG_UNEXPECTED_TOKEN, (msg)), \
-          (bebop_token_t*)NULL))
+  (bebop__token_is_ident_or_keyword(BEBOP_PARSE_CURRENT(p)->kind) \
+       ? (BEBOP_PARSE_ADVANCE(p), true) \
+       : (BEBOP_PARSE_ERROR_CURRENT((p), BEBOP_DIAG_UNEXPECTED_TOKEN, (msg)), false))
 
-static void _bebop_parse_synchronize(bebop_parser_t* p)
+static void bebop__parse_synchronize(bebop_parser_t* p)
 {
   p->flags &= ~(uint32_t)BEBOP_PARSER_PANIC_MODE;
 
@@ -131,7 +129,7 @@ static void _bebop_parse_synchronize(bebop_parser_t* p)
   }
 }
 
-static void _bebop_parse_synchronize_in_block(bebop_parser_t* p)
+static void bebop__parse_synchronize_in_block(bebop_parser_t* p)
 {
   p->flags &= ~(uint32_t)BEBOP_PARSER_PANIC_MODE;
 
@@ -151,57 +149,57 @@ static void _bebop_parse_synchronize_in_block(bebop_parser_t* p)
   }
 }
 
-static const char* const _bebop_fuzzy_keywords[] = {
+static const char* const bebop__fuzzy_keywords[] = {
 #define X(N, s) s,
     BEBOP_KEYWORDS(X)
 #undef X
 };
-#define _BEBOP_FUZZY_KEYWORD_COUNT \
-  (sizeof(_bebop_fuzzy_keywords) / sizeof(_bebop_fuzzy_keywords[0]))
+#define bebop__FUZZY_KEYWORD_COUNT \
+  (sizeof(bebop__fuzzy_keywords) / sizeof(bebop__fuzzy_keywords[0]))
 
-static void _bebop_suggest_keyword(
+static void bebop__suggest_keyword(
     bebop_parser_t* p, const char* input, size_t input_len, bebop_span_t span
 )
 {
   const char* suggestion = bebop_util_fuzzy_match(
-      input, input_len, _bebop_fuzzy_keywords, _BEBOP_FUZZY_KEYWORD_COUNT, 3
+      input, input_len, bebop__fuzzy_keywords, bebop__FUZZY_KEYWORD_COUNT, 3
   );
   if (suggestion) {
     char buf[64];
     snprintf(buf, sizeof(buf), "did you mean '%s'?", suggestion);
-    _bebop_schema_diag_add_label(p->schema, span, buf);
+    bebop__schema_diag_add_label(p->schema, span, buf);
   }
 }
 
 typedef struct {
   const char* name;
   const char* suggestion;
-} _bebop_reserved_ident_t;
+} bebop__reserved_ident_t;
 
-static const _bebop_reserved_ident_t _bebop_reserved_identifiers[] = {
+static const bebop__reserved_ident_t bebop__reserved_identifiers[] = {
 #define X(N, s, sug) {s, sug},
     BEBOP_RESERVED_IDENTIFIERS(X)
 #undef X
 };
-#define _BEBOP_RESERVED_IDENT_COUNT BEBOP_COUNTOF(_bebop_reserved_identifiers)
+#define bebop__RESERVED_IDENT_COUNT BEBOP_COUNTOF(bebop__reserved_identifiers)
 
-static const char* _bebop_check_reserved_identifier(const char* name)
+static const char* bebop__check_reserved_identifier(const char* name)
 {
-  for (size_t i = 0; i < _BEBOP_RESERVED_IDENT_COUNT; i++) {
-    if (strcmp(name, _bebop_reserved_identifiers[i].name) == 0) {
-      return _bebop_reserved_identifiers[i].suggestion;
+  for (size_t i = 0; i < bebop__RESERVED_IDENT_COUNT; i++) {
+    if (strcmp(name, bebop__reserved_identifiers[i].name) == 0) {
+      return bebop__reserved_identifiers[i].suggestion;
     }
   }
   return NULL;
 }
 
-static void _bebop_check_reserved_name(
+static void bebop__check_reserved_name(
     bebop_parser_t* p, const bebop_token_t* tok, bebop_str_t name
 )
 {
-  const char* suggestion = _bebop_check_reserved_identifier(BEBOP_STR(p->ctx, name));
+  const char* suggestion = bebop__check_reserved_identifier(BEBOP_STR(p->ctx, name));
   if (suggestion) {
-    _bebop_PARSE_ERROR_FMT(
+    bebop__PARSE_ERROR_FMT(
         p,
         tok,
         BEBOP_DIAG_RESERVED_IDENTIFIER,
@@ -210,7 +208,7 @@ static void _bebop_check_reserved_name(
     );
     char label[64];
     snprintf(label, sizeof(label), "did you mean '%s'?", suggestion);
-    _bebop_schema_diag_add_label(p->schema, tok->span, label);
+    bebop__schema_diag_add_label(p->schema, tok->span, label);
   }
 }
 
@@ -221,22 +219,22 @@ static void _bebop_check_reserved_name(
   X(validate) \
   X(export)
 
-static const char* const _bebop_decorator_body_items[] = {
+static const char* const bebop__decorator_body_items[] = {
 #define X(name) #name,
     BEBOP_DECORATOR_BODY_ITEMS(X)
 #undef X
 };
-#define _BEBOP_DECORATOR_BODY_ITEM_COUNT BEBOP_COUNTOF(_bebop_decorator_body_items)
+#define bebop__DECORATOR_BODY_ITEM_COUNT BEBOP_COUNTOF(bebop__decorator_body_items)
 
-static bool _bebop_is_decorator_body_item(bebop_parser_t* p)
+static bool bebop__is_decorator_body_item(bebop_parser_t* p)
 {
   if (!BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_IDENTIFIER)) {
     return false;
   }
   const char* name = BEBOP_STR(p->ctx, BEBOP_PARSE_CURRENT(p)->lexeme);
   const size_t len = BEBOP_STR_LEN(p->ctx, BEBOP_PARSE_CURRENT(p)->lexeme);
-  for (size_t i = 0; i < _BEBOP_DECORATOR_BODY_ITEM_COUNT; i++) {
-    const char* item = _bebop_decorator_body_items[i];
+  for (size_t i = 0; i < bebop__DECORATOR_BODY_ITEM_COUNT; i++) {
+    const char* item = bebop__decorator_body_items[i];
     if (len == strlen(item) && memcmp(name, item, len) == 0) {
       return true;
     }
@@ -244,7 +242,7 @@ static bool _bebop_is_decorator_body_item(bebop_parser_t* p)
   return false;
 }
 
-static void _bebop_parse_synchronize_in_decorator(bebop_parser_t* p)
+static void bebop__parse_synchronize_in_decorator(bebop_parser_t* p)
 {
   p->flags &= ~(uint32_t)BEBOP_PARSER_PANIC_MODE;
 
@@ -269,28 +267,28 @@ static void _bebop_parse_synchronize_in_decorator(bebop_parser_t* p)
       }
       continue;
     }
-    if (depth == 0 && _bebop_is_decorator_body_item(p)) {
+    if (depth == 0 && bebop__is_decorator_body_item(p)) {
       break;
     }
     BEBOP_PARSE_ADVANCE(p);
   }
 }
 
-static void _bebop_suggest_decorator_item(
+static void bebop__suggest_decorator_item(
     bebop_parser_t* p, const char* input, size_t input_len, bebop_span_t span
 )
 {
   const char* suggestion = bebop_util_fuzzy_match(
-      input, input_len, _bebop_decorator_body_items, _BEBOP_DECORATOR_BODY_ITEM_COUNT, 3
+      input, input_len, bebop__decorator_body_items, bebop__DECORATOR_BODY_ITEM_COUNT, 3
   );
   if (suggestion) {
     char buf[64];
     snprintf(buf, sizeof(buf), "did you mean '%s'?", suggestion);
-    _bebop_schema_diag_add_label(p->schema, span, buf);
+    bebop__schema_diag_add_label(p->schema, span, buf);
   }
 }
 
-static bebop_span_t _bebop_parse_span_from_tokens(
+static bebop_span_t bebop__parse_span_from_tokens(
     const bebop_token_t* first, const bebop_token_t* last
 )
 {
@@ -317,11 +315,11 @@ static bebop_span_t _bebop_parse_span_from_tokens(
 }
 
 #define BEBOP_PARSE_SET_DEF_SPAN(def, keyword, end) \
-  ((def)->span = _bebop_parse_span_from_tokens( \
+  ((def)->span = bebop__parse_span_from_tokens( \
        (keyword), (end) ? (end) : &(bebop_token_t) {.span = (def)->name_span} \
    ))
 
-static bebop_str_t _bebop_parse_extract_doc(
+static bebop_str_t bebop__parse_extract_doc(
     const bebop_parser_t* p, const bebop_trivia_list_t* trivia
 )
 {
@@ -452,9 +450,9 @@ static bebop_str_t _bebop_parse_extract_doc(
 typedef struct {
   const char* name;
   bebop_type_kind_t kind;
-} _bebop_scalar_entry_t;
+} bebop__scalar_entry_t;
 
-static const _bebop_scalar_entry_t _bebop_scalar_types[] = {
+static const bebop__scalar_entry_t bebop__scalar_types[] = {
 #define X(name, str, size, is_int) {str, BEBOP_TYPE_##name},
     BEBOP_SCALAR_TYPES(X)
 #undef X
@@ -463,22 +461,22 @@ static const _bebop_scalar_entry_t _bebop_scalar_types[] = {
 #undef X
 };
 
-#define _bebop_SCALAR_COUNT BEBOP_COUNTOF(_bebop_scalar_types)
+#define bebop__SCALAR_COUNT BEBOP_COUNTOF(bebop__scalar_types)
 
-static bool _bebop_parse_lookup_scalar(
+static bool bebop__parse_lookup_scalar(
     const char* name, const size_t len, bebop_type_kind_t* out_kind
 )
 {
-  for (size_t i = 0; i < _bebop_SCALAR_COUNT; i++) {
-    if (bebop_streqn(_bebop_scalar_types[i].name, name, len)) {
-      *out_kind = _bebop_scalar_types[i].kind;
+  for (size_t i = 0; i < bebop__SCALAR_COUNT; i++) {
+    if (bebop_streqn(bebop__scalar_types[i].name, name, len)) {
+      *out_kind = bebop__scalar_types[i].kind;
       return true;
     }
   }
   return false;
 }
 
-static bool _bebop_parse_is_integer_type(const bebop_type_kind_t kind)
+static bool bebop__parse_is_integer_type(const bebop_type_kind_t kind)
 {
   switch (kind) {
 #define X(name, str, size, is_int) \
@@ -491,7 +489,7 @@ static bool _bebop_parse_is_integer_type(const bebop_type_kind_t kind)
   }
 }
 
-__attribute__((unused)) static uint32_t _bebop_parse_scalar_wire_size(const bebop_type_kind_t kind)
+__attribute__((unused)) static uint32_t bebop__parse_scalar_wire_size(const bebop_type_kind_t kind)
 {
   switch (kind) {
 #define X(name, str, size, is_int) \
@@ -504,7 +502,7 @@ __attribute__((unused)) static uint32_t _bebop_parse_scalar_wire_size(const bebo
   }
 }
 
-static const char* const _bebop_param_type_names[] = {
+static const char* const bebop__param_type_names[] = {
 #define X(name, str, size, is_int) str,
     BEBOP_SCALAR_TYPES(X)
 #undef X
@@ -513,29 +511,29 @@ static const char* const _bebop_param_type_names[] = {
 #undef X
             "type",
 };
-#define _BEBOP_PARAM_TYPE_NAME_COUNT BEBOP_COUNTOF(_bebop_param_type_names)
+#define bebop__PARAM_TYPE_NAME_COUNT BEBOP_COUNTOF(bebop__param_type_names)
 
-static void _bebop_suggest_param_type(
+static void bebop__suggest_param_type(
     bebop_parser_t* p, const char* input, size_t input_len, bebop_span_t span
 )
 {
   const char* suggestion = bebop_util_fuzzy_match(
-      input, input_len, _bebop_param_type_names, _BEBOP_PARAM_TYPE_NAME_COUNT, 3
+      input, input_len, bebop__param_type_names, bebop__PARAM_TYPE_NAME_COUNT, 3
   );
   if (suggestion) {
     char buf[64];
     snprintf(buf, sizeof(buf), "did you mean '%s'?", suggestion);
-    _bebop_schema_diag_add_label(p->schema, span, buf);
+    bebop__schema_diag_add_label(p->schema, span, buf);
   }
 }
 
-static bebop_type_t* _bebop_parse_make_scalar_type(
+static bebop_type_t* bebop__parse_make_scalar_type(
     bebop_parser_t* p, const bebop_type_kind_t kind, const bebop_span_t span
 )
 {
   bebop_type_t* type = bebop_arena_new(BEBOP_ARENA(p->ctx), bebop_type_t, 1);
   if (!type) {
-    _bebop_parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate type");
+    bebop__parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate type");
     return NULL;
   }
   type->kind = kind;
@@ -543,13 +541,13 @@ static bebop_type_t* _bebop_parse_make_scalar_type(
   return type;
 }
 
-static bebop_type_t* _bebop_parse_make_array_type(
+static bebop_type_t* bebop__parse_make_array_type(
     bebop_parser_t* p, bebop_type_t* element, const bebop_span_t span
 )
 {
   bebop_type_t* type = bebop_arena_new(BEBOP_ARENA(p->ctx), bebop_type_t, 1);
   if (!type) {
-    _bebop_parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate array type");
+    bebop__parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate array type");
     return NULL;
   }
   type->kind = BEBOP_TYPE_ARRAY;
@@ -558,13 +556,13 @@ static bebop_type_t* _bebop_parse_make_array_type(
   return type;
 }
 
-static bebop_type_t* _bebop_parse_make_fixed_array_type(
+static bebop_type_t* bebop__parse_make_fixed_array_type(
     bebop_parser_t* p, bebop_type_t* element, const uint32_t size, const bebop_span_t span
 )
 {
   bebop_type_t* type = bebop_arena_new(BEBOP_ARENA(p->ctx), bebop_type_t, 1);
   if (!type) {
-    _bebop_parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate fixed array type");
+    bebop__parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate fixed array type");
     return NULL;
   }
   type->kind = BEBOP_TYPE_FIXED_ARRAY;
@@ -574,13 +572,13 @@ static bebop_type_t* _bebop_parse_make_fixed_array_type(
   return type;
 }
 
-static bebop_type_t* _bebop_parse_make_map_type(
+static bebop_type_t* bebop__parse_make_map_type(
     bebop_parser_t* p, bebop_type_t* key, bebop_type_t* value, const bebop_span_t span
 )
 {
   bebop_type_t* type = bebop_arena_new(BEBOP_ARENA(p->ctx), bebop_type_t, 1);
   if (!type) {
-    _bebop_parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate map type");
+    bebop__parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate map type");
     return NULL;
   }
   type->kind = BEBOP_TYPE_MAP;
@@ -590,13 +588,13 @@ static bebop_type_t* _bebop_parse_make_map_type(
   return type;
 }
 
-static bebop_type_t* _bebop_parse_make_defined_type(
+static bebop_type_t* bebop__parse_make_defined_type(
     bebop_parser_t* p, const bebop_str_t name, const bebop_span_t span
 )
 {
   bebop_type_t* type = bebop_arena_new(BEBOP_ARENA(p->ctx), bebop_type_t, 1);
   if (!type) {
-    _bebop_parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate defined type");
+    bebop__parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate defined type");
     return NULL;
   }
   type->kind = BEBOP_TYPE_DEFINED;
@@ -624,7 +622,7 @@ typedef struct {
   uint32_t depth;
 } bebop_type_frame_t;
 
-static bebop_type_t* _bebop_parse_type(bebop_parser_t* p)
+static bebop_type_t* bebop__parse_type(bebop_parser_t* p)
 {
   bebop_type_frame_t stack[BEBOP_TYPE_STACK_SIZE];
   int sp = 0;
@@ -682,9 +680,9 @@ static bebop_type_t* _bebop_parse_type(bebop_parser_t* p)
           const size_t len = BEBOP_STR_LEN(p->ctx, tok->lexeme);
 
           bebop_type_kind_t kind;
-          if (_bebop_parse_lookup_scalar(lex, len, &kind)) {
+          if (bebop__parse_lookup_scalar(lex, len, &kind)) {
             BEBOP_PARSE_ADVANCE(p);
-            frame->result = _bebop_parse_make_scalar_type(p, kind, tok->span);
+            frame->result = bebop__parse_make_scalar_type(p, kind, tok->span);
           } else {
             const bebop_token_t* first_tok = BEBOP_PARSE_ADVANCE(p);
             const bebop_token_t* last_tok = first_tok;
@@ -702,15 +700,15 @@ static bebop_type_t* _bebop_parse_type(bebop_parser_t* p)
               memcpy(name_buf, first_str, name_len);
 
               while (BEBOP_PARSE_MATCH(p, BEBOP_TOKEN_DOT)) {
-                bebop_token_t* part = BEBOP_PARSE_CONSUME_AFTER(
-                    p, BEBOP_TOKEN_IDENTIFIER, "Expected identifier after '.'"
-                );
-                if (!part) {
+                if (!BEBOP_PARSE_CONSUME_AFTER(
+                        p, BEBOP_TOKEN_IDENTIFIER, "Expected identifier after '.'"
+                    )) {
                   return NULL;
                 }
+                bebop_token_t* part = BEBOP_PARSE_PREVIOUS(p);
 
                 const char* part_str = BEBOP_STR(p->ctx, part->lexeme);
-                size_t part_len = BEBOP_STR_LEN(p->ctx, part->lexeme);
+                const size_t part_len = BEBOP_STR_LEN(p->ctx, part->lexeme);
 
                 if (name_len + 1 + part_len >= sizeof(name_buf)) {
                   BEBOP_PARSE_ERROR(
@@ -727,10 +725,10 @@ static bebop_type_t* _bebop_parse_type(bebop_parser_t* p)
 
               const bebop_str_t qualified_name =
                   bebop_intern_n(BEBOP_INTERN(p->ctx), name_buf, name_len);
-              const bebop_span_t span = _bebop_parse_span_from_tokens(first_tok, last_tok);
-              frame->result = _bebop_parse_make_defined_type(p, qualified_name, span);
+              const bebop_span_t span = bebop__parse_span_from_tokens(first_tok, last_tok);
+              frame->result = bebop__parse_make_defined_type(p, qualified_name, span);
             } else {
-              frame->result = _bebop_parse_make_defined_type(p, first_tok->lexeme, first_tok->span);
+              frame->result = bebop__parse_make_defined_type(p, first_tok->lexeme, first_tok->span);
             }
           }
           frame->state = TYPE_STATE_ARRAY_SUFFIX;
@@ -779,8 +777,8 @@ static bebop_type_t* _bebop_parse_type(bebop_parser_t* p)
         }
 
         const bebop_span_t span =
-            _bebop_parse_span_from_tokens(frame->start_tok, BEBOP_PARSE_PREVIOUS(p));
-        frame->result = _bebop_parse_make_map_type(p, frame->map_key, value, span);
+            bebop__parse_span_from_tokens(frame->start_tok, BEBOP_PARSE_PREVIOUS(p));
+        frame->result = bebop__parse_make_map_type(p, frame->map_key, value, span);
         frame->state = TYPE_STATE_ARRAY_SUFFIX;
         break;
       }
@@ -796,7 +794,7 @@ static bebop_type_t* _bebop_parse_type(bebop_parser_t* p)
           }
 
           if (BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_NUMBER)) {
-            bebop_token_t* size_tok = BEBOP_PARSE_ADVANCE(p);
+            const bebop_token_t* size_tok = BEBOP_PARSE_ADVANCE(p);
             const char* str = BEBOP_STR(p->ctx, size_tok->lexeme);
             const size_t len = BEBOP_STR_LEN(p->ctx, size_tok->lexeme);
             int64_t size_val;
@@ -804,7 +802,7 @@ static bebop_type_t* _bebop_parse_type(bebop_parser_t* p)
             if (!bebop_util_parse_int(str, len, &size_val) || size_val < 1
                 || size_val > BEBOP_MAX_FIXED_ARRAY_SIZE)
             {
-              _bebop_PARSE_ERROR_FMT(
+              bebop__PARSE_ERROR_FMT(
                   p,
                   size_tok,
                   BEBOP_DIAG_INVALID_FIELD,
@@ -819,16 +817,16 @@ static bebop_type_t* _bebop_parse_type(bebop_parser_t* p)
             }
 
             const bebop_span_t span =
-                _bebop_parse_span_from_tokens(frame->start_tok, BEBOP_PARSE_PREVIOUS(p));
+                bebop__parse_span_from_tokens(frame->start_tok, BEBOP_PARSE_PREVIOUS(p));
             frame->result =
-                _bebop_parse_make_fixed_array_type(p, frame->result, (uint32_t)size_val, span);
+                bebop__parse_make_fixed_array_type(p, frame->result, (uint32_t)size_val, span);
           } else {
             if (!BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_RBRACKET, "Expected ']' for array type")) {
               return NULL;
             }
             const bebop_span_t span =
-                _bebop_parse_span_from_tokens(frame->start_tok, BEBOP_PARSE_PREVIOUS(p));
-            frame->result = _bebop_parse_make_array_type(p, frame->result, span);
+                bebop__parse_span_from_tokens(frame->start_tok, BEBOP_PARSE_PREVIOUS(p));
+            frame->result = bebop__parse_make_array_type(p, frame->result, span);
           }
 
         } else {
@@ -853,7 +851,7 @@ static bebop_type_t* _bebop_parse_type(bebop_parser_t* p)
 
 #define BEBOP_MAX_ENV_VAR_NAME 256
 
-static bebop_str_t _bebop_parse_substitute_env_vars(
+static bebop_str_t bebop__parse_substitute_env_vars(
     bebop_parser_t* p, const bebop_str_t src, bool* had_substitution
 )
 {
@@ -911,7 +909,7 @@ static bebop_str_t _bebop_parse_substitute_env_vars(
         var_end++;
       }
 
-      size_t var_len = var_end - var_start;
+      const size_t var_len = var_end - var_start;
       if (var_end >= len) {
         BEBOP_PARSE_ERROR(p, BEBOP_DIAG_INVALID_LITERAL, "Unclosed environment variable reference");
         goto fail;
@@ -930,27 +928,27 @@ static bebop_str_t _bebop_parse_substitute_env_vars(
       const char* value = NULL;
       const bebop_env_t* env = &p->ctx->host.env;
       for (uint32_t ei = 0; ei < env->count; ei++) {
-        if (_bebop_strcmp(env->entries[ei].key, var_name) == 0) {
+        if (bebop__strcmp(env->entries[ei].key, var_name) == 0) {
           value = env->entries[ei].value;
           break;
         }
       }
 
       if (value) {
-        size_t value_len = strlen(value);
+        const size_t value_len = strlen(value);
         NEED_SPACE(value_len);
         memcpy(result + result_len, value, value_len);
         result_len += value_len;
         *had_substitution = true;
       } else {
-        _bebop_PARSE_ERROR_FMT(
+        bebop__PARSE_ERROR_FMT(
             p,
             BEBOP_PARSE_PREVIOUS(p),
             BEBOP_DIAG_ENV_VAR_NOT_FOUND,
             "Environment variable '%s' not found",
             var_name
         );
-        size_t orig_len = var_end - i + 1;
+        const size_t orig_len = var_end - i + 1;
         NEED_SPACE(orig_len);
         memcpy(result + result_len, str + i, orig_len);
         result_len += orig_len;
@@ -970,9 +968,9 @@ fail:
   return src;
 }
 
-static bool _bebop_parse_number(
+static bool bebop__parse_number(
     bebop_parser_t* p,
-    const _bebop_str_view_t str,
+    const bebop__str_view_t str,
     const bebop_type_kind_t expected_type,
     bebop_literal_t* out
 )
@@ -1004,7 +1002,7 @@ static bool _bebop_parse_number(
   return false;
 }
 
-static bool _bebop_parse_literal(
+static bool bebop__parse_literal(
     bebop_parser_t* p, const bebop_type_kind_t expected_type, bebop_literal_t* out
 )
 {
@@ -1032,7 +1030,7 @@ static bool _bebop_parse_literal(
       out->raw_value = tok->lexeme;
 
       bool had_subst = false;
-      out->string_val = _bebop_parse_substitute_env_vars(p, tok->lexeme, &had_subst);
+      out->string_val = bebop__parse_substitute_env_vars(p, tok->lexeme, &had_subst);
       out->has_env_var = had_subst;
 
       if (expected_type == BEBOP_TYPE_UUID) {
@@ -1114,7 +1112,7 @@ static bool _bebop_parse_literal(
       }
       const size_t len = BEBOP_STR_LEN(p->ctx, tok->lexeme);
       out->raw_value = tok->lexeme;
-      return _bebop_parse_number(p, (_bebop_str_view_t) {str, len}, expected_type, out);
+      return bebop__parse_number(p, (bebop__str_view_t) {str, len}, expected_type, out);
     }
 
     case BEBOP_TOKEN_IDENTIFIER: {
@@ -1148,7 +1146,7 @@ static bool _bebop_parse_literal(
           BEBOP_PARSE_ADVANCE(p);
           out->kind = BEBOP_LITERAL_FLOAT;
           out->float_val = (double)-INFINITY;
-          out->span = _bebop_parse_span_from_tokens(tok, BEBOP_PARSE_PREVIOUS(p));
+          out->span = bebop__parse_span_from_tokens(tok, BEBOP_PARSE_PREVIOUS(p));
           out->raw_value = bebop_intern_n(&p->ctx->intern, "-inf", 4);
           return true;
         }
@@ -1157,10 +1155,10 @@ static bool _bebop_parse_literal(
       if (num_tok->kind == BEBOP_TOKEN_NUMBER) {
         BEBOP_PARSE_ADVANCE(p);
         const char* str = BEBOP_STR(p->ctx, num_tok->lexeme);
-        size_t len = BEBOP_STR_LEN(p->ctx, num_tok->lexeme);
+        const size_t len = BEBOP_STR_LEN(p->ctx, num_tok->lexeme);
 
         if (!str) {
-          _bebop_context_set_error(p->ctx, BEBOP_ERR_INTERNAL, "Null string in number token");
+          bebop__context_set_error(p->ctx, BEBOP_ERR_INTERNAL, "Null string in number token");
           return false;
         }
 
@@ -1172,9 +1170,9 @@ static bool _bebop_parse_literal(
         buf[0] = '-';
         memcpy(buf + 1, str, len);
         buf[len + 1] = '\0';
-        out->span = _bebop_parse_span_from_tokens(tok, BEBOP_PARSE_PREVIOUS(p));
+        out->span = bebop__parse_span_from_tokens(tok, BEBOP_PARSE_PREVIOUS(p));
         out->raw_value = bebop_intern_n(&p->ctx->intern, buf, len + 1);
-        return _bebop_parse_number(p, (_bebop_str_view_t) {buf, len + 1}, expected_type, out);
+        return bebop__parse_number(p, (bebop__str_view_t) {buf, len + 1}, expected_type, out);
       }
 
       BEBOP_PARSE_ERROR_CURRENT(p, BEBOP_DIAG_INVALID_LITERAL, "Expected number after '-'");
@@ -1189,7 +1187,7 @@ static bool _bebop_parse_literal(
   return false;
 }
 
-static bebop_decorator_arg_t* _bebop_parse_decorator_args(bebop_parser_t* p, uint32_t* out_count)
+static bebop_decorator_arg_t* bebop__parse_decorator_args(bebop_parser_t* p, uint32_t* out_count)
 {
   bebop_decorator_arg_t* args = NULL;
   uint32_t count = 0;
@@ -1205,8 +1203,9 @@ static bebop_decorator_arg_t* _bebop_parse_decorator_args(bebop_parser_t* p, uin
     bebop_str_t arg_name = BEBOP_STR_NULL;
     bebop_span_t name_span = BEBOP_SPAN_INVALID;
 
+    const bebop_token_t* peek_tok = bebop__parse_peek(p, 1);
     if (BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_IDENTIFIER)
-        && _bebop_parse_peek(p, 1)->kind == BEBOP_TOKEN_COLON)
+        && peek_tok && peek_tok->kind == BEBOP_TOKEN_COLON)
     {
       const bebop_token_t* name_tok = BEBOP_PARSE_ADVANCE(p);
       arg_name = name_tok->lexeme;
@@ -1215,7 +1214,7 @@ static bebop_decorator_arg_t* _bebop_parse_decorator_args(bebop_parser_t* p, uin
     }
 
     bebop_literal_t value;
-    if (!_bebop_parse_literal(p, BEBOP_TYPE_STRING, &value)) {
+    if (!bebop__parse_literal(p, BEBOP_TYPE_STRING, &value)) {
       break;
     }
 
@@ -1228,7 +1227,7 @@ static bebop_decorator_arg_t* _bebop_parse_decorator_args(bebop_parser_t* p, uin
     arg->name = arg_name;
     arg->span = bebop_str_is_null(arg_name)
         ? value.span
-        : _bebop_parse_span_from_tokens(
+        : bebop__parse_span_from_tokens(
               &(bebop_token_t) {.span = name_span}, &(bebop_token_t) {.span = value.span}
           );
     arg->value = value;
@@ -1238,15 +1237,14 @@ static bebop_decorator_arg_t* _bebop_parse_decorator_args(bebop_parser_t* p, uin
   return args;
 }
 
-static bebop_decorator_t* _bebop_parse_decorators(bebop_parser_t* p)
+static bebop_decorator_t* bebop__parse_decorators(bebop_parser_t* p)
 {
   bebop_decorator_t* head = NULL;
   bebop_decorator_t** tail = &head;
 
   while (BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_AT)) {
     const bebop_token_t* at = BEBOP_PARSE_ADVANCE(p);
-    bebop_token_t* name = BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_IDENTIFIER, "Expected decorator name");
-    if (!name) {
+    if (!BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_IDENTIFIER, "Expected decorator name")) {
       while (!BEBOP_PARSE_AT_END(p) && !BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_AT)
              && !BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_STRUCT)
              && !BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_MESSAGE)
@@ -1258,25 +1256,26 @@ static bebop_decorator_t* _bebop_parse_decorators(bebop_parser_t* p)
       }
       continue;
     }
+    bebop_token_t* name = BEBOP_PARSE_PREVIOUS(p);
 
     bebop_str_t dec_name = name->lexeme;
 
     while (BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_DOT)) {
       BEBOP_PARSE_ADVANCE(p);
-      bebop_token_t* next =
-          BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_IDENTIFIER, "Expected identifier after '.'");
-      if (!next) {
+      if (!BEBOP_PARSE_CONSUME_AFTER(
+              p, BEBOP_TOKEN_IDENTIFIER, "Expected identifier after '.'")) {
         break;
       }
+      bebop_token_t* next = BEBOP_PARSE_PREVIOUS(p);
 
       const char* left = BEBOP_STR(p->ctx, dec_name);
       const size_t left_len = BEBOP_STR_LEN(p->ctx, dec_name);
       const char* right = BEBOP_STR(p->ctx, next->lexeme);
       const size_t right_len = BEBOP_STR_LEN(p->ctx, next->lexeme);
-      char* buf = _bebop_join_dotted(
+      char* buf = bebop__join_dotted(
           BEBOP_ARENA(p->ctx),
-          (_bebop_str_view_t) {left, left_len},
-          (_bebop_str_view_t) {right, right_len}
+          (bebop__str_view_t) {left, left_len},
+          (bebop__str_view_t) {right, right_len}
       );
       if (!buf) {
         break;
@@ -1288,7 +1287,7 @@ static bebop_decorator_t* _bebop_parse_decorators(bebop_parser_t* p)
     uint32_t arg_count = 0;
 
     if (BEBOP_PARSE_MATCH(p, BEBOP_TOKEN_LPAREN)) {
-      args = _bebop_parse_decorator_args(p, &arg_count);
+      args = bebop__parse_decorator_args(p, &arg_count);
       if (!BEBOP_PARSE_CONSUME_AFTER(
               p, BEBOP_TOKEN_RPAREN, "Expected ')' after decorator arguments"
           ))
@@ -1299,12 +1298,12 @@ static bebop_decorator_t* _bebop_parse_decorators(bebop_parser_t* p)
 
     bebop_decorator_t* dec = bebop_arena_new(BEBOP_ARENA(p->ctx), bebop_decorator_t, 1);
     if (!dec) {
-      _bebop_parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate decorator");
+      bebop__parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate decorator");
       return head;
     }
 
     dec->name = dec_name;
-    dec->span = _bebop_parse_span_from_tokens(at, BEBOP_PARSE_PREVIOUS(p));
+    dec->span = bebop__parse_span_from_tokens(at, BEBOP_PARSE_PREVIOUS(p));
     dec->args = args;
     dec->arg_count = arg_count;
     dec->next = NULL;
@@ -1323,13 +1322,13 @@ static bebop_decorator_t* _bebop_parse_decorators(bebop_parser_t* p)
 }
 
 typedef enum {
-  _bebop_OP_NONE = 0,
-  _bebop_OP_OR = 1,
-  _bebop_OP_AND = 2,
-  _bebop_OP_SHIFT = 3,
-} _bebop_op_t;
+  bebop__OP_NONE = 0,
+  bebop__OP_OR = 1,
+  bebop__OP_AND = 2,
+  bebop__OP_SHIFT = 3,
+} bebop__op_t;
 
-static bool _bebop_parse_lookup_enum_member(
+static bool bebop__parse_lookup_enum_member(
     const bebop_parser_t* p, const bebop_def_t* enum_def, const bebop_str_t name, int64_t* out_val
 )
 {
@@ -1358,29 +1357,29 @@ static bool _bebop_parse_lookup_enum_member(
   return false;
 }
 
-#define _bebop_EXPR_STACK_SIZE 32
+#define bebop__EXPR_STACK_SIZE 32
 
 typedef enum {
   EXPR_STATE_OPERAND,
   EXPR_STATE_OPERATOR,
-} _bebop_expr_state_t;
+} bebop__expr_state_t;
 
 typedef struct {
-  int64_t value_stack[_bebop_EXPR_STACK_SIZE];
-  _bebop_op_t op_stack[_bebop_EXPR_STACK_SIZE];
+  int64_t value_stack[bebop__EXPR_STACK_SIZE];
+  bebop__op_t op_stack[bebop__EXPR_STACK_SIZE];
   int value_top;
   int op_top;
   bool negate_next;
-} _bebop_expr_frame_t;
+} bebop__expr_frame_t;
 
-static int64_t _bebop_parse_apply_op(const int64_t a, const int64_t b, const _bebop_op_t op)
+static int64_t bebop__parse_apply_op(const int64_t a, const int64_t b, const bebop__op_t op)
 {
   switch (op) {
-    case _bebop_OP_OR:
+    case bebop__OP_OR:
       return a | b;
-    case _bebop_OP_AND:
+    case bebop__OP_AND:
       return a & b;
-    case _bebop_OP_SHIFT:
+    case bebop__OP_SHIFT:
       if (b < 0 || b >= 64) {
         return 0;
       }
@@ -1390,19 +1389,19 @@ static int64_t _bebop_parse_apply_op(const int64_t a, const int64_t b, const _be
   }
 }
 
-static int64_t _bebop_parse_expression(bebop_parser_t* p, bebop_def_t* enum_def)
+static int64_t bebop__parse_expression(bebop_parser_t* p, bebop_def_t* enum_def)
 {
-  _bebop_expr_frame_t frames[_bebop_EXPR_STACK_SIZE];
+  bebop__expr_frame_t frames[bebop__EXPR_STACK_SIZE];
   int frame_top = 0;
 
   frames[0].value_top = -1;
   frames[0].op_top = -1;
   frames[0].negate_next = false;
 
-  _bebop_expr_state_t state = EXPR_STATE_OPERAND;
+  bebop__expr_state_t state = EXPR_STATE_OPERAND;
 
   while (frame_top >= 0) {
-    _bebop_expr_frame_t* f = &frames[frame_top];
+    bebop__expr_frame_t* f = &frames[frame_top];
 
     if (state == EXPR_STATE_OPERAND) {
       bool negate = f->negate_next;
@@ -1413,7 +1412,7 @@ static int64_t _bebop_parse_expression(bebop_parser_t* p, bebop_def_t* enum_def)
       }
 
       if (BEBOP_PARSE_MATCH(p, BEBOP_TOKEN_LPAREN)) {
-        if (frame_top + 1 >= _bebop_EXPR_STACK_SIZE) {
+        if (frame_top + 1 >= bebop__EXPR_STACK_SIZE) {
           BEBOP_PARSE_ERROR(p, BEBOP_DIAG_INVALID_LITERAL, "Expression too deeply nested");
           return 0;
         }
@@ -1439,10 +1438,10 @@ static int64_t _bebop_parse_expression(bebop_parser_t* p, bebop_def_t* enum_def)
           return 0;
         }
       } else if (BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_IDENTIFIER)) {
-        bebop_token_t* tok = BEBOP_PARSE_ADVANCE(p);
-        if (!_bebop_parse_lookup_enum_member(p, enum_def, tok->lexeme, &val)) {
+        const bebop_token_t* tok = BEBOP_PARSE_ADVANCE(p);
+        if (!bebop__parse_lookup_enum_member(p, enum_def, tok->lexeme, &val)) {
           const char* name = BEBOP_STR(p->ctx, tok->lexeme);
-          _bebop_PARSE_ERROR_FMT(
+          bebop__PARSE_ERROR_FMT(
               p, tok, BEBOP_DIAG_INVALID_LITERAL, "Unknown enum member '%s'", name ? name : ""
           );
           return 0;
@@ -1458,7 +1457,7 @@ static int64_t _bebop_parse_expression(bebop_parser_t* p, bebop_def_t* enum_def)
         val = -val;
       }
 
-      if (f->value_top >= _bebop_EXPR_STACK_SIZE - 1) {
+      if (f->value_top >= bebop__EXPR_STACK_SIZE - 1) {
         BEBOP_PARSE_ERROR(p, BEBOP_DIAG_INVALID_LITERAL, "Expression too complex");
         return 0;
       }
@@ -1466,18 +1465,21 @@ static int64_t _bebop_parse_expression(bebop_parser_t* p, bebop_def_t* enum_def)
       state = EXPR_STATE_OPERATOR;
 
     } else {
-      _bebop_op_t op = _bebop_OP_NONE;
+      bebop__op_t op = bebop__OP_NONE;
       if (BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_PIPE)) {
-        op = _bebop_OP_OR;
+        op = bebop__OP_OR;
       } else if (BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_AMPERSAND)) {
-        op = _bebop_OP_AND;
-      } else if (BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_LANGLE)
-                 && _bebop_parse_peek(p, 1)->kind == BEBOP_TOKEN_LANGLE)
-      {
-        op = _bebop_OP_SHIFT;
+        op = bebop__OP_AND;
+      } else {
+        const bebop_token_t* peek_tok = bebop__parse_peek(p, 1);
+        if (BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_LANGLE)
+            && peek_tok && peek_tok->kind == BEBOP_TOKEN_LANGLE)
+        {
+          op = bebop__OP_SHIFT;
+        }
       }
 
-      if (op == _bebop_OP_NONE) {
+      if (op == bebop__OP_NONE) {
         while (f->op_top >= 0) {
           if (f->value_top < 1) {
             BEBOP_PARSE_ERROR(p, BEBOP_DIAG_INVALID_LITERAL, "Invalid expression: missing operand");
@@ -1485,7 +1487,7 @@ static int64_t _bebop_parse_expression(bebop_parser_t* p, bebop_def_t* enum_def)
           }
           const int64_t b = f->value_stack[f->value_top--];
           const int64_t a = f->value_stack[f->value_top--];
-          f->value_stack[++f->value_top] = _bebop_parse_apply_op(a, b, f->op_stack[f->op_top--]);
+          f->value_stack[++f->value_top] = bebop__parse_apply_op(a, b, f->op_stack[f->op_top--]);
         }
 
         int64_t result = f->value_top >= 0 ? f->value_stack[0] : 0;
@@ -1503,7 +1505,7 @@ static int64_t _bebop_parse_expression(bebop_parser_t* p, bebop_def_t* enum_def)
           f->negate_next = false;
         }
 
-        if (f->value_top >= _bebop_EXPR_STACK_SIZE - 1) {
+        if (f->value_top >= bebop__EXPR_STACK_SIZE - 1) {
           BEBOP_PARSE_ERROR(p, BEBOP_DIAG_INVALID_LITERAL, "Expression too complex");
           return 0;
         }
@@ -1518,16 +1520,16 @@ static int64_t _bebop_parse_expression(bebop_parser_t* p, bebop_def_t* enum_def)
         }
         const int64_t b = f->value_stack[f->value_top--];
         const int64_t a = f->value_stack[f->value_top--];
-        f->value_stack[++f->value_top] = _bebop_parse_apply_op(a, b, f->op_stack[f->op_top--]);
+        f->value_stack[++f->value_top] = bebop__parse_apply_op(a, b, f->op_stack[f->op_top--]);
       }
 
-      if (f->op_top >= _bebop_EXPR_STACK_SIZE - 1) {
+      if (f->op_top >= bebop__EXPR_STACK_SIZE - 1) {
         BEBOP_PARSE_ERROR(p, BEBOP_DIAG_INVALID_LITERAL, "Expression too complex");
         return 0;
       }
       f->op_stack[++f->op_top] = op;
 
-      if (op == _bebop_OP_SHIFT) {
+      if (op == bebop__OP_SHIFT) {
         BEBOP_PARSE_ADVANCE(p);
         BEBOP_PARSE_ADVANCE(p);
       } else {
@@ -1584,24 +1586,24 @@ typedef struct {
 
 #define BEBOP_PARSE_STACK_SIZE 64
 
-static bool _bebop_is_def_keyword(const bebop_token_kind_t kind)
+static bool bebop__is_def_keyword(const bebop_token_kind_t kind)
 {
   return kind == BEBOP_TOKEN_STRUCT || kind == BEBOP_TOKEN_MESSAGE || kind == BEBOP_TOKEN_ENUM
       || kind == BEBOP_TOKEN_UNION;
 }
 
-static bool _bebop_parse_is_nested_def_start(bebop_parser_t* p)
+static bool bebop__parse_is_nested_def_start(bebop_parser_t* p)
 {
   const bebop_token_kind_t kind = BEBOP_PARSE_CURRENT(p)->kind;
 
-  if (_bebop_is_def_keyword(kind)) {
+  if (bebop__is_def_keyword(kind)) {
     return true;
   }
 
   if (kind == BEBOP_TOKEN_EXPORT || kind == BEBOP_TOKEN_LOCAL) {
     if (p->current + 1 < p->stream.count) {
-      bebop_token_kind_t next = p->stream.tokens[p->current + 1].kind;
-      if (_bebop_is_def_keyword(next) || next == BEBOP_TOKEN_MUT) {
+      const bebop_token_kind_t next = p->stream.tokens[p->current + 1].kind;
+      if (bebop__is_def_keyword(next) || next == BEBOP_TOKEN_MUT) {
         return true;
       }
     }
@@ -1660,7 +1662,7 @@ static bool _bebop_parse_is_nested_def_start(bebop_parser_t* p)
       }
 
       after_at = false;
-      const bool is_def = _bebop_is_def_keyword(tok->kind) || tok->kind == BEBOP_TOKEN_EXPORT
+      const bool is_def = bebop__is_def_keyword(tok->kind) || tok->kind == BEBOP_TOKEN_EXPORT
           || tok->kind == BEBOP_TOKEN_LOCAL || tok->kind == BEBOP_TOKEN_MUT;
 
       p->current = save_pos;
@@ -1673,51 +1675,49 @@ static bool _bebop_parse_is_nested_def_start(bebop_parser_t* p)
   return false;
 }
 
-static bebop_token_t* _bebop_parse_def_name(bebop_parser_t* p, const char* expected_context)
+static bebop_token_t* bebop__parse_def_name(bebop_parser_t* p, const char* expected_context)
 {
-  bebop_token_t* name = BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_IDENTIFIER, expected_context);
-  if (!name) {
+  if (!BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_IDENTIFIER, expected_context)) {
     return NULL;
   }
-
-  return name;
+  return BEBOP_PARSE_PREVIOUS(p);
 }
 
-static void _bebop_parse_check_duplicate_def(bebop_parser_t* p, bebop_def_t* def)
+static void bebop__parse_check_duplicate_def(bebop_parser_t* p, bebop_def_t* def)
 {
   if (!def || bebop_str_is_null(def->name)) {
     return;
   }
 
-  const bebop_def_t* existing = _bebop_schema_find_def(p->schema, def->name);
+  const bebop_def_t* existing = bebop__schema_find_def(p->schema, def->name);
   if (existing) {
     const char* name = BEBOP_STR(p->ctx, def->name);
-    _bebop_PARSE_ERROR_FMT(
+    bebop__PARSE_ERROR_FMT(
         p,
         &(bebop_token_t) {.span = def->name_span},
         BEBOP_DIAG_MULTIPLE_DEFINITIONS,
         "A definition named '%s' already exists",
         name ? name : ""
     );
-    _bebop_schema_diag_add_label(p->schema, existing->name_span, "first defined here");
+    bebop__schema_diag_add_label(p->schema, existing->name_span, "first defined here");
   }
 }
 
-static bebop_enum_member_t* _bebop_parse_enum_member_inline(
+static bebop_enum_member_t* bebop__parse_enum_member_inline(
     bebop_parser_t* p, bebop_def_t* enum_def, uint32_t* count, uint32_t* capacity
 )
 {
-  bebop_decorator_t* decorators = _bebop_parse_decorators(p);
+  bebop_decorator_t* decorators = bebop__parse_decorators(p);
 
-  bebop_token_t* name = BEBOP_PARSE_CONSUME_NAME(p, "Expected enum member name");
-  if (!name) {
+  if (!BEBOP_PARSE_CONSUME_NAME(p, "Expected enum member name")) {
     return NULL;
   }
+  bebop_token_t* name = BEBOP_PARSE_PREVIOUS(p);
 
-  _bebop_check_reserved_name(p, name, name->lexeme);
+  bebop__check_reserved_name(p, name, name->lexeme);
   bebop_sema_check_duplicate_name(p->sema, name->lexeme, name->span);
 
-  const bebop_str_t doc = _bebop_parse_extract_doc(p, &name->leading);
+  const bebop_str_t doc = bebop__parse_extract_doc(p, &name->leading);
   const bebop_span_t name_span = name->span;
 
   if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_EQUALS, "Expected '=' after enum member name")) {
@@ -1725,12 +1725,12 @@ static bebop_enum_member_t* _bebop_parse_enum_member_inline(
   }
 
   const bebop_token_t* value_start = BEBOP_PARSE_CURRENT(p);
-  const int64_t value = _bebop_parse_expression(p, enum_def);
+  const int64_t value = bebop__parse_expression(p, enum_def);
   bebop_span_t value_span;
   if (BEBOP_PARSE_PREVIOUS(p) < value_start) {
     value_span = value_start->span;
   } else {
-    value_span = _bebop_parse_span_from_tokens(value_start, BEBOP_PARSE_PREVIOUS(p));
+    value_span = bebop__parse_span_from_tokens(value_start, BEBOP_PARSE_PREVIOUS(p));
   }
 
   if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_SEMICOLON, "Expected ';' after enum member value"))
@@ -1746,7 +1746,7 @@ static bebop_enum_member_t* _bebop_parse_enum_member_inline(
   }
 
   member->name = name->lexeme;
-  member->span = _bebop_parse_span_from_tokens(
+  member->span = bebop__parse_span_from_tokens(
       decorators ? &(bebop_token_t) {.span = decorators->span} : name, BEBOP_PARSE_PREVIOUS(p)
   );
   member->name_span = name_span;
@@ -1768,20 +1768,20 @@ static bebop_enum_member_t* _bebop_parse_enum_member_inline(
 typedef struct {
   uint32_t* count;
   uint32_t* capacity;
-} _bebop_field_state_t;
+} bebop__field_state_t;
 
-static bebop_field_t* _bebop_parse_field_inline(
-    bebop_parser_t* p, bebop_def_t* parent, _bebop_field_state_t* fields, const bool is_message
+static bebop_field_t* bebop__parse_field_inline(
+    bebop_parser_t* p, bebop_def_t* parent, bebop__field_state_t* fields, const bool is_message
 )
 {
-  bebop_decorator_t* decorators = _bebop_parse_decorators(p);
+  bebop_decorator_t* decorators = bebop__parse_decorators(p);
   const bebop_token_t* first_tok =
       decorators ? &(bebop_token_t) {.span = decorators->span} : BEBOP_PARSE_CURRENT(p);
 
-  bebop_token_t* name = BEBOP_PARSE_CONSUME_NAME(p, "Expected field name");
-  if (!name) {
+  if (!BEBOP_PARSE_CONSUME_NAME(p, "Expected field name")) {
     return NULL;
   }
+  bebop_token_t* name = BEBOP_PARSE_PREVIOUS(p);
 
   uint32_t index = 0;
   if (is_message) {
@@ -1789,10 +1789,10 @@ static bebop_field_t* _bebop_parse_field_inline(
       return NULL;
     }
 
-    bebop_token_t* idx_tok = BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_NUMBER, "Expected field index");
-    if (!idx_tok) {
+    if (!BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_NUMBER, "Expected field index")) {
       return NULL;
     }
+    bebop_token_t* idx_tok = BEBOP_PARSE_PREVIOUS(p);
 
     const char* idx_str = BEBOP_STR(p->ctx, idx_tok->lexeme);
     const size_t idx_len = BEBOP_STR_LEN(p->ctx, idx_tok->lexeme);
@@ -1818,7 +1818,7 @@ static bebop_field_t* _bebop_parse_field_inline(
     return NULL;
   }
 
-  bebop_type_t* type = _bebop_parse_type(p);
+  bebop_type_t* type = bebop__parse_type(p);
   if (!type) {
     return NULL;
   }
@@ -1828,7 +1828,7 @@ static bebop_field_t* _bebop_parse_field_inline(
   }
 
   if (bebop_str_eq(name->lexeme, parent->name)) {
-    _bebop_parse_error_at(
+    bebop__parse_error_at(
         p,
         name,
         BEBOP_DIAG_RESERVED_IDENTIFIER,
@@ -1836,15 +1836,15 @@ static bebop_field_t* _bebop_parse_field_inline(
     );
   }
 
-  _bebop_check_reserved_name(p, name, name->lexeme);
+  bebop__check_reserved_name(p, name, name->lexeme);
   bebop_sema_check_duplicate_name(p->sema, name->lexeme, name->span);
 
   bebop_str_t doc = BEBOP_STR_NULL;
   if (!decorators) {
-    doc = _bebop_parse_extract_doc(p, &first_tok->leading);
+    doc = bebop__parse_extract_doc(p, &first_tok->leading);
   }
   if (bebop_str_is_null(doc)) {
-    doc = _bebop_parse_extract_doc(p, &name->leading);
+    doc = bebop__parse_extract_doc(p, &name->leading);
   }
 
   if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_SEMICOLON, "Expected ';' after field")) {
@@ -1861,7 +1861,7 @@ static bebop_field_t* _bebop_parse_field_inline(
   }
 
   field->name = name->lexeme;
-  field->span = _bebop_parse_span_from_tokens(
+  field->span = bebop__parse_span_from_tokens(
       decorators ? &(bebop_token_t) {.span = decorators->span} : first_tok, BEBOP_PARSE_PREVIOUS(p)
   );
   field->name_span = name->span;
@@ -1874,27 +1874,27 @@ static bebop_field_t* _bebop_parse_field_inline(
   return field;
 }
 
-static bebop_method_t* _bebop_parse_method_inline(
+static bebop_method_t* bebop__parse_method_inline(
     bebop_parser_t* p, bebop_def_t* service_def, uint32_t* count, uint32_t* capacity
 )
 {
-  bebop_decorator_t* decorators = _bebop_parse_decorators(p);
-  bebop_token_t* name = BEBOP_PARSE_CONSUME_NAME(p, "Expected method name");
-  if (!name) {
+  bebop_decorator_t* decorators = bebop__parse_decorators(p);
+  if (!BEBOP_PARSE_CONSUME_NAME(p, "Expected method name")) {
     return NULL;
   }
+  bebop_token_t* name = BEBOP_PARSE_PREVIOUS(p);
 
-  _bebop_check_reserved_name(p, name, name->lexeme);
+  bebop__check_reserved_name(p, name, name->lexeme);
   bebop_sema_check_duplicate_name(p->sema, name->lexeme, name->span);
 
-  const bebop_str_t doc = _bebop_parse_extract_doc(p, &name->leading);
+  const bebop_str_t doc = bebop__parse_extract_doc(p, &name->leading);
 
   if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_LPAREN, "Expected '(' after method name")) {
     return NULL;
   }
 
   const bool request_stream = BEBOP_PARSE_MATCH(p, BEBOP_TOKEN_STREAM);
-  bebop_type_t* request_type = _bebop_parse_type(p);
+  bebop_type_t* request_type = bebop__parse_type(p);
   if (!request_type) {
     return NULL;
   }
@@ -1909,7 +1909,7 @@ static bebop_method_t* _bebop_parse_method_inline(
   }
 
   const bool response_stream = BEBOP_PARSE_MATCH(p, BEBOP_TOKEN_STREAM);
-  bebop_type_t* response_type = _bebop_parse_type(p);
+  bebop_type_t* response_type = bebop__parse_type(p);
   if (!response_type) {
     return NULL;
   }
@@ -1934,13 +1934,13 @@ static bebop_method_t* _bebop_parse_method_inline(
   const char* svc_name = BEBOP_STR(p->ctx, service_def->name);
   const char* mth_name = BEBOP_STR(p->ctx, name->lexeme);
   char path[512];
-  int len =
+  const int len =
       snprintf(path, sizeof(path), "/%s/%s", svc_name ? svc_name : "", mth_name ? mth_name : "");
   uint32_t method_id = 0;
   if (len > 0 && (size_t)len < sizeof(path)) {
     method_id = bebop_util_hash_method_id(path, (size_t)len);
   } else if (len >= (int)sizeof(path)) {
-    _bebop_PARSE_ERROR_FMT(
+    bebop__PARSE_ERROR_FMT(
         p,
         name,
         BEBOP_DIAG_INVALID_FIELD,
@@ -1953,7 +1953,7 @@ static bebop_method_t* _bebop_parse_method_inline(
   for (uint32_t i = 0; i < *count; i++) {
     if (service_def->service_def.methods[i].id == method_id) {
       const char* other_name = BEBOP_STR(p->ctx, service_def->service_def.methods[i].name);
-      _bebop_PARSE_ERROR_FMT(
+      bebop__PARSE_ERROR_FMT(
           p,
           name,
           BEBOP_DIAG_DUPLICATE_METHOD_ID,
@@ -1962,7 +1962,7 @@ static bebop_method_t* _bebop_parse_method_inline(
           method_id,
           other_name ? other_name : ""
       );
-      _bebop_schema_diag_add_label(
+      bebop__schema_diag_add_label(
           p->schema, service_def->service_def.methods[i].name_span, "conflicts with this method"
       );
       return NULL;
@@ -1977,7 +1977,7 @@ static bebop_method_t* _bebop_parse_method_inline(
   }
 
   method->name = name->lexeme;
-  method->span = _bebop_parse_span_from_tokens(
+  method->span = bebop__parse_span_from_tokens(
       decorators ? &(bebop_token_t) {.span = decorators->span} : name, BEBOP_PARSE_PREVIOUS(p)
   );
   method->name_span = name->span;
@@ -1992,7 +1992,7 @@ static bebop_method_t* _bebop_parse_method_inline(
   return method;
 }
 
-static bool _bebop_is_keyword_kind(const bebop_token_kind_t kind)
+static bool bebop__is_keyword_kind(const bebop_token_kind_t kind)
 {
   switch (kind) {
 #define X(NAME, str) case BEBOP_TOKEN_##NAME:
@@ -2004,94 +2004,93 @@ static bool _bebop_is_keyword_kind(const bebop_token_kind_t kind)
   }
 }
 
-static bool _bebop_is_name_token(const bebop_token_t* tok)
+static bool bebop__is_name_token(const bebop_token_t* tok)
 {
-  return tok->kind == BEBOP_TOKEN_IDENTIFIER || _bebop_is_keyword_kind(tok->kind);
+  return tok->kind == BEBOP_TOKEN_IDENTIFIER || bebop__is_keyword_kind(tok->kind);
 }
 
 typedef struct {
   const char* name;
   bebop_decorator_target_t target;
-} _bebop_target_entry_t;
+} bebop__target_entry_t;
 
-static const _bebop_target_entry_t _bebop_target_constants[] = {
+static const bebop__target_entry_t bebop__target_constants[] = {
 #define X(NAME, bit) {#NAME, (bebop_decorator_target_t)(1 << (bit))},
     BEBOP_DECORATOR_TARGETS(X)
 #undef X
         {"ALL", BEBOP_TARGET_ALL},
 };
 
-#define _bebop_TARGET_COUNT BEBOP_COUNTOF(_bebop_target_constants)
+#define bebop__TARGET_COUNT BEBOP_COUNTOF(bebop__target_constants)
 
-static const char* const _bebop_target_names[] = {
+static const char* const bebop__target_names[] = {
 #define X(NAME, bit) #NAME,
     BEBOP_DECORATOR_TARGETS(X)
 #undef X
         "ALL",
 };
-#define _bebop_TARGET_NAME_COUNT BEBOP_COUNTOF(_bebop_target_names)
+#define bebop__TARGET_NAME_COUNT BEBOP_COUNTOF(bebop__target_names)
 
-static void _bebop_suggest_target(
+static void bebop__suggest_target(
     bebop_parser_t* p, const char* input, size_t input_len, bebop_span_t span
 )
 {
   const char* suggestion =
-      bebop_util_fuzzy_match(input, input_len, _bebop_target_names, _bebop_TARGET_NAME_COUNT, 3);
+      bebop_util_fuzzy_match(input, input_len, bebop__target_names, bebop__TARGET_NAME_COUNT, 3);
   if (suggestion) {
     char buf[64];
     snprintf(buf, sizeof(buf), "did you mean '%s'?", suggestion);
-    _bebop_schema_diag_add_label(p->schema, span, buf);
+    bebop__schema_diag_add_label(p->schema, span, buf);
   }
 }
 
-static bebop_decorator_target_t _bebop_parse_target_constant(const char* name, const size_t len)
+static bebop_decorator_target_t bebop__parse_target_constant(const char* name, const size_t len)
 {
-  for (size_t i = 0; i < _bebop_TARGET_COUNT; i++) {
-    if (bebop_streqn(_bebop_target_constants[i].name, name, len)) {
-      return _bebop_target_constants[i].target;
+  for (size_t i = 0; i < bebop__TARGET_COUNT; i++) {
+    if (bebop_streqn(bebop__target_constants[i].name, name, len)) {
+      return bebop__target_constants[i].target;
     }
   }
   return BEBOP_TARGET_NONE;
 }
 
-static bebop_decorator_target_t _bebop_parse_target_expr(bebop_parser_t* p)
+static bebop_decorator_target_t bebop__parse_target_expr(bebop_parser_t* p)
 {
   bebop_decorator_target_t result = BEBOP_TARGET_NONE;
 
-  bebop_token_t* tok =
-      BEBOP_PARSE_CONSUME(p,
-                          BEBOP_TOKEN_IDENTIFIER,
-                          "Expected target constant (STRUCT, MESSAGE, ENUM, "
-                          "UNION, FIELD, SERVICE, METHOD, BRANCH, or ALL)");
-  if (!tok) {
+  if (!BEBOP_PARSE_CONSUME(p,
+                           BEBOP_TOKEN_IDENTIFIER,
+                           "Expected target constant (STRUCT, MESSAGE, ENUM, "
+                           "UNION, FIELD, SERVICE, METHOD, BRANCH, or ALL)")) {
     return BEBOP_TARGET_NONE;
   }
+  bebop_token_t* tok = BEBOP_PARSE_PREVIOUS(p);
 
   const char* name = BEBOP_STR(p->ctx, tok->lexeme);
   size_t len = BEBOP_STR_LEN(p->ctx, tok->lexeme);
-  bebop_decorator_target_t target = _bebop_parse_target_constant(name, len);
+  bebop_decorator_target_t target = bebop__parse_target_constant(name, len);
   if (target == BEBOP_TARGET_NONE) {
-    _bebop_PARSE_ERROR_FMT(p, tok, BEBOP_DIAG_INVALID_MACRO, "Unknown target constant '%s'", name);
-    _bebop_suggest_target(p, name, len, tok->span);
+    bebop__PARSE_ERROR_FMT(p, tok, BEBOP_DIAG_INVALID_MACRO, "Unknown target constant '%s'", name);
+    bebop__suggest_target(p, name, len, tok->span);
     return BEBOP_TARGET_NONE;
   }
   result = target;
 
   while (BEBOP_PARSE_MATCH(p, BEBOP_TOKEN_PIPE)) {
-    tok =
-        BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_IDENTIFIER, "Expected target constant after '|'");
-    if (!tok) {
+    if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_IDENTIFIER, "Expected target constant after '|'"))
+    {
       return result;
     }
+    tok = BEBOP_PARSE_PREVIOUS(p);
 
     name = BEBOP_STR(p->ctx, tok->lexeme);
     len = BEBOP_STR_LEN(p->ctx, tok->lexeme);
-    target = _bebop_parse_target_constant(name, len);
+    target = bebop__parse_target_constant(name, len);
     if (target == BEBOP_TARGET_NONE) {
-      _bebop_PARSE_ERROR_FMT(
+      bebop__PARSE_ERROR_FMT(
           p, tok, BEBOP_DIAG_INVALID_MACRO, "Unknown target constant '%s'", name
       );
-      _bebop_suggest_target(p, name, len, tok->span);
+      bebop__suggest_target(p, name, len, tok->span);
       return result;
     }
     result |= target;
@@ -2100,7 +2099,7 @@ static bebop_decorator_target_t _bebop_parse_target_expr(bebop_parser_t* p)
   return result;
 }
 
-static const char* _bebop_parse_lua_block(
+static const char* bebop__parse_lua_block(
     bebop_parser_t* p, size_t* len_out, bebop_span_t* span_out, const char* block_name
 )
 {
@@ -2127,16 +2126,16 @@ static const char* _bebop_parse_lua_block(
   return content;
 }
 
-static bool _bebop_parse_macro_param(bebop_parser_t* p, bebop_macro_param_def_t* param)
+static bool bebop__parse_macro_param(bebop_parser_t* p, bebop_macro_param_def_t* param)
 {
   memset(param, 0, sizeof(*param));
 
   const bebop_token_t* param_keyword = BEBOP_PARSE_PREVIOUS(p);
-  param->description = _bebop_parse_extract_doc(p, &param_keyword->leading);
+  param->description = bebop__parse_extract_doc(p, &param_keyword->leading);
   param->span = param_keyword->span;
 
-  bebop_token_t* name = BEBOP_PARSE_CURRENT(p);
-  if (!_bebop_is_name_token(name)) {
+  const bebop_token_t* name = BEBOP_PARSE_CURRENT(p);
+  if (!bebop__is_name_token(name)) {
     BEBOP_PARSE_ERROR_CURRENT(p, BEBOP_DIAG_INVALID_MACRO, "Expected parameter name after 'param'");
     return false;
   }
@@ -2162,11 +2161,10 @@ static bool _bebop_parse_macro_param(bebop_parser_t* p, bebop_macro_param_def_t*
     return false;
   }
 
-  bebop_token_t* type_tok =
-      BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_IDENTIFIER, "Expected parameter type");
-  if (!type_tok) {
+  if (!BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_IDENTIFIER, "Expected parameter type")) {
     return false;
   }
+  bebop_token_t* type_tok = BEBOP_PARSE_PREVIOUS(p);
 
   const char* type_name = BEBOP_STR(p->ctx, type_tok->lexeme);
   const size_t type_len = BEBOP_STR_LEN(p->ctx, type_tok->lexeme);
@@ -2175,11 +2173,11 @@ static bool _bebop_parse_macro_param(bebop_parser_t* p, bebop_macro_param_def_t*
     param->type = BEBOP_TYPE_DEFINED;
   } else {
     bebop_type_kind_t kind;
-    if (!_bebop_parse_lookup_scalar(type_name, type_len, &kind)) {
-      _bebop_PARSE_ERROR_FMT(
+    if (!bebop__parse_lookup_scalar(type_name, type_len, &kind)) {
+      bebop__PARSE_ERROR_FMT(
           p, type_tok, BEBOP_DIAG_INVALID_MACRO, "Unknown parameter type '%s'", type_name
       );
-      _bebop_suggest_param_type(p, type_name, type_len, type_tok->span);
+      bebop__suggest_param_type(p, type_name, type_len, type_tok->span);
       return false;
     }
     param->type = kind;
@@ -2191,8 +2189,8 @@ static bool _bebop_parse_macro_param(bebop_parser_t* p, bebop_macro_param_def_t*
     if (!param->default_value) {
       return false;
     }
-    if (!_bebop_parse_literal(p, param->type, param->default_value)) {
-      _bebop_parse_error_at(
+    if (!bebop__parse_literal(p, param->type, param->default_value)) {
+      bebop__parse_error_at(
           p, BEBOP_PARSE_CURRENT(p), BEBOP_DIAG_INVALID_MACRO, "Invalid default value for parameter"
       );
       return false;
@@ -2230,7 +2228,7 @@ static bool _bebop_parse_macro_param(bebop_parser_t* p, bebop_macro_param_def_t*
           capacity = new_cap;
         }
 
-        if (!_bebop_parse_literal(
+        if (!bebop__parse_literal(
                 p, param->type, &param->allowed_values[param->allowed_value_count]
             ))
         {
@@ -2257,67 +2255,66 @@ static bool _bebop_parse_macro_param(bebop_parser_t* p, bebop_macro_param_def_t*
   return true;
 }
 
-static void _bebop_parse_macro_decorator(bebop_parser_t* p)
+static void bebop__parse_macro_decorator(bebop_parser_t* p)
 {
   const bebop_token_t* hash_tok = BEBOP_PARSE_ADVANCE(p);
 
-  const bebop_str_t description = _bebop_parse_extract_doc(p, &hash_tok->leading);
+  const bebop_str_t description = bebop__parse_extract_doc(p, &hash_tok->leading);
 
-  bebop_token_t* decorator_kw = BEBOP_PARSE_CURRENT(p);
+  const bebop_token_t* decorator_kw = BEBOP_PARSE_CURRENT(p);
   if (decorator_kw->kind != BEBOP_TOKEN_IDENTIFIER) {
     BEBOP_PARSE_ERROR_CURRENT(p, BEBOP_DIAG_INVALID_MACRO, "Expected 'decorator' after '#'");
-    _bebop_parse_synchronize(p);
+    bebop__parse_synchronize(p);
     return;
   }
   const char* kw_str = BEBOP_STR(p->ctx, decorator_kw->lexeme);
   const size_t kw_len = BEBOP_STR_LEN(p->ctx, decorator_kw->lexeme);
   if (!BEBOP_STREQ(kw_str, kw_len, "decorator")) {
-    _bebop_PARSE_ERROR_FMT(
+    bebop__PARSE_ERROR_FMT(
         p,
         decorator_kw,
         BEBOP_DIAG_INVALID_MACRO,
         "Expected 'decorator' after '#', got '%s'",
         kw_str ? kw_str : ""
     );
-    _bebop_parse_synchronize(p);
+    bebop__parse_synchronize(p);
     return;
   }
   BEBOP_PARSE_ADVANCE(p);
 
   if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_LPAREN, "Expected '(' after '#decorator'")) {
-    _bebop_parse_synchronize(p);
+    bebop__parse_synchronize(p);
     return;
   }
 
-  bebop_token_t* name_tok = BEBOP_PARSE_CONSUME(
-      p, BEBOP_TOKEN_IDENTIFIER, "Expected decorator name inside '#decorator(...)'"
-  );
-  if (!name_tok) {
-    _bebop_parse_synchronize(p);
+  if (!BEBOP_PARSE_CONSUME(
+          p, BEBOP_TOKEN_IDENTIFIER, "Expected decorator name inside '#decorator(...)'")) {
+    bebop__parse_synchronize(p);
     return;
   }
+  bebop_token_t* name_tok = BEBOP_PARSE_PREVIOUS(p);
 
-  const bebop_def_t* existing = _bebop_schema_find_def(p->schema, name_tok->lexeme);
+  const bebop_def_t* existing = bebop__schema_find_def(p->schema, name_tok->lexeme);
   if (existing) {
-    _bebop_PARSE_ERROR_FMT(
+    bebop__PARSE_ERROR_FMT(
         p,
         name_tok,
         BEBOP_DIAG_DUPLICATE_MACRO_DECORATOR,
         "Decorator '%s' is already defined",
         BEBOP_STR(p->ctx, name_tok->lexeme)
     );
-    _bebop_schema_diag_add_label(p->schema, existing->name_span, "first defined here");
-    _bebop_parse_synchronize(p);
+    bebop__schema_diag_add_label(p->schema, existing->name_span, "first defined here");
+    bebop__parse_synchronize(p);
     return;
   }
 
   if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_RPAREN, "Expected ')' after decorator name")) {
-    _bebop_parse_synchronize(p);
+    bebop__parse_synchronize(p);
     return;
   }
 
   if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_LBRACE, "Expected '{' to begin decorator body")) {
-    _bebop_parse_synchronize(p);
+    bebop__parse_synchronize(p);
     return;
   }
 
@@ -2331,17 +2328,17 @@ static void _bebop_parse_macro_decorator(bebop_parser_t* p)
   uint32_t param_count = 0;
 
   while (!BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_RBRACE) && !BEBOP_PARSE_AT_END(p)) {
-    bebop_token_t* item_tok = BEBOP_PARSE_CURRENT(p);
+    const bebop_token_t* item_tok = BEBOP_PARSE_CURRENT(p);
 
-    if (!_bebop_is_name_token(item_tok)) {
-      _bebop_PARSE_ERROR_FMT(
+    if (!bebop__is_name_token(item_tok)) {
+      bebop__PARSE_ERROR_FMT(
           p,
           item_tok,
           BEBOP_DIAG_INVALID_MACRO,
           "Unexpected token '%s' in decorator body",
           bebop_token_kind_name(item_tok->kind)
       );
-      _bebop_parse_synchronize_in_decorator(p);
+      bebop__parse_synchronize_in_decorator(p);
       continue;
     }
 
@@ -2351,16 +2348,16 @@ static void _bebop_parse_macro_decorator(bebop_parser_t* p)
     if (BEBOP_STREQ(item_name, item_len, "targets")) {
       BEBOP_PARSE_ADVANCE(p);
       if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_EQUALS, "Expected '=' after 'targets'")) {
-        _bebop_parse_synchronize_in_decorator(p);
+        bebop__parse_synchronize_in_decorator(p);
         continue;
       }
-      targets = _bebop_parse_target_expr(p);
+      targets = bebop__parse_target_expr(p);
       has_targets = true;
 
     } else if (BEBOP_STREQ(item_name, item_len, "multiple")) {
       BEBOP_PARSE_ADVANCE(p);
       if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_EQUALS, "Expected '=' after 'multiple'")) {
-        _bebop_parse_synchronize_in_decorator(p);
+        bebop__parse_synchronize_in_decorator(p);
         continue;
       }
       if (BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_TRUE)) {
@@ -2373,7 +2370,7 @@ static void _bebop_parse_macro_decorator(bebop_parser_t* p)
         BEBOP_PARSE_ERROR_CURRENT(
             p, BEBOP_DIAG_INVALID_MACRO, "Expected 'true' or 'false' after 'multiple ='"
         );
-        _bebop_parse_synchronize_in_decorator(p);
+        bebop__parse_synchronize_in_decorator(p);
         continue;
       }
 
@@ -2381,11 +2378,11 @@ static void _bebop_parse_macro_decorator(bebop_parser_t* p)
       BEBOP_PARSE_ADVANCE(p);
       if (param_count >= 32) {
         BEBOP_PARSE_ERROR_CURRENT(p, BEBOP_DIAG_INVALID_MACRO, "Too many parameters (maximum 32)");
-        _bebop_parse_synchronize_in_decorator(p);
+        bebop__parse_synchronize_in_decorator(p);
         continue;
       }
-      if (!_bebop_parse_macro_param(p, &params[param_count])) {
-        _bebop_parse_synchronize_in_decorator(p);
+      if (!bebop__parse_macro_param(p, &params[param_count])) {
+        bebop__parse_synchronize_in_decorator(p);
         continue;
       }
       param_count++;
@@ -2394,39 +2391,38 @@ static void _bebop_parse_macro_decorator(bebop_parser_t* p)
       BEBOP_PARSE_ADVANCE(p);
       size_t validate_len;
       const char* validate_src =
-          _bebop_parse_lua_block(p, &validate_len, &validate_span, "validate");
+          bebop__parse_lua_block(p, &validate_len, &validate_span, "validate");
       if (!validate_src) {
-        _bebop_parse_synchronize_in_decorator(p);
+        bebop__parse_synchronize_in_decorator(p);
         continue;
       }
 
     } else if (BEBOP_STREQ(item_name, item_len, "export")) {
       BEBOP_PARSE_ADVANCE(p);
       size_t export_len;
-      const char* export_src = _bebop_parse_lua_block(p, &export_len, &export_span, "export");
+      const char* export_src = bebop__parse_lua_block(p, &export_len, &export_span, "export");
       if (!export_src) {
-        _bebop_parse_synchronize_in_decorator(p);
+        bebop__parse_synchronize_in_decorator(p);
         continue;
       }
 
     } else {
-      _bebop_PARSE_ERROR_FMT(
+      bebop__PARSE_ERROR_FMT(
           p, item_tok, BEBOP_DIAG_INVALID_MACRO, "Unknown decorator body item '%s'", item_name
       );
-      _bebop_suggest_decorator_item(p, item_name, item_len, item_tok->span);
-      _bebop_parse_synchronize_in_decorator(p);
+      bebop__suggest_decorator_item(p, item_name, item_len, item_tok->span);
+      bebop__parse_synchronize_in_decorator(p);
       continue;
     }
   }
 
-  bebop_token_t* close_brace =
-      BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_RBRACE, "Expected '}' to close decorator body");
-  if (!close_brace) {
+  if (!BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_RBRACE, "Expected '}' to close decorator body")) {
     return;
   }
+  bebop_token_t* close_brace = BEBOP_PARSE_PREVIOUS(p);
 
   if (!has_targets) {
-    _bebop_parse_error_at(
+    bebop__parse_error_at(
         p,
         name_tok,
         BEBOP_DIAG_INVALID_MACRO,
@@ -2437,14 +2433,14 @@ static void _bebop_parse_macro_decorator(bebop_parser_t* p)
 
   bebop_def_t* def = bebop_arena_new1(BEBOP_ARENA(p->ctx), bebop_def_t);
   if (!def) {
-    _bebop_parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate decorator def");
+    bebop__parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate decorator def");
     return;
   }
 
   def->kind = BEBOP_DEF_DECORATOR;
   def->name = name_tok->lexeme;
   def->name_span = name_tok->span;
-  def->span = _bebop_parse_span_from_tokens(hash_tok, close_brace);
+  def->span = bebop__parse_span_from_tokens(hash_tok, close_brace);
   def->documentation = description;
   def->decorator_def.targets = targets;
   def->decorator_def.allow_multiple = allow_multiple;
@@ -2463,10 +2459,10 @@ static void _bebop_parse_macro_decorator(bebop_parser_t* p)
     def->decorator_def.param_count = param_count;
   }
 
-  _bebop_schema_add_def(p->schema, def);
+  bebop__schema_add_def(p->schema, def);
 }
 
-static void _bebop_parse_file(bebop_parser_t* p)
+static void bebop__parse_file(bebop_parser_t* p)
 {
   bebop_parse_frame_t stack[BEBOP_PARSE_STACK_SIZE];
   int sp = 0;
@@ -2528,7 +2524,7 @@ static void _bebop_parse_file(bebop_parser_t* p)
           if (p->preamble_state < BEBOP_PREAMBLE_DONE) {
             p->preamble_state = BEBOP_PREAMBLE_DONE;
           }
-          _bebop_parse_macro_decorator(p);
+          bebop__parse_macro_decorator(p);
 
         } else {
           if (p->preamble_state < BEBOP_PREAMBLE_DONE) {
@@ -2541,15 +2537,14 @@ static void _bebop_parse_file(bebop_parser_t* p)
 
       case PARSE_STATE_IMPORT: {
         BEBOP_PARSE_ADVANCE(p);
-        bebop_token_t* path_tok =
-            BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_STRING, "Expected import path string");
-        if (path_tok) {
-          _bebop_schema_add_import(p->schema, path_tok->lexeme, path_tok->span);
+        if (BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_STRING, "Expected import path string")) {
+          bebop_token_t* path_tok = BEBOP_PARSE_PREVIOUS(p);
+          bebop__schema_add_import(p->schema, path_tok->lexeme, path_tok->span);
         }
         BEBOP_PARSE_MATCH(p, BEBOP_TOKEN_SEMICOLON);
         frame->state = PARSE_STATE_FILE;
         if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-          _bebop_parse_synchronize(p);
+          bebop__parse_synchronize(p);
         }
         break;
       }
@@ -2557,15 +2552,14 @@ static void _bebop_parse_file(bebop_parser_t* p)
       case PARSE_STATE_EDITION: {
         BEBOP_PARSE_ADVANCE(p);
         BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_EQUALS, "Expected '=' after 'edition'");
-        bebop_token_t* year_tok =
-            BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_STRING, "Expected edition year string");
-        if (year_tok) {
+        if (BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_STRING, "Expected edition year string")) {
+          bebop_token_t* year_tok = BEBOP_PARSE_PREVIOUS(p);
           const char* year_str = BEBOP_STR(p->ctx, year_tok->lexeme);
           size_t year_len = BEBOP_STR_LEN(p->ctx, year_tok->lexeme);
           if (year_str && BEBOP_STREQ(year_str, year_len, "2026")) {
             p->schema->edition = BEBOP_ED_2026;
           } else {
-            _bebop_PARSE_ERROR_FMT(
+            bebop__PARSE_ERROR_FMT(
                 p, year_tok, BEBOP_DIAG_INVALID_EDITION, "Unsupported edition (supported: \"2026\")"
             );
           }
@@ -2574,7 +2568,7 @@ static void _bebop_parse_file(bebop_parser_t* p)
         BEBOP_PARSE_MATCH(p, BEBOP_TOKEN_SEMICOLON);
         frame->state = PARSE_STATE_FILE;
         if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-          _bebop_parse_synchronize(p);
+          bebop__parse_synchronize(p);
         }
         break;
       }
@@ -2583,29 +2577,28 @@ static void _bebop_parse_file(bebop_parser_t* p)
         bebop_token_t* pkg_tok = BEBOP_PARSE_ADVANCE(p);
 
         if (!bebop_str_is_null(p->schema->package)) {
-          _bebop_PARSE_ERROR_FMT(
+          bebop__PARSE_ERROR_FMT(
               p,
               BEBOP_PARSE_PREVIOUS(p),
               BEBOP_DIAG_DUPLICATE_PACKAGE,
               "Duplicate package declaration"
           );
-          _bebop_schema_diag_add_label(p->schema, p->schema->package_span, "first declared here");
+          bebop__schema_diag_add_label(p->schema, p->schema->package_span, "first declared here");
           frame->state = PARSE_STATE_FILE;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize(p);
+            bebop__parse_synchronize(p);
           }
           break;
         }
 
-        bebop_token_t* first_tok =
-            BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_IDENTIFIER, "Expected package name");
-        if (!first_tok) {
+        if (!BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_IDENTIFIER, "Expected package name")) {
           frame->state = PARSE_STATE_FILE;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize(p);
+            bebop__parse_synchronize(p);
           }
           break;
         }
+        bebop_token_t* first_tok = BEBOP_PARSE_PREVIOUS(p);
 
         char pkg_buf[512];
         const char* first_str = BEBOP_STR(p->ctx, first_tok->lexeme);
@@ -2630,7 +2623,7 @@ static void _bebop_parse_file(bebop_parser_t* p)
             );
             frame->state = PARSE_STATE_FILE;
             if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-              _bebop_parse_synchronize(p);
+              bebop__parse_synchronize(p);
             }
             break;
           }
@@ -2654,19 +2647,19 @@ static void _bebop_parse_file(bebop_parser_t* p)
         if (!(p->flags & BEBOP_PARSER_PANIC_MODE)) {
           BEBOP_PARSE_MATCH(p, BEBOP_TOKEN_SEMICOLON);
           p->schema->package = bebop_intern_n(BEBOP_INTERN(p->ctx), pkg_buf, pkg_len);
-          p->schema->package_span = _bebop_parse_span_from_tokens(pkg_tok, last_tok);
+          p->schema->package_span = bebop__parse_span_from_tokens(pkg_tok, last_tok);
           p->preamble_state = BEBOP_PREAMBLE_PACKAGE;
         }
 
         frame->state = PARSE_STATE_FILE;
         if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-          _bebop_parse_synchronize(p);
+          bebop__parse_synchronize(p);
         }
         break;
       }
 
       case PARSE_STATE_DEFINITION: {
-        bebop_decorator_t* decorators = _bebop_parse_decorators(p);
+        bebop_decorator_t* decorators = bebop__parse_decorators(p);
         bool is_nested = frame->nested_parent != NULL;
 
         bebop_visibility_t visibility = BEBOP_VIS_DEFAULT;
@@ -2712,7 +2705,7 @@ static void _bebop_parse_file(bebop_parser_t* p)
 
         if (is_mutable && kind != BEBOP_TOKEN_STRUCT) {
           const char* def_kind = bebop_token_kind_name(kind);
-          _bebop_PARSE_ERROR_FMT(
+          bebop__PARSE_ERROR_FMT(
               p,
               BEBOP_PARSE_CURRENT(p),
               BEBOP_DIAG_INVALID_FIELD,
@@ -2748,10 +2741,10 @@ static void _bebop_parse_file(bebop_parser_t* p)
             if (kind == BEBOP_TOKEN_IDENTIFIER) {
               bebop_token_t* tok = BEBOP_PARSE_CURRENT(p);
               const char* lex = BEBOP_STR(p->ctx, tok->lexeme);
-              _bebop_PARSE_ERROR_FMT(
+              bebop__PARSE_ERROR_FMT(
                   p, tok, BEBOP_DIAG_UNEXPECTED_TOKEN, "Unrecognized keyword '%s'", lex ? lex : "?"
               );
-              _bebop_suggest_keyword(p, lex, lex ? strlen(lex) : 0, tok->span);
+              bebop__suggest_keyword(p, lex, lex ? strlen(lex) : 0, tok->span);
             } else {
               BEBOP_PARSE_ERROR_CURRENT(
                   p,
@@ -2761,7 +2754,7 @@ static void _bebop_parse_file(bebop_parser_t* p)
             }
             frame->state = PARSE_STATE_FILE;
             if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-              _bebop_parse_synchronize(p);
+              bebop__parse_synchronize(p);
             }
             break;
         }
@@ -2772,19 +2765,19 @@ static void _bebop_parse_file(bebop_parser_t* p)
         bebop_token_t* keyword = BEBOP_PARSE_ADVANCE(p);
         frame->keyword = keyword;
 
-        bebop_str_t doc = _bebop_parse_extract_doc(p, &keyword->leading);
-        bebop_token_t* name = _bebop_parse_def_name(p, "Expected enum name");
+        bebop_str_t doc = bebop__parse_extract_doc(p, &keyword->leading);
+        bebop_token_t* name = bebop__parse_def_name(p, "Expected enum name");
         if (!name) {
           frame->state = PARSE_STATE_FILE;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize(p);
+            bebop__parse_synchronize(p);
           }
           break;
         }
 
         bebop_def_t* def = bebop_arena_new(BEBOP_ARENA(p->ctx), bebop_def_t, 1);
         if (!def) {
-          _bebop_parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate definition");
+          bebop__parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate definition");
           break;
         }
 
@@ -2798,18 +2791,17 @@ static void _bebop_parse_file(bebop_parser_t* p)
         def->visibility = frame->visibility;
         def->enum_def.base_type = BEBOP_TYPE_UINT32;
 
-        _bebop_check_reserved_name(p, name, name->lexeme);
+        bebop__check_reserved_name(p, name, name->lexeme);
 
         if (BEBOP_PARSE_MATCH(p, BEBOP_TOKEN_COLON)) {
-          bebop_token_t* base_tok = BEBOP_PARSE_CONSUME_AFTER(
-              p, BEBOP_TOKEN_IDENTIFIER, "Expected integer type after ':'"
-          );
-          if (base_tok) {
+          if (BEBOP_PARSE_CONSUME_AFTER(
+                  p, BEBOP_TOKEN_IDENTIFIER, "Expected integer type after ':'")) {
+            bebop_token_t* base_tok = BEBOP_PARSE_PREVIOUS(p);
             const char* base_str = BEBOP_STR(p->ctx, base_tok->lexeme);
             size_t base_len = BEBOP_STR_LEN(p->ctx, base_tok->lexeme);
             bebop_type_kind_t base_kind;
-            if (base_str && _bebop_parse_lookup_scalar(base_str, base_len, &base_kind)
-                && _bebop_parse_is_integer_type(base_kind))
+            if (base_str && bebop__parse_lookup_scalar(base_str, base_len, &base_kind)
+                && bebop__parse_is_integer_type(base_kind))
             {
               if (base_kind == BEBOP_TYPE_INT128 || base_kind == BEBOP_TYPE_UINT128) {
                 BEBOP_PARSE_ERROR(
@@ -2831,7 +2823,7 @@ static void _bebop_parse_file(bebop_parser_t* p)
         if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_LBRACE, "Expected '{'")) {
           frame->state = PARSE_STATE_FILE;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize(p);
+            bebop__parse_synchronize(p);
           }
           break;
         }
@@ -2847,28 +2839,29 @@ static void _bebop_parse_file(bebop_parser_t* p)
 
       case PARSE_STATE_ENUM_BODY: {
         if (BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_RBRACE) || BEBOP_PARSE_AT_END(p)) {
-          bebop_token_t* rbrace = BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_RBRACE, "Expected '}'");
+          BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_RBRACE, "Expected '}'");
+          bebop_token_t* rbrace = BEBOP_PARSE_PREVIOUS(p);
           bebop_sema_exit_def(p->sema);
 
           frame->def->enum_def.member_count = frame->count;
           BEBOP_PARSE_SET_DEF_SPAN(frame->def, frame->keyword, rbrace);
 
           bebop_sema_check_enum_complete(p->sema, frame->def);
-          _bebop_parse_check_duplicate_def(p, frame->def);
+          bebop__parse_check_duplicate_def(p, frame->def);
 
           if (frame->nested_parent) {
-            _bebop_def_add_nested(frame->nested_parent, frame->def);
+            bebop__def_add_nested(frame->nested_parent, frame->def);
             sp--;
           } else {
-            _bebop_schema_add_def(p->schema, frame->def);
+            bebop__schema_add_def(p->schema, frame->def);
             frame->state = PARSE_STATE_FILE;
             frame->def = NULL;
             frame->decorators = NULL;
           }
         } else {
-          _bebop_parse_enum_member_inline(p, frame->def, &frame->count, &frame->capacity);
+          bebop__parse_enum_member_inline(p, frame->def, &frame->count, &frame->capacity);
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize_in_block(p);
+            bebop__parse_synchronize_in_block(p);
           }
         }
         break;
@@ -2878,19 +2871,19 @@ static void _bebop_parse_file(bebop_parser_t* p)
         bebop_token_t* keyword = BEBOP_PARSE_ADVANCE(p);
         frame->keyword = keyword;
 
-        bebop_str_t doc = _bebop_parse_extract_doc(p, &keyword->leading);
-        bebop_token_t* name = _bebop_parse_def_name(p, "Expected struct name");
+        bebop_str_t doc = bebop__parse_extract_doc(p, &keyword->leading);
+        bebop_token_t* name = bebop__parse_def_name(p, "Expected struct name");
         if (!name) {
           frame->state = PARSE_STATE_FILE;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize(p);
+            bebop__parse_synchronize(p);
           }
           break;
         }
 
         bebop_def_t* def = bebop_arena_new(BEBOP_ARENA(p->ctx), bebop_def_t, 1);
         if (!def) {
-          _bebop_parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate definition");
+          bebop__parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate definition");
           break;
         }
 
@@ -2904,12 +2897,12 @@ static void _bebop_parse_file(bebop_parser_t* p)
         def->visibility = frame->visibility;
         def->struct_def.is_mutable = frame->is_mutable;
 
-        _bebop_check_reserved_name(p, name, name->lexeme);
+        bebop__check_reserved_name(p, name, name->lexeme);
 
         if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_LBRACE, "Expected '{'")) {
           frame->state = frame->nested_parent ? PARSE_STATE_FILE : PARSE_STATE_FILE;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize(p);
+            bebop__parse_synchronize(p);
           }
           break;
         }
@@ -2925,26 +2918,27 @@ static void _bebop_parse_file(bebop_parser_t* p)
 
       case PARSE_STATE_STRUCT_BODY: {
         if (BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_RBRACE) || BEBOP_PARSE_AT_END(p)) {
-          bebop_token_t* rbrace = BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_RBRACE, "Expected '}'");
+          BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_RBRACE, "Expected '}'");
+          bebop_token_t* rbrace = BEBOP_PARSE_PREVIOUS(p);
           bebop_sema_exit_def(p->sema);
 
           frame->def->struct_def.field_count = frame->count;
           BEBOP_PARSE_SET_DEF_SPAN(frame->def, frame->keyword, rbrace);
 
-          _bebop_parse_check_duplicate_def(p, frame->def);
+          bebop__parse_check_duplicate_def(p, frame->def);
 
           if (frame->nested_parent) {
-            _bebop_def_add_nested(frame->nested_parent, frame->def);
+            bebop__def_add_nested(frame->nested_parent, frame->def);
             sp--;
           } else {
-            _bebop_schema_add_def(p->schema, frame->def);
+            bebop__schema_add_def(p->schema, frame->def);
             frame->state = PARSE_STATE_FILE;
             frame->def = NULL;
             frame->decorators = NULL;
           }
-        } else if (_bebop_parse_is_nested_def_start(p)) {
+        } else if (bebop__parse_is_nested_def_start(p)) {
           if (sp + 1 >= BEBOP_PARSE_STACK_SIZE) {
-            _bebop_parse_fatal(
+            bebop__parse_fatal(
                 p, BEBOP_ERR_INTERNAL, "Parser stack overflow (too many nested definitions)"
             );
             break;
@@ -2962,11 +2956,11 @@ static void _bebop_parse_file(bebop_parser_t* p)
               .nested_parent = frame->def,
           };
         } else {
-          _bebop_parse_field_inline(
-              p, frame->def, &(_bebop_field_state_t) {&frame->count, &frame->capacity}, false
+          bebop__parse_field_inline(
+              p, frame->def, &(bebop__field_state_t) {&frame->count, &frame->capacity}, false
           );
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize_in_block(p);
+            bebop__parse_synchronize_in_block(p);
           }
         }
         break;
@@ -2976,19 +2970,19 @@ static void _bebop_parse_file(bebop_parser_t* p)
         bebop_token_t* keyword = BEBOP_PARSE_ADVANCE(p);
         frame->keyword = keyword;
 
-        bebop_str_t doc = _bebop_parse_extract_doc(p, &keyword->leading);
-        bebop_token_t* name = _bebop_parse_def_name(p, "Expected message name");
+        bebop_str_t doc = bebop__parse_extract_doc(p, &keyword->leading);
+        bebop_token_t* name = bebop__parse_def_name(p, "Expected message name");
         if (!name) {
           frame->state = PARSE_STATE_FILE;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize(p);
+            bebop__parse_synchronize(p);
           }
           break;
         }
 
         bebop_def_t* def = bebop_arena_new(BEBOP_ARENA(p->ctx), bebop_def_t, 1);
         if (!def) {
-          _bebop_parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate definition");
+          bebop__parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate definition");
           break;
         }
 
@@ -3001,12 +2995,12 @@ static void _bebop_parse_file(bebop_parser_t* p)
         def->parent = frame->nested_parent;
         def->visibility = frame->visibility;
 
-        _bebop_check_reserved_name(p, name, name->lexeme);
+        bebop__check_reserved_name(p, name, name->lexeme);
 
         if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_LBRACE, "Expected '{'")) {
           frame->state = PARSE_STATE_FILE;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize(p);
+            bebop__parse_synchronize(p);
           }
           break;
         }
@@ -3022,26 +3016,27 @@ static void _bebop_parse_file(bebop_parser_t* p)
 
       case PARSE_STATE_MESSAGE_BODY: {
         if (BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_RBRACE) || BEBOP_PARSE_AT_END(p)) {
-          bebop_token_t* rbrace = BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_RBRACE, "Expected '}'");
+          BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_RBRACE, "Expected '}'");
+          bebop_token_t* rbrace = BEBOP_PARSE_PREVIOUS(p);
           bebop_sema_exit_def(p->sema);
 
           frame->def->message_def.field_count = frame->count;
           BEBOP_PARSE_SET_DEF_SPAN(frame->def, frame->keyword, rbrace);
 
-          _bebop_parse_check_duplicate_def(p, frame->def);
+          bebop__parse_check_duplicate_def(p, frame->def);
 
           if (frame->nested_parent) {
-            _bebop_def_add_nested(frame->nested_parent, frame->def);
+            bebop__def_add_nested(frame->nested_parent, frame->def);
             sp--;
           } else {
-            _bebop_schema_add_def(p->schema, frame->def);
+            bebop__schema_add_def(p->schema, frame->def);
             frame->state = PARSE_STATE_FILE;
             frame->def = NULL;
             frame->decorators = NULL;
           }
-        } else if (_bebop_parse_is_nested_def_start(p)) {
+        } else if (bebop__parse_is_nested_def_start(p)) {
           if (sp + 1 >= BEBOP_PARSE_STACK_SIZE) {
-            _bebop_parse_fatal(
+            bebop__parse_fatal(
                 p, BEBOP_ERR_INTERNAL, "Parser stack overflow (too many nested definitions)"
             );
             break;
@@ -3059,11 +3054,11 @@ static void _bebop_parse_file(bebop_parser_t* p)
               .nested_parent = frame->def,
           };
         } else {
-          _bebop_parse_field_inline(
-              p, frame->def, &(_bebop_field_state_t) {&frame->count, &frame->capacity}, true
+          bebop__parse_field_inline(
+              p, frame->def, &(bebop__field_state_t) {&frame->count, &frame->capacity}, true
           );
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize_in_block(p);
+            bebop__parse_synchronize_in_block(p);
           }
         }
         break;
@@ -3073,19 +3068,19 @@ static void _bebop_parse_file(bebop_parser_t* p)
         bebop_token_t* keyword = BEBOP_PARSE_ADVANCE(p);
         frame->keyword = keyword;
 
-        bebop_str_t doc = _bebop_parse_extract_doc(p, &keyword->leading);
-        bebop_token_t* name = _bebop_parse_def_name(p, "Expected union name");
+        bebop_str_t doc = bebop__parse_extract_doc(p, &keyword->leading);
+        bebop_token_t* name = bebop__parse_def_name(p, "Expected union name");
         if (!name) {
           frame->state = PARSE_STATE_FILE;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize(p);
+            bebop__parse_synchronize(p);
           }
           break;
         }
 
         bebop_def_t* def = bebop_arena_new(BEBOP_ARENA(p->ctx), bebop_def_t, 1);
         if (!def) {
-          _bebop_parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate definition");
+          bebop__parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate definition");
           break;
         }
 
@@ -3098,12 +3093,12 @@ static void _bebop_parse_file(bebop_parser_t* p)
         def->parent = frame->nested_parent;
         def->visibility = frame->visibility;
 
-        _bebop_check_reserved_name(p, name, name->lexeme);
+        bebop__check_reserved_name(p, name, name->lexeme);
 
         if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_LBRACE, "Expected '{'")) {
           frame->state = PARSE_STATE_FILE;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize(p);
+            bebop__parse_synchronize(p);
           }
           break;
         }
@@ -3119,7 +3114,8 @@ static void _bebop_parse_file(bebop_parser_t* p)
 
       case PARSE_STATE_UNION_BODY: {
         if (BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_RBRACE) || BEBOP_PARSE_AT_END(p)) {
-          bebop_token_t* rbrace = BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_RBRACE, "Expected '}'");
+          BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_RBRACE, "Expected '}'");
+          bebop_token_t* rbrace = BEBOP_PARSE_PREVIOUS(p);
           bebop_sema_exit_def(p->sema);
 
           if (frame->count == 0) {
@@ -3129,20 +3125,20 @@ static void _bebop_parse_file(bebop_parser_t* p)
           frame->def->union_def.branch_count = frame->count;
           BEBOP_PARSE_SET_DEF_SPAN(frame->def, frame->keyword, rbrace);
 
-          _bebop_parse_check_duplicate_def(p, frame->def);
+          bebop__parse_check_duplicate_def(p, frame->def);
 
           if (frame->nested_parent) {
-            _bebop_def_add_nested(frame->nested_parent, frame->def);
+            bebop__def_add_nested(frame->nested_parent, frame->def);
             sp--;
           } else {
-            _bebop_schema_add_def(p->schema, frame->def);
+            bebop__schema_add_def(p->schema, frame->def);
             frame->state = PARSE_STATE_FILE;
             frame->def = NULL;
             frame->decorators = NULL;
           }
-        } else if (_bebop_parse_is_nested_def_start(p)) {
+        } else if (bebop__parse_is_nested_def_start(p)) {
           if (sp + 1 >= BEBOP_PARSE_STACK_SIZE) {
-            _bebop_parse_fatal(
+            bebop__parse_fatal(
                 p, BEBOP_ERR_INTERNAL, "Parser stack overflow (too many nested definitions)"
             );
             break;
@@ -3166,7 +3162,7 @@ static void _bebop_parse_file(bebop_parser_t* p)
       }
 
       case PARSE_STATE_UNION_BRANCH: {
-        bebop_decorator_t* branch_decorators = _bebop_parse_decorators(p);
+        bebop_decorator_t* branch_decorators = bebop__parse_decorators(p);
         const bebop_token_t* first_tok = branch_decorators
             ? &(bebop_token_t) {.span = branch_decorators->span}
             : BEBOP_PARSE_CURRENT(p);
@@ -3186,34 +3182,33 @@ static void _bebop_parse_file(bebop_parser_t* p)
           );
         }
 
-        bebop_token_t* branch_name_tok = BEBOP_PARSE_CONSUME_NAME(p, "Expected branch name");
-        if (!branch_name_tok) {
+        if (!BEBOP_PARSE_CONSUME_NAME(p, "Expected branch name")) {
           frame->state = PARSE_STATE_UNION_BODY;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize_in_block(p);
+            bebop__parse_synchronize_in_block(p);
           }
           break;
         }
+        bebop_token_t* branch_name_tok = BEBOP_PARSE_PREVIOUS(p);
         bebop_str_t branch_name = branch_name_tok->lexeme;
         bebop_span_t branch_name_span = branch_name_tok->span;
 
         if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_LPAREN, "Expected '(' after branch name")) {
           frame->state = PARSE_STATE_UNION_BODY;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize_in_block(p);
+            bebop__parse_synchronize_in_block(p);
           }
           break;
         }
 
-        bebop_token_t* disc_tok =
-            BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_NUMBER, "Expected discriminator");
-        if (!disc_tok) {
+        if (!BEBOP_PARSE_CONSUME(p, BEBOP_TOKEN_NUMBER, "Expected discriminator")) {
           frame->state = PARSE_STATE_UNION_BODY;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize_in_block(p);
+            bebop__parse_synchronize_in_block(p);
           }
           break;
         }
+        bebop_token_t* disc_tok = BEBOP_PARSE_PREVIOUS(p);
 
         const char* disc_str = BEBOP_STR(p->ctx, disc_tok->lexeme);
         size_t disc_len = BEBOP_STR_LEN(p->ctx, disc_tok->lexeme);
@@ -3226,25 +3221,25 @@ static void _bebop_parse_file(bebop_parser_t* p)
           );
           frame->state = PARSE_STATE_UNION_BODY;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize_in_block(p);
+            bebop__parse_synchronize_in_block(p);
           }
           break;
         }
 
         for (uint32_t i = 0; i < frame->count; i++) {
           if (frame->def->union_def.branches[i].discriminator == (uint8_t)disc_val) {
-            _bebop_PARSE_ERROR_FMT(
+            bebop__PARSE_ERROR_FMT(
                 p,
                 disc_tok,
                 BEBOP_DIAG_DUPLICATE_UNION_DISCRIMINATOR,
                 "Duplicate union discriminator %d",
                 (int)disc_val
             );
-            _bebop_schema_diag_add_label(
+            bebop__schema_diag_add_label(
                 p->schema, frame->def->union_def.branches[i].span, "first used here"
             );
             if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-              _bebop_parse_synchronize_in_block(p);
+              bebop__parse_synchronize_in_block(p);
             }
             goto next_union_branch;
           }
@@ -3253,7 +3248,7 @@ static void _bebop_parse_file(bebop_parser_t* p)
         if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_RPAREN, "Expected ')' after discriminator")) {
           frame->state = PARSE_STATE_UNION_BODY;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize_in_block(p);
+            bebop__parse_synchronize_in_block(p);
           }
           break;
         }
@@ -3261,24 +3256,24 @@ static void _bebop_parse_file(bebop_parser_t* p)
         if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_COLON, "Expected ':' after ')'")) {
           frame->state = PARSE_STATE_UNION_BODY;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize_in_block(p);
+            bebop__parse_synchronize_in_block(p);
           }
           break;
         }
 
-        bebop_str_t branch_doc = _bebop_parse_extract_doc(p, &first_tok->leading);
+        bebop_str_t branch_doc = bebop__parse_extract_doc(p, &first_tok->leading);
         bebop_def_t* branch_def = NULL;
         bebop_type_t* type_ref = NULL;
 
         bool branch_is_mutable = BEBOP_PARSE_MATCH(p, BEBOP_TOKEN_MUT);
 
         if (BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_LBRACE)) {
-          _bebop_check_reserved_name(p, branch_name_tok, branch_name);
+          bebop__check_reserved_name(p, branch_name_tok, branch_name);
           bebop_token_t* lbrace = BEBOP_PARSE_ADVANCE(p);
 
           branch_def = bebop_arena_new(BEBOP_ARENA(p->ctx), bebop_def_t, 1);
           if (!branch_def) {
-            _bebop_parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate branch definition");
+            bebop__parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate branch definition");
             break;
           }
 
@@ -3296,22 +3291,23 @@ static void _bebop_parse_file(bebop_parser_t* p)
           uint32_t field_count = 0;
           uint32_t field_capacity = 0;
           while (!BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_RBRACE) && !BEBOP_PARSE_AT_END(p)) {
-            _bebop_parse_field_inline(
-                p, branch_def, &(_bebop_field_state_t) {&field_count, &field_capacity}, false
+            bebop__parse_field_inline(
+                p, branch_def, &(bebop__field_state_t) {&field_count, &field_capacity}, false
             );
             if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-              _bebop_parse_synchronize_in_block(p);
+              bebop__parse_synchronize_in_block(p);
             }
           }
 
-          bebop_token_t* rbrace = BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_RBRACE, "Expected '}'");
+          BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_RBRACE, "Expected '}'");
+          bebop_token_t* rbrace = BEBOP_PARSE_PREVIOUS(p);
           bebop_sema_exit_def(p->sema);
 
           branch_def->struct_def.field_count = field_count;
           BEBOP_PARSE_SET_DEF_SPAN(branch_def, lbrace, rbrace);
 
         } else if (BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_MESSAGE)) {
-          _bebop_check_reserved_name(p, branch_name_tok, branch_name);
+          bebop__check_reserved_name(p, branch_name_tok, branch_name);
           if (branch_is_mutable) {
             BEBOP_PARSE_ERROR_CURRENT(
                 p, BEBOP_DIAG_INVALID_UNION_BRANCH, "'mut' cannot be applied to message"
@@ -3322,14 +3318,14 @@ static void _bebop_parse_file(bebop_parser_t* p)
           if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_LBRACE, "Expected '{' after 'message'")) {
             frame->state = PARSE_STATE_UNION_BODY;
             if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-              _bebop_parse_synchronize_in_block(p);
+              bebop__parse_synchronize_in_block(p);
             }
             break;
           }
 
           branch_def = bebop_arena_new(BEBOP_ARENA(p->ctx), bebop_def_t, 1);
           if (!branch_def) {
-            _bebop_parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate branch definition");
+            bebop__parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate branch definition");
             break;
           }
 
@@ -3346,15 +3342,16 @@ static void _bebop_parse_file(bebop_parser_t* p)
           uint32_t field_count = 0;
           uint32_t field_capacity = 0;
           while (!BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_RBRACE) && !BEBOP_PARSE_AT_END(p)) {
-            _bebop_parse_field_inline(
-                p, branch_def, &(_bebop_field_state_t) {&field_count, &field_capacity}, true
+            bebop__parse_field_inline(
+                p, branch_def, &(bebop__field_state_t) {&field_count, &field_capacity}, true
             );
             if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-              _bebop_parse_synchronize_in_block(p);
+              bebop__parse_synchronize_in_block(p);
             }
           }
 
-          bebop_token_t* rbrace = BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_RBRACE, "Expected '}'");
+          BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_RBRACE, "Expected '}'");
+          bebop_token_t* rbrace = BEBOP_PARSE_PREVIOUS(p);
           bebop_sema_exit_def(p->sema);
 
           branch_def->message_def.field_count = field_count;
@@ -3376,11 +3373,11 @@ static void _bebop_parse_file(bebop_parser_t* p)
             );
           }
 
-          type_ref = _bebop_parse_type(p);
+          type_ref = bebop__parse_type(p);
           if (!type_ref) {
             frame->state = PARSE_STATE_UNION_BODY;
             if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-              _bebop_parse_synchronize_in_block(p);
+              bebop__parse_synchronize_in_block(p);
             }
             break;
           }
@@ -3410,7 +3407,7 @@ static void _bebop_parse_file(bebop_parser_t* p)
         }
 
         if (branch_def) {
-          _bebop_def_add_nested(frame->def, branch_def);
+          bebop__def_add_nested(frame->def, branch_def);
         }
 
         bebop_union_branch_t* branch = BEBOP_ARRAY_PUSH(
@@ -3426,7 +3423,7 @@ static void _bebop_parse_file(bebop_parser_t* p)
         }
 
         branch->discriminator = (uint8_t)disc_val;
-        branch->span = _bebop_parse_span_from_tokens(first_tok, BEBOP_PARSE_PREVIOUS(p));
+        branch->span = bebop__parse_span_from_tokens(first_tok, BEBOP_PARSE_PREVIOUS(p));
         branch->documentation = branch_doc;
         branch->decorators = branch_decorators;
         branch->def = branch_def;
@@ -3444,19 +3441,19 @@ static void _bebop_parse_file(bebop_parser_t* p)
         bebop_token_t* keyword = BEBOP_PARSE_ADVANCE(p);
         frame->keyword = keyword;
 
-        bebop_str_t doc = _bebop_parse_extract_doc(p, &keyword->leading);
-        bebop_token_t* name = _bebop_parse_def_name(p, "Expected service name");
+        bebop_str_t doc = bebop__parse_extract_doc(p, &keyword->leading);
+        bebop_token_t* name = bebop__parse_def_name(p, "Expected service name");
         if (!name) {
           frame->state = PARSE_STATE_FILE;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize(p);
+            bebop__parse_synchronize(p);
           }
           break;
         }
 
         bebop_def_t* def = bebop_arena_new(BEBOP_ARENA(p->ctx), bebop_def_t, 1);
         if (!def) {
-          _bebop_parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate definition");
+          bebop__parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate definition");
           break;
         }
 
@@ -3468,13 +3465,13 @@ static void _bebop_parse_file(bebop_parser_t* p)
         def->schema = p->schema;
         def->visibility = frame->visibility;
 
-        _bebop_check_reserved_name(p, name, name->lexeme);
+        bebop__check_reserved_name(p, name, name->lexeme);
 
         if (BEBOP_PARSE_MATCH(p, BEBOP_TOKEN_WITH)) {
           uint32_t mixin_count = 0;
           uint32_t mixin_capacity = 0;
           do {
-            bebop_type_t* mixin_type = _bebop_parse_type(p);
+            bebop_type_t* mixin_type = bebop__parse_type(p);
             if (!mixin_type) {
               break;
             }
@@ -3501,7 +3498,7 @@ static void _bebop_parse_file(bebop_parser_t* p)
         if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_LBRACE, "Expected '{'")) {
           frame->state = PARSE_STATE_FILE;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize(p);
+            bebop__parse_synchronize(p);
           }
           break;
         }
@@ -3517,22 +3514,23 @@ static void _bebop_parse_file(bebop_parser_t* p)
 
       case PARSE_STATE_SERVICE_BODY: {
         if (BEBOP_PARSE_CHECK(p, BEBOP_TOKEN_RBRACE) || BEBOP_PARSE_AT_END(p)) {
-          bebop_token_t* rbrace = BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_RBRACE, "Expected '}'");
+          BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_RBRACE, "Expected '}'");
+          bebop_token_t* rbrace = BEBOP_PARSE_PREVIOUS(p);
           bebop_sema_exit_def(p->sema);
 
           frame->def->service_def.method_count = frame->count;
           BEBOP_PARSE_SET_DEF_SPAN(frame->def, frame->keyword, rbrace);
 
-          _bebop_parse_check_duplicate_def(p, frame->def);
-          _bebop_schema_add_def(p->schema, frame->def);
+          bebop__parse_check_duplicate_def(p, frame->def);
+          bebop__schema_add_def(p->schema, frame->def);
 
           frame->state = PARSE_STATE_FILE;
           frame->def = NULL;
           frame->decorators = NULL;
         } else {
-          _bebop_parse_method_inline(p, frame->def, &frame->count, &frame->capacity);
+          bebop__parse_method_inline(p, frame->def, &frame->count, &frame->capacity);
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize_in_block(p);
+            bebop__parse_synchronize_in_block(p);
           }
         }
         break;
@@ -3541,13 +3539,13 @@ static void _bebop_parse_file(bebop_parser_t* p)
       case PARSE_STATE_CONST_START: {
         bebop_token_t* keyword = BEBOP_PARSE_ADVANCE(p);
 
-        bebop_str_t doc = _bebop_parse_extract_doc(p, &keyword->leading);
+        bebop_str_t doc = bebop__parse_extract_doc(p, &keyword->leading);
 
-        bebop_type_t* type = _bebop_parse_type(p);
+        bebop_type_t* type = bebop__parse_type(p);
         if (!type) {
           frame->state = PARSE_STATE_FILE;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize(p);
+            bebop__parse_synchronize(p);
           }
           break;
         }
@@ -3573,32 +3571,32 @@ static void _bebop_parse_file(bebop_parser_t* p)
               const char* suggestion = bebop_util_fuzzy_match(
                   type_name,
                   strlen(type_name),
-                  _bebop_param_type_names,
-                  _BEBOP_PARAM_TYPE_NAME_COUNT - 1,
+                  bebop__param_type_names,
+                  bebop__PARAM_TYPE_NAME_COUNT - 1,
                   3
               );
               if (suggestion) {
                 char buf[64];
                 snprintf(buf, sizeof(buf), "did you mean '%s'?", suggestion);
-                _bebop_schema_diag_add_label(p->schema, type->span, buf);
+                bebop__schema_diag_add_label(p->schema, type->span, buf);
               }
             }
           }
         }
 
-        bebop_token_t* name = BEBOP_PARSE_CONSUME_NAME(p, "Expected const name");
-        if (!name) {
+        if (!BEBOP_PARSE_CONSUME_NAME(p, "Expected const name")) {
           frame->state = PARSE_STATE_FILE;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize(p);
+            bebop__parse_synchronize(p);
           }
           break;
         }
+        bebop_token_t* name = BEBOP_PARSE_PREVIOUS(p);
 
         if (!BEBOP_PARSE_CONSUME_AFTER(p, BEBOP_TOKEN_EQUALS, "Expected '=' after const name")) {
           frame->state = PARSE_STATE_FILE;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize(p);
+            bebop__parse_synchronize(p);
           }
           break;
         }
@@ -3608,10 +3606,10 @@ static void _bebop_parse_file(bebop_parser_t* p)
         if (is_byte_array) {
           literal_type_hint = BEBOP_TYPE_BYTE;
         }
-        if (!_bebop_parse_literal(p, literal_type_hint, &value)) {
+        if (!bebop__parse_literal(p, literal_type_hint, &value)) {
           frame->state = PARSE_STATE_FILE;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize(p);
+            bebop__parse_synchronize(p);
           }
           break;
         }
@@ -3683,14 +3681,14 @@ static void _bebop_parse_file(bebop_parser_t* p)
         {
           frame->state = PARSE_STATE_FILE;
           if (p->flags & BEBOP_PARSER_PANIC_MODE) {
-            _bebop_parse_synchronize(p);
+            bebop__parse_synchronize(p);
           }
           break;
         }
 
         bebop_def_t* def = bebop_arena_new(BEBOP_ARENA(p->ctx), bebop_def_t, 1);
         if (!def) {
-          _bebop_parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate const definition");
+          bebop__parse_fatal(p, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate const definition");
           break;
         }
 
@@ -3701,12 +3699,12 @@ static void _bebop_parse_file(bebop_parser_t* p)
         def->decorators = frame->decorators;
         def->schema = p->schema;
         def->visibility = frame->visibility;
-        def->span = _bebop_parse_span_from_tokens(keyword, BEBOP_PARSE_PREVIOUS(p));
+        def->span = bebop__parse_span_from_tokens(keyword, BEBOP_PARSE_PREVIOUS(p));
         def->const_def.type = type;
         def->const_def.value = value;
 
-        _bebop_parse_check_duplicate_def(p, def);
-        _bebop_schema_add_def(p->schema, def);
+        bebop__parse_check_duplicate_def(p, def);
+        bebop__schema_add_def(p->schema, def);
 
         frame->state = PARSE_STATE_FILE;
         frame->decorators = NULL;
@@ -3721,7 +3719,7 @@ static void _bebop_parse_file(bebop_parser_t* p)
   }
 }
 
-void _bebop_parse_tokens_into(
+void bebop__parse_tokens_into(
     bebop_context_t* ctx, const bebop_token_stream_t stream, bebop_schema_t* schema
 )
 {
@@ -3729,7 +3727,7 @@ void _bebop_parse_tokens_into(
   BEBOP_ASSERT(schema != NULL);
 
   if (stream.count == 0) {
-    _bebop_context_set_error(ctx, BEBOP_ERR_INTERNAL, "Empty token stream");
+    bebop__context_set_error(ctx, BEBOP_ERR_INTERNAL, "Empty token stream");
     return;
   }
 
@@ -3751,21 +3749,21 @@ void _bebop_parse_tokens_into(
       .sema = &sema,
   };
 
-  _bebop_parse_file(&parser);
+  bebop__parse_file(&parser);
 }
 
-bebop_schema_t* _bebop_parse_tokens(
+bebop_schema_t* bebop__parse_tokens(
     bebop_context_t* ctx, const bebop_token_stream_t stream, const bebop_source_t* source
 )
 {
   BEBOP_ASSERT(ctx != NULL);
 
-  bebop_schema_t* schema = _bebop_schema_create(ctx, source->path, source->source, source->len);
+  bebop_schema_t* schema = bebop__schema_create(ctx, source->path, source->source, source->len);
   if (!schema) {
     return NULL;
   }
 
-  _bebop_parse_tokens_into(ctx, stream, schema);
+  bebop__parse_tokens_into(ctx, stream, schema);
 
   return schema;
 }

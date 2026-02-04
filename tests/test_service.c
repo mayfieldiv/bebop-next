@@ -4,9 +4,6 @@
 
 static bebop_context_t* ctx;
 
-void setUp(void);
-void tearDown(void);
-
 void test_service_basic_parsing(void);
 void test_service_single_mixin(void);
 void test_service_multiple_mixins(void);

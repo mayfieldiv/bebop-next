@@ -584,7 +584,7 @@ static_assert(CWISS_kDeleted == -2,
               "ConvertSpecialToEmptyAndFullToDeleted efficient");
 
 /// Returns a pointer to a control byte group that can be used by empty tables.
-static inline CWISS_ControlByte* CWISS_EmptyGroup() {
+static inline CWISS_ControlByte* CWISS_EmptyGroup(void) {
   // A single block of empty control bytes for tables without any slots
   // allocated. This enables removing a branch in the hot path of find().
   alignas(16) static const CWISS_ControlByte kEmptyGroup[16] = {

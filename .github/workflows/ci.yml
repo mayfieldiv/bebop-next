@@ -28,7 +28,7 @@ jobs:
   macos-x64:
     uses: ./.github/workflows/build.yml
     with:
-      os: macos-13
+      os: macos-15-intel
       arch: x64
 
   windows-x64:

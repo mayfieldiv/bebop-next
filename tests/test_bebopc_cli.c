@@ -4,9 +4,6 @@
 #include "cli/bebopc_cli_defs.h"
 #include "unity.h"
 
-void setUp(void);
-void tearDown(void);
-
 void setUp(void) {}
 
 void tearDown(void) {}

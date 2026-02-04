@@ -540,6 +540,10 @@ bebopc_process_t* bebopc_process_spawn(const char* exe)
   if (!p) {
     return NULL;
   }
+#ifndef BEBOPC_WINDOWS
+  p->stdin_fd = -1;
+  p->stdout_fd = -1;
+#endif
 
 #ifdef BEBOPC_WINDOWS
   int wide_len = MultiByteToWideChar(CP_UTF8, 0, exe, -1, NULL, 0);

@@ -154,6 +154,9 @@ static bool _try_parse_plugin_out(const char* opt_name, const char* value, cli_a
 
 static bool _add_option(cli_args_t* args, const char* spec)
 {
+  if (!spec) {
+    return false;
+  }
   const char* eq = bebopc_strchr(spec, '=');
   if (!eq) {
     return false;

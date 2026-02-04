@@ -200,7 +200,7 @@ int bebop_unescape_char(const char* s, size_t len, char* out, int* out_len)
   }
 }
 
-static const uint8_t _bebop_digit_val[256] = {
+static const uint8_t bebop__digit_val[256] = {
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -222,7 +222,7 @@ static const uint8_t _bebop_digit_val[256] = {
 #if defined(_MSC_VER)
 #define BEBOP_HAS_STRTOD_L 1
 
-static _locale_t _bebop_c_locale(void)
+static _locale_t bebop__c_locale(void)
 {
   static _locale_t loc = NULL;
   if (!loc) {
@@ -234,7 +234,7 @@ static _locale_t _bebop_c_locale(void)
     || defined(__OpenBSD__)
 #define BEBOP_HAS_STRTOD_L 1
 
-static locale_t _bebop_c_locale(void)
+static locale_t bebop__c_locale(void)
 {
   static locale_t loc = NULL;
   if (!loc) {
@@ -247,19 +247,19 @@ static locale_t _bebop_c_locale(void)
 uint32_t bebop_util_hash_method_id(const char* input, const size_t length)
 {
   size_t idx = 0;
-  uint32_t hash = _bebop_HASH_SEED;
+  uint32_t hash = bebop__HASH_SEED;
 
   while (idx + 4 <= length) {
     uint32_t block = (uint32_t)(uint8_t)input[idx] | (uint32_t)(uint8_t)input[idx + 1] << 8
         | (uint32_t)(uint8_t)input[idx + 2] << 16 | (uint32_t)(uint8_t)input[idx + 3] << 24;
 
-    block *= _bebop_HASH_C1;
+    block *= bebop__HASH_C1;
     block = block << 15 | block >> 17;
-    block *= _bebop_HASH_C2;
+    block *= bebop__HASH_C2;
 
     hash ^= block;
     hash = hash << 13 | hash >> 19;
-    hash = hash * 5 + _bebop_HASH_N;
+    hash = hash * 5 + bebop__HASH_N;
 
     idx += 4;
   }
@@ -276,9 +276,9 @@ uint32_t bebop_util_hash_method_id(const char* input, const size_t length)
       /* fallthrough */
     case 1:
       tail |= (uint32_t)(uint8_t)input[idx];
-      tail *= _bebop_HASH_C1;
+      tail *= bebop__HASH_C1;
       tail = tail << 15 | tail >> 17;
-      tail *= _bebop_HASH_C2;
+      tail *= bebop__HASH_C2;
       hash ^= tail;
       break;
   }
@@ -292,14 +292,14 @@ uint32_t bebop_util_hash_method_id(const char* input, const size_t length)
   return hash;
 }
 
-static uint64_t _bebop_util_parse_decimal(const char** s, const char* end, bool* overflow)
+static uint64_t bebop__util_parse_decimal(const char** s, const char* end, bool* overflow)
 {
   uint64_t acc = 0, prev;
   bool of = false;
   const char* p = *s;
   uint8_t d;
 
-  while (p < end && (d = _bebop_digit_val[(unsigned char)*p]) < 10) {
+  while (p < end && (d = bebop__digit_val[(unsigned char)*p]) < 10) {
     prev = acc;
     acc = acc * 10 + d;
     if (acc < prev) {
@@ -315,14 +315,14 @@ static uint64_t _bebop_util_parse_decimal(const char** s, const char* end, bool*
   return of ? UINT64_MAX : acc;
 }
 
-static uint64_t _bebop_util_parse_hex(const char** s, const char* end, bool* overflow)
+static uint64_t bebop__util_parse_hex(const char** s, const char* end, bool* overflow)
 {
   uint64_t acc = 0, prev;
   bool of = false;
   const char* p = *s;
   uint8_t d;
 
-  while (p < end && (d = _bebop_digit_val[(unsigned char)*p]) < 16) {
+  while (p < end && (d = bebop__digit_val[(unsigned char)*p]) < 16) {
     prev = acc;
     acc = acc << 4 | d;
     if (acc < prev) {
@@ -364,15 +364,15 @@ bool bebop_util_parse_int(const char* str, const size_t len, int64_t* out)
 
   if (p + 2 <= end && p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
     p += 2;
-    if (p >= end || _bebop_digit_val[(unsigned char)*p] >= 16) {
+    if (p >= end || bebop__digit_val[(unsigned char)*p] >= 16) {
       return false;
     }
-    uval = _bebop_util_parse_hex(&p, end, &overflow);
+    uval = bebop__util_parse_hex(&p, end, &overflow);
   } else {
-    if (_bebop_digit_val[(unsigned char)*p] >= 10) {
+    if (bebop__digit_val[(unsigned char)*p] >= 10) {
       return false;
     }
-    uval = _bebop_util_parse_decimal(&p, end, &overflow);
+    uval = bebop__util_parse_decimal(&p, end, &overflow);
   }
 
   if (p != end || overflow) {
@@ -418,15 +418,15 @@ bool bebop_util_parse_uint(const char* str, const size_t len, uint64_t* out)
 
   if (p + 2 <= end && p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
     p += 2;
-    if (p >= end || _bebop_digit_val[(unsigned char)*p] >= 16) {
+    if (p >= end || bebop__digit_val[(unsigned char)*p] >= 16) {
       return false;
     }
-    val = _bebop_util_parse_hex(&p, end, &overflow);
+    val = bebop__util_parse_hex(&p, end, &overflow);
   } else {
-    if (_bebop_digit_val[(unsigned char)*p] >= 10) {
+    if (bebop__digit_val[(unsigned char)*p] >= 10) {
       return false;
     }
-    val = _bebop_util_parse_decimal(&p, end, &overflow);
+    val = bebop__util_parse_decimal(&p, end, &overflow);
   }
 
   if (p != end || overflow) {
@@ -472,9 +472,9 @@ bool bebop_util_parse_float(const char* str, size_t len, double* out)
 
 #if BEBOP_HAS_STRTOD_L
 #if defined(_MSC_VER)
-  double val = _strtod_l(buf, &endptr, _bebop_c_locale());
+  double val = _strtod_l(buf, &endptr, bebop__c_locale());
 #else
-  const double val = strtod_l(buf, &endptr, _bebop_c_locale());
+  const double val = strtod_l(buf, &endptr, bebop__c_locale());
 #endif
 #else
   double val = strtod(buf, &endptr);
@@ -488,7 +488,7 @@ bool bebop_util_parse_float(const char* str, size_t len, double* out)
   return true;
 }
 
-static bool _bebop_util_parse_hex_byte(const char* s, uint8_t* out)
+static bool bebop__util_parse_hex_byte(const char* s, uint8_t* out)
 {
   const int hi = BEBOP_HEX_VALUE(s[0]);
   const int lo = BEBOP_HEX_VALUE(s[1]);
@@ -514,64 +514,64 @@ bool bebop_util_parse_uuid(const char* str, const size_t len, uint8_t out[16])
 
     // RFC 4122 byte order: big-endian for all fields
     // time_low (4 bytes)
-    if (!_bebop_util_parse_hex_byte(p + 0, &out[0])) {
+    if (!bebop__util_parse_hex_byte(p + 0, &out[0])) {
       return false;
     }
-    if (!_bebop_util_parse_hex_byte(p + 2, &out[1])) {
+    if (!bebop__util_parse_hex_byte(p + 2, &out[1])) {
       return false;
     }
-    if (!_bebop_util_parse_hex_byte(p + 4, &out[2])) {
+    if (!bebop__util_parse_hex_byte(p + 4, &out[2])) {
       return false;
     }
-    if (!_bebop_util_parse_hex_byte(p + 6, &out[3])) {
+    if (!bebop__util_parse_hex_byte(p + 6, &out[3])) {
       return false;
     }
     p += 9;
 
     // time_mid (2 bytes)
-    if (!_bebop_util_parse_hex_byte(p + 0, &out[4])) {
+    if (!bebop__util_parse_hex_byte(p + 0, &out[4])) {
       return false;
     }
-    if (!_bebop_util_parse_hex_byte(p + 2, &out[5])) {
+    if (!bebop__util_parse_hex_byte(p + 2, &out[5])) {
       return false;
     }
     p += 5;
 
     // time_hi_and_version (2 bytes)
-    if (!_bebop_util_parse_hex_byte(p + 0, &out[6])) {
+    if (!bebop__util_parse_hex_byte(p + 0, &out[6])) {
       return false;
     }
-    if (!_bebop_util_parse_hex_byte(p + 2, &out[7])) {
+    if (!bebop__util_parse_hex_byte(p + 2, &out[7])) {
       return false;
     }
     p += 5;
 
     // clock_seq (2 bytes)
-    if (!_bebop_util_parse_hex_byte(p + 0, &out[8])) {
+    if (!bebop__util_parse_hex_byte(p + 0, &out[8])) {
       return false;
     }
-    if (!_bebop_util_parse_hex_byte(p + 2, &out[9])) {
+    if (!bebop__util_parse_hex_byte(p + 2, &out[9])) {
       return false;
     }
     p += 5;
 
     // node (6 bytes)
-    if (!_bebop_util_parse_hex_byte(p + 0, &out[10])) {
+    if (!bebop__util_parse_hex_byte(p + 0, &out[10])) {
       return false;
     }
-    if (!_bebop_util_parse_hex_byte(p + 2, &out[11])) {
+    if (!bebop__util_parse_hex_byte(p + 2, &out[11])) {
       return false;
     }
-    if (!_bebop_util_parse_hex_byte(p + 4, &out[12])) {
+    if (!bebop__util_parse_hex_byte(p + 4, &out[12])) {
       return false;
     }
-    if (!_bebop_util_parse_hex_byte(p + 6, &out[13])) {
+    if (!bebop__util_parse_hex_byte(p + 6, &out[13])) {
       return false;
     }
-    if (!_bebop_util_parse_hex_byte(p + 8, &out[14])) {
+    if (!bebop__util_parse_hex_byte(p + 8, &out[14])) {
       return false;
     }
-    if (!_bebop_util_parse_hex_byte(p + 10, &out[15])) {
+    if (!bebop__util_parse_hex_byte(p + 10, &out[15])) {
       return false;
     }
 
@@ -580,7 +580,7 @@ bool bebop_util_parse_uuid(const char* str, const size_t len, uint8_t out[16])
   if (len == 32) {
     // RFC 4122 byte order: straight through, no byte swapping
     for (int i = 0; i < 16; i++) {
-      if (!_bebop_util_parse_hex_byte(p + i * 2, &out[i])) {
+      if (!bebop__util_parse_hex_byte(p + i * 2, &out[i])) {
         return false;
       }
     }
@@ -601,7 +601,7 @@ uint32_t bebop_util_levenshtein(
     return (uint32_t)a_len;
   }
 
-  size_t len_diff = a_len > b_len ? a_len - b_len : b_len - a_len;
+  const size_t len_diff = a_len > b_len ? a_len - b_len : b_len - a_len;
   if (len_diff > max_dist) {
     return max_dist + 1;
   }
@@ -620,10 +620,10 @@ uint32_t bebop_util_levenshtein(
 
   for (size_t i = 1; i <= a_len; i++) {
     for (size_t j = 1; j <= b_len; j++) {
-      uint32_t cost = (a[i - 1] == b[j - 1]) ? 0 : 1;
-      uint32_t del = d[i - 1][j] + 1;
-      uint32_t ins = d[i][j - 1] + 1;
-      uint32_t sub = d[i - 1][j - 1] + cost;
+      const uint32_t cost = (a[i - 1] == b[j - 1]) ? 0 : 1;
+      const uint32_t del = d[i - 1][j] + 1;
+      const uint32_t ins = d[i][j - 1] + 1;
+      const uint32_t sub = d[i - 1][j - 1] + cost;
 
       d[i][j] = del < ins ? del : ins;
       if (sub < d[i][j]) {
@@ -631,7 +631,7 @@ uint32_t bebop_util_levenshtein(
       }
 
       if (i > 1 && j > 1 && a[i - 1] == b[j - 2] && a[i - 2] == b[j - 1]) {
-        uint32_t trans = d[i - 2][j - 2] + 1;
+        const uint32_t trans = d[i - 2][j - 2] + 1;
         if (trans < d[i][j]) {
           d[i][j] = trans;
         }
@@ -662,7 +662,7 @@ const char* bebop_util_fuzzy_match(
     if (!c) {
       continue;
     }
-    uint32_t dist = bebop_util_levenshtein(input, input_len, c, strlen(c), best_dist - 1);
+    const uint32_t dist = bebop_util_levenshtein(input, input_len, c, strlen(c), best_dist - 1);
     if (dist < best_dist) {
       best_dist = dist;
       best = c;
@@ -692,19 +692,19 @@ bool bebop_util_scan_int(const char* str, const size_t len)
 
   if (p + 1 < end && p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
     p += 2;
-    if (p >= end || _bebop_digit_val[(unsigned char)*p] >= 16) {
+    if (p >= end || bebop__digit_val[(unsigned char)*p] >= 16) {
       return false;
     }
-    while (p < end && _bebop_digit_val[(unsigned char)*p] < 16) {
+    while (p < end && bebop__digit_val[(unsigned char)*p] < 16) {
       p++;
     }
     return p == end;
   }
 
-  if (_bebop_digit_val[(unsigned char)*p] >= 10) {
+  if (bebop__digit_val[(unsigned char)*p] >= 10) {
     return false;
   }
-  while (p < end && _bebop_digit_val[(unsigned char)*p] < 10) {
+  while (p < end && bebop__digit_val[(unsigned char)*p] < 10) {
     p++;
   }
 
@@ -731,7 +731,7 @@ bool bebop_util_scan_float(const char* str, const size_t len)
   bool has_dot = false;
   bool has_exp = false;
 
-  while (p < end && _bebop_digit_val[(unsigned char)*p] < 10) {
+  while (p < end && bebop__digit_val[(unsigned char)*p] < 10) {
     has_digits = true;
     p++;
   }
@@ -739,7 +739,7 @@ bool bebop_util_scan_float(const char* str, const size_t len)
   if (p < end && *p == '.') {
     has_dot = true;
     p++;
-    while (p < end && _bebop_digit_val[(unsigned char)*p] < 10) {
+    while (p < end && bebop__digit_val[(unsigned char)*p] < 10) {
       has_digits = true;
       p++;
     }
@@ -755,10 +755,10 @@ bool bebop_util_scan_float(const char* str, const size_t len)
     if (p < end && (*p == '+' || *p == '-')) {
       p++;
     }
-    if (p >= end || _bebop_digit_val[(unsigned char)*p] >= 10) {
+    if (p >= end || bebop__digit_val[(unsigned char)*p] >= 10) {
       return false;
     }
-    while (p < end && _bebop_digit_val[(unsigned char)*p] < 10) {
+    while (p < end && bebop__digit_val[(unsigned char)*p] < 10) {
       p++;
     }
   }
@@ -766,13 +766,13 @@ bool bebop_util_scan_float(const char* str, const size_t len)
   return p == end && (has_dot || has_exp);
 }
 
-static bool _bebop_util_parse_2digit(const char** p, const char* end, int* out)
+static bool bebop__util_parse_2digit(const char** p, const char* end, int* out)
 {
   if (*p + 2 > end) {
     return false;
   }
-  const uint8_t d0 = _bebop_digit_val[(unsigned char)(*p)[0]];
-  const uint8_t d1 = _bebop_digit_val[(unsigned char)(*p)[1]];
+  const uint8_t d0 = bebop__digit_val[(unsigned char)(*p)[0]];
+  const uint8_t d1 = bebop__digit_val[(unsigned char)(*p)[1]];
   if (d0 >= 10 || d1 >= 10) {
     return false;
   }
@@ -781,15 +781,15 @@ static bool _bebop_util_parse_2digit(const char** p, const char* end, int* out)
   return true;
 }
 
-static bool _bebop_util_parse_4digit(const char** p, const char* end, int* out)
+static bool bebop__util_parse_4digit(const char** p, const char* end, int* out)
 {
   if (*p + 4 > end) {
     return false;
   }
-  const uint8_t d0 = _bebop_digit_val[(unsigned char)(*p)[0]];
-  const uint8_t d1 = _bebop_digit_val[(unsigned char)(*p)[1]];
-  const uint8_t d2 = _bebop_digit_val[(unsigned char)(*p)[2]];
-  const uint8_t d3 = _bebop_digit_val[(unsigned char)(*p)[3]];
+  const uint8_t d0 = bebop__digit_val[(unsigned char)(*p)[0]];
+  const uint8_t d1 = bebop__digit_val[(unsigned char)(*p)[1]];
+  const uint8_t d2 = bebop__digit_val[(unsigned char)(*p)[2]];
+  const uint8_t d3 = bebop__digit_val[(unsigned char)(*p)[3]];
   if (d0 >= 10 || d1 >= 10 || d2 >= 10 || d3 >= 10) {
     return false;
   }
@@ -798,7 +798,7 @@ static bool _bebop_util_parse_4digit(const char** p, const char* end, int* out)
   return true;
 }
 
-static int64_t _bebop_util_days_from_civil(int y, int m, int d)
+static int64_t bebop__util_days_from_civil(int y, int m, int d)
 {
   y -= (m <= 2);
   const int64_t era = (y >= 0 ? y : y - 399) / 400;
@@ -821,7 +821,7 @@ bool bebop_util_parse_timestamp(
 
   int year, month, day, hour, minute, second;
 
-  if (!_bebop_util_parse_4digit(&p, end, &year)) {
+  if (!bebop__util_parse_4digit(&p, end, &year)) {
     return false;
   }
   if (p >= end || *p != '-') {
@@ -829,7 +829,7 @@ bool bebop_util_parse_timestamp(
   }
   p++;
 
-  if (!_bebop_util_parse_2digit(&p, end, &month)) {
+  if (!bebop__util_parse_2digit(&p, end, &month)) {
     return false;
   }
   if (month < 1 || month > 12) {
@@ -840,7 +840,7 @@ bool bebop_util_parse_timestamp(
   }
   p++;
 
-  if (!_bebop_util_parse_2digit(&p, end, &day)) {
+  if (!bebop__util_parse_2digit(&p, end, &day)) {
     return false;
   }
   if (day < 1 || day > 31) {
@@ -852,7 +852,7 @@ bool bebop_util_parse_timestamp(
   }
   p++;
 
-  if (!_bebop_util_parse_2digit(&p, end, &hour)) {
+  if (!bebop__util_parse_2digit(&p, end, &hour)) {
     return false;
   }
   if (hour > 23) {
@@ -863,7 +863,7 @@ bool bebop_util_parse_timestamp(
   }
   p++;
 
-  if (!_bebop_util_parse_2digit(&p, end, &minute)) {
+  if (!bebop__util_parse_2digit(&p, end, &minute)) {
     return false;
   }
   if (minute > 59) {
@@ -874,7 +874,7 @@ bool bebop_util_parse_timestamp(
   }
   p++;
 
-  if (!_bebop_util_parse_2digit(&p, end, &second)) {
+  if (!bebop__util_parse_2digit(&p, end, &second)) {
     return false;
   }
   if (second > 60) {
@@ -887,7 +887,7 @@ bool bebop_util_parse_timestamp(
     int32_t frac = 0;
     int digits = 0;
     while (p < end && digits < 9) {
-      const uint8_t d = _bebop_digit_val[(unsigned char)*p];
+      const uint8_t d = bebop__digit_val[(unsigned char)*p];
       if (d >= 10) {
         break;
       }
@@ -900,7 +900,7 @@ bool bebop_util_parse_timestamp(
       digits++;
     }
     nanos = frac;
-    while (p < end && _bebop_digit_val[(unsigned char)*p] < 10) {
+    while (p < end && bebop__digit_val[(unsigned char)*p] < 10) {
       p++;
     }
   }
@@ -913,14 +913,14 @@ bool bebop_util_parse_timestamp(
       const bool neg = (*p == '-');
       p++;
       int tz_hour = 0, tz_min = 0;
-      if (!_bebop_util_parse_2digit(&p, end, &tz_hour)) {
+      if (!bebop__util_parse_2digit(&p, end, &tz_hour)) {
         return false;
       }
       if (p < end && *p == ':') {
         p++;
       }
-      if (p < end && _bebop_digit_val[(unsigned char)*p] < 10) {
-        if (!_bebop_util_parse_2digit(&p, end, &tz_min)) {
+      if (p < end && bebop__digit_val[(unsigned char)*p] < 10) {
+        if (!bebop__util_parse_2digit(&p, end, &tz_min)) {
           return false;
         }
       }
@@ -935,8 +935,8 @@ bool bebop_util_parse_timestamp(
     return false;
   }
 
-  const int64_t days = _bebop_util_days_from_civil(year, month, day);
-  int64_t secs =
+  const int64_t days = bebop__util_days_from_civil(year, month, day);
+  const int64_t secs =
       days * 86400 + (int64_t)hour * 3600 + (int64_t)minute * 60 + (int64_t)second - tz_offset;
 
   *out_seconds = secs;
@@ -973,8 +973,8 @@ bool bebop_util_parse_duration(
   while (p < end) {
     uint64_t val = 0;
     int digits = 0;
-    while (p < end && _bebop_digit_val[(unsigned char)*p] < 10) {
-      val = val * 10 + _bebop_digit_val[(unsigned char)*p];
+    while (p < end && bebop__digit_val[(unsigned char)*p] < 10) {
+      val = val * 10 + bebop__digit_val[(unsigned char)*p];
       digits++;
       p++;
     }
@@ -985,7 +985,7 @@ bool bebop_util_parse_duration(
       p++;
       uint64_t frac = 0;
       while (p < end && frac_digits < 9) {
-        const uint8_t d = _bebop_digit_val[(unsigned char)*p];
+        const uint8_t d = bebop__digit_val[(unsigned char)*p];
         if (d >= 10) {
           break;
         }
@@ -998,7 +998,7 @@ bool bebop_util_parse_duration(
         frac_digits++;
       }
       frac_nanos = frac;
-      while (p < end && _bebop_digit_val[(unsigned char)*p] < 10) {
+      while (p < end && bebop__digit_val[(unsigned char)*p] < 10) {
         p++;
       }
     }

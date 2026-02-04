@@ -4,9 +4,6 @@
 
 static bebop_context_t* ctx;
 
-void setUp(void);
-void tearDown(void);
-
 void setUp(void)
 {
   ctx = NULL;
@@ -50,7 +47,7 @@ void test_context_error_set_and_get(void)
   ctx = test_context_create();
   TEST_ASSERT_NOT_NULL(ctx);
 
-  _bebop_context_set_error(ctx, BEBOP_ERR_FILE_NOT_FOUND, "test.bop not found");
+  bebop__context_set_error(ctx, BEBOP_ERR_FILE_NOT_FOUND, "test.bop not found");
 
   TEST_ASSERT_EQUAL(BEBOP_ERR_FILE_NOT_FOUND, bebop_context_last_error(ctx));
   TEST_ASSERT_EQUAL_STRING("test.bop not found", bebop_context_error_message(ctx));
@@ -61,7 +58,7 @@ void test_context_error_clear(void)
   ctx = test_context_create();
   TEST_ASSERT_NOT_NULL(ctx);
 
-  _bebop_context_set_error(ctx, BEBOP_ERR_OUT_OF_MEMORY, "allocation failed");
+  bebop__context_set_error(ctx, BEBOP_ERR_OUT_OF_MEMORY, "allocation failed");
   TEST_ASSERT_EQUAL(BEBOP_ERR_OUT_OF_MEMORY, bebop_context_last_error(ctx));
 
   bebop_context_clear_error(ctx);

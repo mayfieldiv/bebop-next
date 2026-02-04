@@ -141,8 +141,9 @@ if(APPLE)
 endif()
 add_test(NAME bebopc_runner COMMAND test_bebopc_runner)
 
-# File system watcher test (only on macOS for now, Linux/Windows not implemented)
-if(APPLE)
+# File system watcher test (only on macOS with Clang, Linux/Windows not implemented)
+# GCC on macOS cannot compile CoreServices headers (uses blocks)
+if(APPLE AND CMAKE_C_COMPILER_ID MATCHES "Clang")
     add_executable(test_bebop_fsw test_bebop_fsw.c
         ${CMAKE_SOURCE_DIR}/bebopc/src/bebopc_utils.c
         ${CMAKE_SOURCE_DIR}/bebopc/src/bebopc_error.c

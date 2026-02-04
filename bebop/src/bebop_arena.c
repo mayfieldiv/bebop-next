@@ -1,43 +1,43 @@
-struct _bebop_chunk {
-  _bebop_chunk_t* next;
+struct bebop__chunk {
+  bebop__chunk_t* next;
   size_t capacity;
   size_t used;
 };
 
-static inline char* _bebop_chunk_data(_bebop_chunk_t* chunk)
+static inline char* bebop__chunk_data(bebop__chunk_t* chunk)
 {
   return (char*)(chunk + 1);
 }
 
-static void* _bebop_alloc(const bebop_host_allocator_t* a, const size_t size)
+static void* bebop__alloc(const bebop_host_allocator_t* a, const size_t size)
 {
   BEBOP_ASSERT(a->alloc != NULL);
   return a->alloc(NULL, 0, size, a->ctx);
 }
 
-static void _bebop_free(const bebop_host_allocator_t* a, void* ptr, const size_t size)
+static void bebop__free(const bebop_host_allocator_t* a, void* ptr, const size_t size)
 {
   BEBOP_ASSERT(a->alloc != NULL);
   a->alloc(ptr, size, 0, a->ctx);
 }
 
-static inline size_t _bebop_align_up(const size_t val, const size_t align)
+static inline size_t bebop__align_up(const size_t val, const size_t align)
 {
-  return val + align - 1 & ~(align - 1);
+  return (val + align - 1) & ~(align - 1);
 }
 
-static inline char* _bebop_align_ptr(char* ptr, const size_t align)
+static inline char* bebop__align_ptr(const char* ptr, const size_t align)
 {
   const uintptr_t addr = (uintptr_t)ptr;
-  const uintptr_t aligned = addr + align - 1 & ~(align - 1);
+  const uintptr_t aligned = (addr + align - 1) & ~(align - 1);
   return (char*)aligned;
 }
 
-static _bebop_chunk_t* _bebop_chunk_alloc(
+static bebop__chunk_t* bebop__chunk_alloc(
     const bebop_arena_t* arena, const size_t min_data_size, const bool use_default
 )
 {
-  const size_t header_size = _bebop_align_up(sizeof(_bebop_chunk_t), BEBOP_ARENA_MIN_ALIGN);
+  const size_t header_size = bebop__align_up(sizeof(bebop__chunk_t), BEBOP_ARENA_MIN_ALIGN);
 
   size_t data_size = min_data_size;
   const size_t default_data = BEBOP_ARENA_CHUNK_SIZE - header_size;
@@ -47,12 +47,12 @@ static _bebop_chunk_t* _bebop_chunk_alloc(
 
   const size_t total_size = header_size + data_size;
 
-  void* mem = _bebop_alloc(&arena->alloc, total_size);
+  void* mem = bebop__alloc(&arena->alloc, total_size);
   if (!mem) {
     return NULL;
   }
 
-  _bebop_chunk_t* chunk = mem;
+  bebop__chunk_t* chunk = mem;
   chunk->next = NULL;
   chunk->capacity = data_size;
   chunk->used = 0;
@@ -60,11 +60,11 @@ static _bebop_chunk_t* _bebop_chunk_alloc(
   return chunk;
 }
 
-static void _bebop_chunk_free(const bebop_arena_t* arena, _bebop_chunk_t* chunk)
+static void bebop__chunk_free(const bebop_arena_t* arena, bebop__chunk_t* chunk)
 {
-  const size_t header_size = _bebop_align_up(sizeof(_bebop_chunk_t), BEBOP_ARENA_MIN_ALIGN);
+  const size_t header_size = bebop__align_up(sizeof(bebop__chunk_t), BEBOP_ARENA_MIN_ALIGN);
   const size_t total_size = header_size + chunk->capacity;
-  _bebop_free(&arena->alloc, chunk, total_size);
+  bebop__free(&arena->alloc, chunk, total_size);
 }
 
 bool bebop_arena_init(
@@ -79,7 +79,7 @@ bool bebop_arena_init(
   arena->alloc = *alloc;
 
   const size_t init_size = initial > 0 ? initial : BEBOP_ARENA_CHUNK_SIZE;
-  _bebop_chunk_t* chunk = _bebop_chunk_alloc(arena, init_size, initial == 0);
+  bebop__chunk_t* chunk = bebop__chunk_alloc(arena, init_size, initial == 0);
   if (!chunk) {
     return false;
   }
@@ -95,10 +95,10 @@ void bebop_arena_destroy(bebop_arena_t* arena)
     return;
   }
 
-  _bebop_chunk_t* chunk = arena->head;
+  bebop__chunk_t* chunk = arena->head;
   while (chunk) {
-    _bebop_chunk_t* next = chunk->next;
-    _bebop_chunk_free(arena, chunk);
+    bebop__chunk_t* next = chunk->next;
+    bebop__chunk_free(arena, chunk);
     chunk = next;
   }
 
@@ -111,10 +111,10 @@ void bebop_arena_reset(bebop_arena_t* arena)
     return;
   }
 
-  _bebop_chunk_t* chunk = arena->head->next;
+  bebop__chunk_t* chunk = arena->head->next;
   while (chunk) {
-    _bebop_chunk_t* next = chunk->next;
-    _bebop_chunk_free(arena, chunk);
+    bebop__chunk_t* next = chunk->next;
+    bebop__chunk_free(arena, chunk);
     chunk = next;
   }
 
@@ -128,7 +128,7 @@ void* bebop_arena_alloc(bebop_arena_t* arena, size_t size, size_t align)
   BEBOP_ASSERT(arena != NULL);
   BEBOP_ASSERT(arena->current != NULL);
   BEBOP_ASSERT(align > 0);
-  BEBOP_ASSERT((align & align - 1) == 0);
+  BEBOP_ASSERT((align & (align - 1)) == 0);
 
   if (size == 0) {
     return NULL;
@@ -138,15 +138,15 @@ void* bebop_arena_alloc(bebop_arena_t* arena, size_t size, size_t align)
     align = BEBOP_ARENA_MIN_ALIGN;
   }
 
-  _bebop_chunk_t* chunk = arena->current;
+  bebop__chunk_t* chunk = arena->current;
 
-  char* data = _bebop_chunk_data(chunk);
-  char* ptr = _bebop_align_ptr(data + chunk->used, align);
+  const char* data = bebop__chunk_data(chunk);
+  char* ptr = bebop__align_ptr(data + chunk->used, align);
   size_t offset = (size_t)(ptr - data);
 
   if (BEBOP_UNLIKELY(offset + size > chunk->capacity)) {
     const size_t needed = size + align;
-    _bebop_chunk_t* new_chunk = _bebop_chunk_alloc(arena, needed, true);
+    bebop__chunk_t* new_chunk = bebop__chunk_alloc(arena, needed, true);
     if (!new_chunk) {
       return NULL;
     }
@@ -155,8 +155,8 @@ void* bebop_arena_alloc(bebop_arena_t* arena, size_t size, size_t align)
     arena->current = new_chunk;
     chunk = new_chunk;
 
-    data = _bebop_chunk_data(chunk);
-    ptr = _bebop_align_ptr(data, align);
+    data = bebop__chunk_data(chunk);
+    ptr = bebop__align_ptr(data, align);
     offset = (size_t)(ptr - data);
   }
 
@@ -220,7 +220,7 @@ void* bebop_arena_realloc(
   }
 
   if (ptr && old_size > 0) {
-    size_t copy_size = old_size < new_size ? old_size : new_size;
+    const size_t copy_size = old_size < new_size ? old_size : new_size;
     memcpy(new_ptr, ptr, copy_size);
   }
 

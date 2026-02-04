@@ -20,24 +20,24 @@ typedef struct {
   uint32_t def_count;
 } bebop_validator_t;
 
-static void _bebop_validate_error(
+static void bebop__validate_error(
     const bebop_validator_t* v,
     bebop_schema_t* schema,
-    const _bebop_diag_loc_t loc,
+    const bebop__diag_loc_t loc,
     const char* message
 )
 {
   BEBOP_UNUSED(v);
-  _bebop_schema_add_diagnostic(schema, loc, message, NULL);
+  bebop__schema_add_diagnostic(schema, loc, message, NULL);
 }
 
-#define _bebop_VALIDATE_ERROR_FMT(v, schema, code, span, ...) \
+#define bebop__VALIDATE_ERROR_FMT(v, schema, code, span, ...) \
   BEBOP_ERROR_FMT((schema), (code), (span), __VA_ARGS__)
 
-#define _bebop_VALIDATE_WARNING_FMT(v, schema, code, span, ...) \
+#define bebop__VALIDATE_WARNING_FMT(v, schema, code, span, ...) \
   BEBOP_WARNING_FMT((schema), (code), (span), __VA_ARGS__)
 
-static bebop_schema_t* _bebop_validate_get_schema(
+static bebop_schema_t* bebop__validate_get_schema(
     const bebop_validator_t* v, const bebop_def_t* def
 )
 {
@@ -45,7 +45,7 @@ static bebop_schema_t* _bebop_validate_get_schema(
   return def->schema;
 }
 
-static void _bebop_validate_add_reference(
+static void bebop__validate_add_reference(
     bebop_validator_t* v, bebop_def_t* def, const bebop_span_t span
 )
 {
@@ -63,7 +63,7 @@ static void _bebop_validate_add_reference(
   *slot = span;
 }
 
-static void _bebop_validate_add_dependent(
+static void bebop__validate_add_dependent(
     bebop_validator_t* v, bebop_def_t* def, bebop_def_t* dependent
 )
 {
@@ -81,7 +81,7 @@ static void _bebop_validate_add_dependent(
   *slot = dependent;
 }
 
-static bool _bebop_validate_paths_equal(const char* a, const char* b)
+static bool bebop__validate_paths_equal(const char* a, const char* b)
 {
   if (!a || !b) {
     return false;
@@ -97,8 +97,8 @@ static bool _bebop_validate_paths_equal(const char* a, const char* b)
 
   const char* shorter = la < lb ? a : b;
   const char* longer = la < lb ? b : a;
-  size_t ls = la < lb ? la : lb;
-  size_t ll = la < lb ? lb : la;
+  const size_t ls = la < lb ? la : lb;
+  const size_t ll = la < lb ? lb : la;
 
   if (ll > ls && longer[ll - ls - 1] == '/') {
     return strcmp(longer + ll - ls, shorter) == 0;
@@ -106,7 +106,7 @@ static bool _bebop_validate_paths_equal(const char* a, const char* b)
   return false;
 }
 
-static void _bebop_validate_resolve_imports(const bebop_validator_t* v)
+static void bebop__validate_resolve_imports(const bebop_validator_t* v)
 {
   const bebop_parse_result_t* result = v->result;
 
@@ -127,7 +127,7 @@ static void _bebop_validate_resolve_imports(const bebop_validator_t* v)
         if (!target || target == schema) {
           continue;
         }
-        if (target->path && _bebop_validate_paths_equal(target->path, imp->resolved_path)) {
+        if (target->path && bebop__validate_paths_equal(target->path, imp->resolved_path)) {
           imp->schema = target;
           break;
         }
@@ -141,31 +141,31 @@ static void _bebop_validate_resolve_imports(const bebop_validator_t* v)
 typedef struct {
   bebop_type_t* type;
   uint32_t depth;
-} _bebop_validate_type_frame_t;
+} bebop__validate_type_frame_t;
 
 typedef enum {
   RESOLVE_FIELD_TYPE,
   RESOLVE_MIXIN_TYPE,
-} _bebop_resolve_kind_t;
+} bebop__resolve_kind_t;
 
-static bool _bebop_validate_resolve_type(
+static bool bebop__validate_resolve_type(
     bebop_validator_t* v,
     bebop_type_t* type,
     bebop_def_t* context_def,
-    _bebop_resolve_kind_t resolve_kind
+    bebop__resolve_kind_t resolve_kind
 )
 {
   if (!type) {
     return true;
   }
 
-  _bebop_validate_type_frame_t stack[BEBOP_VALIDATE_TYPE_STACK_SIZE];
+  bebop__validate_type_frame_t stack[BEBOP_VALIDATE_TYPE_STACK_SIZE];
   int sp = 0;
 
-  stack[sp++] = (_bebop_validate_type_frame_t) {type, 0};
+  stack[sp++] = (bebop__validate_type_frame_t) {type, 0};
 
   while (sp > 0) {
-    const _bebop_validate_type_frame_t frame = stack[--sp];
+    const bebop__validate_type_frame_t frame = stack[--sp];
     bebop_type_t* t = frame.type;
 
     if (!t) {
@@ -173,11 +173,11 @@ static bool _bebop_validate_resolve_type(
     }
 
     if (frame.depth >= BEBOP_MAX_TYPE_DEPTH) {
-      bebop_schema_t* schema = _bebop_validate_get_schema(v, context_def);
-      _bebop_validate_error(
+      bebop_schema_t* schema = bebop__validate_get_schema(v, context_def);
+      bebop__validate_error(
           v,
           schema,
-          (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_INVALID_FIELD, t->span},
+          (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_INVALID_FIELD, t->span},
           "Type nesting depth exceeds maximum limit"
       );
       return false;
@@ -186,34 +186,34 @@ static bool _bebop_validate_resolve_type(
     switch (t->kind) {
       case BEBOP_TYPE_ARRAY:
         if (sp < BEBOP_VALIDATE_TYPE_STACK_SIZE) {
-          stack[sp++] = (_bebop_validate_type_frame_t) {t->array.element, frame.depth + 1};
+          stack[sp++] = (bebop__validate_type_frame_t) {t->array.element, frame.depth + 1};
         }
         break;
 
       case BEBOP_TYPE_FIXED_ARRAY:
         if (sp < BEBOP_VALIDATE_TYPE_STACK_SIZE) {
-          stack[sp++] = (_bebop_validate_type_frame_t) {t->fixed_array.element, frame.depth + 1};
+          stack[sp++] = (bebop__validate_type_frame_t) {t->fixed_array.element, frame.depth + 1};
         }
         break;
 
       case BEBOP_TYPE_MAP:
         if (sp + 2 <= BEBOP_VALIDATE_TYPE_STACK_SIZE) {
-          stack[sp++] = (_bebop_validate_type_frame_t) {t->map.value, frame.depth + 1};
-          stack[sp++] = (_bebop_validate_type_frame_t) {t->map.key, frame.depth + 1};
+          stack[sp++] = (bebop__validate_type_frame_t) {t->map.value, frame.depth + 1};
+          stack[sp++] = (bebop__validate_type_frame_t) {t->map.key, frame.depth + 1};
         }
         break;
 
       case BEBOP_TYPE_DEFINED: {
-        bebop_schema_t* schema = _bebop_validate_get_schema(v, context_def);
+        bebop_schema_t* schema = bebop__validate_get_schema(v, context_def);
         bebop_def_t* ambiguous_with = NULL;
-        bebop_def_t* resolved = _bebop_result_resolve_type(
+        bebop_def_t* resolved = bebop__result_resolve_type(
             v->result, schema, context_def, BEBOP_STR(v->ctx, t->defined.name), &ambiguous_with
         );
 
         if (!resolved) {
           const char* type_name = BEBOP_STR(v->ctx, t->defined.name);
           const char* def_name = BEBOP_STR(v->ctx, context_def->name);
-          _bebop_VALIDATE_ERROR_FMT(
+          bebop__VALIDATE_ERROR_FMT(
               v,
               schema,
               BEBOP_DIAG_UNRECOGNIZED_TYPE,
@@ -227,19 +227,19 @@ static bool _bebop_validate_resolve_type(
             if (strcmp(type_name, "date") == 0) {
               schema->diagnostics[schema->diagnostic_count - 1].hint =
                   "'date' was removed; use 'timestamp' or 'duration' instead";
-              _bebop_schema_diag_add_label(schema, t->span, "did you mean 'timestamp'?");
+              bebop__schema_diag_add_label(schema, t->span, "did you mean 'timestamp'?");
             } else {
               static const char* const builtin_types[] = {
 #define X(N, s, sz, is_int) s,
                   BEBOP_SCALAR_TYPES(X)
 #undef X
               };
-              size_t type_len = strlen(type_name);
+              const size_t type_len = strlen(type_name);
               const char* best = NULL;
               uint32_t best_dist = 3;
 
               for (size_t i = 0; i < sizeof(builtin_types) / sizeof(builtin_types[0]); i++) {
-                uint32_t dist = bebop_util_levenshtein(
+                const uint32_t dist = bebop_util_levenshtein(
                     type_name, type_len, builtin_types[i], strlen(builtin_types[i]), best_dist - 1
                 );
                 if (dist < best_dist) {
@@ -253,12 +253,12 @@ static bool _bebop_validate_resolve_type(
                 if (!s) {
                   continue;
                 }
-                for (bebop_def_t* d = s->definitions; d != NULL; d = d->next) {
+                for (const bebop_def_t* d = s->definitions; d != NULL; d = d->next) {
                   const char* name = BEBOP_STR(v->ctx, d->name);
                   if (!name) {
                     continue;
                   }
-                  uint32_t dist = bebop_util_levenshtein(
+                  const uint32_t dist = bebop_util_levenshtein(
                       type_name, type_len, name, strlen(name), best_dist - 1
                   );
                   if (dist < best_dist) {
@@ -271,7 +271,7 @@ static bool _bebop_validate_resolve_type(
               if (best) {
                 char hint_buf[128];
                 snprintf(hint_buf, sizeof(hint_buf), "did you mean '%s'?", best);
-                _bebop_schema_diag_add_label(schema, t->span, hint_buf);
+                bebop__schema_diag_add_label(schema, t->span, hint_buf);
               }
             }
           }
@@ -302,15 +302,15 @@ static bool _bebop_validate_resolve_type(
         }
 
         t->defined.resolved = resolved;
-        _bebop_validate_add_reference(v, resolved, t->span);
+        bebop__validate_add_reference(v, resolved, t->span);
 
         if (resolved->kind == BEBOP_DEF_DECORATOR
             || (resolve_kind == RESOLVE_FIELD_TYPE && resolved->kind == BEBOP_DEF_SERVICE))
         {
-          _bebop_validate_error(
+          bebop__validate_error(
               v,
               schema,
-              (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_INVALID_FIELD, t->span},
+              (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_INVALID_FIELD, t->span},
               "Cannot use service or decorator as a field type"
           );
           return false;
@@ -319,7 +319,7 @@ static bool _bebop_validate_resolve_type(
         if (resolved->parent != NULL && resolved->parent->kind == BEBOP_DEF_UNION) {
           if (context_def->parent != resolved->parent && resolved->visibility != BEBOP_VIS_EXPORT) {
             const char* type_name = BEBOP_STR(v->ctx, t->defined.name);
-            _bebop_VALIDATE_ERROR_FMT(
+            bebop__VALIDATE_ERROR_FMT(
                 v,
                 schema,
                 BEBOP_DIAG_INVALID_FIELD,
@@ -346,21 +346,21 @@ static bool _bebop_validate_resolve_type(
 typedef struct {
   bebop_def_t* def;
   uint32_t depth;
-} _bebop_validate_def_frame_t;
+} bebop__validate_def_frame_t;
 
-static void _bebop_validate_resolve_def(bebop_validator_t* v, bebop_def_t* def)
+static void bebop__validate_resolve_def(bebop_validator_t* v, bebop_def_t* def)
 {
   if (!def) {
     return;
   }
 
-  _bebop_validate_def_frame_t stack[BEBOP_VALIDATE_DEF_STACK_SIZE];
+  bebop__validate_def_frame_t stack[BEBOP_VALIDATE_DEF_STACK_SIZE];
   int sp = 0;
 
-  stack[sp++] = (_bebop_validate_def_frame_t) {def, 0};
+  stack[sp++] = (bebop__validate_def_frame_t) {def, 0};
 
   while (sp > 0) {
-    const _bebop_validate_def_frame_t frame = stack[--sp];
+    const bebop__validate_def_frame_t frame = stack[--sp];
     bebop_def_t* d = frame.def;
 
     if (frame.depth >= BEBOP_MAX_TYPE_DEPTH) {
@@ -371,13 +371,13 @@ static void _bebop_validate_resolve_def(bebop_validator_t* v, bebop_def_t* def)
     switch (d->kind) {
       case BEBOP_DEF_STRUCT:
         for (uint32_t i = 0; i < d->struct_def.field_count; i++) {
-          _bebop_validate_resolve_type(v, d->struct_def.fields[i].type, d, RESOLVE_FIELD_TYPE);
+          bebop__validate_resolve_type(v, d->struct_def.fields[i].type, d, RESOLVE_FIELD_TYPE);
         }
         break;
 
       case BEBOP_DEF_MESSAGE:
         for (uint32_t i = 0; i < d->message_def.field_count; i++) {
-          _bebop_validate_resolve_type(v, d->message_def.fields[i].type, d, RESOLVE_FIELD_TYPE);
+          bebop__validate_resolve_type(v, d->message_def.fields[i].type, d, RESOLVE_FIELD_TYPE);
         }
         break;
 
@@ -386,21 +386,21 @@ static void _bebop_validate_resolve_def(bebop_validator_t* v, bebop_def_t* def)
           const bebop_union_branch_t* branch = &d->union_def.branches[i];
 
           if (branch->def && sp < BEBOP_VALIDATE_DEF_STACK_SIZE) {
-            stack[sp++] = (_bebop_validate_def_frame_t) {branch->def, frame.depth + 1};
+            stack[sp++] = (bebop__validate_def_frame_t) {branch->def, frame.depth + 1};
           }
 
           if (branch->type_ref) {
-            _bebop_validate_resolve_type(v, branch->type_ref, d, RESOLVE_FIELD_TYPE);
+            bebop__validate_resolve_type(v, branch->type_ref, d, RESOLVE_FIELD_TYPE);
 
             if (branch->type_ref->kind == BEBOP_TYPE_DEFINED && branch->type_ref->defined.resolved)
             {
               const bebop_def_t* resolved = branch->type_ref->defined.resolved;
               if (resolved->kind == BEBOP_DEF_UNION) {
-                bebop_schema_t* schema = _bebop_validate_get_schema(v, d);
-                _bebop_validate_error(
+                bebop_schema_t* schema = bebop__validate_get_schema(v, d);
+                bebop__validate_error(
                     v,
                     schema,
-                    (_bebop_diag_loc_t) {
+                    (bebop__diag_loc_t) {
                         BEBOP_DIAG_ERROR, BEBOP_DIAG_UNION_REF_INVALID_TYPE, branch->span
                     },
                     "Union branch cannot reference another union"
@@ -409,11 +409,11 @@ static void _bebop_validate_resolve_def(bebop_validator_t* v, bebop_def_t* def)
                          || resolved->kind == BEBOP_DEF_CONST
                          || resolved->kind == BEBOP_DEF_DECORATOR)
               {
-                bebop_schema_t* schema = _bebop_validate_get_schema(v, d);
-                _bebop_validate_error(
+                bebop_schema_t* schema = bebop__validate_get_schema(v, d);
+                bebop__validate_error(
                     v,
                     schema,
-                    (_bebop_diag_loc_t) {
+                    (bebop__diag_loc_t) {
                         BEBOP_DIAG_ERROR, BEBOP_DIAG_UNION_REF_INVALID_TYPE, branch->span
                     },
                     "Union branch must reference a struct or message type"
@@ -426,15 +426,15 @@ static void _bebop_validate_resolve_def(bebop_validator_t* v, bebop_def_t* def)
 
       case BEBOP_DEF_SERVICE:
         for (uint32_t i = 0; i < d->service_def.method_count; i++) {
-          _bebop_validate_resolve_type(
+          bebop__validate_resolve_type(
               v, d->service_def.methods[i].request_type, d, RESOLVE_FIELD_TYPE
           );
-          _bebop_validate_resolve_type(
+          bebop__validate_resolve_type(
               v, d->service_def.methods[i].response_type, d, RESOLVE_FIELD_TYPE
           );
         }
         for (uint32_t i = 0; i < d->service_def.mixin_count; i++) {
-          _bebop_validate_resolve_type(v, d->service_def.mixins[i], d, RESOLVE_MIXIN_TYPE);
+          bebop__validate_resolve_type(v, d->service_def.mixins[i], d, RESOLVE_MIXIN_TYPE);
         }
         break;
 
@@ -448,7 +448,7 @@ static void _bebop_validate_resolve_def(bebop_validator_t* v, bebop_def_t* def)
   }
 }
 
-static bool _bebop_deps_contains(
+static bool bebop__deps_contains(
     const bebop_str_t* deps, const uint32_t count, const bebop_str_t fqn
 )
 {
@@ -460,21 +460,21 @@ static bool _bebop_deps_contains(
   return false;
 }
 
-static void _bebop_validate_collect_type_deps(
-    bebop_validator_t* v, bebop_type_t* type, _bebop_dep_list_t* deps
+static void bebop__validate_collect_type_deps(
+    bebop_validator_t* v, bebop_type_t* type, bebop__dep_list_t* deps
 )
 {
   if (!type) {
     return;
   }
 
-  _bebop_validate_type_frame_t stack[BEBOP_VALIDATE_TYPE_STACK_SIZE];
+  bebop__validate_type_frame_t stack[BEBOP_VALIDATE_TYPE_STACK_SIZE];
   int sp = 0;
 
-  stack[sp++] = (_bebop_validate_type_frame_t) {type, 0};
+  stack[sp++] = (bebop__validate_type_frame_t) {type, 0};
 
   while (sp > 0) {
-    const _bebop_validate_type_frame_t frame = stack[--sp];
+    const bebop__validate_type_frame_t frame = stack[--sp];
     bebop_type_t* t = frame.type;
 
     if (!t) {
@@ -489,20 +489,20 @@ static void _bebop_validate_collect_type_deps(
     switch (t->kind) {
       case BEBOP_TYPE_ARRAY:
         if (sp < BEBOP_VALIDATE_TYPE_STACK_SIZE) {
-          stack[sp++] = (_bebop_validate_type_frame_t) {t->array.element, frame.depth + 1};
+          stack[sp++] = (bebop__validate_type_frame_t) {t->array.element, frame.depth + 1};
         }
         break;
 
       case BEBOP_TYPE_FIXED_ARRAY:
         if (sp < BEBOP_VALIDATE_TYPE_STACK_SIZE) {
-          stack[sp++] = (_bebop_validate_type_frame_t) {t->fixed_array.element, frame.depth + 1};
+          stack[sp++] = (bebop__validate_type_frame_t) {t->fixed_array.element, frame.depth + 1};
         }
         break;
 
       case BEBOP_TYPE_MAP:
         if (sp + 2 <= BEBOP_VALIDATE_TYPE_STACK_SIZE) {
-          stack[sp++] = (_bebop_validate_type_frame_t) {t->map.value, frame.depth + 1};
-          stack[sp++] = (_bebop_validate_type_frame_t) {t->map.key, frame.depth + 1};
+          stack[sp++] = (bebop__validate_type_frame_t) {t->map.value, frame.depth + 1};
+          stack[sp++] = (bebop__validate_type_frame_t) {t->map.key, frame.depth + 1};
         }
         break;
 
@@ -512,7 +512,7 @@ static void _bebop_validate_collect_type_deps(
           break;
         }
 
-        if (_bebop_deps_contains(deps->items, deps->count, resolved->fqn)) {
+        if (bebop__deps_contains(deps->items, deps->count, resolved->fqn)) {
           break;
         }
         bebop_str_t* slot = BEBOP_ARRAY_PUSH(
@@ -532,24 +532,24 @@ static void _bebop_validate_collect_type_deps(
   }
 }
 
-static void _bebop_validate_get_deps(
+static void bebop__validate_get_deps(
     bebop_validator_t* v, const bebop_def_t* def, bebop_str_t** deps, uint32_t* count
 )
 {
   *deps = NULL;
   *count = 0;
-  _bebop_dep_list_t dl = {NULL, 0, 0};
+  bebop__dep_list_t dl = {NULL, 0, 0};
 
   switch (def->kind) {
     case BEBOP_DEF_STRUCT:
       for (uint32_t i = 0; i < def->struct_def.field_count; i++) {
-        _bebop_validate_collect_type_deps(v, def->struct_def.fields[i].type, &dl);
+        bebop__validate_collect_type_deps(v, def->struct_def.fields[i].type, &dl);
       }
       break;
 
     case BEBOP_DEF_MESSAGE:
       for (uint32_t i = 0; i < def->message_def.field_count; i++) {
-        _bebop_validate_collect_type_deps(v, def->message_def.fields[i].type, &dl);
+        bebop__validate_collect_type_deps(v, def->message_def.fields[i].type, &dl);
       }
       break;
 
@@ -568,18 +568,18 @@ static void _bebop_validate_get_deps(
         }
 
         if (branch->type_ref) {
-          _bebop_validate_collect_type_deps(v, branch->type_ref, &dl);
+          bebop__validate_collect_type_deps(v, branch->type_ref, &dl);
         }
       }
       break;
 
     case BEBOP_DEF_SERVICE:
       for (uint32_t i = 0; i < def->service_def.method_count; i++) {
-        _bebop_validate_collect_type_deps(v, def->service_def.methods[i].request_type, &dl);
-        _bebop_validate_collect_type_deps(v, def->service_def.methods[i].response_type, &dl);
+        bebop__validate_collect_type_deps(v, def->service_def.methods[i].request_type, &dl);
+        bebop__validate_collect_type_deps(v, def->service_def.methods[i].response_type, &dl);
       }
       for (uint32_t i = 0; i < def->service_def.mixin_count; i++) {
-        _bebop_validate_collect_type_deps(v, def->service_def.mixins[i], &dl);
+        bebop__validate_collect_type_deps(v, def->service_def.mixins[i], &dl);
       }
       break;
 
@@ -595,7 +595,7 @@ static void _bebop_validate_get_deps(
   for (bebop_decorator_t* dec = (chain); dec; dec = dec->next) { \
     if (!dec->resolved || bebop_str_is_null(dec->resolved->fqn)) \
       continue; \
-    if (_bebop_deps_contains(dl.items, dl.count, dec->resolved->fqn)) \
+    if (bebop__deps_contains(dl.items, dl.count, dec->resolved->fqn)) \
       continue; \
     bebop_str_t* slot = \
         BEBOP_ARRAY_PUSH(BEBOP_ARENA(v->ctx), dl.items, dl.count, dl.capacity, bebop_str_t); \
@@ -644,7 +644,7 @@ static void _bebop_validate_get_deps(
   *count = dl.count;
 }
 
-static bool _bebop_validate_service_has_method(
+static bool bebop__validate_service_has_method(
     bebop_validator_t* v, const bebop_def_t* service, bebop_str_t name, const bebop_method_t** out
 )
 {
@@ -657,11 +657,11 @@ static bool _bebop_validate_service_has_method(
     }
   }
   for (uint32_t i = 0; i < service->service_def.mixin_count; i++) {
-    bebop_type_t* mixin_type = service->service_def.mixins[i];
+    const bebop_type_t* mixin_type = service->service_def.mixins[i];
     if (mixin_type && mixin_type->kind == BEBOP_TYPE_DEFINED && mixin_type->defined.resolved) {
       const bebop_def_t* mixin = mixin_type->defined.resolved;
       if (mixin->kind == BEBOP_DEF_SERVICE) {
-        if (_bebop_validate_service_has_method(v, mixin, name, out)) {
+        if (bebop__validate_service_has_method(v, mixin, name, out)) {
           return true;
         }
       }
@@ -670,15 +670,15 @@ static bool _bebop_validate_service_has_method(
   return false;
 }
 
-static void _bebop_validate_service(bebop_validator_t* v, bebop_def_t* def)
+static void bebop__validate_service(bebop_validator_t* v, bebop_def_t* def)
 {
-  bebop_schema_t* schema = _bebop_validate_get_schema(v, def);
+  bebop_schema_t* schema = bebop__validate_get_schema(v, def);
 
   if (def->service_def.method_count > BEBOP_MAX_SERVICE_METHODS) {
-    _bebop_validate_error(
+    bebop__validate_error(
         v,
         schema,
-        (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_INVALID_FIELD, def->span},
+        (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_INVALID_FIELD, def->span},
         "A service cannot have more than 255 methods"
     );
   }
@@ -693,7 +693,7 @@ static void _bebop_validate_service(bebop_validator_t* v, bebop_def_t* def)
       continue;
     }
     if (resolved->kind != BEBOP_DEF_SERVICE) {
-      _bebop_VALIDATE_ERROR_FMT(
+      bebop__VALIDATE_ERROR_FMT(
           v,
           schema,
           BEBOP_DIAG_MIXIN_NOT_SERVICE,
@@ -714,7 +714,7 @@ static void _bebop_validate_service(bebop_validator_t* v, bebop_def_t* def)
         }
       }
       if (existing) {
-        _bebop_VALIDATE_ERROR_FMT(
+        bebop__VALIDATE_ERROR_FMT(
             v,
             schema,
             BEBOP_DIAG_CONFLICTING_MIXIN_METHOD,
@@ -723,7 +723,7 @@ static void _bebop_validate_service(bebop_validator_t* v, bebop_def_t* def)
             BEBOP_STR(v->ctx, mixin_method->name),
             BEBOP_STR(v->ctx, resolved->name)
         );
-        _bebop_schema_diag_add_label(schema, mixin_method->name_span, "defined here in mixin");
+        bebop__schema_diag_add_label(schema, mixin_method->name_span, "defined here in mixin");
       }
 
       for (uint32_t m = i + 1; m < def->service_def.mixin_count; m++) {
@@ -738,8 +738,8 @@ static void _bebop_validate_service(bebop_validator_t* v, bebop_def_t* def)
           continue;
         }
         const bebop_method_t* other_method = NULL;
-        if (_bebop_validate_service_has_method(v, other, mixin_method->name, &other_method)) {
-          _bebop_VALIDATE_ERROR_FMT(
+        if (bebop__validate_service_has_method(v, other, mixin_method->name, &other_method)) {
+          bebop__VALIDATE_ERROR_FMT(
               v,
               schema,
               BEBOP_DIAG_CONFLICTING_MIXIN_METHOD,
@@ -750,7 +750,7 @@ static void _bebop_validate_service(bebop_validator_t* v, bebop_def_t* def)
               BEBOP_STR(v->ctx, other->name)
           );
           if (other_method) {
-            _bebop_schema_diag_add_label(schema, other_method->name_span, "also defined here");
+            bebop__schema_diag_add_label(schema, other_method->name_span, "also defined here");
           }
         }
       }
@@ -765,10 +765,10 @@ static void _bebop_validate_service(bebop_validator_t* v, bebop_def_t* def)
       if (resolved && resolved->kind != BEBOP_DEF_STRUCT && resolved->kind != BEBOP_DEF_MESSAGE
           && resolved->kind != BEBOP_DEF_UNION)
       {
-        _bebop_validate_error(
+        bebop__validate_error(
             v,
             schema,
-            (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_INVALID_SERVICE_TYPE, method->span},
+            (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_INVALID_SERVICE_TYPE, method->span},
             "Service request type must be struct, message, or union"
         );
       }
@@ -779,10 +779,10 @@ static void _bebop_validate_service(bebop_validator_t* v, bebop_def_t* def)
       if (resolved && resolved->kind != BEBOP_DEF_STRUCT && resolved->kind != BEBOP_DEF_MESSAGE
           && resolved->kind != BEBOP_DEF_UNION)
       {
-        _bebop_validate_error(
+        bebop__validate_error(
             v,
             schema,
-            (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_INVALID_SERVICE_TYPE, method->span},
+            (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_INVALID_SERVICE_TYPE, method->span},
             "Service response type must be struct, message, or union"
         );
       }
@@ -790,7 +790,7 @@ static void _bebop_validate_service(bebop_validator_t* v, bebop_def_t* def)
   }
 }
 
-static int32_t _bebop_validate_find_def_index(bebop_validator_t* v, const bebop_str_t name)
+static int32_t bebop__validate_find_def_index(bebop_validator_t* v, const bebop_str_t name)
 {
   if (bebop_str_is_null(name)) {
     return -1;
@@ -801,7 +801,7 @@ static int32_t _bebop_validate_find_def_index(bebop_validator_t* v, const bebop_
   return entry ? (int32_t)entry->val : -1;
 }
 
-static bool _bebop_validate_init_toposort(bebop_validator_t* v)
+static bool bebop__validate_init_toposort(bebop_validator_t* v)
 {
   const uint32_t n = v->def_count;
   if (n == 0) {
@@ -825,7 +825,7 @@ static bool _bebop_validate_init_toposort(bebop_validator_t* v)
   return true;
 }
 
-static void _bebop_validate_add_edge(
+static void bebop__validate_add_edge(
     bebop_validator_t* v, const uint32_t dep_idx, const uint32_t def_idx
 )
 {
@@ -852,7 +852,7 @@ static void _bebop_validate_add_edge(
   v->in_degree[def_idx]++;
 }
 
-static const char* _bebop_validate_find_cycle_path(bebop_validator_t* v, const uint32_t start_idx)
+static const char* bebop__validate_find_cycle_path(bebop_validator_t* v, const uint32_t start_idx)
 {
   const char* fallback_name = BEBOP_STR(v->ctx, v->all_defs[start_idx]->name);
 
@@ -924,7 +924,7 @@ build_path:
       needed += name_len + 4;
     }
     const char* start_name = BEBOP_STR(v->ctx, v->all_defs[cycle_start]->name);
-    size_t start_len = strlen(start_name);
+    const size_t start_len = strlen(start_name);
     if (needed > SIZE_MAX - start_len - 1) {
       goto fallback;
     }
@@ -939,7 +939,7 @@ build_path:
     char* p = result;
     for (uint32_t i = cycle_pos; i < path_len; i++) {
       const char* n = BEBOP_STR(v->ctx, v->all_defs[path[i]]->name);
-      size_t len = strlen(n);
+      const size_t len = strlen(n);
       memcpy(p, n, len);
       p += len;
       memcpy(p, " -> ", 4);
@@ -954,7 +954,7 @@ fallback:
   return fallback_name;
 }
 
-static bool _bebop_validate_is_message_branch_of(const bebop_def_t* def, const bebop_def_t* dep)
+static bool bebop__validate_is_message_branch_of(const bebop_def_t* def, const bebop_def_t* dep)
 {
   if (dep->kind != BEBOP_DEF_UNION) {
     return false;
@@ -978,7 +978,7 @@ static bool _bebop_validate_is_message_branch_of(const bebop_def_t* def, const b
   return false;
 }
 
-static bebop_def_t** _bebop_validate_toposort(bebop_validator_t* v, uint32_t* out_count)
+static bebop_def_t** bebop__validate_toposort(bebop_validator_t* v, uint32_t* out_count)
 {
   *out_count = 0;
 
@@ -986,22 +986,22 @@ static bebop_def_t** _bebop_validate_toposort(bebop_validator_t* v, uint32_t* ou
     return NULL;
   }
 
-  if (!_bebop_validate_init_toposort(v)) {
+  if (!bebop__validate_init_toposort(v)) {
     v->alloc_failed = true;
     return NULL;
   }
 
   for (uint32_t i = 0; i < v->def_count && !v->alloc_failed; i++) {
-    bebop_def_t* def = v->all_defs[i];
+    const bebop_def_t* def = v->all_defs[i];
     bebop_str_t* deps;
     uint32_t dep_count;
 
-    _bebop_validate_get_deps(v, def, &deps, &dep_count);
+    bebop__validate_get_deps(v, def, &deps, &dep_count);
 
     for (uint32_t j = 0; j < dep_count && !v->alloc_failed; j++) {
-      const int32_t dep_idx = _bebop_validate_find_def_index(v, deps[j]);
+      const int32_t dep_idx = bebop__validate_find_def_index(v, deps[j]);
       if (dep_idx >= 0) {
-        bebop_def_t* dep = v->all_defs[dep_idx];
+        const bebop_def_t* dep = v->all_defs[dep_idx];
 
         if ((uint32_t)dep_idx == i
             && (def->kind == BEBOP_DEF_MESSAGE || def->kind == BEBOP_DEF_UNION))
@@ -1009,14 +1009,14 @@ static bebop_def_t** _bebop_validate_toposort(bebop_validator_t* v, uint32_t* ou
           continue;
         }
 
-        if (_bebop_validate_is_message_branch_of(def, dep)) {
+        if (bebop__validate_is_message_branch_of(def, dep)) {
           continue;
         }
-        if (_bebop_validate_is_message_branch_of(dep, def)) {
+        if (bebop__validate_is_message_branch_of(dep, def)) {
           continue;
         }
 
-        _bebop_validate_add_edge(v, (uint32_t)dep_idx, i);
+        bebop__validate_add_edge(v, (uint32_t)dep_idx, i);
       }
     }
   }
@@ -1060,10 +1060,10 @@ static bebop_def_t** _bebop_validate_toposort(bebop_validator_t* v, uint32_t* ou
   if (sorted_count != v->def_count) {
     for (uint32_t i = 0; i < v->def_count; i++) {
       if (v->in_degree[i] > 0) {
-        bebop_def_t* def = v->all_defs[i];
-        bebop_schema_t* schema = _bebop_validate_get_schema(v, def);
-        const char* cycle_path = _bebop_validate_find_cycle_path(v, i);
-        _bebop_VALIDATE_ERROR_FMT(
+        const bebop_def_t* def = v->all_defs[i];
+        bebop_schema_t* schema = bebop__validate_get_schema(v, def);
+        const char* cycle_path = bebop__validate_find_cycle_path(v, i);
+        bebop__VALIDATE_ERROR_FMT(
             v, schema, BEBOP_DIAG_CYCLIC_DEFINITIONS, def->span, "Cyclic dependency: %s", cycle_path
         );
         break;
@@ -1076,7 +1076,7 @@ static bebop_def_t** _bebop_validate_toposort(bebop_validator_t* v, uint32_t* ou
   return sorted;
 }
 
-static bebop_def_t* _bebop_validate_resolve_decorator_name(
+static bebop_def_t* bebop__validate_resolve_decorator_name(
     const bebop_validator_t* v,
     bebop_schema_t* schema,
     const bebop_str_t name,
@@ -1089,7 +1089,7 @@ static bebop_def_t* _bebop_validate_resolve_decorator_name(
   }
 
   bebop_def_t* found =
-      _bebop_result_resolve_type(v->result, schema, NULL, name_str, ambiguous_with);
+      bebop__result_resolve_type(v->result, schema, NULL, name_str, ambiguous_with);
   if (found && found->kind == BEBOP_DEF_DECORATOR) {
     return found;
   }
@@ -1100,7 +1100,7 @@ static bebop_def_t* _bebop_validate_resolve_decorator_name(
   return NULL;
 }
 
-static void _bebop_validate_resolve_chain(
+static void bebop__validate_resolve_chain(
     bebop_validator_t* v, bebop_decorator_t* chain, bebop_schema_t* schema
 )
 {
@@ -1111,11 +1111,11 @@ static void _bebop_validate_resolve_chain(
 
     bebop_def_t* ambiguous_with = NULL;
     bebop_def_t* dec_def =
-        _bebop_validate_resolve_decorator_name(v, schema, dec->name, &ambiguous_with);
+        bebop__validate_resolve_decorator_name(v, schema, dec->name, &ambiguous_with);
     if (!dec_def) {
       const char* name = BEBOP_STR(v->ctx, dec->name);
       const size_t name_len = name ? strlen(name) : 0;
-      _bebop_VALIDATE_ERROR_FMT(
+      bebop__VALIDATE_ERROR_FMT(
           v,
           schema,
           BEBOP_DIAG_UNKNOWN_DECORATOR,
@@ -1145,7 +1145,7 @@ static void _bebop_validate_resolve_chain(
             if (suggestion) {
               char buf[64];
               snprintf(buf, sizeof(buf), "did you mean '@%s'?", suggestion);
-              _bebop_schema_diag_add_label(schema, dec->span, buf);
+              bebop__schema_diag_add_label(schema, dec->span, buf);
             }
           }
         }
@@ -1177,11 +1177,11 @@ static void _bebop_validate_resolve_chain(
     }
 
     dec->resolved = dec_def;
-    _bebop_validate_add_reference(v, dec_def, dec->span);
+    bebop__validate_add_reference(v, dec_def, dec->span);
   }
 }
 
-static void _bebop_validate_resolve_all_decorators(bebop_validator_t* v)
+static void bebop__validate_resolve_all_decorators(bebop_validator_t* v)
 {
   for (uint32_t i = 0; i < v->def_count; i++) {
     const bebop_def_t* def = v->all_defs[i];
@@ -1190,7 +1190,7 @@ static void _bebop_validate_resolve_all_decorators(bebop_validator_t* v)
       continue;
     }
 
-    _bebop_validate_resolve_chain(v, def->decorators, schema);
+    bebop__validate_resolve_chain(v, def->decorators, schema);
 
     if (def->kind == BEBOP_DEF_STRUCT || def->kind == BEBOP_DEF_MESSAGE) {
       const bebop_field_t* fields =
@@ -1198,25 +1198,25 @@ static void _bebop_validate_resolve_all_decorators(bebop_validator_t* v)
       const uint32_t count = def->kind == BEBOP_DEF_STRUCT ? def->struct_def.field_count
                                                            : def->message_def.field_count;
       for (uint32_t f = 0; f < count; f++) {
-        _bebop_validate_resolve_chain(v, fields[f].decorators, schema);
+        bebop__validate_resolve_chain(v, fields[f].decorators, schema);
       }
     } else if (def->kind == BEBOP_DEF_ENUM) {
       for (uint32_t m = 0; m < def->enum_def.member_count; m++) {
-        _bebop_validate_resolve_chain(v, def->enum_def.members[m].decorators, schema);
+        bebop__validate_resolve_chain(v, def->enum_def.members[m].decorators, schema);
       }
     } else if (def->kind == BEBOP_DEF_UNION) {
       for (uint32_t b = 0; b < def->union_def.branch_count; b++) {
-        _bebop_validate_resolve_chain(v, def->union_def.branches[b].decorators, schema);
+        bebop__validate_resolve_chain(v, def->union_def.branches[b].decorators, schema);
       }
     } else if (def->kind == BEBOP_DEF_SERVICE) {
       for (uint32_t m = 0; m < def->service_def.method_count; m++) {
-        _bebop_validate_resolve_chain(v, def->service_def.methods[m].decorators, schema);
+        bebop__validate_resolve_chain(v, def->service_def.methods[m].decorators, schema);
       }
     }
   }
 }
 
-static bebop_decorator_target_t _bebop_validate_def_target(const bebop_def_t* def)
+static bebop_decorator_target_t bebop__validate_def_target(const bebop_def_t* def)
 {
   switch (def->kind) {
     case BEBOP_DEF_ENUM:
@@ -1238,7 +1238,7 @@ static bebop_decorator_target_t _bebop_validate_def_target(const bebop_def_t* de
   return BEBOP_TARGET_NONE;
 }
 
-static bebop_literal_kind_t _bebop_validate_type_to_literal(const bebop_type_kind_t type)
+static bebop_literal_kind_t bebop__validate_type_to_literal(const bebop_type_kind_t type)
 {
   switch (type) {
     case BEBOP_TYPE_BOOL:
@@ -1256,11 +1256,11 @@ static bebop_literal_kind_t _bebop_validate_type_to_literal(const bebop_type_kin
   }
 }
 
-static void _bebop_validate_decorator_chain(
+static void bebop__validate_decorator_chain(
     const bebop_validator_t* v,
     bebop_lua_state_t* lua,
     const bebop_decorator_t* chain,
-    const _bebop_decor_target_t target
+    const bebop__decor_target_t target
 )
 {
   if (!chain) {
@@ -1280,7 +1280,7 @@ static void _bebop_validate_decorator_chain(
     }
 
     if (!(def->decorator_def.targets & target.flag)) {
-      _bebop_VALIDATE_ERROR_FMT(
+      bebop__VALIDATE_ERROR_FMT(
           v,
           schema,
           BEBOP_DIAG_MACRO_VALIDATE_ERROR,
@@ -1305,7 +1305,7 @@ static void _bebop_validate_decorator_chain(
         if (!param) {
           const char* arg_name = BEBOP_STR(v->ctx, arg->name);
           const size_t arg_len = arg_name ? strlen(arg_name) : 0;
-          _bebop_VALIDATE_ERROR_FMT(
+          bebop__VALIDATE_ERROR_FMT(
               v,
               schema,
               BEBOP_DIAG_MACRO_VALIDATE_ERROR,
@@ -1328,7 +1328,7 @@ static void _bebop_validate_decorator_chain(
               if (suggestion) {
                 char buf[64];
                 snprintf(buf, sizeof(buf), "did you mean '%s'?", suggestion);
-                _bebop_schema_diag_add_label(schema, arg->span, buf);
+                bebop__schema_diag_add_label(schema, arg->span, buf);
               }
             }
           }
@@ -1337,7 +1337,7 @@ static void _bebop_validate_decorator_chain(
       } else if (i < def->decorator_def.param_count) {
         param = &def->decorator_def.params[i];
       } else {
-        _bebop_VALIDATE_ERROR_FMT(
+        bebop__VALIDATE_ERROR_FMT(
             v,
             schema,
             BEBOP_DIAG_MACRO_VALIDATE_ERROR,
@@ -1349,10 +1349,10 @@ static void _bebop_validate_decorator_chain(
       }
 
       if (param) {
-        const bebop_literal_kind_t expected = _bebop_validate_type_to_literal(param->type);
+        const bebop_literal_kind_t expected = bebop__validate_type_to_literal(param->type);
         if (arg->value.kind != expected) {
           const char* param_name = BEBOP_STR(v->ctx, param->name);
-          _bebop_VALIDATE_ERROR_FMT(
+          bebop__VALIDATE_ERROR_FMT(
               v,
               schema,
               BEBOP_DIAG_MACRO_VALIDATE_ERROR,
@@ -1379,7 +1379,7 @@ static void _bebop_validate_decorator_chain(
           }
           {
             const char* param_name = BEBOP_STR(v->ctx, param->name);
-            _bebop_VALIDATE_ERROR_FMT(
+            bebop__VALIDATE_ERROR_FMT(
                 v,
                 schema,
                 BEBOP_DIAG_MACRO_VALIDATE_ERROR,
@@ -1409,7 +1409,7 @@ static void _bebop_validate_decorator_chain(
       }
       {
         const char* param_name = BEBOP_STR(v->ctx, def->decorator_def.params[pi].name);
-        _bebop_VALIDATE_ERROR_FMT(
+        bebop__VALIDATE_ERROR_FMT(
             v,
             schema,
             BEBOP_DIAG_MACRO_VALIDATE_ERROR,
@@ -1424,24 +1424,24 @@ static void _bebop_validate_decorator_chain(
 
     if (lua) {
       if (def->decorator_def.validate_ref != BEBOP_LUA_NOREF) {
-        _bebop_lua_run_validate(lua, def, dec, target.target);
+        bebop__lua_run_validate(lua, def, dec, target.target);
       }
       if (def->decorator_def.export_ref != BEBOP_LUA_NOREF) {
-        _bebop_lua_run_export(lua, def, BEBOP_DISCARD_CONST(bebop_decorator_t*, dec));
+        bebop__lua_run_export(lua, def, BEBOP_DISCARD_CONST(bebop_decorator_t*, dec));
       }
     }
   }
 }
 
-static void _bebop_validate_all_decorators(bebop_validator_t* v)
+static void bebop__validate_all_decorators(bebop_validator_t* v)
 {
-  bebop_lua_state_t* lua = _bebop_lua_state_create(v->ctx);
+  bebop_lua_state_t* lua = bebop__lua_state_create(v->ctx);
   if (!lua) {
     v->alloc_failed = true;
     return;
   }
 
-  _bebop_lua_compile_decorators(lua, v->result);
+  bebop__lua_compile_decorators(lua, v->result);
 
   for (uint32_t i = 0; i < v->def_count; i++) {
     bebop_def_t* def = v->all_defs[i];
@@ -1449,10 +1449,10 @@ static void _bebop_validate_all_decorators(bebop_validator_t* v)
       continue;
     }
 
-    const bebop_decorator_target_t def_target = _bebop_validate_def_target(def);
+    const bebop_decorator_target_t def_target = bebop__validate_def_target(def);
     const bebop_decorated_t decorated = {.kind = BEBOP_DECORATED_DEF, .def = def};
-    _bebop_validate_decorator_chain(
-        v, lua, def->decorators, (_bebop_decor_target_t) {def_target, decorated}
+    bebop__validate_decorator_chain(
+        v, lua, def->decorators, (bebop__decor_target_t) {def_target, decorated}
     );
 
     if (def->kind == BEBOP_DEF_STRUCT || def->kind == BEBOP_DEF_MESSAGE) {
@@ -1462,8 +1462,8 @@ static void _bebop_validate_all_decorators(bebop_validator_t* v)
                                                            : def->message_def.field_count;
       for (uint32_t f = 0; f < count; f++) {
         const bebop_decorated_t fd = {.kind = BEBOP_DECORATED_FIELD, .field = &fields[f]};
-        _bebop_validate_decorator_chain(
-            v, lua, fields[f].decorators, (_bebop_decor_target_t) {BEBOP_TARGET_FIELD, fd}
+        bebop__validate_decorator_chain(
+            v, lua, fields[f].decorators, (bebop__decor_target_t) {BEBOP_TARGET_FIELD, fd}
         );
       }
     } else if (def->kind == BEBOP_DEF_ENUM) {
@@ -1471,38 +1471,38 @@ static void _bebop_validate_all_decorators(bebop_validator_t* v)
         const bebop_decorated_t ed = {
             .kind = BEBOP_DECORATED_ENUM_MEMBER, .enum_member = &def->enum_def.members[m]
         };
-        _bebop_validate_decorator_chain(
+        bebop__validate_decorator_chain(
             v,
             lua,
             def->enum_def.members[m].decorators,
-            (_bebop_decor_target_t) {BEBOP_TARGET_FIELD, ed}
+            (bebop__decor_target_t) {BEBOP_TARGET_FIELD, ed}
         );
       }
     } else if (def->kind == BEBOP_DEF_UNION) {
       for (uint32_t b = 0; b < def->union_def.branch_count; b++) {
         bebop_union_branch_t* branch = &def->union_def.branches[b];
         const bebop_decorated_t bd = {.kind = BEBOP_DECORATED_BRANCH, .branch = branch};
-        _bebop_validate_decorator_chain(
-            v, lua, branch->decorators, (_bebop_decor_target_t) {BEBOP_TARGET_BRANCH, bd}
+        bebop__validate_decorator_chain(
+            v, lua, branch->decorators, (bebop__decor_target_t) {BEBOP_TARGET_BRANCH, bd}
         );
       }
     } else if (def->kind == BEBOP_DEF_SERVICE) {
       for (uint32_t m = 0; m < def->service_def.method_count; m++) {
         bebop_method_t* method = &def->service_def.methods[m];
         const bebop_decorated_t md = {.kind = BEBOP_DECORATED_METHOD, .method = method};
-        _bebop_validate_decorator_chain(
-            v, lua, method->decorators, (_bebop_decor_target_t) {BEBOP_TARGET_METHOD, md}
+        bebop__validate_decorator_chain(
+            v, lua, method->decorators, (bebop__decor_target_t) {BEBOP_TARGET_METHOD, md}
         );
       }
     }
   }
 
   if (lua) {
-    _bebop_lua_state_destroy(lua);
+    bebop__lua_state_destroy(lua);
   }
 }
 
-static void _bebop_validate_compute_fixed_sizes(bebop_def_t** sorted, uint32_t count)
+static void bebop__validate_compute_fixed_sizes(bebop_def_t** sorted, uint32_t count)
 {
   for (uint32_t i = 0; i < count; i++) {
     bebop_def_t* def = sorted[i];
@@ -1514,8 +1514,8 @@ static void _bebop_validate_compute_fixed_sizes(bebop_def_t** sorted, uint32_t c
     bool is_fixed = true;
 
     for (uint32_t f = 0; f < def->struct_def.field_count && is_fixed; f++) {
-      bebop_type_t* ftype = def->struct_def.fields[f].type;
-      uint32_t field_size = bebop_type_fixed_size(ftype);
+      const bebop_type_t* ftype = def->struct_def.fields[f].type;
+      const uint32_t field_size = bebop_type_fixed_size(ftype);
       if (field_size == 0) {
         is_fixed = false;
       } else if (BEBOP_ADD_WOULD_OVERFLOW_U32(total, field_size)) {
@@ -1542,7 +1542,7 @@ bebop_status_t bebop_validate(bebop_parse_result_t* result)
       .alloc_failed = false,
   };
 
-  _bebop_validate_resolve_imports(&v);
+  bebop__validate_resolve_imports(&v);
 
   uint32_t total_defs = 0;
   for (uint32_t s = 0; s < result->schema_count; s++) {
@@ -1552,7 +1552,7 @@ bebop_status_t bebop_validate(bebop_parse_result_t* result)
     }
 
     if (total_defs > UINT32_MAX - schema->sorted_defs_count) {
-      _bebop_context_set_error(
+      bebop__context_set_error(
           ctx, BEBOP_ERR_OUT_OF_MEMORY, "Too many definitions (integer overflow)"
       );
       return BEBOP_FATAL;
@@ -1566,7 +1566,7 @@ bebop_status_t bebop_validate(bebop_parse_result_t* result)
 
   v.all_defs = bebop_arena_new(BEBOP_ARENA(ctx), bebop_def_t*, total_defs);
   if (!v.all_defs) {
-    _bebop_context_set_error(ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate definition array");
+    bebop__context_set_error(ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate definition array");
     return BEBOP_FATAL;
   }
 
@@ -1575,7 +1575,7 @@ bebop_status_t bebop_validate(bebop_parse_result_t* result)
   v.name_to_idx = bebop_idxmap_new(total_defs, BEBOP_ARENA(ctx));
   if (!v.name_to_idx.set_.ctrl_) {
     v.alloc_failed = true;
-    _bebop_context_set_error(ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate idxmap");
+    bebop__context_set_error(ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate idxmap");
     return BEBOP_FATAL;
   }
 
@@ -1608,14 +1608,14 @@ bebop_status_t bebop_validate(bebop_parse_result_t* result)
   }
 
   for (uint32_t i = 0; i < v.def_count; i++) {
-    bebop_def_t* def = v.all_defs[i];
+    const bebop_def_t* def = v.all_defs[i];
     if (!bebop_str_is_null(def->fqn)) {
-      const bebop_def_t* existing = _bebop_result_find_def(result, BEBOP_STR(ctx, def->fqn));
+      const bebop_def_t* existing = bebop__result_find_def(result, BEBOP_STR(ctx, def->fqn));
       if (existing && existing != def && existing->schema != def->schema
-          && !_bebop_schema_has_visibility(def->schema, existing->schema)
-          && !_bebop_schema_has_visibility(existing->schema, def->schema))
+          && !bebop__schema_has_visibility(def->schema, existing->schema)
+          && !bebop__schema_has_visibility(existing->schema, def->schema))
       {
-        bebop_schema_t* schema = _bebop_validate_get_schema(&v, def);
+        bebop_schema_t* schema = bebop__validate_get_schema(&v, def);
         const char* fqn = BEBOP_STR(ctx, def->fqn);
         char hint[256];
         const char* orig_path = existing->schema ? existing->schema->path : NULL;
@@ -1650,32 +1650,32 @@ bebop_status_t bebop_validate(bebop_parse_result_t* result)
   }
 
   for (uint32_t i = 0; i < v.def_count; i++) {
-    _bebop_validate_resolve_def(&v, v.all_defs[i]);
+    bebop__validate_resolve_def(&v, v.all_defs[i]);
   }
 
   for (uint32_t i = 0; i < v.def_count; i++) {
     bebop_def_t* def = v.all_defs[i];
     if (def->kind == BEBOP_DEF_SERVICE) {
-      _bebop_validate_service(&v, def);
+      bebop__validate_service(&v, def);
     }
   }
 
-  _bebop_validate_resolve_all_decorators(&v);
+  bebop__validate_resolve_all_decorators(&v);
 
-  _bebop_validate_all_decorators(&v);
+  bebop__validate_all_decorators(&v);
 
   uint32_t sorted_count;
-  bebop_def_t** sorted = _bebop_validate_toposort(&v, &sorted_count);
+  bebop_def_t** sorted = bebop__validate_toposort(&v, &sorted_count);
 
   if (sorted) {
-    _bebop_validate_compute_fixed_sizes(sorted, sorted_count);
+    bebop__validate_compute_fixed_sizes(sorted, sorted_count);
 
     for (uint32_t i = 0; i < v.def_count; i++) {
       bebop_def_t* def = v.all_defs[i];
       for (uint32_t j = 0; j < v.adj_counts[i]; j++) {
         const uint32_t dependent_idx = v.adjacency[i][j];
         bebop_def_t* dependent = v.all_defs[dependent_idx];
-        _bebop_validate_add_dependent(&v, def, dependent);
+        bebop__validate_add_dependent(&v, def, dependent);
       }
     }
 
@@ -1721,7 +1721,7 @@ bebop_status_t bebop_validate(bebop_parse_result_t* result)
   }
 
   if (v.alloc_failed) {
-    _bebop_context_set_error(
+    bebop__context_set_error(
         ctx, BEBOP_ERR_OUT_OF_MEMORY, "Memory allocation failed during validation"
     );
     return BEBOP_FATAL;

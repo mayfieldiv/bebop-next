@@ -31,7 +31,7 @@ struct bebop_plugin_request_builder {
   bool opts_initialized;
 };
 
-static Bebop_WireCtx* _make_ctx(bebop_host_allocator_t* a)
+static Bebop_WireCtx* bebop__parser_make_ctx(bebop_host_allocator_t* a)
 {
   Bebop_WireCtxOpts opts = Bebop_WireCtx_DefaultOpts();
   opts.arena_options.allocator =
@@ -39,12 +39,12 @@ static Bebop_WireCtx* _make_ctx(bebop_host_allocator_t* a)
   return Bebop_WireCtx_New(&opts);
 }
 
-static Bebop_Str _dup_str(Bebop_WireCtx* ctx, const char* s)
+static Bebop_Str bebop__parser_dup_str(Bebop_WireCtx* ctx, const char* s)
 {
   if (!s) {
     return (Bebop_Str) {0};
   }
-  size_t len = strlen(s);
+  const size_t len = strlen(s);
   char* p = Bebop_WireCtx_Alloc(ctx, len + 1);
   if (!p) {
     return (Bebop_Str) {0};
@@ -68,7 +68,7 @@ bebop_status_t bebop_plugin_request_decode(
     return BEBOP_FATAL;
   }
 
-  Bebop_WireCtx* wctx = _make_ctx(&ctx->host.allocator);
+  Bebop_WireCtx* wctx = bebop__parser_make_ctx(&ctx->host.allocator);
   if (!wctx) {
     return BEBOP_FATAL;
   }
@@ -104,7 +104,7 @@ bebop_status_t bebop_plugin_request_encode(
     return BEBOP_FATAL;
   }
 
-  Bebop_WireCtx* wctx = _make_ctx(&ctx->host.allocator);
+  Bebop_WireCtx* wctx = bebop__parser_make_ctx(&ctx->host.allocator);
   if (!wctx) {
     return BEBOP_FATAL;
   }
@@ -120,8 +120,8 @@ bebop_status_t bebop_plugin_request_encode(
     return BEBOP_FATAL;
   }
 
-  uint8_t* tmp;
-  size_t tmp_len;
+  uint8_t* tmp = NULL;
+  size_t tmp_len = 0;
   Bebop_Writer_Buf(w, &tmp, &tmp_len);
 
   uint8_t* buf = bebop_arena_alloc(BEBOP_ARENA(ctx), tmp_len, 1);
@@ -154,9 +154,10 @@ const char* bebop_plugin_request_file_at(const bebop_plugin_request_t* r, uint32
   return r->data.files_to_generate.value.data[i].data;
 }
 
-const char* bebop_plugin_request_parameter(const bebop_plugin_request_t* r)
+const char* bebop_plugin_request_parameter(const bebop_plugin_request_t* req)
 {
-  return r && BEBOP_WIRE_IS_SOME(r->data.parameter) ? r->data.parameter.value.data : NULL;
+  if (req == NULL) return NULL;
+  return BEBOP_WIRE_IS_SOME(req->data.parameter) ? req->data.parameter.value.data : NULL;
 }
 
 bebop_version_t bebop_plugin_request_compiler_version(const bebop_plugin_request_t* r)
@@ -168,9 +169,9 @@ bebop_version_t bebop_plugin_request_compiler_version(const bebop_plugin_request
   return (bebop_version_t) {v->major, v->minor, v->patch, v->suffix.data ? v->suffix.data : ""};
 }
 
-uint32_t bebop_plugin_request_schema_count(const bebop_plugin_request_t* r)
+uint32_t bebop_plugin_request_schema_count(const bebop_plugin_request_t* req)
 {
-  return r && BEBOP_WIRE_IS_SOME(r->data.schemas) ? (uint32_t)r->data.schemas.value.length : 0;
+  return req && BEBOP_WIRE_IS_SOME(req->data.schemas) ? (uint32_t)req->data.schemas.value.length : 0;
 }
 
 const bebop_descriptor_schema_t* bebop_plugin_request_schema_at(
@@ -236,7 +237,7 @@ bebop_status_t bebop_plugin_response_decode(
     return BEBOP_FATAL;
   }
 
-  Bebop_WireCtx* wctx = _make_ctx(&ctx->host.allocator);
+  Bebop_WireCtx* wctx = bebop__parser_make_ctx(&ctx->host.allocator);
   if (!wctx) {
     return BEBOP_FATAL;
   }
@@ -272,7 +273,7 @@ bebop_status_t bebop_plugin_response_encode(
     return BEBOP_FATAL;
   }
 
-  Bebop_WireCtx* wctx = _make_ctx(&ctx->host.allocator);
+  Bebop_WireCtx* wctx = bebop__parser_make_ctx(&ctx->host.allocator);
   if (!wctx) {
     return BEBOP_FATAL;
   }
@@ -288,8 +289,8 @@ bebop_status_t bebop_plugin_response_encode(
     return BEBOP_FATAL;
   }
 
-  uint8_t* tmp;
-  size_t tmp_len;
+  uint8_t* tmp = NULL;
+  size_t tmp_len = 0;
   Bebop_Writer_Buf(w, &tmp, &tmp_len);
 
   uint8_t* buf = bebop_arena_alloc(BEBOP_ARENA(ctx), tmp_len, 1);
@@ -305,9 +306,10 @@ bebop_status_t bebop_plugin_response_encode(
   return BEBOP_OK;
 }
 
-const char* bebop_plugin_response_error(const bebop_plugin_response_t* r)
+const char* bebop_plugin_response_error(const bebop_plugin_response_t* resp)
 {
-  return r && BEBOP_WIRE_IS_SOME(r->data.error) ? r->data.error.value.data : NULL;
+  if (resp == NULL) return NULL;
+  return BEBOP_WIRE_IS_SOME(resp->data.error) ? resp->data.error.value.data : NULL;
 }
 
 uint32_t bebop_plugin_response_file_count(const bebop_plugin_response_t* r)
@@ -401,7 +403,7 @@ bebop_plugin_response_builder_t* bebop_plugin_response_builder_create(bebop_host
   if (!a) {
     return NULL;
   }
-  Bebop_WireCtx* ctx = _make_ctx(a);
+  Bebop_WireCtx* ctx = bebop__parser_make_ctx(a);
   if (!ctx) {
     return NULL;
   }
@@ -421,7 +423,7 @@ void bebop_plugin_response_builder_set_error(bebop_plugin_response_builder_t* b,
     return;
   }
   b->data.error.has_value = true;
-  b->data.error.value = _dup_str(b->ctx, err);
+  b->data.error.value = bebop__parser_dup_str(b->ctx, err);
 }
 
 void bebop_plugin_response_builder_add_file(
@@ -431,9 +433,9 @@ void bebop_plugin_response_builder_add_file(
   if (!b) {
     return;
   }
-  uint32_t n = BEBOP_WIRE_IS_SOME(b->data.files) ? (uint32_t)b->data.files.value.length : 0;
+  const uint32_t n = BEBOP_WIRE_IS_SOME(b->data.files) ? (uint32_t)b->data.files.value.length : 0;
   if (n >= b->file_cap) {
-    uint32_t cap = b->file_cap ? b->file_cap * 2 : 8;
+    const uint32_t cap = b->file_cap ? b->file_cap * 2 : 8;
     Bebop_GeneratedFile* f = Bebop_WireCtx_Alloc(b->ctx, cap * sizeof(*f));
     if (!f) {
       return;
@@ -448,11 +450,11 @@ void bebop_plugin_response_builder_add_file(
   memset(f, 0, sizeof(*f));
   if (name) {
     f->name.has_value = true;
-    f->name.value = _dup_str(b->ctx, name);
+    f->name.value = bebop__parser_dup_str(b->ctx, name);
   }
   if (content) {
     f->content.has_value = true;
-    f->content.value = _dup_str(b->ctx, content);
+    f->content.value = bebop__parser_dup_str(b->ctx, content);
   }
   b->data.files.has_value = true;
   b->data.files.value.data = b->files;
@@ -466,9 +468,9 @@ void bebop_plugin_response_builder_add_insertion(
   if (!b) {
     return;
   }
-  uint32_t n = BEBOP_WIRE_IS_SOME(b->data.files) ? (uint32_t)b->data.files.value.length : 0;
+  const uint32_t n = BEBOP_WIRE_IS_SOME(b->data.files) ? (uint32_t)b->data.files.value.length : 0;
   if (n >= b->file_cap) {
-    uint32_t cap = b->file_cap ? b->file_cap * 2 : 8;
+    const uint32_t cap = b->file_cap ? b->file_cap * 2 : 8;
     Bebop_GeneratedFile* f = Bebop_WireCtx_Alloc(b->ctx, cap * sizeof(*f));
     if (!f) {
       return;
@@ -483,15 +485,15 @@ void bebop_plugin_response_builder_add_insertion(
   memset(f, 0, sizeof(*f));
   if (name) {
     f->name.has_value = true;
-    f->name.value = _dup_str(b->ctx, name);
+    f->name.value = bebop__parser_dup_str(b->ctx, name);
   }
   if (ip) {
     f->insertion_point.has_value = true;
-    f->insertion_point.value = _dup_str(b->ctx, ip);
+    f->insertion_point.value = bebop__parser_dup_str(b->ctx, ip);
   }
   if (content) {
     f->content.has_value = true;
-    f->content.value = _dup_str(b->ctx, content);
+    f->content.value = bebop__parser_dup_str(b->ctx, content);
   }
   b->data.files.has_value = true;
   b->data.files.value.data = b->files;
@@ -510,10 +512,10 @@ void bebop_plugin_response_builder_add_diagnostic(
   if (!b) {
     return;
   }
-  uint32_t n =
+  const uint32_t n =
       BEBOP_WIRE_IS_SOME(b->data.diagnostics) ? (uint32_t)b->data.diagnostics.value.length : 0;
   if (n >= b->diag_cap) {
-    uint32_t cap = b->diag_cap ? b->diag_cap * 2 : 8;
+    const uint32_t cap = b->diag_cap ? b->diag_cap * 2 : 8;
     Bebop_Diagnostic* d = Bebop_WireCtx_Alloc(b->ctx, cap * sizeof(*d));
     if (!d) {
       return;
@@ -530,15 +532,15 @@ void bebop_plugin_response_builder_add_diagnostic(
   d->severity.value = (Bebop_DiagnosticSeverity)sev;
   if (text) {
     d->text.has_value = true;
-    d->text.value = _dup_str(b->ctx, text);
+    d->text.value = bebop__parser_dup_str(b->ctx, text);
   }
   if (hint) {
     d->hint.has_value = true;
-    d->hint.value = _dup_str(b->ctx, hint);
+    d->hint.value = bebop__parser_dup_str(b->ctx, hint);
   }
   if (file) {
     d->file.has_value = true;
-    d->file.value = _dup_str(b->ctx, file);
+    d->file.value = bebop__parser_dup_str(b->ctx, file);
   }
   if (span) {
     d->span.has_value = true;
@@ -575,7 +577,7 @@ bebop_plugin_request_builder_t* bebop_plugin_request_builder_create(bebop_host_a
   if (!a) {
     return NULL;
   }
-  Bebop_WireCtx* ctx = _make_ctx(a);
+  Bebop_WireCtx* ctx = bebop__parser_make_ctx(a);
   if (!ctx) {
     return NULL;
   }
@@ -594,7 +596,7 @@ void bebop_plugin_request_builder_set_version(bebop_plugin_request_builder_t* b,
   if (!b) {
     return;
   }
-  Bebop_Version ver = {.major = v.major, .minor = v.minor, .patch = v.patch, .suffix = _dup_str(b->ctx, v.suffix ? v.suffix : "")};
+  const Bebop_Version ver = {.major = v.major, .minor = v.minor, .patch = v.patch, .suffix = bebop__parser_dup_str(b->ctx, v.suffix ? v.suffix : "")};
   b->data.compiler_version.has_value = true;
   memcpy(BEBOP_WIRE_MUTPTR(Bebop_Version, &b->data.compiler_version.value), &ver, sizeof(ver));
 }
@@ -605,7 +607,7 @@ void bebop_plugin_request_builder_set_parameter(bebop_plugin_request_builder_t* 
     return;
   }
   b->data.parameter.has_value = true;
-  b->data.parameter.value = _dup_str(b->ctx, p);
+  b->data.parameter.value = bebop__parser_dup_str(b->ctx, p);
 }
 
 void bebop_plugin_request_builder_add_file(bebop_plugin_request_builder_t* b, const char* path)
@@ -613,11 +615,11 @@ void bebop_plugin_request_builder_add_file(bebop_plugin_request_builder_t* b, co
   if (!b) {
     return;
   }
-  uint32_t n = BEBOP_WIRE_IS_SOME(b->data.files_to_generate)
+  const uint32_t n = BEBOP_WIRE_IS_SOME(b->data.files_to_generate)
       ? (uint32_t)b->data.files_to_generate.value.length
       : 0;
   if (n >= b->file_cap) {
-    uint32_t cap = b->file_cap ? b->file_cap * 2 : 8;
+    const uint32_t cap = b->file_cap ? b->file_cap * 2 : 8;
     Bebop_Str* f = Bebop_WireCtx_Alloc(b->ctx, cap * sizeof(*f));
     if (!f) {
       return;
@@ -628,7 +630,7 @@ void bebop_plugin_request_builder_add_file(bebop_plugin_request_builder_t* b, co
     b->files = f;
     b->file_cap = cap;
   }
-  b->files[n] = _dup_str(b->ctx, path);
+  b->files[n] = bebop__parser_dup_str(b->ctx, path);
   b->data.files_to_generate.has_value = true;
   b->data.files_to_generate.value.data = b->files;
   b->data.files_to_generate.value.length = n + 1;
@@ -651,8 +653,8 @@ void bebop_plugin_request_builder_add_option(
   if (!key || !val) {
     return;
   }
-  *key = _dup_str(b->ctx, k);
-  *val = _dup_str(b->ctx, v);
+  *key = bebop__parser_dup_str(b->ctx, k);
+  *val = bebop__parser_dup_str(b->ctx, v);
   Bebop_Map_Put(&b->data.host_options.value, key, val);
 }
 
@@ -663,7 +665,7 @@ void bebop_plugin_request_builder_set_descriptor(
   if (!b || !d) {
     return;
   }
-  uint32_t n = bebop_descriptor_schema_count(d);
+  const uint32_t n = bebop_descriptor_schema_count(d);
   if (n == 0) {
     return;
   }

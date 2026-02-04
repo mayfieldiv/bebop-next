@@ -1,4 +1,4 @@
-static const bebop_type_kind_t _bebop_sema_valid_map_keys[] = {
+static const bebop_type_kind_t bebop__sema_valid_map_keys[] = {
     BEBOP_TYPE_BOOL,
     BEBOP_TYPE_BYTE,
     BEBOP_TYPE_INT8,
@@ -14,7 +14,7 @@ static const bebop_type_kind_t _bebop_sema_valid_map_keys[] = {
     BEBOP_TYPE_UUID,
 };
 
-#define _bebop_SEMA_VALID_MAP_KEY_COUNT BEBOP_COUNTOF(_bebop_sema_valid_map_keys)
+#define bebop__SEMA_VALID_MAP_KEY_COUNT BEBOP_COUNTOF(bebop__sema_valid_map_keys)
 
 bool bebop_sema_init(bebop_sema_t* sema, bebop_context_t* ctx, bebop_schema_t* schema)
 {
@@ -29,7 +29,7 @@ bool bebop_sema_init(bebop_sema_t* sema, bebop_context_t* ctx, bebop_schema_t* s
 
   sema->name_scope = bebop_defmap_new(BEBOP_SEMA_INITIAL_SCOPE_CAPACITY, BEBOP_ARENA(ctx));
   if (!sema->name_scope.set_.ctrl_) {
-    _bebop_context_set_error(ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate sema name scope");
+    bebop__context_set_error(ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate sema name scope");
     return false;
   }
 
@@ -56,7 +56,7 @@ void bebop_sema_exit_def(bebop_sema_t* sema)
   memset(sema->seen_index_spans, 0, sizeof(sema->seen_index_spans));
 }
 
-static void _bebop_sema_int_range(
+static void bebop__sema_int_range(
     const bebop_type_kind_t kind, int64_t* min, uint64_t* max, bool* is_unsigned
 )
 {
@@ -120,7 +120,7 @@ bool bebop_sema_check_enum_member(
   int64_t min_val;
   uint64_t max_val;
   bool is_unsigned;
-  _bebop_sema_int_range(enum_def->enum_def.base_type, &min_val, &max_val, &is_unsigned);
+  bebop__sema_int_range(enum_def->enum_def.base_type, &min_val, &max_val, &is_unsigned);
 
   if (is_unsigned) {
     if (member->value > max_val) {
@@ -166,19 +166,19 @@ range_ok:;
   uint32_t decorator_count = 0;
   for (const bebop_decorator_t* dec = enum_def->decorators; dec != NULL; dec = dec->next) {
     if (++decorator_count > BEBOP_MAX_DECORATOR_CHAIN_LENGTH) {
-      _bebop_context_set_error(
+      bebop__context_set_error(
           sema->ctx, BEBOP_ERR_INTERNAL, "Decorator list exceeds maximum length (corrupted data)"
       );
       return false;
     }
     const char* dec_name = BEBOP_STR(sema->ctx, dec->name);
-    if (dec_name && _bebop_streq(dec_name, "flags")) {
+    if (dec_name && bebop__streq(dec_name, "flags")) {
       return true;
     }
   }
 
   if (enum_def->enum_def.member_count > 0 && !enum_def->enum_def.members) {
-    _bebop_context_set_error(
+    bebop__context_set_error(
         sema->ctx, BEBOP_ERR_OUT_OF_MEMORY, "Enum members array is NULL despite non-zero count"
     );
     return false;
@@ -270,7 +270,7 @@ bool bebop_sema_check_duplicate_name(
   const bebop_defmap_Entry entry = {name.idx, stored_span};
   const bebop_defmap_Insert insert_result = bebop_defmap_insert(&sema->name_scope, &entry);
   if (bebop_defmap_Iter_get(&insert_result.iter) == NULL) {
-    _bebop_context_set_error(
+    bebop__context_set_error(
         sema->ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to register name in scope"
     );
     return false;
@@ -326,8 +326,8 @@ bool bebop_sema_check_map_key_type(
     return false;
   }
 
-  for (size_t i = 0; i < _bebop_SEMA_VALID_MAP_KEY_COUNT; i++) {
-    if (key_type->kind == _bebop_sema_valid_map_keys[i]) {
+  for (size_t i = 0; i < bebop__SEMA_VALID_MAP_KEY_COUNT; i++) {
+    if (key_type->kind == bebop__sema_valid_map_keys[i]) {
       return true;
     }
   }

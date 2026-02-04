@@ -1,6 +1,6 @@
-const char* _bebop_lua_wrap_function(
+const char* bebop__lua_wrap_function(
     bebop_arena_t* arena,
-    const _bebop_str_view_t source,
+    const bebop__str_view_t source,
     const char* const* params,
     const uint32_t param_count
 )
@@ -37,7 +37,7 @@ const char* _bebop_lua_wrap_function(
       *p++ = ',';
       *p++ = ' ';
     }
-    size_t len = strlen(params[i]);
+    const size_t len = strlen(params[i]);
     memcpy(p, params[i], len);
     p += len;
   }
@@ -59,7 +59,7 @@ const char* _bebop_lua_wrap_function(
   return buf;
 }
 
-static char _bebop_lua_ctx_key = 'B';
+static char bebop__lua_ctx_key = 'B';
 
 typedef struct {
   bebop_schema_t* schema;
@@ -73,23 +73,23 @@ struct bebop_lua_state {
   bebop_lua_eval_ctx_t eval_ctx;
 };
 
-static bebop_lua_eval_ctx_t* _bebop_lua_get_eval_ctx(lua_State* L)
+static bebop_lua_eval_ctx_t* bebop__lua_get_eval_ctx(lua_State* L)
 {
-  lua_pushlightuserdata(L, &_bebop_lua_ctx_key);
+  lua_pushlightuserdata(L, &bebop__lua_ctx_key);
   lua_rawget(L, LUA_REGISTRYINDEX);
   bebop_lua_eval_ctx_t* ec = lua_touserdata(L, -1);
   lua_pop(L, 1);
   return ec;
 }
 
-static void _bebop_lua_set_eval_ctx(lua_State* L, bebop_lua_eval_ctx_t* ec)
+static void bebop__lua_set_eval_ctx(lua_State* L, bebop_lua_eval_ctx_t* ec)
 {
-  lua_pushlightuserdata(L, &_bebop_lua_ctx_key);
+  lua_pushlightuserdata(L, &bebop__lua_ctx_key);
   lua_pushlightuserdata(L, ec);
   lua_rawset(L, LUA_REGISTRYINDEX);
 }
 
-static bool _bebop_lua_read_span(lua_State* L, const int idx, bebop_span_t* out)
+static bool bebop__lua_read_span(lua_State* L, const int idx, bebop_span_t* out)
 {
   if (!lua_istable(L, idx)) {
     return false;
@@ -122,25 +122,25 @@ static bool _bebop_lua_read_span(lua_State* L, const int idx, bebop_span_t* out)
   return true;
 }
 
-static bebop_span_t _bebop_lua_resolve_span(lua_State* L, const bebop_lua_eval_ctx_t* ec)
+static bebop_span_t bebop__lua_resolve_span(lua_State* L, const bebop_lua_eval_ctx_t* ec)
 {
   bebop_span_t span;
-  if (lua_gettop(L) >= 2 && _bebop_lua_read_span(L, 2, &span)) {
+  if (lua_gettop(L) >= 2 && bebop__lua_read_span(L, 2, &span)) {
     return span;
   }
   return ec->span;
 }
 
-static int _bebop_lua_fn_error(lua_State* L)
+static int bebop__lua_fn_error(lua_State* L)
 {
   const char* msg = luaL_optstring(L, 1, "validation error");
-  bebop_lua_eval_ctx_t* ec = _bebop_lua_get_eval_ctx(L);
+  bebop_lua_eval_ctx_t* ec = bebop__lua_get_eval_ctx(L);
 
   if (ec && ec->schema) {
-    const bebop_span_t span = _bebop_lua_resolve_span(L, ec);
-    _bebop_schema_add_diagnostic(
+    const bebop_span_t span = bebop__lua_resolve_span(L, ec);
+    bebop__schema_add_diagnostic(
         ec->schema,
-        (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_VALIDATE_ERROR, span},
+        (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_VALIDATE_ERROR, span},
         msg,
         NULL
     );
@@ -150,16 +150,16 @@ static int _bebop_lua_fn_error(lua_State* L)
   return lua_error(L);
 }
 
-static int _bebop_lua_fn_warn(lua_State* L)
+static int bebop__lua_fn_warn(lua_State* L)
 {
   const char* msg = luaL_optstring(L, 1, "validation warning");
-  bebop_lua_eval_ctx_t* ec = _bebop_lua_get_eval_ctx(L);
+  const bebop_lua_eval_ctx_t* ec = bebop__lua_get_eval_ctx(L);
 
   if (ec && ec->schema) {
-    const bebop_span_t span = _bebop_lua_resolve_span(L, ec);
-    _bebop_schema_add_diagnostic(
+    const bebop_span_t span = bebop__lua_resolve_span(L, ec);
+    bebop__schema_add_diagnostic(
         ec->schema,
-        (_bebop_diag_loc_t) {BEBOP_DIAG_WARNING, BEBOP_DIAG_MACRO_VALIDATE_WARNING, span},
+        (bebop__diag_loc_t) {BEBOP_DIAG_WARNING, BEBOP_DIAG_MACRO_VALIDATE_WARNING, span},
         msg,
         NULL
     );
@@ -168,14 +168,14 @@ static int _bebop_lua_fn_warn(lua_State* L)
   return 0;
 }
 
-static int _bebop_lua_fn_is_power_of_two(lua_State* L)
+static int bebop__lua_fn_is_power_of_two(lua_State* L)
 {
   const lua_Integer n = luaL_checkinteger(L, 1);
-  lua_pushboolean(L, n > 0 && (n & n - 1) == 0);
+  lua_pushboolean(L, n > 0 && (n & (n - 1)) == 0);
   return 1;
 }
 
-static int _bebop_lua_fn_is_valid_identifier(lua_State* L)
+static int bebop__lua_fn_is_valid_identifier(lua_State* L)
 {
   size_t len;
   const char* s = luaL_checklstring(L, 1, &len);
@@ -196,7 +196,7 @@ static int _bebop_lua_fn_is_valid_identifier(lua_State* L)
   return 1;
 }
 
-static int _bebop_lua_bit_band(lua_State* L)
+static int bebop__lua_bit_band(lua_State* L)
 {
   const lua_Integer a = luaL_checkinteger(L, 1);
   const lua_Integer b = luaL_checkinteger(L, 2);
@@ -204,7 +204,7 @@ static int _bebop_lua_bit_band(lua_State* L)
   return 1;
 }
 
-static int _bebop_lua_bit_bor(lua_State* L)
+static int bebop__lua_bit_bor(lua_State* L)
 {
   const lua_Integer a = luaL_checkinteger(L, 1);
   const lua_Integer b = luaL_checkinteger(L, 2);
@@ -212,7 +212,7 @@ static int _bebop_lua_bit_bor(lua_State* L)
   return 1;
 }
 
-static int _bebop_lua_bit_bxor(lua_State* L)
+static int bebop__lua_bit_bxor(lua_State* L)
 {
   const lua_Integer a = luaL_checkinteger(L, 1);
   const lua_Integer b = luaL_checkinteger(L, 2);
@@ -220,14 +220,14 @@ static int _bebop_lua_bit_bxor(lua_State* L)
   return 1;
 }
 
-static int _bebop_lua_bit_bnot(lua_State* L)
+static int bebop__lua_bit_bnot(lua_State* L)
 {
   const lua_Integer a = luaL_checkinteger(L, 1);
   lua_pushinteger(L, ~a);
   return 1;
 }
 
-static int _bebop_lua_bit_lshift(lua_State* L)
+static int bebop__lua_bit_lshift(lua_State* L)
 {
   const lua_Integer a = luaL_checkinteger(L, 1);
   const lua_Integer n = luaL_checkinteger(L, 2);
@@ -235,7 +235,7 @@ static int _bebop_lua_bit_lshift(lua_State* L)
   return 1;
 }
 
-static int _bebop_lua_bit_rshift(lua_State* L)
+static int bebop__lua_bit_rshift(lua_State* L)
 {
   const lua_Integer a = luaL_checkinteger(L, 1);
   const lua_Integer n = luaL_checkinteger(L, 2);
@@ -243,17 +243,17 @@ static int _bebop_lua_bit_rshift(lua_State* L)
   return 1;
 }
 
-static const luaL_Reg _bebop_lua_bit_funcs[] = {
-    {"band", _bebop_lua_bit_band},
-    {"bor", _bebop_lua_bit_bor},
-    {"bxor", _bebop_lua_bit_bxor},
-    {"bnot", _bebop_lua_bit_bnot},
-    {"lshift", _bebop_lua_bit_lshift},
-    {"rshift", _bebop_lua_bit_rshift},
+static const luaL_Reg bebop__lua_bit_funcs[] = {
+    {"band", bebop__lua_bit_band},
+    {"bor", bebop__lua_bit_bor},
+    {"bxor", bebop__lua_bit_bxor},
+    {"bnot", bebop__lua_bit_bnot},
+    {"lshift", bebop__lua_bit_lshift},
+    {"rshift", bebop__lua_bit_rshift},
     {NULL, NULL}
 };
 
-static void _bebop_lua_register_constants(lua_State* L)
+static void bebop__lua_register_constants(lua_State* L)
 {
 #define X(name, bit) \
   lua_pushinteger(L, (lua_Integer)(1u << (bit))); \
@@ -265,7 +265,7 @@ static void _bebop_lua_register_constants(lua_State* L)
   lua_setglobal(L, "ALL");
 }
 
-static void _bebop_lua_open_safe_libs(lua_State* L)
+static void bebop__lua_open_safe_libs(lua_State* L)
 {
   luaL_requiref(L, LUA_GNAME, luaopen_base, 1);
   lua_pop(L, 1);
@@ -294,7 +294,7 @@ static void _bebop_lua_open_safe_libs(lua_State* L)
   }
 }
 
-bebop_lua_state_t* _bebop_lua_state_create(bebop_context_t* ctx)
+bebop_lua_state_t* bebop__lua_state_create(bebop_context_t* ctx)
 {
   if (!ctx) {
     return NULL;
@@ -302,7 +302,7 @@ bebop_lua_state_t* _bebop_lua_state_create(bebop_context_t* ctx)
 
   bebop_lua_state_t* state = bebop_arena_new1(&ctx->arena, bebop_lua_state_t);
   if (!state) {
-    _bebop_context_set_error(ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate Lua state");
+    bebop__context_set_error(ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to allocate Lua state");
     return NULL;
   }
 
@@ -310,35 +310,35 @@ bebop_lua_state_t* _bebop_lua_state_create(bebop_context_t* ctx)
 
   state->L = luaL_newstate();
   if (!state->L) {
-    _bebop_context_set_error(ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to initialize Lua runtime");
+    bebop__context_set_error(ctx, BEBOP_ERR_OUT_OF_MEMORY, "Failed to initialize Lua runtime");
     return NULL;
   }
 
-  _bebop_lua_open_safe_libs(state->L);
+  bebop__lua_open_safe_libs(state->L);
 
-  _bebop_lua_register_constants(state->L);
+  bebop__lua_register_constants(state->L);
 
-  luaL_newlib(state->L, _bebop_lua_bit_funcs);
+  luaL_newlib(state->L, bebop__lua_bit_funcs);
   lua_setglobal(state->L, "bit");
 
-  lua_pushcfunction(state->L, _bebop_lua_fn_error);
+  lua_pushcfunction(state->L, bebop__lua_fn_error);
   lua_setglobal(state->L, "error");
 
-  lua_pushcfunction(state->L, _bebop_lua_fn_warn);
+  lua_pushcfunction(state->L, bebop__lua_fn_warn);
   lua_setglobal(state->L, "warn");
 
-  lua_pushcfunction(state->L, _bebop_lua_fn_is_power_of_two);
+  lua_pushcfunction(state->L, bebop__lua_fn_is_power_of_two);
   lua_setglobal(state->L, "is_power_of_two");
 
-  lua_pushcfunction(state->L, _bebop_lua_fn_is_valid_identifier);
+  lua_pushcfunction(state->L, bebop__lua_fn_is_valid_identifier);
   lua_setglobal(state->L, "is_valid_identifier");
 
-  _bebop_lua_set_eval_ctx(state->L, &state->eval_ctx);
+  bebop__lua_set_eval_ctx(state->L, &state->eval_ctx);
 
   return state;
 }
 
-void _bebop_lua_state_destroy(bebop_lua_state_t* state)
+void bebop__lua_state_destroy(bebop_lua_state_t* state)
 {
   if (!state) {
     return;
@@ -349,7 +349,7 @@ void _bebop_lua_state_destroy(bebop_lua_state_t* state)
   }
 }
 
-static void _bebop_lua_push_span(lua_State* L, const bebop_span_t span)
+static void bebop__lua_push_span(lua_State* L, const bebop_span_t span)
 {
   lua_createtable(L, 0, 4);
   lua_pushinteger(L, span.off);
@@ -362,7 +362,7 @@ static void _bebop_lua_push_span(lua_State* L, const bebop_span_t span)
   lua_setfield(L, -2, "start_col");
 }
 
-static void _bebop_lua_push_literal(
+static void bebop__lua_push_literal(
     lua_State* L, const bebop_context_t* ctx, const bebop_literal_t* lit
 )
 {
@@ -385,7 +385,7 @@ static void _bebop_lua_push_literal(
   }
 }
 
-static const bebop_decorator_arg_t* _bebop_lua_find_arg(
+static const bebop_decorator_arg_t* bebop__lua_find_arg(
     const bebop_macro_param_def_t* param, const uint32_t param_index, const bebop_decorator_t* usage
 )
 {
@@ -403,7 +403,7 @@ static const bebop_decorator_arg_t* _bebop_lua_find_arg(
   return NULL;
 }
 
-static void _bebop_lua_push_param_value(
+static void bebop__lua_push_param_value(
     lua_State* L,
     bebop_context_t* ctx,
     const bebop_macro_param_def_t* param,
@@ -411,15 +411,15 @@ static void _bebop_lua_push_param_value(
 )
 {
   if (arg) {
-    _bebop_lua_push_literal(L, ctx, &arg->value);
+    bebop__lua_push_literal(L, ctx, &arg->value);
   } else if (param->default_value) {
-    _bebop_lua_push_literal(L, ctx, param->default_value);
+    bebop__lua_push_literal(L, ctx, param->default_value);
   } else {
     lua_pushnil(L);
   }
 }
 
-static const char* _bebop_decorated_kind_str(const bebop_decorated_kind_t kind)
+static const char* bebop__decorated_kind_str(const bebop_decorated_kind_t kind)
 {
   switch (kind) {
     case BEBOP_DECORATED_DEF:
@@ -436,7 +436,7 @@ static const char* _bebop_decorated_kind_str(const bebop_decorated_kind_t kind)
   BEBOP_UNREACHABLE();
 }
 
-static const char* _bebop_def_kind_str(const bebop_def_kind_t kind)
+static const char* bebop__def_kind_str(const bebop_def_kind_t kind)
 {
   switch (kind) {
     case BEBOP_DEF_ENUM:
@@ -459,13 +459,13 @@ static const char* _bebop_def_kind_str(const bebop_def_kind_t kind)
   BEBOP_UNREACHABLE();
 }
 
-static void _bebop_lua_push_target(
+static void bebop__lua_push_target(
     lua_State* L, const bebop_context_t* ctx, const bebop_decorated_t* target
 )
 {
   lua_newtable(L);
 
-  lua_pushstring(L, _bebop_decorated_kind_str(target->kind));
+  lua_pushstring(L, bebop__decorated_kind_str(target->kind));
   lua_setfield(L, -2, "kind");
 
   switch (target->kind) {
@@ -485,7 +485,7 @@ static void _bebop_lua_push_target(
         }
         lua_setfield(L, -2, "fqn");
 
-        lua_pushstring(L, _bebop_def_kind_str(target->def->kind));
+        lua_pushstring(L, bebop__def_kind_str(target->def->kind));
         lua_setfield(L, -2, "def_kind");
       }
       break;
@@ -496,7 +496,7 @@ static void _bebop_lua_push_target(
           lua_setfield(L, -2, "name");
         }
         if (target->field->parent) {
-          lua_pushstring(L, _bebop_def_kind_str(target->field->parent->kind));
+          lua_pushstring(L, bebop__def_kind_str(target->field->parent->kind));
           lua_setfield(L, -2, "parent_kind");
         }
       }
@@ -555,7 +555,7 @@ static void _bebop_lua_push_target(
   }
 }
 
-static uint32_t _bebop_lua_push_call_args(
+static uint32_t bebop__lua_push_call_args(
     bebop_lua_state_t* state,
     const bebop_def_t* decorator_def,
     const bebop_decorator_t* usage,
@@ -567,20 +567,20 @@ static uint32_t _bebop_lua_push_call_args(
 
   lua_newtable(L);
 
-  _bebop_lua_push_span(L, usage->span);
+  bebop__lua_push_span(L, usage->span);
   lua_setfield(L, -2, "span");
 
   for (uint32_t i = 0; i < decorator_def->decorator_def.param_count; i++) {
     const char* param_name = BEBOP_STR(ctx, decorator_def->decorator_def.params[i].name);
     const bebop_decorator_arg_t* arg =
-        _bebop_lua_find_arg(&decorator_def->decorator_def.params[i], i, usage);
+        bebop__lua_find_arg(&decorator_def->decorator_def.params[i], i, usage);
 
     lua_newtable(L);
 
     if (arg) {
-      _bebop_lua_push_span(L, arg->span);
+      bebop__lua_push_span(L, arg->span);
     } else {
-      _bebop_lua_push_span(L, usage->span);
+      bebop__lua_push_span(L, usage->span);
     }
     lua_setfield(L, -2, "span");
 
@@ -588,22 +588,22 @@ static uint32_t _bebop_lua_push_call_args(
   }
 
   if (target) {
-    _bebop_lua_push_target(L, ctx, target);
+    bebop__lua_push_target(L, ctx, target);
   } else {
     lua_pushnil(L);
   }
 
   for (uint32_t i = 0; i < decorator_def->decorator_def.param_count; i++) {
     const bebop_decorator_arg_t* arg =
-        _bebop_lua_find_arg(&decorator_def->decorator_def.params[i], i, usage);
-    _bebop_lua_push_param_value(L, ctx, &decorator_def->decorator_def.params[i], arg);
+        bebop__lua_find_arg(&decorator_def->decorator_def.params[i], i, usage);
+    bebop__lua_push_param_value(L, ctx, &decorator_def->decorator_def.params[i], arg);
   }
 
   return 2 + decorator_def->decorator_def.param_count;
 }
 
-static bebop_span_t _bebop_lua_line_to_span(
-    bebop_span_t base_span, const _bebop_str_view_t block, long block_line
+static bebop_span_t bebop__lua_line_to_span(
+    bebop_span_t base_span, const bebop__str_view_t block, long block_line
 )
 {
   if (block_line < 1) {
@@ -641,12 +641,12 @@ found:;
   return result;
 }
 
-static const char* _bebop_lua_remap_error(
+static const char* bebop__lua_remap_error(
     bebop_arena_t* arena,
     const char* err,
     bebop_span_t* span,
     bebop_span_t* open_span,
-    const _bebop_str_view_t block
+    const bebop__str_view_t block
 )
 {
   if (open_span) {
@@ -672,10 +672,10 @@ static const char* _bebop_lua_remap_error(
     msg++;
   }
 
-  long block_line = lua_line - 1;
+  const long block_line = lua_line - 1;
 
   const bebop_span_t base_span = *span;
-  *span = _bebop_lua_line_to_span(base_span, block, block_line);
+  *span = bebop__lua_line_to_span(base_span, block, block_line);
 
   const char* close_pat = strstr(msg, "(to close '");
   const char* at_line_ptr = NULL;
@@ -687,7 +687,7 @@ static const char* _bebop_lua_remap_error(
     if (at_line_ptr) {
       at_line_ptr += 10;
       char* parse_end;
-      long open_lua_line = strtol(at_line_ptr, &parse_end, 10);
+      const long open_lua_line = strtol(at_line_ptr, &parse_end, 10);
       if (parse_end != at_line_ptr) {
         line_num_end = parse_end;
         long open_block_line = open_lua_line - 1;
@@ -696,18 +696,18 @@ static const char* _bebop_lua_remap_error(
         }
         schema_open_line = (long)base_span.start_line + open_block_line - 1;
         if (open_span) {
-          *open_span = _bebop_lua_line_to_span(base_span, block, open_block_line);
+          *open_span = bebop__lua_line_to_span(base_span, block, open_block_line);
         }
       }
     }
   }
 
   if (at_line_ptr && line_num_end && schema_open_line > 0) {
-    size_t prefix_len = (size_t)(at_line_ptr - msg);
-    size_t suffix_len = strlen(line_num_end);
+    const size_t prefix_len = (size_t)(at_line_ptr - msg);
+    const size_t suffix_len = strlen(line_num_end);
     char line_buf[32];
-    int line_len = snprintf(line_buf, sizeof(line_buf), "%ld", schema_open_line);
-    size_t total = prefix_len + (size_t)line_len + suffix_len + 1;
+    const int line_len = snprintf(line_buf, sizeof(line_buf), "%ld", schema_open_line);
+    const size_t total = prefix_len + (size_t)line_len + suffix_len + 1;
     char* clean = bebop_arena_alloc(arena, total, 1);
     if (!clean) {
       return msg;
@@ -727,7 +727,7 @@ static const char* _bebop_lua_remap_error(
   return clean;
 }
 
-static int _bebop_lua_compile_one(
+static int bebop__lua_compile_one(
     const bebop_lua_state_t* state, const bebop_def_t* def, const bool is_export
 )
 {
@@ -742,9 +742,9 @@ static int _bebop_lua_compile_one(
   const uint32_t total_params = 2 + param_count;
   const char** param_names = bebop_arena_new(&state->ctx->arena, const char*, total_params);
   if (!param_names) {
-    _bebop_schema_add_diagnostic(
+    bebop__schema_add_diagnostic(
         schema,
-        (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, span},
+        (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, span},
         "Failed to allocate decorator parameter list",
         NULL
     );
@@ -756,13 +756,13 @@ static int _bebop_lua_compile_one(
     param_names[i + 2] = BEBOP_STR(state->ctx, def->decorator_def.params[i].name);
   }
 
-  const char* wrapped = _bebop_lua_wrap_function(
-      &state->ctx->arena, (_bebop_str_view_t) {source, source_len}, param_names, total_params
+  const char* wrapped = bebop__lua_wrap_function(
+      &state->ctx->arena, (bebop__str_view_t) {source, source_len}, param_names, total_params
   );
   if (!wrapped) {
-    _bebop_schema_add_diagnostic(
+    bebop__schema_add_diagnostic(
         schema,
-        (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, span},
+        (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, span},
         "Failed to wrap Lua source",
         NULL
     );
@@ -774,17 +774,17 @@ static int _bebop_lua_compile_one(
     const char* err = lua_tostring(L, -1);
     bebop_span_t err_span = span;
     bebop_span_t open_span = {0};
-    const char* msg = _bebop_lua_remap_error(
-        &state->ctx->arena, err, &err_span, &open_span, (_bebop_str_view_t) {source, source_len}
+    const char* msg = bebop__lua_remap_error(
+        &state->ctx->arena, err, &err_span, &open_span, (bebop__str_view_t) {source, source_len}
     );
-    _bebop_schema_add_diagnostic(
+    bebop__schema_add_diagnostic(
         schema,
-        (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, err_span},
+        (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, err_span},
         msg,
         NULL
     );
     if (open_span.len > 0) {
-      _bebop_schema_diag_add_label(schema, open_span, "unclosed delimiter here");
+      bebop__schema_diag_add_label(schema, open_span, "unclosed delimiter here");
     }
     lua_pop(L, 1);
     return BEBOP_LUA_NOREF;
@@ -795,26 +795,26 @@ static int _bebop_lua_compile_one(
     const char* err = lua_tostring(L, -1);
     bebop_span_t err_span = span;
     bebop_span_t open_span = {0};
-    const char* msg = _bebop_lua_remap_error(
-        &state->ctx->arena, err, &err_span, &open_span, (_bebop_str_view_t) {source, source_len}
+    const char* msg = bebop__lua_remap_error(
+        &state->ctx->arena, err, &err_span, &open_span, (bebop__str_view_t) {source, source_len}
     );
-    _bebop_schema_add_diagnostic(
+    bebop__schema_add_diagnostic(
         schema,
-        (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, err_span},
+        (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, err_span},
         msg,
         NULL
     );
     if (open_span.len > 0) {
-      _bebop_schema_diag_add_label(schema, open_span, "unclosed delimiter here");
+      bebop__schema_diag_add_label(schema, open_span, "unclosed delimiter here");
     }
     lua_pop(L, 1);
     return BEBOP_LUA_NOREF;
   }
 
   if (!lua_isfunction(L, -1)) {
-    _bebop_schema_add_diagnostic(
+    bebop__schema_add_diagnostic(
         schema,
-        (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, span},
+        (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, span},
         "Lua chunk did not return a function",
         NULL
     );
@@ -825,7 +825,7 @@ static int _bebop_lua_compile_one(
   return luaL_ref(L, LUA_REGISTRYINDEX);
 }
 
-void _bebop_lua_compile_decorators(bebop_lua_state_t* state, bebop_parse_result_t* result)
+void bebop__lua_compile_decorators(bebop_lua_state_t* state, bebop_parse_result_t* result)
 {
   if (!state || !result) {
     return;
@@ -844,14 +844,14 @@ void _bebop_lua_compile_decorators(bebop_lua_state_t* state, bebop_parse_result_
       }
 
       if (def->decorator_def.validate_span.len > 0 && schema->source) {
-        const int ref = _bebop_lua_compile_one(state, def, false);
+        const int ref = bebop__lua_compile_one(state, def, false);
         if (ref != BEBOP_LUA_NOREF) {
           def->decorator_def.validate_ref = ref;
         }
       }
 
       if (def->decorator_def.export_span.len > 0 && schema->source) {
-        const int ref = _bebop_lua_compile_one(state, def, true);
+        const int ref = bebop__lua_compile_one(state, def, true);
         if (ref != BEBOP_LUA_NOREF) {
           def->decorator_def.export_ref = ref;
         }
@@ -860,7 +860,7 @@ void _bebop_lua_compile_decorators(bebop_lua_state_t* state, bebop_parse_result_
   }
 }
 
-static bebop_status_t _bebop_lua_invoke_validate(
+static bebop_status_t bebop__lua_invoke_validate(
     bebop_lua_state_t* state,
     const bebop_def_t* decorator_def,
     const bebop_decorator_t* usage,
@@ -878,9 +878,9 @@ static bebop_status_t _bebop_lua_invoke_validate(
 
   lua_rawgeti(L, LUA_REGISTRYINDEX, func_ref);
   if (!lua_isfunction(L, -1)) {
-    _bebop_schema_add_diagnostic(
+    bebop__schema_add_diagnostic(
         schema,
-        (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, source_span},
+        (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, source_span},
         "Compiled decorator function lost from registry",
         NULL
     );
@@ -888,19 +888,19 @@ static bebop_status_t _bebop_lua_invoke_validate(
     goto cleanup;
   }
 
-  const uint32_t nargs = _bebop_lua_push_call_args(state, decorator_def, usage, target);
+  const uint32_t nargs = bebop__lua_push_call_args(state, decorator_def, usage, target);
   const int call_status = lua_pcall(L, (int)nargs, 0, 0);
   if (call_status != LUA_OK) {
     if (!state->eval_ctx.error_raised) {
       const char* err = lua_tostring(L, -1);
       bebop_span_t err_span = source_span;
       const char* block_src = decorator_def->schema->source + source_span.off;
-      const char* msg = _bebop_lua_remap_error(
-          &state->ctx->arena, err, &err_span, NULL, (_bebop_str_view_t) {block_src, source_span.len}
+      const char* msg = bebop__lua_remap_error(
+          &state->ctx->arena, err, &err_span, NULL, (bebop__str_view_t) {block_src, source_span.len}
       );
-      _bebop_schema_add_diagnostic(
+      bebop__schema_add_diagnostic(
           schema,
-          (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, err_span},
+          (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, err_span},
           msg,
           NULL
       );
@@ -917,7 +917,7 @@ cleanup:
   return BEBOP_ERROR;
 }
 
-static bebop_status_t _bebop_lua_invoke_export(
+static bebop_status_t bebop__lua_invoke_export(
     bebop_lua_state_t* state, const bebop_def_t* decorator_def, bebop_decorator_t* usage
 )
 {
@@ -932,9 +932,9 @@ static bebop_status_t _bebop_lua_invoke_export(
 
   lua_rawgeti(L, LUA_REGISTRYINDEX, func_ref);
   if (!lua_isfunction(L, -1)) {
-    _bebop_schema_add_diagnostic(
+    bebop__schema_add_diagnostic(
         schema,
-        (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, source_span},
+        (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, source_span},
         "Compiled decorator function lost from registry",
         NULL
     );
@@ -942,19 +942,19 @@ static bebop_status_t _bebop_lua_invoke_export(
     goto cleanup;
   }
 
-  const uint32_t nargs = _bebop_lua_push_call_args(state, decorator_def, usage, NULL);
+  const uint32_t nargs = bebop__lua_push_call_args(state, decorator_def, usage, NULL);
   const int call_status = lua_pcall(L, (int)nargs, 1, 0);
   if (call_status != LUA_OK) {
     if (!state->eval_ctx.error_raised) {
       const char* err = lua_tostring(L, -1);
       bebop_span_t err_span = source_span;
       const char* block_src = decorator_def->schema->source + source_span.off;
-      const char* msg = _bebop_lua_remap_error(
-          &state->ctx->arena, err, &err_span, NULL, (_bebop_str_view_t) {block_src, source_span.len}
+      const char* msg = bebop__lua_remap_error(
+          &state->ctx->arena, err, &err_span, NULL, (bebop__str_view_t) {block_src, source_span.len}
       );
-      _bebop_schema_add_diagnostic(
+      bebop__schema_add_diagnostic(
           schema,
-          (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, err_span},
+          (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, err_span},
           msg,
           NULL
       );
@@ -964,9 +964,9 @@ static bebop_status_t _bebop_lua_invoke_export(
   }
 
   if (!lua_istable(L, -1)) {
-    _bebop_schema_add_diagnostic(
+    bebop__schema_add_diagnostic(
         schema,
-        (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, source_span},
+        (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, source_span},
         "Export block must return a table",
         NULL
     );
@@ -978,9 +978,9 @@ static bebop_status_t _bebop_lua_invoke_export(
   lua_pushnil(L);
   while (lua_next(L, -2) != 0) {
     if (lua_type(L, -2) != LUA_TSTRING) {
-      _bebop_schema_add_diagnostic(
+      bebop__schema_add_diagnostic(
           schema,
-          (_bebop_diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, source_span},
+          (bebop__diag_loc_t) {BEBOP_DIAG_ERROR, BEBOP_DIAG_MACRO_RUNTIME_ERROR, source_span},
           "Export table keys must be strings",
           NULL
       );
@@ -1043,7 +1043,7 @@ cleanup:
   return BEBOP_ERROR;
 }
 
-bebop_status_t _bebop_lua_run_validate(
+bebop_status_t bebop__lua_run_validate(
     bebop_lua_state_t* state,
     bebop_def_t* decorator_def,
     const bebop_decorator_t* usage,
@@ -1056,10 +1056,10 @@ bebop_status_t _bebop_lua_run_validate(
   if (decorator_def->decorator_def.validate_ref == BEBOP_LUA_NOREF) {
     return BEBOP_OK;
   }
-  return _bebop_lua_invoke_validate(state, decorator_def, usage, &target);
+  return bebop__lua_invoke_validate(state, decorator_def, usage, &target);
 }
 
-bebop_status_t _bebop_lua_run_export(
+bebop_status_t bebop__lua_run_export(
     bebop_lua_state_t* state, bebop_def_t* decorator_def, bebop_decorator_t* usage
 )
 {
@@ -1069,5 +1069,5 @@ bebop_status_t _bebop_lua_run_export(
   if (decorator_def->decorator_def.export_ref == BEBOP_LUA_NOREF) {
     return BEBOP_OK;
   }
-  return _bebop_lua_invoke_export(state, decorator_def, usage);
+  return bebop__lua_invoke_export(state, decorator_def, usage);
 }

@@ -13,7 +13,7 @@ static Bebop_Str _desc_dup_str(Bebop_WireCtx* ctx, const char* s)
   if (!s) {
     return (Bebop_Str) {0};
   }
-  size_t len = strlen(s);
+  const size_t len = strlen(s);
   char* p = Bebop_WireCtx_Alloc(ctx, len + 1);
   if (!p) {
     return (Bebop_Str) {0};
@@ -197,7 +197,7 @@ static Bebop_DecoratorUsage_Array _desc_build_decorators(
               arg_name = BEBOP_STR(bctx, d->resolved->decorator_def.params[j].name);
             }
           }
-          Bebop_DecoratorArg* da = &args[j];
+          const Bebop_DecoratorArg* da = &args[j];
           memcpy(BEBOP_WIRE_MUTPTR(Bebop_Str, &da->name), &(Bebop_Str) {0}, sizeof(Bebop_Str));
           if (arg_name) {
             Bebop_Str s = _desc_dup_str(wctx, arg_name);
@@ -390,7 +390,7 @@ static void _desc_extract_comments(
     } else if (t->kind == BEBOP_TRIVIA_LINE_COMMENT || t->kind == BEBOP_TRIVIA_DOC_COMMENT
                || t->kind == BEBOP_TRIVIA_BLOCK_COMMENT)
     {
-      Bebop_Str comment = _desc_extract_comment(wctx, schema, t);
+      const Bebop_Str comment = _desc_extract_comment(wctx, schema, t);
       if (comment.length > 0 && group_count < 32) {
         if (start_new_group) {
           groups[group_count++] = comment;
@@ -466,7 +466,7 @@ static void _desc_set_comments(
     loc->detached_comments.value.length = detached_count;
   }
 
-  Bebop_Str trailing = _desc_extract_trailing(wctx, schema, tok);
+  const Bebop_Str trailing = _desc_extract_trailing(wctx, schema, tok);
   if (trailing.length > 0) {
     loc->trailing_comments.has_value = true;
     loc->trailing_comments.value = trailing;
@@ -487,7 +487,7 @@ static uint32_t _desc_build_locations(
     Bebop_Location* loc = &locs[idx++];
     memset(loc, 0, sizeof(*loc));
 
-    uint32_t path_len = parent_path_len + 2;
+    const uint32_t path_len = parent_path_len + 2;
     int32_t* path = Bebop_WireCtx_Alloc(wctx, path_len * sizeof(*path));
     if (path) {
       if (parent_path_len > 0) {
@@ -511,7 +511,7 @@ static uint32_t _desc_build_locations(
           memset(floc, 0, sizeof(*floc));
 
           int32_t fpath[6];
-          uint32_t fpath_len = path_len + 2;
+          const uint32_t fpath_len = path_len + 2;
           if (path_len <= 4) {
             memcpy(fpath, path, path_len * sizeof(*fpath));
             fpath[path_len] = 1;
@@ -529,7 +529,7 @@ static uint32_t _desc_build_locations(
           Bebop_Location* floc = &locs[idx++];
           memset(floc, 0, sizeof(*floc));
           int32_t fpath[6];
-          uint32_t fpath_len = path_len + 2;
+          const uint32_t fpath_len = path_len + 2;
           if (path_len <= 4) {
             memcpy(fpath, path, path_len * sizeof(*fpath));
             fpath[path_len] = 1;
@@ -548,7 +548,7 @@ static uint32_t _desc_build_locations(
           memset(mloc, 0, sizeof(*mloc));
 
           int32_t mpath[6];
-          uint32_t mpath_len = path_len + 2;
+          const uint32_t mpath_len = path_len + 2;
           if (path_len <= 4) {
             memcpy(mpath, path, path_len * sizeof(*mpath));
             mpath[path_len] = 2;
@@ -567,7 +567,7 @@ static uint32_t _desc_build_locations(
           memset(bloc, 0, sizeof(*bloc));
 
           int32_t bpath[6];
-          uint32_t bpath_len = path_len + 2;
+          const uint32_t bpath_len = path_len + 2;
           if (path_len <= 4) {
             memcpy(bpath, path, path_len * sizeof(*bpath));
             bpath[path_len] = 1;
@@ -586,7 +586,7 @@ static uint32_t _desc_build_locations(
           memset(mloc, 0, sizeof(*mloc));
 
           int32_t mpath[6];
-          uint32_t mpath_len = path_len + 2;
+          const uint32_t mpath_len = path_len + 2;
           if (path_len <= 4) {
             memcpy(mpath, path, path_len * sizeof(*mpath));
             mpath[path_len] = 1;
@@ -613,7 +613,7 @@ static Bebop_SourceCodeInfo* _desc_build_source_code_info(
     Bebop_WireCtx* wctx, const bebop_schema_t* src
 )
 {
-  uint32_t loc_count = _desc_count_locations(src->definitions);
+  const uint32_t loc_count = _desc_count_locations(src->definitions);
   if (loc_count == 0) {
     return NULL;
   }
@@ -718,7 +718,7 @@ static void _desc_build_def(
   DESC_SET_OPT_STR(dst->documentation, BEBOP_STR(bctx, src->documentation));
   DESC_SET_DECORATORS(dst->decorators, wctx, bctx, src->decorators);
   {
-    Bebop_DefinitionDescriptor_Array nested = _desc_build_nested(wctx, bctx, src);
+    const Bebop_DefinitionDescriptor_Array nested = _desc_build_nested(wctx, bctx, src);
     if (nested.length > 0) {
       BEBOP_WIRE_SET_SOME(dst->nested, nested);
     }
@@ -911,7 +911,7 @@ static void _desc_build_def(
 
       if (src->decorator_def.validate_span.len > 0 && src->schema && src->schema->source) {
         const char* lua_src = src->schema->source + src->decorator_def.validate_span.off;
-        size_t lua_len = src->decorator_def.validate_span.len;
+        const size_t lua_len = src->decorator_def.validate_span.len;
         char* copy = Bebop_WireCtx_Alloc(wctx, lua_len + 1);
         if (copy) {
           memcpy(copy, lua_src, lua_len);
@@ -923,7 +923,7 @@ static void _desc_build_def(
 
       if (src->decorator_def.export_span.len > 0 && src->schema && src->schema->source) {
         const char* lua_src = src->schema->source + src->decorator_def.export_span.off;
-        size_t lua_len = src->decorator_def.export_span.len;
+        const size_t lua_len = src->decorator_def.export_span.len;
         char* copy = Bebop_WireCtx_Alloc(wctx, lua_len + 1);
         if (copy) {
           memcpy(copy, lua_src, lua_len);
@@ -1060,13 +1060,13 @@ bebop_status_t bebop_descriptor_build(
   memset(desc, 0, sizeof(*desc));
   desc->ctx = wctx;
 
-  uint32_t schema_count = bebop_result_schema_count(result);
+  const uint32_t schema_count = bebop_result_schema_count(result);
   if (schema_count > 0) {
     Bebop_SchemaDescriptor* schemas = Bebop_WireCtx_Alloc(wctx, schema_count * sizeof(*schemas));
     if (schemas) {
       for (uint32_t i = 0; i < schema_count; i++) {
         const bebop_schema_t* src = bebop_result_schema_at(result, i);
-        Bebop_SchemaDescriptor* built = _desc_build_schema(wctx, bctx, src, flags);
+        const Bebop_SchemaDescriptor* built = _desc_build_schema(wctx, bctx, src, flags);
         if (built) {
           memcpy(&schemas[i], built, sizeof(schemas[i]));
         }
@@ -1098,8 +1098,8 @@ bebop_status_t bebop_descriptor_encode(
     return BEBOP_FATAL;
   }
 
-  uint8_t* buf;
-  size_t len;
+  uint8_t* buf = NULL;
+  size_t len = 0;
   Bebop_Writer_Buf(w, &buf, &len);
 
   *out_buf = buf;

@@ -21,9 +21,6 @@ static char* test_dir = NULL;
 static bebop_fsw_event_t last_event;
 static int event_count = 0;
 
-void setUp(void);
-void tearDown(void);
-
 static char* create_test_dir(void)
 {
   char template[] = "/tmp/fsw_test_XXXXXX";

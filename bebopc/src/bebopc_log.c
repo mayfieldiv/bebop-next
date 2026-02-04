@@ -326,8 +326,10 @@ static bool _log_parse_rgb_color(const char* str, size_t len, int* r, int* g, in
 
 static void _log_emit_rgb(_log_strbuf_t* buf, int r, int g, int b, bool is_bg)
 {
-  char code[24];
-  snprintf(code, sizeof(code), "\x1b[%d;2;%d;%d;%dm", is_bg ? 48 : 38, r, g, b);
+  char code[64];
+  snprintf(
+      code, sizeof(code), "\x1b[%d;2;%d;%d;%dm", is_bg ? 48 : 38, r & 0xFF, g & 0xFF, b & 0xFF
+  );
   _log_strbuf_append_str(buf, code);
 }
 
@@ -439,6 +441,9 @@ static bool _log_render_markup(
     _log_strbuf_t* buf, const char* markup, bool use_colors, bool strip_only
 )
 {
+  if (!markup) {
+    return true;
+  }
   const char* p = markup;
   int style_depth = 0;
   bool link_stack[LOG_MAX_STYLE_DEPTH] = {false};

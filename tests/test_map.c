@@ -6,8 +6,15 @@
 #include "bebop_wire.h"
 #include "unity.h"
 
+#ifdef __clang__
 #pragma clang diagnostic ignored "-Wgnu-statement-expression-from-macro-expansion"
 #pragma clang diagnostic ignored "-Wmissing-field-initializers"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Wunused-value"
+#pragma GCC diagnostic ignored "-Wmissing-braces"
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#endif
 
 static void* _alloc(void* ptr, size_t old, size_t new, void* ctx)
 {

@@ -1,7 +1,7 @@
-#define _bebop_IMPORT_INITIAL_CAPACITY 8
-#define _bebop_DIAGNOSTIC_INITIAL_CAPACITY 16
+#define bebop__IMPORT_INITIAL_CAPACITY 8
+#define bebop__DIAGNOSTIC_INITIAL_CAPACITY 16
 
-bebop_schema_t* _bebop_schema_create(
+bebop_schema_t* bebop__schema_create(
     bebop_context_t* ctx, const char* path, const char* source, const size_t len
 )
 {
@@ -27,19 +27,19 @@ bebop_schema_t* _bebop_schema_create(
   return schema;
 }
 
-#define _bebop_SORTED_DEFS_INITIAL_CAPACITY 16
+#define bebop__SORTED_DEFS_INITIAL_CAPACITY 16
 
-void _bebop_schema_register_def(bebop_schema_t* schema, bebop_def_t* def)
+void bebop__schema_register_def(bebop_schema_t* schema, bebop_def_t* def)
 {
   BEBOP_ASSERT(schema != NULL);
   BEBOP_ASSERT(def != NULL);
 
-  _bebop_def_compute_fqn(def);
+  bebop__def_compute_fqn(def);
 
   if (schema->sorted_defs_count >= schema->sorted_defs_capacity) {
     const uint32_t new_capacity = schema->sorted_defs_capacity
         ? schema->sorted_defs_capacity * 2
-        : _bebop_SORTED_DEFS_INITIAL_CAPACITY;
+        : bebop__SORTED_DEFS_INITIAL_CAPACITY;
     bebop_def_t** new_arr = bebop_arena_new(BEBOP_ARENA(schema->ctx), bebop_def_t*, new_capacity);
     if (BEBOP_UNLIKELY(!new_arr)) {
       return;
@@ -55,7 +55,7 @@ void _bebop_schema_register_def(bebop_schema_t* schema, bebop_def_t* def)
   schema->sorted_defs[schema->sorted_defs_count++] = def;
 }
 
-void _bebop_schema_add_def(bebop_schema_t* schema, bebop_def_t* def)
+void bebop__schema_add_def(bebop_schema_t* schema, bebop_def_t* def)
 {
   BEBOP_ASSERT(schema != NULL);
   BEBOP_ASSERT(def != NULL);
@@ -72,7 +72,7 @@ void _bebop_schema_add_def(bebop_schema_t* schema, bebop_def_t* def)
   }
   schema->definition_count++;
 
-  _bebop_schema_register_def(schema, def);
+  bebop__schema_register_def(schema, def);
 
   if (!bebop_str_is_null(def->name)) {
     const bebop_defmap_Entry entry = {def->name.idx, def};
@@ -80,7 +80,7 @@ void _bebop_schema_add_def(bebop_schema_t* schema, bebop_def_t* def)
   }
 }
 
-void _bebop_def_add_nested(bebop_def_t* parent, bebop_def_t* nested)
+void bebop__def_add_nested(bebop_def_t* parent, bebop_def_t* nested)
 {
   BEBOP_ASSERT(parent != NULL);
   BEBOP_ASSERT(nested != NULL);
@@ -98,10 +98,10 @@ void _bebop_def_add_nested(bebop_def_t* parent, bebop_def_t* nested)
   }
   parent->nested_def_count++;
 
-  _bebop_schema_register_def(parent->schema, nested);
+  bebop__schema_register_def(parent->schema, nested);
 }
 
-bebop_def_t* _bebop_schema_find_def(bebop_schema_t* schema, const bebop_str_t name)
+bebop_def_t* bebop__schema_find_def(bebop_schema_t* schema, const bebop_str_t name)
 {
   BEBOP_ASSERT(schema != NULL);
 
@@ -114,7 +114,7 @@ bebop_def_t* _bebop_schema_find_def(bebop_schema_t* schema, const bebop_str_t na
   return entry ? (bebop_def_t*)entry->val : NULL;
 }
 
-bebop_def_t* _bebop_def_find_nested(bebop_def_t* parent, const bebop_str_t name)
+bebop_def_t* bebop__def_find_nested(bebop_def_t* parent, const bebop_str_t name)
 {
   if (!parent || bebop_str_is_null(name)) {
     return NULL;
@@ -128,7 +128,7 @@ bebop_def_t* _bebop_def_find_nested(bebop_def_t* parent, const bebop_str_t name)
   return NULL;
 }
 
-bool _bebop_def_is_accessible(const bebop_def_t* def)
+bool bebop__def_is_accessible(const bebop_def_t* def)
 {
   if (!def) {
     return false;
@@ -153,7 +153,7 @@ bool _bebop_def_is_accessible(const bebop_def_t* def)
   return true;
 }
 
-bebop_str_t _bebop_def_compute_fqn(bebop_def_t* def)
+bebop_str_t bebop__def_compute_fqn(bebop_def_t* def)
 {
   BEBOP_ASSERT(def != NULL);
   BEBOP_ASSERT(def->schema != NULL);
@@ -166,7 +166,7 @@ bebop_str_t _bebop_def_compute_fqn(bebop_def_t* def)
   const bebop_schema_t* schema = def->schema;
 
   if (def->parent && bebop_str_is_null(def->parent->fqn)) {
-    _bebop_def_compute_fqn(def->parent);
+    bebop__def_compute_fqn(def->parent);
   }
 
   const char* name = BEBOP_STR(ctx, def->name);
@@ -176,10 +176,10 @@ bebop_str_t _bebop_def_compute_fqn(bebop_def_t* def)
     const char* parent_fqn = BEBOP_STR(ctx, def->parent->fqn);
     const size_t parent_len = BEBOP_STR_LEN(ctx, def->parent->fqn);
 
-    char* fqn_buf = _bebop_join_dotted(
+    char* fqn_buf = bebop__join_dotted(
         BEBOP_ARENA(ctx),
-        (_bebop_str_view_t) {parent_fqn, parent_len},
-        (_bebop_str_view_t) {name, name_len}
+        (bebop__str_view_t) {parent_fqn, parent_len},
+        (bebop__str_view_t) {name, name_len}
     );
     if (!fqn_buf) {
       return BEBOP_STR_NULL;
@@ -190,8 +190,8 @@ bebop_str_t _bebop_def_compute_fqn(bebop_def_t* def)
     const char* pkg = BEBOP_STR(ctx, schema->package);
     const size_t pkg_len = BEBOP_STR_LEN(ctx, schema->package);
 
-    char* fqn_buf = _bebop_join_dotted(
-        BEBOP_ARENA(ctx), (_bebop_str_view_t) {pkg, pkg_len}, (_bebop_str_view_t) {name, name_len}
+    char* fqn_buf = bebop__join_dotted(
+        BEBOP_ARENA(ctx), (bebop__str_view_t) {pkg, pkg_len}, (bebop__str_view_t) {name, name_len}
     );
     if (!fqn_buf) {
       return BEBOP_STR_NULL;
@@ -205,7 +205,7 @@ bebop_str_t _bebop_def_compute_fqn(bebop_def_t* def)
   return def->fqn;
 }
 
-void _bebop_schema_add_import(
+void bebop__schema_add_import(
     bebop_schema_t* schema, const bebop_str_t path, const bebop_span_t span
 )
 {
@@ -213,7 +213,7 @@ void _bebop_schema_add_import(
 
   if (schema->import_count >= schema->import_capacity) {
     const uint32_t new_capacity =
-        schema->import_capacity ? schema->import_capacity * 2 : _bebop_IMPORT_INITIAL_CAPACITY;
+        schema->import_capacity ? schema->import_capacity * 2 : bebop__IMPORT_INITIAL_CAPACITY;
     bebop_import_t* new_imports =
         bebop_arena_new(BEBOP_ARENA(schema->ctx), bebop_import_t, new_capacity);
     if (BEBOP_UNLIKELY(!new_imports)) {
@@ -233,7 +233,7 @@ void _bebop_schema_add_import(
   };
 }
 
-bool _bebop_schema_has_visibility(bebop_schema_t* source, bebop_schema_t* target)
+bool bebop__schema_has_visibility(bebop_schema_t* source, bebop_schema_t* target)
 {
   if (!source || !target) {
     return false;
@@ -250,8 +250,8 @@ bool _bebop_schema_has_visibility(bebop_schema_t* source, bebop_schema_t* target
   return false;
 }
 
-void _bebop_schema_add_diagnostic(
-    bebop_schema_t* schema, const _bebop_diag_loc_t loc, const char* message, const char* hint
+void bebop__schema_add_diagnostic(
+    bebop_schema_t* schema, const bebop__diag_loc_t loc, const char* message, const char* hint
 )
 {
   BEBOP_ASSERT(schema != NULL);
@@ -263,7 +263,7 @@ void _bebop_schema_add_diagnostic(
 
   if (schema->diagnostic_count >= schema->diagnostic_capacity) {
     const uint32_t new_capacity = schema->diagnostic_capacity ? schema->diagnostic_capacity * 2
-                                                              : _bebop_DIAGNOSTIC_INITIAL_CAPACITY;
+                                                              : bebop__DIAGNOSTIC_INITIAL_CAPACITY;
     bebop_diagnostic_t* new_diags =
         bebop_arena_new(BEBOP_ARENA(schema->ctx), bebop_diagnostic_t, new_capacity);
     if (BEBOP_UNLIKELY(!new_diags)) {
@@ -294,14 +294,14 @@ void _bebop_schema_add_diagnostic(
   }
 }
 
-void _bebop_schema_diag_add_label(bebop_schema_t* schema, bebop_span_t span, const char* message)
+void bebop__schema_diag_add_label(bebop_schema_t* schema, bebop_span_t span, const char* message)
 {
   if (schema->diagnostic_count == 0) {
     return;
   }
   bebop_diagnostic_t* diag = &schema->diagnostics[schema->diagnostic_count - 1];
 
-  uint32_t new_count = diag->label_count + 1;
+  const uint32_t new_count = diag->label_count + 1;
   bebop_diag_label_t* new_labels =
       bebop_arena_new(BEBOP_ARENA(schema->ctx), bebop_diag_label_t, new_count);
   if (!new_labels) {

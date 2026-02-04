@@ -10,9 +10,6 @@
 static bebopc_ctx_t ctx;
 static bebopc_config_t cfg;
 
-void setUp(void);
-void tearDown(void);
-
 void setUp(void)
 {
   bebopc_ctx_init(&ctx);

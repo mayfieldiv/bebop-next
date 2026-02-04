@@ -3,10 +3,11 @@
 #include "test_common.h"
 #include "unity.h"
 
-static bebop_context_t* ctx;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+#endif
 
-void setUp(void);
-void tearDown(void);
+static bebop_context_t* ctx;
 
 void setUp(void)
 {

@@ -68,6 +68,9 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         -Wstrict-prototypes -Wmissing-prototypes
         -Wredundant-decls -Wnull-dereference
     )
+    if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+        add_compile_options(-Wno-format-zero-length)
+    endif()
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
         add_compile_options(-O2)
     else()
