@@ -185,8 +185,13 @@ void test_runner_init_with_files(void)
   TEST_ASSERT_NOT_NULL(desc);
 
   const char** files = malloc(2 * sizeof(char*));
+#ifdef _WIN32
+  files[0] = _strdup("file1.bop");
+  files[1] = _strdup("file2.bop");
+#else
   files[0] = strdup("file1.bop");
   files[1] = strdup("file2.bop");
+#endif
 
   bebopc_runner_t runner;
   bebopc_error_code_t err = bebopc_runner_init(&runner, &ctx, beb_ctx, desc, files, 2);
