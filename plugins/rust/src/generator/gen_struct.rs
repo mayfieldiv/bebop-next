@@ -81,10 +81,31 @@ pub fn generate(
   output.push_str(&impl_header);
   if let Some(fs) = struct_def.fixed_size {
     if fs > 0 {
-      output.push_str(&format!(
-        "  pub const FIXED_ENCODED_SIZE: usize = {};\n\n",
-        fs
-      ));
+      let mut parts: Vec<String> = Vec::with_capacity(fields.len());
+      let mut can_emit_expr = true;
+      for f in fields {
+        let td = f.r#type.as_ref().ok_or_else(|| {
+          GeneratorError::MalformedDefinition("struct field missing type".into())
+        })?;
+        match type_mapper::fixed_encoded_size_expression(td)? {
+          Some(expr) => parts.push(expr),
+          None => {
+            can_emit_expr = false;
+            break;
+          }
+        }
+      }
+      if can_emit_expr && !parts.is_empty() {
+        output.push_str(&format!(
+          "  pub const FIXED_ENCODED_SIZE: usize = {};\n\n",
+          parts.join(" + ")
+        ));
+      } else {
+        output.push_str(&format!(
+          "  pub const FIXED_ENCODED_SIZE: usize = {};\n\n",
+          fs
+        ));
+      }
     }
   }
   output.push_str("  pub fn new(");
