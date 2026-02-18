@@ -65,6 +65,29 @@ pub fn to_pascal_case(name: &str) -> String {
     .collect()
 }
 
+/// Convert a SCREAMING_SNAKE_CASE name to PascalCase for enum variant names.
+///
+/// `UNKNOWN` → `Unknown`, `SERVER_STREAM` → `ServerStream`, `UINT32` → `Uint32`
+pub fn variant_name(name: &str) -> String {
+  name
+    .split('_')
+    .filter(|s| !s.is_empty())
+    .map(|seg| {
+      let mut chars = seg.chars();
+      match chars.next() {
+        Some(c) => {
+          let mut result = c.to_uppercase().to_string();
+          for ch in chars {
+            result.push(ch.to_ascii_lowercase());
+          }
+          result
+        }
+        None => String::new(),
+      }
+    })
+    .collect()
+}
+
 /// Escape and convert a field name to idiomatic Rust.
 pub fn field_name(name: &str) -> String {
   escape_keyword(&to_snake_case(name))
