@@ -1,5 +1,5 @@
-use crate::descriptor::DefinitionDescriptor;
 use crate::error::GeneratorError;
+use crate::generated::DefinitionDescriptor;
 
 use super::naming::{field_name, type_name};
 use super::type_mapper;
@@ -22,7 +22,7 @@ pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), G
     .map(|f| {
       let fname = field_name(f.name.as_deref().unwrap_or("unknown"));
       let ftype = f
-        .field_type
+        .r#type
         .as_ref()
         .map(|td| type_mapper::rust_type(td))
         .transpose()?
@@ -54,7 +54,7 @@ pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), G
   for (i, f) in fields.iter().enumerate() {
     let (ref fname, _) = field_info[i];
     let td = f
-      .field_type
+      .r#type
       .as_ref()
       .ok_or_else(|| GeneratorError::MalformedDefinition("struct field missing type".into()))?;
     let read_expr = type_mapper::read_expression(td, "reader")?;
@@ -72,7 +72,7 @@ pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), G
   for (i, f) in fields.iter().enumerate() {
     let (ref fname, _) = field_info[i];
     let td = f
-      .field_type
+      .r#type
       .as_ref()
       .ok_or_else(|| GeneratorError::MalformedDefinition("struct field missing type".into()))?;
     let write_stmt = type_mapper::write_expression(td, &format!("self.{}", fname), "writer")?;

@@ -1,5 +1,5 @@
-use crate::descriptor::{DefinitionDescriptor, TypeKind};
 use crate::error::GeneratorError;
+use crate::generated::{DefinitionDescriptor, TypeKind};
 
 use super::naming::{field_name, type_name};
 use super::type_mapper;
@@ -16,7 +16,7 @@ enum FieldWrap {
 }
 
 /// Determine wrapping for a message field.
-fn field_wrap(field_type: &crate::descriptor::TypeDescriptor, own_fqn: &str) -> FieldWrap {
+fn field_wrap(field_type: &crate::generated::TypeDescriptor, own_fqn: &str) -> FieldWrap {
   let kind = field_type.kind.unwrap_or(TypeKind::UNKNOWN);
 
   // Direct self-reference: field's DEFINED fqn == own fqn
@@ -75,7 +75,7 @@ pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), G
     .map(|f| {
       let fname = field_name(f.name.as_deref().unwrap_or("unknown"));
       let td = f
-        .field_type
+        .r#type
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedDefinition("message field missing type".into()))?;
       let rust_type = type_mapper::rust_type(td)?;
@@ -135,7 +135,7 @@ pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), G
 
   for (i, f) in fields.iter().enumerate() {
     let meta = &field_metas[i];
-    let td = f.field_type.as_ref().unwrap();
+    let td = f.r#type.as_ref().unwrap();
     let read_expr = type_mapper::read_expression(td, "reader")?;
 
     match meta.wrap {
@@ -166,7 +166,7 @@ pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), G
 
   for (i, f) in fields.iter().enumerate() {
     let meta = &field_metas[i];
-    let td = f.field_type.as_ref().unwrap();
+    let td = f.r#type.as_ref().unwrap();
     let kind = td.kind.unwrap_or(TypeKind::UNKNOWN);
 
     match meta.wrap {

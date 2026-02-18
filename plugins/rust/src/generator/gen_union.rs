@@ -1,5 +1,5 @@
-use crate::descriptor::DefinitionDescriptor;
 use crate::error::GeneratorError;
+use crate::generated::DefinitionDescriptor;
 
 /// Generate Rust code for a union definition.
 pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), GeneratorError> {

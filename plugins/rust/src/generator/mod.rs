@@ -7,9 +7,8 @@ pub mod gen_union;
 pub mod naming;
 pub mod type_mapper;
 
-use crate::descriptor::*;
 use crate::error::GeneratorError;
-use crate::plugin::request::Version;
+use crate::generated::*;
 
 pub struct RustGenerator {
   pub compiler_version: Option<Version>,
@@ -124,7 +123,7 @@ pub fn emit_deprecated(output: &mut String, decorators: &Option<Vec<DecoratorUsa
         // Check for a message argument
         let msg = dec.args.as_ref().and_then(|args| {
           args.iter().find_map(|arg| {
-            if let crate::descriptor::LiteralValue {
+            if let crate::generated::LiteralValue {
               string_value: Some(ref s),
               ..
             } = arg.value
