@@ -3,8 +3,10 @@ mod generated;
 mod generator;
 mod wire;
 
+use std::borrow::Cow;
 use std::io::{self, Read, Write};
 
+use bebop_runtime::{BebopDecode, BebopEncode};
 use error::GeneratorError;
 use generated::{CodeGeneratorRequest, CodeGeneratorResponse, GeneratedFile};
 use generator::{LifetimeAnalysis, RustGenerator};
@@ -16,7 +18,7 @@ fn read_all_stdin() -> io::Result<Vec<u8>> {
   Ok(buf)
 }
 
-fn run() -> Result<CodeGeneratorResponse, GeneratorError> {
+fn run() -> Result<CodeGeneratorResponse<'static>, GeneratorError> {
   let input = read_all_stdin()?;
   if input.is_empty() {
     return Err(GeneratorError::EmptyInput);
@@ -67,7 +69,7 @@ fn run() -> Result<CodeGeneratorResponse, GeneratorError> {
 
   // Build the set of files we should generate (full paths)
   let file_set: std::collections::HashSet<&str> =
-    files_to_generate.iter().map(|s| s.as_str()).collect();
+    files_to_generate.iter().map(|s| &**s).collect();
 
   // Also build a set of file stems for matching imports (which may be relative)
   let file_stem_set: std::collections::HashSet<&str> = file_set
@@ -75,7 +77,7 @@ fn run() -> Result<CodeGeneratorResponse, GeneratorError> {
     .filter_map(|p| std::path::Path::new(p).file_stem().and_then(|s| s.to_str()))
     .collect();
 
-  let generator = RustGenerator::new(request.compiler_version);
+  let generator = RustGenerator::new(request.compiler_version.as_ref());
 
   // Build lifetime analysis across all schemas so cross-schema type references resolve
   let analysis = LifetimeAnalysis::build_all(schemas);
@@ -105,7 +107,7 @@ fn run() -> Result<CodeGeneratorResponse, GeneratorError> {
       .unwrap_or(&[])
       .iter()
       .filter_map(|imp| {
-        let stem = std::path::Path::new(imp.as_str())
+        let stem = std::path::Path::new(&**imp)
           .file_stem()
           .and_then(|s| s.to_str())?;
         if stem != file_stem && file_stem_set.contains(stem) {
@@ -119,8 +121,8 @@ fn run() -> Result<CodeGeneratorResponse, GeneratorError> {
     let code = generator.generate(schema, &sibling_imports, &analysis)?;
 
     generated_files.push(GeneratedFile {
-      name: Some(output_name),
-      content: Some(code),
+      name: Some(Cow::Owned(output_name)),
+      content: Some(Cow::Owned(code)),
       ..Default::default()
     });
   }
@@ -147,7 +149,7 @@ fn main() {
     Err(e) => {
       eprintln!("[bebopc-gen-rust] error: {}", e);
       CodeGeneratorResponse {
-        error: Some(format!("bebopc-gen-rust: {}", e)),
+        error: Some(Cow::Owned(format!("bebopc-gen-rust: {}", e))),
         files: None,
         diagnostics: None,
       }

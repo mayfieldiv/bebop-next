@@ -33,7 +33,7 @@ pub fn generate(
       let disc = b.discriminator.unwrap_or(0);
       let (variant, inner_type, inner_fqn) = if let Some(ref fqn) = b.inline_fqn {
         let t = fqn_to_type_name(fqn);
-        (t.clone(), t, Some(fqn.clone()))
+        (t.clone(), t, Some(fqn.to_string()))
       } else if let Some(ref bname) = b.name {
         let fqn = b.type_ref_fqn.as_ref();
         let t = if let Some(ref fqn) = fqn {
@@ -41,7 +41,7 @@ pub fn generate(
         } else {
           type_name(bname)
         };
-        (type_name(bname), t, fqn.cloned())
+        (type_name(bname), t, fqn.map(|f| f.to_string()))
       } else {
         ("Unknown".to_string(), "Unknown".to_string(), None)
       };

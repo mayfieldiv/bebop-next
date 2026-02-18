@@ -7,6 +7,7 @@ pub mod gen_union;
 pub mod naming;
 pub mod type_mapper;
 
+use std::borrow::Cow;
 use std::collections::HashSet;
 
 use crate::error::GeneratorError;
@@ -127,7 +128,7 @@ impl LifetimeAnalysis {
       }
       TypeKind::Defined => {
         if let Some(ref fqn) = td.defined_fqn {
-          self.lifetime_fqns.contains(fqn)
+          self.lifetime_fqns.contains(&**fqn)
         } else {
           false
         }
@@ -137,12 +138,12 @@ impl LifetimeAnalysis {
   }
 }
 
-pub struct RustGenerator {
-  pub compiler_version: Option<Version>,
+pub struct RustGenerator<'a> {
+  pub compiler_version: Option<&'a Version<'a>>,
 }
 
-impl RustGenerator {
-  pub fn new(compiler_version: Option<Version>) -> Self {
+impl<'a> RustGenerator<'a> {
+  pub fn new(compiler_version: Option<&'a Version<'a>>) -> Self {
     Self { compiler_version }
   }
 
@@ -166,7 +167,7 @@ impl RustGenerator {
     if let Some(ref path) = schema.path {
       output.push_str(&format!("// source: {}\n", path));
     }
-    if let Some(ref v) = self.compiler_version {
+    if let Some(v) = self.compiler_version {
       output.push_str(&format!("// bebopc {}\n", v));
     }
     if let Some(ref edition) = schema.edition {
@@ -251,8 +252,8 @@ impl RustGenerator {
 }
 
 /// Emit `///` doc comment lines if documentation is present.
-pub fn emit_doc_comment(output: &mut String, doc: &Option<String>) {
-  if let Some(ref text) = doc {
+pub fn emit_doc_comment(output: &mut String, doc: &Option<Cow<'_, str>>) {
+  if let Some(ref text) = *doc {
     for line in text.lines() {
       output.push_str(&format!("/// {}\n", line));
     }
@@ -260,8 +261,8 @@ pub fn emit_doc_comment(output: &mut String, doc: &Option<String>) {
 }
 
 /// Emit `#[deprecated]` attribute if the definition has a `@deprecated` decorator.
-pub fn emit_deprecated(output: &mut String, decorators: &Option<Vec<DecoratorUsage>>) {
-  if let Some(ref decs) = decorators {
+pub fn emit_deprecated(output: &mut String, decorators: &Option<Vec<DecoratorUsage<'_>>>) {
+  if let Some(ref decs) = *decorators {
     for dec in decs {
       if dec.fqn.as_deref() == Some("bebop.deprecated") {
         // Check for a message argument
