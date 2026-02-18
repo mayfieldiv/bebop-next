@@ -6,25 +6,25 @@ use super::naming::fqn_to_type_name;
 /// Map a scalar TypeKind to its Rust type string.
 pub fn scalar_type(kind: TypeKind) -> Option<&'static str> {
   match kind {
-    TypeKind::BOOL => Some("bool"),
-    TypeKind::BYTE => Some("u8"),
-    TypeKind::INT8 => Some("i8"),
-    TypeKind::INT16 => Some("i16"),
-    TypeKind::UINT16 => Some("u16"),
-    TypeKind::INT32 => Some("i32"),
-    TypeKind::UINT32 => Some("u32"),
-    TypeKind::INT64 => Some("i64"),
-    TypeKind::UINT64 => Some("u64"),
-    TypeKind::INT128 => Some("i128"),
-    TypeKind::UINT128 => Some("u128"),
-    TypeKind::FLOAT32 => Some("f32"),
-    TypeKind::FLOAT64 => Some("f64"),
-    TypeKind::STRING => Some("String"),
-    TypeKind::FLOAT16 => Some("F16"),
-    TypeKind::BFLOAT16 => Some("BF16"),
-    TypeKind::UUID => Some("[u8; 16]"),
-    TypeKind::TIMESTAMP => Some("(i64, i32)"),
-    TypeKind::DURATION => Some("(i64, i32)"),
+    TypeKind::Bool => Some("bool"),
+    TypeKind::Byte => Some("u8"),
+    TypeKind::Int8 => Some("i8"),
+    TypeKind::Int16 => Some("i16"),
+    TypeKind::Uint16 => Some("u16"),
+    TypeKind::Int32 => Some("i32"),
+    TypeKind::Uint32 => Some("u32"),
+    TypeKind::Int64 => Some("i64"),
+    TypeKind::Uint64 => Some("u64"),
+    TypeKind::Int128 => Some("i128"),
+    TypeKind::Uint128 => Some("u128"),
+    TypeKind::Float32 => Some("f32"),
+    TypeKind::Float64 => Some("f64"),
+    TypeKind::String => Some("String"),
+    TypeKind::Float16 => Some("F16"),
+    TypeKind::Bfloat16 => Some("BF16"),
+    TypeKind::Uuid => Some("[u8; 16]"),
+    TypeKind::Timestamp => Some("(i64, i32)"),
+    TypeKind::Duration => Some("(i64, i32)"),
     _ => None,
   }
 }
@@ -32,25 +32,25 @@ pub fn scalar_type(kind: TypeKind) -> Option<&'static str> {
 /// Map a scalar TypeKind to its BebopReader read method name.
 pub fn scalar_read_method(kind: TypeKind) -> Option<&'static str> {
   match kind {
-    TypeKind::BOOL => Some("read_bool"),
-    TypeKind::BYTE => Some("read_byte"),
-    TypeKind::INT8 => Some("read_i8"),
-    TypeKind::INT16 => Some("read_i16"),
-    TypeKind::UINT16 => Some("read_u16"),
-    TypeKind::INT32 => Some("read_i32"),
-    TypeKind::UINT32 => Some("read_u32"),
-    TypeKind::INT64 => Some("read_i64"),
-    TypeKind::UINT64 => Some("read_u64"),
-    TypeKind::INT128 => Some("read_i128"),
-    TypeKind::UINT128 => Some("read_u128"),
-    TypeKind::FLOAT16 => Some("read_f16"),
-    TypeKind::FLOAT32 => Some("read_f32"),
-    TypeKind::FLOAT64 => Some("read_f64"),
-    TypeKind::BFLOAT16 => Some("read_bf16"),
-    TypeKind::STRING => Some("read_string"),
-    TypeKind::UUID => Some("read_uuid"),
-    TypeKind::TIMESTAMP => Some("read_timestamp"),
-    TypeKind::DURATION => Some("read_duration"),
+    TypeKind::Bool => Some("read_bool"),
+    TypeKind::Byte => Some("read_byte"),
+    TypeKind::Int8 => Some("read_i8"),
+    TypeKind::Int16 => Some("read_i16"),
+    TypeKind::Uint16 => Some("read_u16"),
+    TypeKind::Int32 => Some("read_i32"),
+    TypeKind::Uint32 => Some("read_u32"),
+    TypeKind::Int64 => Some("read_i64"),
+    TypeKind::Uint64 => Some("read_u64"),
+    TypeKind::Int128 => Some("read_i128"),
+    TypeKind::Uint128 => Some("read_u128"),
+    TypeKind::Float16 => Some("read_f16"),
+    TypeKind::Float32 => Some("read_f32"),
+    TypeKind::Float64 => Some("read_f64"),
+    TypeKind::Bfloat16 => Some("read_bf16"),
+    TypeKind::String => Some("read_string"),
+    TypeKind::Uuid => Some("read_uuid"),
+    TypeKind::Timestamp => Some("read_timestamp"),
+    TypeKind::Duration => Some("read_duration"),
     _ => None,
   }
 }
@@ -58,25 +58,25 @@ pub fn scalar_read_method(kind: TypeKind) -> Option<&'static str> {
 /// Map a scalar TypeKind to its BebopWriter write method name.
 pub fn scalar_write_method(kind: TypeKind) -> Option<&'static str> {
   match kind {
-    TypeKind::BOOL => Some("write_bool"),
-    TypeKind::BYTE => Some("write_byte"),
-    TypeKind::INT8 => Some("write_i8"),
-    TypeKind::INT16 => Some("write_i16"),
-    TypeKind::UINT16 => Some("write_u16"),
-    TypeKind::INT32 => Some("write_i32"),
-    TypeKind::UINT32 => Some("write_u32"),
-    TypeKind::INT64 => Some("write_i64"),
-    TypeKind::UINT64 => Some("write_u64"),
-    TypeKind::INT128 => Some("write_i128"),
-    TypeKind::UINT128 => Some("write_u128"),
-    TypeKind::FLOAT16 => Some("write_f16"),
-    TypeKind::FLOAT32 => Some("write_f32"),
-    TypeKind::FLOAT64 => Some("write_f64"),
-    TypeKind::BFLOAT16 => Some("write_bf16"),
-    TypeKind::STRING => Some("write_string"),
-    TypeKind::UUID => Some("write_uuid"),
-    TypeKind::TIMESTAMP => Some("write_timestamp"),
-    TypeKind::DURATION => Some("write_duration"),
+    TypeKind::Bool => Some("write_bool"),
+    TypeKind::Byte => Some("write_byte"),
+    TypeKind::Int8 => Some("write_i8"),
+    TypeKind::Int16 => Some("write_i16"),
+    TypeKind::Uint16 => Some("write_u16"),
+    TypeKind::Int32 => Some("write_i32"),
+    TypeKind::Uint32 => Some("write_u32"),
+    TypeKind::Int64 => Some("write_i64"),
+    TypeKind::Uint64 => Some("write_u64"),
+    TypeKind::Int128 => Some("write_i128"),
+    TypeKind::Uint128 => Some("write_u128"),
+    TypeKind::Float16 => Some("write_f16"),
+    TypeKind::Float32 => Some("write_f32"),
+    TypeKind::Float64 => Some("write_f64"),
+    TypeKind::Bfloat16 => Some("write_bf16"),
+    TypeKind::String => Some("write_string"),
+    TypeKind::Uuid => Some("write_uuid"),
+    TypeKind::Timestamp => Some("write_timestamp"),
+    TypeKind::Duration => Some("write_duration"),
     _ => None,
   }
 }
@@ -84,17 +84,17 @@ pub fn scalar_write_method(kind: TypeKind) -> Option<&'static str> {
 /// Map an enum base TypeKind to its Rust integer type.
 pub fn enum_base_rust_type(kind: TypeKind) -> Result<&'static str, GeneratorError> {
   match kind {
-    TypeKind::BYTE => Ok("u8"),
-    TypeKind::INT8 => Ok("i8"),
-    TypeKind::INT16 => Ok("i16"),
-    TypeKind::UINT16 => Ok("u16"),
-    TypeKind::INT32 => Ok("i32"),
-    TypeKind::UINT32 => Ok("u32"),
-    TypeKind::INT64 => Ok("i64"),
-    TypeKind::UINT64 => Ok("u64"),
+    TypeKind::Byte => Ok("u8"),
+    TypeKind::Int8 => Ok("i8"),
+    TypeKind::Int16 => Ok("i16"),
+    TypeKind::Uint16 => Ok("u16"),
+    TypeKind::Int32 => Ok("i32"),
+    TypeKind::Uint32 => Ok("u32"),
+    TypeKind::Int64 => Ok("i64"),
+    TypeKind::Uint64 => Ok("u64"),
     _ => Err(GeneratorError::MalformedType(format!(
       "unsupported enum base type kind: {}",
-      kind.0
+      kind as u8
     ))),
   }
 }
@@ -102,17 +102,17 @@ pub fn enum_base_rust_type(kind: TypeKind) -> Result<&'static str, GeneratorErro
 /// Map an enum base TypeKind to its BebopReader read method.
 pub fn enum_read_method(kind: TypeKind) -> Result<&'static str, GeneratorError> {
   match kind {
-    TypeKind::BYTE => Ok("read_byte"),
-    TypeKind::INT8 => Ok("read_i8"),
-    TypeKind::INT16 => Ok("read_i16"),
-    TypeKind::UINT16 => Ok("read_u16"),
-    TypeKind::INT32 => Ok("read_i32"),
-    TypeKind::UINT32 => Ok("read_u32"),
-    TypeKind::INT64 => Ok("read_i64"),
-    TypeKind::UINT64 => Ok("read_u64"),
+    TypeKind::Byte => Ok("read_byte"),
+    TypeKind::Int8 => Ok("read_i8"),
+    TypeKind::Int16 => Ok("read_i16"),
+    TypeKind::Uint16 => Ok("read_u16"),
+    TypeKind::Int32 => Ok("read_i32"),
+    TypeKind::Uint32 => Ok("read_u32"),
+    TypeKind::Int64 => Ok("read_i64"),
+    TypeKind::Uint64 => Ok("read_u64"),
     _ => Err(GeneratorError::MalformedType(format!(
       "unsupported enum base type for read: {}",
-      kind.0
+      kind as u8
     ))),
   }
 }
@@ -120,17 +120,17 @@ pub fn enum_read_method(kind: TypeKind) -> Result<&'static str, GeneratorError> 
 /// Map an enum base TypeKind to its BebopWriter write method.
 pub fn enum_write_method(kind: TypeKind) -> Result<&'static str, GeneratorError> {
   match kind {
-    TypeKind::BYTE => Ok("write_byte"),
-    TypeKind::INT8 => Ok("write_i8"),
-    TypeKind::INT16 => Ok("write_i16"),
-    TypeKind::UINT16 => Ok("write_u16"),
-    TypeKind::INT32 => Ok("write_i32"),
-    TypeKind::UINT32 => Ok("write_u32"),
-    TypeKind::INT64 => Ok("write_i64"),
-    TypeKind::UINT64 => Ok("write_u64"),
+    TypeKind::Byte => Ok("write_byte"),
+    TypeKind::Int8 => Ok("write_i8"),
+    TypeKind::Int16 => Ok("write_i16"),
+    TypeKind::Uint16 => Ok("write_u16"),
+    TypeKind::Int32 => Ok("write_i32"),
+    TypeKind::Uint32 => Ok("write_u32"),
+    TypeKind::Int64 => Ok("write_i64"),
+    TypeKind::Uint64 => Ok("write_u64"),
     _ => Err(GeneratorError::MalformedType(format!(
       "unsupported enum base type for write: {}",
-      kind.0
+      kind as u8
     ))),
   }
 }
@@ -146,19 +146,19 @@ pub fn rust_type(td: &TypeDescriptor) -> Result<String, GeneratorError> {
   }
 
   match kind {
-    TypeKind::ARRAY => {
+    TypeKind::Array => {
       let elem = td
         .array_element
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
       // Byte arrays get special treatment
-      if elem.kind == Some(TypeKind::BYTE) {
+      if elem.kind == Some(TypeKind::Byte) {
         return Ok("Vec<u8>".to_string());
       }
       let inner = rust_type(elem)?;
       Ok(format!("Vec<{}>", inner))
     }
-    TypeKind::FIXED_ARRAY => {
+    TypeKind::FixedArray => {
       let elem = td
         .fixed_array_element
         .as_ref()
@@ -169,7 +169,7 @@ pub fn rust_type(td: &TypeDescriptor) -> Result<String, GeneratorError> {
       let inner = rust_type(elem)?;
       Ok(format!("[{}; {}]", inner, size))
     }
-    TypeKind::MAP => {
+    TypeKind::Map => {
       let key = td
         .map_key
         .as_ref()
@@ -182,7 +182,7 @@ pub fn rust_type(td: &TypeDescriptor) -> Result<String, GeneratorError> {
       let v = rust_type(val)?;
       Ok(format!("std::collections::HashMap<{}, {}>", k, v))
     }
-    TypeKind::DEFINED => {
+    TypeKind::Defined => {
       let fqn = td
         .defined_fqn
         .as_deref()
@@ -191,7 +191,7 @@ pub fn rust_type(td: &TypeDescriptor) -> Result<String, GeneratorError> {
     }
     _ => Err(GeneratorError::MalformedType(format!(
       "unknown type kind: {}",
-      kind.0
+      kind as u8
     ))),
   }
 }
@@ -210,17 +210,17 @@ pub fn read_expression(td: &TypeDescriptor, reader: &str) -> Result<String, Gene
   }
 
   match kind {
-    TypeKind::ARRAY => {
+    TypeKind::Array => {
       let elem = td
         .array_element
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
       // Byte array optimization
-      if elem.kind == Some(TypeKind::BYTE) {
+      if elem.kind == Some(TypeKind::Byte) {
         return Ok(format!("{}.read_byte_array()", reader));
       }
-      let elem_kind = elem.kind.unwrap_or(TypeKind::UNKNOWN);
-      if elem_kind == TypeKind::DEFINED {
+      let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
+      if elem_kind == TypeKind::Defined {
         // DEFINED elements: use fn pointer
         let fqn = elem.defined_fqn.as_deref().unwrap_or("");
         let type_name = fqn_to_type_name(fqn);
@@ -231,7 +231,7 @@ pub fn read_expression(td: &TypeDescriptor, reader: &str) -> Result<String, Gene
         Ok(format!("{}.read_array(|_r| {})", reader, inner))
       }
     }
-    TypeKind::FIXED_ARRAY => {
+    TypeKind::FixedArray => {
       let elem = td
         .fixed_array_element
         .as_ref()
@@ -239,8 +239,8 @@ pub fn read_expression(td: &TypeDescriptor, reader: &str) -> Result<String, Gene
       let size = td
         .fixed_array_size
         .ok_or_else(|| GeneratorError::MalformedType("fixed array missing size".into()))?;
-      let elem_kind = elem.kind.unwrap_or(TypeKind::UNKNOWN);
-      if elem_kind == TypeKind::INT32 {
+      let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
+      if elem_kind == TypeKind::Int32 {
         Ok(format!("{}.read_fixed_i32_array::<{}>()", reader, size))
       } else {
         // General fixed array: read N elements
@@ -251,7 +251,7 @@ pub fn read_expression(td: &TypeDescriptor, reader: &str) -> Result<String, Gene
         ))
       }
     }
-    TypeKind::MAP => {
+    TypeKind::Map => {
       let key = td
         .map_key
         .as_ref()
@@ -267,7 +267,7 @@ pub fn read_expression(td: &TypeDescriptor, reader: &str) -> Result<String, Gene
         reader, k_expr, v_expr
       ))
     }
-    TypeKind::DEFINED => {
+    TypeKind::Defined => {
       let fqn = td
         .defined_fqn
         .as_deref()
@@ -277,14 +277,14 @@ pub fn read_expression(td: &TypeDescriptor, reader: &str) -> Result<String, Gene
     }
     _ => Err(GeneratorError::MalformedType(format!(
       "cannot generate read for type kind: {}",
-      kind.0
+      kind as u8
     ))),
   }
 }
 
 /// Returns true if a scalar TypeKind needs `&` when passed to its write method.
 fn scalar_needs_ref(kind: TypeKind) -> bool {
-  matches!(kind, TypeKind::STRING | TypeKind::UUID)
+  matches!(kind, TypeKind::String | TypeKind::Uuid)
 }
 
 /// Generate a write statement for a TypeDescriptor.
@@ -307,17 +307,17 @@ pub fn write_expression(
   }
 
   match kind {
-    TypeKind::ARRAY => {
+    TypeKind::Array => {
       let elem = td
         .array_element
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
       // Byte array optimization
-      if elem.kind == Some(TypeKind::BYTE) {
+      if elem.kind == Some(TypeKind::Byte) {
         return Ok(format!("{}.write_byte_array(&{})", writer, value));
       }
-      let elem_kind = elem.kind.unwrap_or(TypeKind::UNKNOWN);
-      if elem_kind == TypeKind::DEFINED {
+      let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
+      if elem_kind == TypeKind::Defined {
         Ok(format!(
           "{}.write_array(&{}, |_w, _el| _el.encode(_w))",
           writer, value
@@ -343,13 +343,13 @@ pub fn write_expression(
         ))
       }
     }
-    TypeKind::FIXED_ARRAY => {
+    TypeKind::FixedArray => {
       let elem = td
         .fixed_array_element
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("fixed array missing element type".into()))?;
-      let elem_kind = elem.kind.unwrap_or(TypeKind::UNKNOWN);
-      if elem_kind == TypeKind::INT32 {
+      let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
+      if elem_kind == TypeKind::Int32 {
         let size = td
           .fixed_array_size
           .ok_or_else(|| GeneratorError::MalformedType("fixed array missing size".into()))?;
@@ -363,7 +363,7 @@ pub fn write_expression(
         Ok(format!("for _el in {}.iter() {{ {} }}", value, inner))
       }
     }
-    TypeKind::MAP => {
+    TypeKind::Map => {
       let key = td
         .map_key
         .as_ref()
@@ -379,10 +379,10 @@ pub fn write_expression(
         writer, value, k_write, v_write
       ))
     }
-    TypeKind::DEFINED => Ok(format!("{}.encode({})", value, writer)),
+    TypeKind::Defined => Ok(format!("{}.encode({})", value, writer)),
     _ => Err(GeneratorError::MalformedType(format!(
       "cannot generate write for type kind: {}",
-      kind.0
+      kind as u8
     ))),
   }
 }
@@ -390,12 +390,12 @@ pub fn write_expression(
 /// Return the fixed byte size of a scalar type, or None for variable-size types.
 pub fn fixed_size(kind: TypeKind) -> Option<usize> {
   match kind {
-    TypeKind::BOOL | TypeKind::BYTE | TypeKind::INT8 => Some(1),
-    TypeKind::INT16 | TypeKind::UINT16 | TypeKind::FLOAT16 | TypeKind::BFLOAT16 => Some(2),
-    TypeKind::INT32 | TypeKind::UINT32 | TypeKind::FLOAT32 => Some(4),
-    TypeKind::INT64 | TypeKind::UINT64 | TypeKind::FLOAT64 => Some(8),
-    TypeKind::INT128 | TypeKind::UINT128 | TypeKind::UUID => Some(16),
-    TypeKind::TIMESTAMP | TypeKind::DURATION => Some(12),
+    TypeKind::Bool | TypeKind::Byte | TypeKind::Int8 => Some(1),
+    TypeKind::Int16 | TypeKind::Uint16 | TypeKind::Float16 | TypeKind::Bfloat16 => Some(2),
+    TypeKind::Int32 | TypeKind::Uint32 | TypeKind::Float32 => Some(4),
+    TypeKind::Int64 | TypeKind::Uint64 | TypeKind::Float64 => Some(8),
+    TypeKind::Int128 | TypeKind::Uint128 | TypeKind::Uuid => Some(16),
+    TypeKind::Timestamp | TypeKind::Duration => Some(12),
     _ => None,
   }
 }
