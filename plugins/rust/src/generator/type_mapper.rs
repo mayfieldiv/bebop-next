@@ -828,6 +828,14 @@ pub fn write_expression_cow(
 }
 
 /// Generate an expression computing the encoded byte size of a value.
+fn collection_ref(value: &str) -> String {
+  if value.starts_with("self.") {
+    format!("&{}", value)
+  } else {
+    value.to_string()
+  }
+}
+
 pub fn encoded_size_expression(td: &TypeDescriptor, value: &str, analysis: &LifetimeAnalysis) -> Result<String, GeneratorError> {
   let kind = td
     .kind
@@ -840,29 +848,23 @@ pub fn encoded_size_expression(td: &TypeDescriptor, value: &str, analysis: &Life
 
   match kind {
     TypeKind::String => {
-      // 4-byte length prefix + UTF-8 bytes + NUL terminator
-      Ok(format!("size_of::<u32>() + {}.len() + size_of::<u8>()", value))
+      Ok(format!("wire::string_size({}.len())", value))
     }
     TypeKind::Array => {
       let elem = td
         .array_element
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
-      // Byte array: 4-byte length prefix + bytes
       if elem.kind == Some(TypeKind::Byte) {
-        return Ok(format!("size_of::<u32>() + {}.len()", value));
+        return Ok(format!("wire::byte_array_size({}.len())", value));
       }
+      let items_ref = collection_ref(value);
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
       if let Some(sz_expr) = fixed_size_expr(elem_kind) {
-        // Fixed-size elements: 4 + count * elem_size
-        Ok(format!("size_of::<u32>() + {}.len() * ({})", value, sz_expr))
+        Ok(format!("wire::array_size({}, |_el| ({}))", items_ref, sz_expr))
       } else {
-        // Variable-size elements
         let inner = encoded_size_expression(elem, "_el", analysis)?;
-        Ok(format!(
-          "size_of::<u32>() + {}.iter().map(|_el| {}).sum::<usize>()",
-          value, inner
-        ))
+        Ok(format!("wire::array_size({}, |_el| {})", items_ref, inner))
       }
     }
     TypeKind::FixedArray => {
@@ -895,9 +897,10 @@ pub fn encoded_size_expression(td: &TypeDescriptor, value: &str, analysis: &Life
         .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
       let k_size = encoded_size_expression(key, "_k", analysis)?;
       let v_size = encoded_size_expression(val, "_v", analysis)?;
+      let map_ref = collection_ref(value);
       Ok(format!(
-        "size_of::<u32>() + {}.iter().map(|(_k, _v)| {} + {}).sum::<usize>()",
-        value, k_size, v_size
+        "wire::map_size({}, |_k, _v| {} + {})",
+        map_ref, k_size, v_size
       ))
     }
     TypeKind::Defined => {

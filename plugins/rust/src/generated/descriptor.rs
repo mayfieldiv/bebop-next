@@ -15,6 +15,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::mem::size_of;
 use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, F16, BF16};
+use bebop_runtime::wire_size as wire;
 
 /// Scalar and compound type kinds.
 /// Scalars (1-18) encode as fixed-size little-endian bytes. `BOOL` is 1 byte
@@ -490,27 +491,27 @@ impl<'buf> BebopEncode for TypeDescriptor<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.kind {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.array_element {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.fixed_array_element {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(v) = self.fixed_array_size {
-      size += size_of::<u8>() + size_of::<u32>();
+      size += wire::tagged_size(size_of::<u32>());
     }
     if let Some(ref v) = self.map_key {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.map_value {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.defined_fqn {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     size
   }
@@ -631,36 +632,36 @@ impl<'buf> BebopEncode for LiteralValue<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.kind {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(v) = self.bool_value {
-      size += size_of::<u8>() + size_of::<bool>();
+      size += wire::tagged_size(size_of::<bool>());
     }
     if let Some(v) = self.int_value {
-      size += size_of::<u8>() + size_of::<i64>();
+      size += wire::tagged_size(size_of::<i64>());
     }
     if let Some(v) = self.float_value {
-      size += size_of::<u8>() + size_of::<f64>();
+      size += wire::tagged_size(size_of::<f64>());
     }
     if let Some(ref v) = self.string_value {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.uuid_value {
-      size += size_of::<u8>() + size_of::<[u8; 16]>();
+      size += wire::tagged_size(size_of::<[u8; 16]>());
     }
     if let Some(ref v) = self.raw_value {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.bytes_value {
-      size += size_of::<u8>() + size_of::<u32>() + v.len();
+      size += wire::tagged_size(wire::byte_array_size(v.len()));
     }
     if let Some(v) = self.timestamp_value {
-      size += size_of::<u8>() + size_of::<i64>() + size_of::<i32>();
+      size += wire::tagged_size(size_of::<i64>() + size_of::<i32>());
     }
     if let Some(v) = self.duration_value {
-      size += size_of::<u8>() + size_of::<i64>() + size_of::<i32>();
+      size += wire::tagged_size(size_of::<i64>() + size_of::<i32>());
     }
     size
   }
@@ -728,7 +729,7 @@ impl<'buf> BebopEncode for DecoratorArg<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    size_of::<u32>() + self.name.len() + size_of::<u8>() + self.value.encoded_size()
+    wire::string_size(self.name.len()) + self.value.encoded_size()
   }
 }
 
@@ -791,15 +792,15 @@ impl<'buf> BebopEncode for DecoratorUsage<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.fqn {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.args {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     if let Some(ref v) = self.export_data {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|(_k, _v)| size_of::<u32>() + _k.len() + size_of::<u8>() + _v.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::map_size(v, |_k, _v| wire::string_size(_k.len()) + _v.encoded_size()));
     }
     size
   }
@@ -884,21 +885,21 @@ impl<'buf> BebopEncode for FieldDescriptor<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.name {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.documentation {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.r#type {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(v) = self.index {
-      size += size_of::<u8>() + size_of::<u32>();
+      size += wire::tagged_size(size_of::<u32>());
     }
     if let Some(ref v) = self.decorators {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
@@ -983,21 +984,21 @@ impl<'buf> BebopEncode for EnumMemberDescriptor<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.name {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.documentation {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(v) = self.value {
-      size += size_of::<u8>() + size_of::<u64>();
+      size += wire::tagged_size(size_of::<u64>());
     }
     if let Some(ref v) = self.decorators {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     if let Some(ref v) = self.value_expr {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     size
   }
@@ -1100,24 +1101,24 @@ impl<'buf> BebopEncode for UnionBranchDescriptor<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(v) = self.discriminator {
-      size += size_of::<u8>() + size_of::<u8>();
+      size += wire::tagged_size(size_of::<u8>());
     }
     if let Some(ref v) = self.documentation {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.inline_fqn {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.type_ref_fqn {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.name {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.decorators {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
@@ -1213,27 +1214,27 @@ impl<'buf> BebopEncode for MethodDescriptor<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.name {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.documentation {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.request_type {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.response_type {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.method_type {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(v) = self.id {
-      size += size_of::<u8>() + size_of::<u32>();
+      size += wire::tagged_size(size_of::<u32>());
     }
     if let Some(ref v) = self.decorators {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
@@ -1308,15 +1309,15 @@ impl<'buf> BebopEncode for EnumDef<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.base_type {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.members {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     if let Some(v) = self.is_flags {
-      size += size_of::<u8>() + size_of::<bool>();
+      size += wire::tagged_size(size_of::<bool>());
     }
     size
   }
@@ -1388,15 +1389,15 @@ impl<'buf> BebopEncode for StructDef<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.fields {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     if let Some(v) = self.is_mutable {
-      size += size_of::<u8>() + size_of::<bool>();
+      size += wire::tagged_size(size_of::<bool>());
     }
     if let Some(v) = self.fixed_size {
-      size += size_of::<u8>() + size_of::<u32>();
+      size += wire::tagged_size(size_of::<u32>());
     }
     size
   }
@@ -1452,9 +1453,9 @@ impl<'buf> BebopEncode for MessageDef<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.fields {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
@@ -1508,9 +1509,9 @@ impl<'buf> BebopEncode for UnionDef<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.branches {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
@@ -1562,9 +1563,9 @@ impl<'buf> BebopEncode for ServiceDef<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.methods {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
@@ -1629,12 +1630,12 @@ impl<'buf> BebopEncode for ConstDef<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.r#type {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.value {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     size
   }
@@ -1731,24 +1732,24 @@ impl<'buf> BebopEncode for DecoratorParamDef<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.name {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.description {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.r#type {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(v) = self.required {
-      size += size_of::<u8>() + size_of::<bool>();
+      size += wire::tagged_size(size_of::<bool>());
     }
     if let Some(ref v) = self.default_value {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.allowed_values {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
@@ -1837,21 +1838,21 @@ impl<'buf> BebopEncode for DecoratorDef<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.targets {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(v) = self.allow_multiple {
-      size += size_of::<u8>() + size_of::<bool>();
+      size += wire::tagged_size(size_of::<bool>());
     }
     if let Some(ref v) = self.params {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     if let Some(ref v) = self.validate_source {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.export_source {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     size
   }
@@ -1996,48 +1997,48 @@ impl<'buf> BebopEncode for DefinitionDescriptor<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.kind {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.name {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.fqn {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.documentation {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.visibility {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.decorators {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     if let Some(ref v) = self.nested {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     if let Some(ref v) = self.enum_def {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.struct_def {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.message_def {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.union_def {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.service_def {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.const_def {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.decorator_def {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     size
   }
@@ -2142,21 +2143,21 @@ impl<'buf> BebopEncode for Location<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.path {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() * (size_of::<i32>());
+      size += wire::tagged_size(wire::array_size(v, |_el| (size_of::<i32>())));
     }
     if let Some(ref v) = self.span {
-      size += size_of::<u8>() + 4usize * (size_of::<i32>());
+      size += wire::tagged_size(4usize * (size_of::<i32>()));
     }
     if let Some(ref v) = self.leading_comments {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.trailing_comments {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.detached_comments {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| size_of::<u32>() + _el.len() + size_of::<u8>()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| wire::string_size(_el.len())));
     }
     size
   }
@@ -2215,9 +2216,9 @@ impl<'buf> BebopEncode for SourceCodeInfo<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.locations {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
@@ -2307,24 +2308,24 @@ impl<'buf> BebopEncode for SchemaDescriptor<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.path {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.package {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.edition {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.imports {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| size_of::<u32>() + _el.len() + size_of::<u8>()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| wire::string_size(_el.len())));
     }
     if let Some(ref v) = self.definitions {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     if let Some(ref v) = self.source_code_info {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     size
   }
@@ -2385,9 +2386,9 @@ impl<'buf> BebopEncode for DescriptorSet<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.schemas {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
