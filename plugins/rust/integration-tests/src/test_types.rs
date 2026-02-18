@@ -99,7 +99,7 @@ pub struct Point {
 }
 
 impl Point {
-  pub const FIXED_ENCODED_SIZE: usize = 8;
+  pub const FIXED_ENCODED_SIZE: usize = size_of::<f32>() + size_of::<f32>();
 
   pub fn new(x: f32, y: f32) -> Self {
     Self { x, y }
@@ -134,7 +134,7 @@ pub struct Pixel {
 }
 
 impl Pixel {
-  pub const FIXED_ENCODED_SIZE: usize = 10;
+  pub const FIXED_ENCODED_SIZE: usize = Point::FIXED_ENCODED_SIZE + Color::FIXED_ENCODED_SIZE + size_of::<u8>();
 
   pub fn new(position: Point, color: Color, alpha: u8) -> Self {
     Self { position, color, alpha }
@@ -561,7 +561,7 @@ pub struct Matrix2x2 {
 }
 
 impl Matrix2x2 {
-  pub const FIXED_ENCODED_SIZE: usize = 16;
+  pub const FIXED_ENCODED_SIZE: usize = size_of::<f32>() * 4;
 
   pub fn new(values: [f32; 4]) -> Self {
     Self { values }

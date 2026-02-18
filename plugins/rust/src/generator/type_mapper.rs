@@ -445,6 +445,48 @@ pub fn fixed_size_expr(kind: TypeKind) -> Option<&'static str> {
   }
 }
 
+/// Return a constant Rust expression for a type's fixed encoded size.
+///
+/// Returns `Ok(None)` for variable-size types.
+pub fn fixed_encoded_size_expression(td: &TypeDescriptor) -> Result<Option<String>, GeneratorError> {
+  let kind = td
+    .kind
+    .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
+
+  if let Some(expr) = fixed_size_expr(kind) {
+    return Ok(Some(expr.to_string()));
+  }
+
+  match kind {
+    TypeKind::FixedArray => {
+      let elem = td
+        .fixed_array_element
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("fixed array missing element type".into()))?;
+      let size = td
+        .fixed_array_size
+        .ok_or_else(|| GeneratorError::MalformedType("fixed array missing size".into()))?;
+      let elem_expr = fixed_encoded_size_expression(elem)?;
+      Ok(elem_expr.map(|e| {
+        if e.contains(" + ") {
+          format!("({}) * {}", e, size)
+        } else {
+          format!("{} * {}", e, size)
+        }
+      }))
+    }
+    TypeKind::Defined => {
+      let fqn = td
+        .defined_fqn
+        .as_deref()
+        .ok_or_else(|| GeneratorError::MalformedType("defined type missing fqn".into()))?;
+      let type_name = fqn_to_type_name(fqn);
+      Ok(Some(format!("{}::FIXED_ENCODED_SIZE", type_name)))
+    }
+    _ => Ok(None),
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // Cow-aware functions for zero-copy code generation
 // ═══════════════════════════════════════════════════════════════════
