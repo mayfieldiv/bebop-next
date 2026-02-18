@@ -188,6 +188,7 @@ impl<'a> RustGenerator<'a> {
     output.push_str("use std::collections::HashMap;\n");
     output.push_str("use std::mem::size_of;\n");
     output.push_str("use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, F16, BF16};\n");
+    output.push_str("use bebop_runtime::wire_size as wire;\n");
 
     // Cross-module imports for sibling schemas
     for stem in sibling_imports {

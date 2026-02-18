@@ -15,6 +15,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::mem::size_of;
 use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, F16, BF16};
+use bebop_runtime::wire_size as wire;
 use super::descriptor::*;
 
 /// Compiler version.
@@ -62,7 +63,7 @@ impl<'buf> BebopEncode for Version<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    size_of::<i32>() + size_of::<i32>() + size_of::<i32>() + size_of::<u32>() + self.suffix.len() + size_of::<u8>()
+    size_of::<i32>() + size_of::<i32>() + size_of::<i32>() + wire::string_size(self.suffix.len())
   }
 }
 
@@ -149,21 +150,21 @@ impl<'buf> BebopEncode for CodeGeneratorRequest<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.files_to_generate {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| size_of::<u32>() + _el.len() + size_of::<u8>()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| wire::string_size(_el.len())));
     }
     if let Some(ref v) = self.parameter {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.compiler_version {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.schemas {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     if let Some(ref v) = self.host_options {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|(_k, _v)| size_of::<u32>() + _k.len() + size_of::<u8>() + size_of::<u32>() + _v.len() + size_of::<u8>()).sum::<usize>();
+      size += wire::tagged_size(wire::map_size(v, |_k, _v| wire::string_size(_k.len()) + wire::string_size(_v.len())));
     }
     size
   }
@@ -295,21 +296,21 @@ impl<'buf> BebopEncode for Diagnostic<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.severity {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.text {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.hint {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.file {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.span {
-      size += size_of::<u8>() + 4usize * (size_of::<i32>());
+      size += wire::tagged_size(4usize * (size_of::<i32>()));
     }
     size
   }
@@ -403,18 +404,18 @@ impl<'buf> BebopEncode for GeneratedFile<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.name {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.insertion_point {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.content {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.generated_code_info {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     size
   }
@@ -499,15 +500,15 @@ impl<'buf> BebopEncode for CodeGeneratorResponse<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.error {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.files {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     if let Some(ref v) = self.diagnostics {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
