@@ -6,6 +6,12 @@ dist/
 node_modules/
 out
 
+# CMake install outputs
+/bin/
+/lib/
+/include/
+/share/
+
 # Release artifacts
 bebop-*.tar.gz
 *.vsix
