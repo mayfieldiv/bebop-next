@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
+use crate::{BF16, F16};
+
 /// Accumulating writer for Bebop wire format.
 ///
 /// All multi-byte integers are little-endian.
@@ -55,6 +57,22 @@ impl BebopWriter {
 
   pub fn write_i64(&mut self, v: i64) {
     self.buf.extend_from_slice(&v.to_le_bytes());
+  }
+
+  pub fn write_i128(&mut self, v: i128) {
+    self.buf.extend_from_slice(&v.to_le_bytes());
+  }
+
+  pub fn write_u128(&mut self, v: u128) {
+    self.buf.extend_from_slice(&v.to_le_bytes());
+  }
+
+  pub fn write_f16(&mut self, v: F16) {
+    self.buf.extend_from_slice(&v.0.to_le_bytes());
+  }
+
+  pub fn write_bf16(&mut self, v: BF16) {
+    self.buf.extend_from_slice(&v.0.to_le_bytes());
   }
 
   pub fn write_f32(&mut self, v: f32) {
