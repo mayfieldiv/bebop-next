@@ -1,9 +1,11 @@
 mod error;
 mod reader;
+mod traits;
 mod writer;
 
 pub use error::DecodeError;
 pub use reader::BebopReader;
+pub use traits::{BebopDecode, BebopDecodeOwned, BebopEncode};
 pub use writer::BebopWriter;
 
 /// IEEE 754 binary16 half-precision float, stored as raw bits.
