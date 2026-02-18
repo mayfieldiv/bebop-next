@@ -17,10 +17,10 @@ enum FieldWrap {
 
 /// Determine wrapping for a message field.
 fn field_wrap(field_type: &crate::generated::TypeDescriptor, own_fqn: &str) -> FieldWrap {
-  let kind = field_type.kind.unwrap_or(TypeKind::UNKNOWN);
+  let kind = field_type.kind.unwrap_or(TypeKind::Unknown);
 
   // Direct self-reference: field's DEFINED fqn == own fqn
-  if kind == TypeKind::DEFINED {
+  if kind == TypeKind::Defined {
     if let Some(ref fqn) = field_type.defined_fqn {
       if fqn == own_fqn {
         return FieldWrap::Boxed;
@@ -29,9 +29,9 @@ fn field_wrap(field_type: &crate::generated::TypeDescriptor, own_fqn: &str) -> F
   }
 
   // Array of self: element is DEFINED with fqn == own fqn — Vec provides indirection
-  if kind == TypeKind::ARRAY {
+  if kind == TypeKind::Array {
     if let Some(ref elem) = field_type.array_element {
-      if elem.kind == Some(TypeKind::DEFINED) {
+      if elem.kind == Some(TypeKind::Defined) {
         if let Some(ref fqn) = elem.defined_fqn {
           if fqn == own_fqn {
             return FieldWrap::VecIndirect;
@@ -47,7 +47,7 @@ fn field_wrap(field_type: &crate::generated::TypeDescriptor, own_fqn: &str) -> F
 /// Returns true if a scalar TypeKind value should be dereferenced when writing from `&T`.
 fn scalar_needs_deref(kind: TypeKind) -> bool {
   // String and UUID are passed by reference, all other scalars are Copy and need *v
-  kind != TypeKind::STRING && kind != TypeKind::UUID
+  kind != TypeKind::String && kind != TypeKind::Uuid
 }
 
 /// Generate Rust code for a message definition.
@@ -167,7 +167,7 @@ pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), G
   for (i, f) in fields.iter().enumerate() {
     let meta = &field_metas[i];
     let td = f.r#type.as_ref().unwrap();
-    let kind = td.kind.unwrap_or(TypeKind::UNKNOWN);
+    let kind = td.kind.unwrap_or(TypeKind::Unknown);
 
     match meta.wrap {
       FieldWrap::Boxed => {

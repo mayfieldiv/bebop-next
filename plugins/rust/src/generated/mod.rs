@@ -1,7 +1,9 @@
 // Types generated from bebop/schemas/bebop/{descriptor,plugin}.bop
 // Regenerate with: ./generate.sh
 
+#[rustfmt::skip]
 mod descriptor;
+#[rustfmt::skip]
 mod plugin;
 
 pub use descriptor::*;
@@ -12,21 +14,42 @@ pub use plugin::*;
 impl DefinitionKind {
   pub fn name(self) -> &'static str {
     match self {
-      Self::ENUM => "enum",
-      Self::STRUCT => "struct",
-      Self::MESSAGE => "message",
-      Self::UNION => "union",
-      Self::SERVICE => "service",
-      Self::CONST => "const",
-      Self::DECORATOR => "decorator",
-      _ => "unknown",
+      Self::Unknown => "unknown",
+      Self::Enum => "enum",
+      Self::Struct => "struct",
+      Self::Message => "message",
+      Self::Union => "union",
+      Self::Service => "service",
+      Self::Const => "const",
+      Self::Decorator => "decorator",
     }
   }
 }
 
 impl TypeKind {
   pub fn is_scalar(self) -> bool {
-    self.0 >= 1 && self.0 <= 19
+    matches!(
+      self,
+      Self::Bool
+        | Self::Byte
+        | Self::Int8
+        | Self::Int16
+        | Self::Uint16
+        | Self::Int32
+        | Self::Uint32
+        | Self::Int64
+        | Self::Uint64
+        | Self::Int128
+        | Self::Uint128
+        | Self::Float16
+        | Self::Float32
+        | Self::Float64
+        | Self::Bfloat16
+        | Self::String
+        | Self::Uuid
+        | Self::Timestamp
+        | Self::Duration
+    )
   }
 }
 
