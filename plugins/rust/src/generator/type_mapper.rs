@@ -359,8 +359,13 @@ pub fn write_expression(
           writer, size, value
         ))
       } else {
-        // General: write each element
-        let inner = write_expression(elem, "_el", writer)?;
+        // General: write each element — iter() yields &T, dereference for by-value methods
+        let elem_val = if scalar_write_method(elem_kind).is_some() && !scalar_needs_ref(elem_kind) {
+          "*_el"
+        } else {
+          "_el"
+        };
+        let inner = write_expression(elem, elem_val, writer)?;
         Ok(format!("for _el in {}.iter() {{ {} }}", value, inner))
       }
     }
@@ -373,8 +378,21 @@ pub fn write_expression(
         .map_value
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
-      let k_write = write_expression(key, "_k", "_w")?;
-      let v_write = write_expression(val, "_v", "_w")?;
+      // Map callbacks receive (&K, &V) — dereference scalars
+      let k_kind = key.kind.unwrap_or(TypeKind::Unknown);
+      let v_kind = val.kind.unwrap_or(TypeKind::Unknown);
+      let k_val = if scalar_write_method(k_kind).is_some() && !scalar_needs_ref(k_kind) {
+        "*_k"
+      } else {
+        "_k"
+      };
+      let v_val = if scalar_write_method(v_kind).is_some() && !scalar_needs_ref(v_kind) {
+        "*_v"
+      } else {
+        "_v"
+      };
+      let k_write = write_expression(key, k_val, "_w")?;
+      let v_write = write_expression(val, v_val, "_w")?;
       Ok(format!(
         "{}.write_map(&{}, |_w, _k, _v| {{ {}; {}; }})",
         writer, value, k_write, v_write
@@ -736,7 +754,13 @@ pub fn write_expression_cow(
           writer, size, value
         ))
       } else {
-        let inner = write_expression_cow(elem, "_el", writer, analysis)?;
+        // iter() yields &T — dereference for scalar write methods that take T by value
+        let elem_val = if scalar_write_method(elem_kind).is_some() && !scalar_needs_ref(elem_kind) {
+          "*_el"
+        } else {
+          "_el"
+        };
+        let inner = write_expression_cow(elem, elem_val, writer, analysis)?;
         Ok(format!("for _el in {}.iter() {{ {} }}", value, inner))
       }
     }
@@ -749,8 +773,21 @@ pub fn write_expression_cow(
         .map_value
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
-      let k_write = write_expression_cow(key, "_k", "_w", analysis)?;
-      let v_write = write_expression_cow(val, "_v", "_w", analysis)?;
+      // Map callbacks receive (&K, &V) — dereference scalars that write methods take by value
+      let k_kind = key.kind.unwrap_or(TypeKind::Unknown);
+      let v_kind = val.kind.unwrap_or(TypeKind::Unknown);
+      let k_val = if scalar_write_method(k_kind).is_some() && !scalar_needs_ref(k_kind) {
+        "*_k"
+      } else {
+        "_k"
+      };
+      let v_val = if scalar_write_method(v_kind).is_some() && !scalar_needs_ref(v_kind) {
+        "*_v"
+      } else {
+        "_v"
+      };
+      let k_write = write_expression_cow(key, k_val, "_w", analysis)?;
+      let v_write = write_expression_cow(val, v_val, "_w", analysis)?;
       Ok(format!(
         "{}.write_map(&{}, |_w, _k, _v| {{ {}; {}; }})",
         writer, value, k_write, v_write
@@ -917,7 +954,7 @@ pub fn into_owned_expression(td: &TypeDescriptor, value: &str, analysis: &Lifeti
     }
     TypeKind::Defined => {
       if let Some(ref fqn) = td.defined_fqn {
-        if analysis.lifetime_fqns.contains(fqn) {
+        if analysis.lifetime_fqns.contains(&**fqn) {
           return Ok(format!("{}.into_owned()", value));
         }
       }

@@ -53,7 +53,7 @@ impl TypeKind {
   }
 }
 
-impl std::fmt::Display for Version {
+impl std::fmt::Display for Version<'_> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{}.{}.{}", self.major, self.minor, self.patch)?;
     if !self.suffix.is_empty() {
