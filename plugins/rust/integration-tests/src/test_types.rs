@@ -13,7 +13,8 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
-use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, DecodeError, F16, BF16};
+use std::mem::size_of;
+use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, F16, BF16};
 
 /// Simple enum with uint8 base type.
 #[repr(u8)]
@@ -24,8 +25,6 @@ pub enum Color {
   Green = 2,
   Blue = 3,
 }
-
-pub type ColorOwned = Color;
 
 impl std::convert::TryFrom<u8> for Color {
   type Error = DecodeError;
@@ -44,14 +43,16 @@ impl From<Color> for u8 {
   fn from(value: Color) -> u8 { value as u8 }
 }
 
-impl BebopEncode for Color {
-  const FIXED_ENCODED_SIZE: Option<usize> = Some(1);
+impl Color {
+  pub const FIXED_ENCODED_SIZE: usize = 1;
+}
 
+impl BebopEncode for Color {
   fn encode(&self, writer: &mut BebopWriter) {
     writer.write_byte(*self as u8);
   }
 
-  fn encoded_size(&self) -> usize { 1 }
+  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
 }
 
 impl<'buf> BebopDecode<'buf> for Color {
@@ -63,10 +64,9 @@ impl<'buf> BebopDecode<'buf> for Color {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Permissions(pub u8);
 
-pub type PermissionsOwned = Permissions;
-
 #[allow(non_upper_case_globals)]
 impl Permissions {
+  pub const FIXED_ENCODED_SIZE: usize = 1;
   pub const NONE: Self = Self(0);
   pub const READ: Self = Self(1);
   pub const WRITE: Self = Self(2);
@@ -74,75 +74,21 @@ impl Permissions {
   pub const ALL: Self = Self(7);
 }
 
-impl Permissions {
-  pub fn empty() -> Self { Self(0) }
-  pub fn all() -> Self { Self(7) }
-  pub fn bits(self) -> u8 { self.0 }
-  pub fn from_bits(bits: u8) -> Option<Self> {
-    if bits & !Self::all().0 == 0 { Some(Self(bits)) } else { None }
-  }
-  pub fn from_bits_truncate(bits: u8) -> Self { Self(bits & Self::all().0) }
-  pub fn is_empty(self) -> bool { self.0 == 0 }
-  pub fn is_all(self) -> bool { self.0 == Self::all().0 }
-  pub fn contains(self, other: Self) -> bool { (self.0 & other.0) == other.0 }
-  pub fn intersects(self, other: Self) -> bool { (self.0 & other.0) != 0 }
-  pub fn insert(&mut self, other: Self) { self.0 |= other.0; }
-  pub fn remove(&mut self, other: Self) { self.0 &= !other.0; }
-  pub fn toggle(&mut self, other: Self) { self.0 ^= other.0; }
+impl BebopFlags for Permissions {
+  type Bits = u8;
+  const ALL_BITS: Self::Bits = 7;
+  fn bits(self) -> Self::Bits { self.0 }
+  fn from_bits_retain(bits: Self::Bits) -> Self { Self(bits) }
 }
 
-impl BebopEncode for Permissions {
-  const FIXED_ENCODED_SIZE: Option<usize> = Some(1);
-
-  fn encode(&self, writer: &mut BebopWriter) {
-    writer.write_byte(self.0);
-  }
-
-  fn encoded_size(&self) -> usize { 1 }
-}
-
-impl<'buf> BebopDecode<'buf> for Permissions {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
-    Ok(Self(reader.read_byte()?))
-  }
-}
-
-impl std::ops::BitOr for Permissions {
-  type Output = Self;
-  fn bitor(self, rhs: Self) -> Self { Self(self.0 | rhs.0) }
-}
-
-impl std::ops::BitOrAssign for Permissions {
-  fn bitor_assign(&mut self, rhs: Self) { self.0 |= rhs.0; }
-}
-
-impl std::ops::BitAnd for Permissions {
-  type Output = Self;
-  fn bitand(self, rhs: Self) -> Self { Self(self.0 & rhs.0) }
-}
-
-impl std::ops::BitAndAssign for Permissions {
-  fn bitand_assign(&mut self, rhs: Self) { self.0 &= rhs.0; }
-}
-
-impl std::ops::BitXor for Permissions {
-  type Output = Self;
-  fn bitxor(self, rhs: Self) -> Self { Self(self.0 ^ rhs.0) }
-}
-
-impl std::ops::BitXorAssign for Permissions {
-  fn bitxor_assign(&mut self, rhs: Self) { self.0 ^= rhs.0; }
-}
-
-impl std::ops::Not for Permissions {
-  type Output = Self;
-  fn not(self) -> Self { Self(!self.0) }
-}
-
-impl std::ops::Sub for Permissions {
-  type Output = Self;
-  fn sub(self, rhs: Self) -> Self { Self(self.0 & !rhs.0) }
-}
+impl std::ops::BitOr for Permissions { type Output = Self; fn bitor(self, rhs: Self) -> Self { Self(self.0 | rhs.0) } }
+impl std::ops::BitOrAssign for Permissions { fn bitor_assign(&mut self, rhs: Self) { self.0 |= rhs.0; } }
+impl std::ops::BitAnd for Permissions { type Output = Self; fn bitand(self, rhs: Self) -> Self { Self(self.0 & rhs.0) } }
+impl std::ops::BitAndAssign for Permissions { fn bitand_assign(&mut self, rhs: Self) { self.0 &= rhs.0; } }
+impl std::ops::BitXor for Permissions { type Output = Self; fn bitxor(self, rhs: Self) -> Self { Self(self.0 ^ rhs.0) } }
+impl std::ops::BitXorAssign for Permissions { fn bitxor_assign(&mut self, rhs: Self) { self.0 ^= rhs.0; } }
+impl std::ops::Not for Permissions { type Output = Self; fn not(self) -> Self { Self(!self.0) } }
+impl std::ops::Sub for Permissions { type Output = Self; fn sub(self, rhs: Self) -> Self { Self(self.0 & !rhs.0) } }
 
 /// Fixed-size struct (all scalar fields).
 #[derive(Debug, Clone)]
@@ -151,9 +97,9 @@ pub struct Point {
   pub y: f32,
 }
 
-pub type PointOwned = Point;
-
 impl Point {
+  pub const FIXED_ENCODED_SIZE: usize = 8;
+
   pub fn new(x: f32, y: f32) -> Self {
     Self {
       x,
@@ -163,15 +109,13 @@ impl Point {
 }
 
 impl BebopEncode for Point {
-  const FIXED_ENCODED_SIZE: Option<usize> = Some(8);
-
   fn encode(&self, writer: &mut BebopWriter) {
     writer.write_f32(self.x);
     writer.write_f32(self.y);
   }
 
   fn encoded_size(&self) -> usize {
-    8
+    Self::FIXED_ENCODED_SIZE
   }
 }
 
@@ -194,9 +138,9 @@ pub struct Pixel {
   pub alpha: u8,
 }
 
-pub type PixelOwned = Pixel;
-
 impl Pixel {
+  pub const FIXED_ENCODED_SIZE: usize = 10;
+
   pub fn new(position: Point, color: Color, alpha: u8) -> Self {
     Self {
       position,
@@ -207,8 +151,6 @@ impl Pixel {
 }
 
 impl BebopEncode for Pixel {
-  const FIXED_ENCODED_SIZE: Option<usize> = Some(10);
-
   fn encode(&self, writer: &mut BebopWriter) {
     self.position.encode(writer);
     self.color.encode(writer);
@@ -216,7 +158,7 @@ impl BebopEncode for Pixel {
   }
 
   fn encoded_size(&self) -> usize {
-    10
+    Self::FIXED_ENCODED_SIZE
   }
 }
 
@@ -242,17 +184,17 @@ pub struct Person<'buf> {
 
 pub type PersonOwned = Person<'static>;
 
-impl Person<'_> {
-  pub fn new(name: String, age: u32) -> Self {
+impl<'buf> Person<'buf> {
+  pub fn new(name: impl Into<Cow<'buf, str>>, age: u32) -> Self {
     Self {
-      name: Cow::Owned(name),
+      name: name.into(),
       age,
     }
   }
 }
 
 impl<'buf> Person<'buf> {
-  pub fn into_owned(self) -> Person<'static> {
+  pub fn into_owned(self) -> PersonOwned {
     Person {
       name: Cow::Owned(self.name.into_owned()),
       age: self.age,
@@ -267,7 +209,7 @@ impl<'buf> BebopEncode for Person<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    4 + self.name.len() + 1 + 4
+    size_of::<u32>() + self.name.len() + size_of::<u8>() + size_of::<u32>()
   }
 }
 
@@ -291,17 +233,17 @@ pub struct BinaryPayload<'buf> {
 
 pub type BinaryPayloadOwned = BinaryPayload<'static>;
 
-impl BinaryPayload<'_> {
-  pub fn new(tag: u32, data: Vec<u8>) -> Self {
+impl<'buf> BinaryPayload<'buf> {
+  pub fn new(tag: u32, data: impl Into<Cow<'buf, [u8]>>) -> Self {
     Self {
       tag,
-      data: Cow::Owned(data),
+      data: data.into(),
     }
   }
 }
 
 impl<'buf> BinaryPayload<'buf> {
-  pub fn into_owned(self) -> BinaryPayload<'static> {
+  pub fn into_owned(self) -> BinaryPayloadOwned {
     BinaryPayload {
       tag: self.tag,
       data: Cow::Owned(self.data.into_owned()),
@@ -316,7 +258,7 @@ impl<'buf> BebopEncode for BinaryPayload<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    4 + 4 + self.data.len()
+    size_of::<u32>() + size_of::<u32>() + self.data.len()
   }
 }
 
@@ -346,7 +288,7 @@ pub struct UserProfile<'buf> {
 pub type UserProfileOwned = UserProfile<'static>;
 
 impl<'buf> UserProfile<'buf> {
-  pub fn into_owned(self) -> UserProfile<'static> {
+  pub fn into_owned(self) -> UserProfileOwned {
     UserProfile {
       display_name: self.display_name.map(|v| Cow::Owned(v.into_owned())),
       email: self.email.map(|v| Cow::Owned(v.into_owned())),
@@ -395,27 +337,27 @@ impl<'buf> BebopEncode for UserProfile<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = 5usize; // 4-byte length prefix + end marker
+    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
     if let Some(ref v) = self.display_name {
-      size += 1 + 4 + v.len() + 1;
+      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
     }
     if let Some(ref v) = self.email {
-      size += 1 + 4 + v.len() + 1;
+      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
     }
     if let Some(v) = self.age {
-      size += 1 + 4;
+      size += size_of::<u8>() + size_of::<u32>();
     }
     if let Some(v) = self.active {
-      size += 1 + 1;
+      size += size_of::<u8>() + size_of::<bool>();
     }
     if let Some(ref v) = self.tags {
-      size += 1 + 4 + v.iter().map(|_el| 4 + _el.len() + 1).sum::<usize>();
+      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| size_of::<u32>() + _el.len() + size_of::<u8>()).sum::<usize>();
     }
     if let Some(ref v) = self.metadata {
-      size += 1 + 4 + v.iter().map(|(_k, _v)| 4 + _k.len() + 1 + 4 + _v.len() + 1).sum::<usize>();
+      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|(_k, _v)| size_of::<u32>() + _k.len() + size_of::<u8>() + size_of::<u32>() + _v.len() + size_of::<u8>()).sum::<usize>();
     }
     if let Some(ref v) = self.permissions {
-      size += 1 + v.encoded_size();
+      size += size_of::<u8>() + v.encoded_size();
     }
     size
   }
@@ -457,7 +399,7 @@ pub struct DrawCommand<'buf> {
 pub type DrawCommandOwned = DrawCommand<'static>;
 
 impl<'buf> DrawCommand<'buf> {
-  pub fn into_owned(self) -> DrawCommand<'static> {
+  pub fn into_owned(self) -> DrawCommandOwned {
     DrawCommand {
       target: self.target,
       color: self.color,
@@ -491,18 +433,18 @@ impl<'buf> BebopEncode for DrawCommand<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = 5usize; // 4-byte length prefix + end marker
+    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
     if let Some(ref v) = self.target {
-      size += 1 + v.encoded_size();
+      size += size_of::<u8>() + v.encoded_size();
     }
     if let Some(ref v) = self.color {
-      size += 1 + v.encoded_size();
+      size += size_of::<u8>() + v.encoded_size();
     }
     if let Some(ref v) = self.label {
-      size += 1 + 4 + v.len() + 1;
+      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
     }
     if let Some(v) = self.thickness {
-      size += 1 + 4;
+      size += size_of::<u8>() + size_of::<f32>();
     }
     size
   }
@@ -538,17 +480,17 @@ pub struct TextLabel<'buf> {
 
 pub type TextLabelOwned = TextLabel<'static>;
 
-impl TextLabel<'_> {
-  pub fn new(position: Point, text: String) -> Self {
+impl<'buf> TextLabel<'buf> {
+  pub fn new(position: Point, text: impl Into<Cow<'buf, str>>) -> Self {
     Self {
       position,
-      text: Cow::Owned(text),
+      text: text.into(),
     }
   }
 }
 
 impl<'buf> TextLabel<'buf> {
-  pub fn into_owned(self) -> TextLabel<'static> {
+  pub fn into_owned(self) -> TextLabelOwned {
     TextLabel {
       position: self.position,
       text: Cow::Owned(self.text.into_owned()),
@@ -563,7 +505,7 @@ impl<'buf> BebopEncode for TextLabel<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    self.position.encoded_size() + 4 + self.text.len() + 1
+    self.position.encoded_size() + size_of::<u32>() + self.text.len() + size_of::<u8>()
   }
 }
 
@@ -590,7 +532,7 @@ pub enum Shape<'buf> {
 pub type ShapeOwned = Shape<'static>;
 
 impl<'buf> Shape<'buf> {
-  pub fn into_owned(self) -> Shape<'static> {
+  pub fn into_owned(self) -> ShapeOwned {
     match self {
       Self::Point(inner) => Shape::Point(inner),
       Self::Pixel(inner) => Shape::Pixel(inner),
@@ -613,11 +555,11 @@ impl<'buf> BebopEncode for Shape<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    4 + match self {
-      Self::Point(inner) => 1 + inner.encoded_size(),
-      Self::Pixel(inner) => 1 + inner.encoded_size(),
-      Self::Label(inner) => 1 + inner.encoded_size(),
-      Self::Unknown(_, data) => 1 + data.len(),
+    size_of::<u32>() + match self {
+      Self::Point(inner) => size_of::<u8>() + inner.encoded_size(),
+      Self::Pixel(inner) => size_of::<u8>() + inner.encoded_size(),
+      Self::Label(inner) => size_of::<u8>() + inner.encoded_size(),
+      Self::Unknown(_, data) => size_of::<u8>() + data.len(),
     }
   }
 }
@@ -646,9 +588,9 @@ pub struct Matrix2x2 {
   pub values: [f32; 4],
 }
 
-pub type Matrix2x2Owned = Matrix2x2;
-
 impl Matrix2x2 {
+  pub const FIXED_ENCODED_SIZE: usize = 16;
+
   pub fn new(values: [f32; 4]) -> Self {
     Self {
       values,
@@ -657,14 +599,12 @@ impl Matrix2x2 {
 }
 
 impl BebopEncode for Matrix2x2 {
-  const FIXED_ENCODED_SIZE: Option<usize> = Some(16);
-
   fn encode(&self, writer: &mut BebopWriter) {
     for _el in self.values.iter() { writer.write_f32(*_el) };
   }
 
   fn encoded_size(&self) -> usize {
-    16
+    Self::FIXED_ENCODED_SIZE
   }
 }
 
@@ -688,19 +628,19 @@ pub struct Address<'buf> {
 
 pub type AddressOwned = Address<'static>;
 
-impl Address<'_> {
-  pub fn new(street: String, city: String, country: String, zip_code: String) -> Self {
+impl<'buf> Address<'buf> {
+  pub fn new(street: impl Into<Cow<'buf, str>>, city: impl Into<Cow<'buf, str>>, country: impl Into<Cow<'buf, str>>, zip_code: impl Into<Cow<'buf, str>>) -> Self {
     Self {
-      street: Cow::Owned(street),
-      city: Cow::Owned(city),
-      country: Cow::Owned(country),
-      zip_code: Cow::Owned(zip_code),
+      street: street.into(),
+      city: city.into(),
+      country: country.into(),
+      zip_code: zip_code.into(),
     }
   }
 }
 
 impl<'buf> Address<'buf> {
-  pub fn into_owned(self) -> Address<'static> {
+  pub fn into_owned(self) -> AddressOwned {
     Address {
       street: Cow::Owned(self.street.into_owned()),
       city: Cow::Owned(self.city.into_owned()),
@@ -719,7 +659,7 @@ impl<'buf> BebopEncode for Address<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    4 + self.street.len() + 1 + 4 + self.city.len() + 1 + 4 + self.country.len() + 1 + 4 + self.zip_code.len() + 1
+    size_of::<u32>() + self.street.len() + size_of::<u8>() + size_of::<u32>() + self.city.len() + size_of::<u8>() + size_of::<u32>() + self.country.len() + size_of::<u8>() + size_of::<u32>() + self.zip_code.len() + size_of::<u8>()
   }
 }
 
@@ -749,7 +689,7 @@ pub struct Scene<'buf> {
 pub type SceneOwned = Scene<'static>;
 
 impl<'buf> Scene<'buf> {
-  pub fn into_owned(self) -> Scene<'static> {
+  pub fn into_owned(self) -> SceneOwned {
     Scene {
       shapes: self.shapes.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
       background: self.background,
@@ -778,15 +718,15 @@ impl<'buf> BebopEncode for Scene<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = 5usize; // 4-byte length prefix + end marker
+    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
     if let Some(ref v) = self.shapes {
-      size += 1 + 4 + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
     }
     if let Some(ref v) = self.background {
-      size += 1 + v.encoded_size();
+      size += size_of::<u8>() + v.encoded_size();
     }
     if let Some(ref v) = self.title {
-      size += 1 + 4 + v.len() + 1;
+      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
     }
     size
   }
@@ -822,7 +762,7 @@ pub struct Inventory<'buf> {
 pub type InventoryOwned = Inventory<'static>;
 
 impl<'buf> Inventory<'buf> {
-  pub fn into_owned(self) -> Inventory<'static> {
+  pub fn into_owned(self) -> InventoryOwned {
     Inventory {
       items: self.items.map(|v| v.into_iter().map(|(_k, _v)| (Cow::Owned(_k.into_owned()), _v)).collect()),
       label: self.label.map(|v| Cow::Owned(v.into_owned())),
@@ -846,12 +786,12 @@ impl<'buf> BebopEncode for Inventory<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = 5usize; // 4-byte length prefix + end marker
+    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
     if let Some(ref v) = self.items {
-      size += 1 + 4 + v.iter().map(|(_k, _v)| 4 + _k.len() + 1 + 4).sum::<usize>();
+      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|(_k, _v)| size_of::<u32>() + _k.len() + size_of::<u8>() + size_of::<u32>()).sum::<usize>();
     }
     if let Some(ref v) = self.label {
-      size += 1 + 4 + v.len() + 1;
+      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
     }
     size
   }
@@ -885,7 +825,7 @@ pub struct EmptyMessage<'buf> {
 pub type EmptyMessageOwned = EmptyMessage<'static>;
 
 impl<'buf> EmptyMessage<'buf> {
-  pub fn into_owned(self) -> EmptyMessage<'static> {
+  pub fn into_owned(self) -> EmptyMessageOwned {
     EmptyMessage {
       unused_field: self.unused_field.map(|v| Cow::Owned(v.into_owned())),
     }
@@ -904,9 +844,9 @@ impl<'buf> BebopEncode for EmptyMessage<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = 5usize; // 4-byte length prefix + end marker
+    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
     if let Some(ref v) = self.unused_field {
-      size += 1 + 4 + v.len() + 1;
+      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
     }
     size
   }

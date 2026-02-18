@@ -419,6 +419,32 @@ pub fn fixed_size(kind: TypeKind) -> Option<usize> {
   }
 }
 
+/// Return a constant expression for the fixed byte size of a scalar type.
+///
+/// This is used in generated `encoded_size()` expressions to avoid magic numbers.
+pub fn fixed_size_expr(kind: TypeKind) -> Option<&'static str> {
+  match kind {
+    TypeKind::Bool => Some("size_of::<bool>()"),
+    TypeKind::Byte => Some("size_of::<u8>()"),
+    TypeKind::Int8 => Some("size_of::<i8>()"),
+    TypeKind::Int16 => Some("size_of::<i16>()"),
+    TypeKind::Uint16 => Some("size_of::<u16>()"),
+    TypeKind::Int32 => Some("size_of::<i32>()"),
+    TypeKind::Uint32 => Some("size_of::<u32>()"),
+    TypeKind::Int64 => Some("size_of::<i64>()"),
+    TypeKind::Uint64 => Some("size_of::<u64>()"),
+    TypeKind::Int128 => Some("size_of::<i128>()"),
+    TypeKind::Uint128 => Some("size_of::<u128>()"),
+    TypeKind::Float16 => Some("size_of::<F16>()"),
+    TypeKind::Bfloat16 => Some("size_of::<BF16>()"),
+    TypeKind::Float32 => Some("size_of::<f32>()"),
+    TypeKind::Float64 => Some("size_of::<f64>()"),
+    TypeKind::Uuid => Some("size_of::<[u8; 16]>()"),
+    TypeKind::Timestamp | TypeKind::Duration => Some("size_of::<i64>() + size_of::<i32>()"),
+    _ => None,
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // Cow-aware functions for zero-copy code generation
 // ═══════════════════════════════════════════════════════════════════
@@ -808,14 +834,14 @@ pub fn encoded_size_expression(td: &TypeDescriptor, value: &str, analysis: &Life
     .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
 
   // Fixed-size scalars
-  if let Some(sz) = fixed_size(kind) {
-    return Ok(format!("{}", sz));
+  if let Some(sz_expr) = fixed_size_expr(kind) {
+    return Ok(sz_expr.to_string());
   }
 
   match kind {
     TypeKind::String => {
       // 4-byte length prefix + UTF-8 bytes + NUL terminator
-      Ok(format!("4 + {}.len() + 1", value))
+      Ok(format!("size_of::<u32>() + {}.len() + size_of::<u8>()", value))
     }
     TypeKind::Array => {
       let elem = td
@@ -824,17 +850,17 @@ pub fn encoded_size_expression(td: &TypeDescriptor, value: &str, analysis: &Life
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
       // Byte array: 4-byte length prefix + bytes
       if elem.kind == Some(TypeKind::Byte) {
-        return Ok(format!("4 + {}.len()", value));
+        return Ok(format!("size_of::<u32>() + {}.len()", value));
       }
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
-      if let Some(sz) = fixed_size(elem_kind) {
+      if let Some(sz_expr) = fixed_size_expr(elem_kind) {
         // Fixed-size elements: 4 + count * elem_size
-        Ok(format!("4 + {}.len() * {}", value, sz))
+        Ok(format!("size_of::<u32>() + {}.len() * ({})", value, sz_expr))
       } else {
         // Variable-size elements
         let inner = encoded_size_expression(elem, "_el", analysis)?;
         Ok(format!(
-          "4 + {}.iter().map(|_el| {}).sum::<usize>()",
+          "size_of::<u32>() + {}.iter().map(|_el| {}).sum::<usize>()",
           value, inner
         ))
       }
@@ -848,8 +874,8 @@ pub fn encoded_size_expression(td: &TypeDescriptor, value: &str, analysis: &Life
         .fixed_array_size
         .ok_or_else(|| GeneratorError::MalformedType("fixed array missing size".into()))?;
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
-      if let Some(sz) = fixed_size(elem_kind) {
-        Ok(format!("{}", size as usize * sz))
+      if let Some(sz_expr) = fixed_size_expr(elem_kind) {
+        Ok(format!("{}usize * ({})", size as usize, sz_expr))
       } else {
         let inner = encoded_size_expression(elem, "_el", analysis)?;
         Ok(format!(
@@ -870,7 +896,7 @@ pub fn encoded_size_expression(td: &TypeDescriptor, value: &str, analysis: &Life
       let k_size = encoded_size_expression(key, "_k", analysis)?;
       let v_size = encoded_size_expression(val, "_v", analysis)?;
       Ok(format!(
-        "4 + {}.iter().map(|(_k, _v)| {} + {}).sum::<usize>()",
+        "size_of::<u32>() + {}.iter().map(|(_k, _v)| {} + {}).sum::<usize>()",
         value, k_size, v_size
       ))
     }
@@ -954,7 +980,7 @@ pub fn into_owned_expression(td: &TypeDescriptor, value: &str, analysis: &Lifeti
     }
     TypeKind::Defined => {
       if let Some(ref fqn) = td.defined_fqn {
-        if analysis.lifetime_fqns.contains(&**fqn) {
+        if analysis.lifetime_fqns.contains(fqn.as_ref()) {
           return Ok(format!("{}.into_owned()", value));
         }
       }
