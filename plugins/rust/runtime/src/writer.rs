@@ -138,6 +138,13 @@ impl BebopWriter {
     self.buf.push(0);
   }
 
+  // ── Raw bytes ──────────────────────────────────────────────
+
+  /// Write raw bytes without a length prefix.
+  pub fn write_raw(&mut self, v: &[u8]) {
+    self.buf.extend_from_slice(v);
+  }
+
   // ── Collections ─────────────────────────────────────────────
 
   /// Write an array: u32 count + elements.
