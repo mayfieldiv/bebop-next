@@ -234,9 +234,7 @@ pub fn generate(
 
   // encoded_size()
   output.push_str("  fn encoded_size(&self) -> usize {\n");
-  output.push_str(
-    "    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker\n",
-  );
+  output.push_str("    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;\n");
   for (i, f) in fields.iter().enumerate() {
     let meta = &field_metas[i];
     let td = f.r#type.as_ref().unwrap();
@@ -249,7 +247,7 @@ pub fn generate(
           meta.fname
         ));
         let size_expr = type_mapper::encoded_size_expression(td, "v", analysis)?;
-        output.push_str(&format!("      size += size_of::<u8>() + {};\n", size_expr));
+        output.push_str(&format!("      size += wire::tagged_size({});\n", size_expr));
         output.push_str("    }\n");
       }
       _ => {
@@ -260,7 +258,7 @@ pub fn generate(
         if is_scalar_copy {
           output.push_str(&format!("    if let Some(v) = self.{} {{\n", meta.fname));
           let size_expr = type_mapper::encoded_size_expression(td, "v", analysis)?;
-          output.push_str(&format!("      size += size_of::<u8>() + {};\n", size_expr));
+          output.push_str(&format!("      size += wire::tagged_size({});\n", size_expr));
           output.push_str("    }\n");
         } else {
           output.push_str(&format!(
@@ -268,7 +266,7 @@ pub fn generate(
             meta.fname
           ));
           let size_expr = type_mapper::encoded_size_expression(td, "v", analysis)?;
-          output.push_str(&format!("      size += size_of::<u8>() + {};\n", size_expr));
+          output.push_str(&format!("      size += wire::tagged_size({});\n", size_expr));
           output.push_str("    }\n");
         }
       }
