@@ -240,4 +240,32 @@ impl<'a> BebopReader<'a> {
     let count = self.read_u32()? as usize;
     self.read_bytes(count)
   }
+
+  // ── Zero-copy methods ────────────────────────────────────────
+
+  /// Read a Bebop string as a borrowed `&str` (zero-copy).
+  /// Same wire format as `read_string`: u32 byte_count + UTF-8 bytes + NUL.
+  pub fn read_str(&mut self) -> Result<&'a str> {
+    let len = self.read_u32()? as usize;
+    self.ensure(len + 1)?;
+    let str_bytes = &self.buf[self.pos..self.pos + len];
+    self.pos += len + 1; // advance past string bytes + NUL
+    std::str::from_utf8(str_bytes).map_err(|_| DecodeError::InvalidUtf8)
+  }
+
+  /// Read a byte array as a borrowed `&[u8]` (zero-copy).
+  /// Same wire format as `read_byte_array`: u32 count + bytes.
+  pub fn read_byte_slice(&mut self) -> Result<&'a [u8]> {
+    let count = self.read_u32()? as usize;
+    self.read_raw_bytes(count)
+  }
+
+  /// Read `count` raw bytes as a borrowed slice (zero-copy).
+  /// Like `read_bytes` but borrows instead of allocating.
+  pub fn read_raw_bytes(&mut self, count: usize) -> Result<&'a [u8]> {
+    self.ensure(count)?;
+    let slice = &self.buf[self.pos..self.pos + count];
+    self.pos += count;
+    Ok(slice)
+  }
 }
