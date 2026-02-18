@@ -13,7 +13,8 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
-use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, DecodeError, F16, BF16};
+use std::mem::size_of;
+use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, F16, BF16};
 use super::descriptor::*;
 
 /// Compiler version.
@@ -30,19 +31,19 @@ pub struct Version<'buf> {
 
 pub type VersionOwned = Version<'static>;
 
-impl Version<'_> {
-  pub fn new(major: i32, minor: i32, patch: i32, suffix: String) -> Self {
+impl<'buf> Version<'buf> {
+  pub fn new(major: i32, minor: i32, patch: i32, suffix: impl Into<Cow<'buf, str>>) -> Self {
     Self {
       major,
       minor,
       patch,
-      suffix: Cow::Owned(suffix),
+      suffix: suffix.into(),
     }
   }
 }
 
 impl<'buf> Version<'buf> {
-  pub fn into_owned(self) -> Version<'static> {
+  pub fn into_owned(self) -> VersionOwned {
     Version {
       major: self.major,
       minor: self.minor,
@@ -61,7 +62,7 @@ impl<'buf> BebopEncode for Version<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    4 + 4 + 4 + 4 + self.suffix.len() + 1
+    size_of::<i32>() + size_of::<i32>() + size_of::<i32>() + size_of::<u32>() + self.suffix.len() + size_of::<u8>()
   }
 }
 
@@ -109,7 +110,7 @@ pub struct CodeGeneratorRequest<'buf> {
 pub type CodeGeneratorRequestOwned = CodeGeneratorRequest<'static>;
 
 impl<'buf> CodeGeneratorRequest<'buf> {
-  pub fn into_owned(self) -> CodeGeneratorRequest<'static> {
+  pub fn into_owned(self) -> CodeGeneratorRequestOwned {
     CodeGeneratorRequest {
       files_to_generate: self.files_to_generate.map(|v| v.into_iter().map(|_e| Cow::Owned(_e.into_owned())).collect()),
       parameter: self.parameter.map(|v| Cow::Owned(v.into_owned())),
@@ -148,21 +149,21 @@ impl<'buf> BebopEncode for CodeGeneratorRequest<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = 5usize; // 4-byte length prefix + end marker
+    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
     if let Some(ref v) = self.files_to_generate {
-      size += 1 + 4 + v.iter().map(|_el| 4 + _el.len() + 1).sum::<usize>();
+      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| size_of::<u32>() + _el.len() + size_of::<u8>()).sum::<usize>();
     }
     if let Some(ref v) = self.parameter {
-      size += 1 + 4 + v.len() + 1;
+      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
     }
     if let Some(ref v) = self.compiler_version {
-      size += 1 + v.encoded_size();
+      size += size_of::<u8>() + v.encoded_size();
     }
     if let Some(ref v) = self.schemas {
-      size += 1 + 4 + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
     }
     if let Some(ref v) = self.host_options {
-      size += 1 + 4 + v.iter().map(|(_k, _v)| 4 + _k.len() + 1 + 4 + _v.len() + 1).sum::<usize>();
+      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|(_k, _v)| size_of::<u32>() + _k.len() + size_of::<u8>() + size_of::<u32>() + _v.len() + size_of::<u8>()).sum::<usize>();
     }
     size
   }
@@ -200,8 +201,6 @@ pub enum DiagnosticSeverity {
   Hint = 3,
 }
 
-pub type DiagnosticSeverityOwned = DiagnosticSeverity;
-
 impl std::convert::TryFrom<u8> for DiagnosticSeverity {
   type Error = DecodeError;
   fn try_from(value: u8) -> Result<Self, DecodeError> {
@@ -219,14 +218,16 @@ impl From<DiagnosticSeverity> for u8 {
   fn from(value: DiagnosticSeverity) -> u8 { value as u8 }
 }
 
-impl BebopEncode for DiagnosticSeverity {
-  const FIXED_ENCODED_SIZE: Option<usize> = Some(1);
+impl DiagnosticSeverity {
+  pub const FIXED_ENCODED_SIZE: usize = 1;
+}
 
+impl BebopEncode for DiagnosticSeverity {
   fn encode(&self, writer: &mut BebopWriter) {
     writer.write_byte(*self as u8);
   }
 
-  fn encoded_size(&self) -> usize { 1 }
+  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
 }
 
 impl<'buf> BebopDecode<'buf> for DiagnosticSeverity {
@@ -255,7 +256,7 @@ pub struct Diagnostic<'buf> {
 pub type DiagnosticOwned = Diagnostic<'static>;
 
 impl<'buf> Diagnostic<'buf> {
-  pub fn into_owned(self) -> Diagnostic<'static> {
+  pub fn into_owned(self) -> DiagnosticOwned {
     Diagnostic {
       severity: self.severity,
       text: self.text.map(|v| Cow::Owned(v.into_owned())),
@@ -294,21 +295,21 @@ impl<'buf> BebopEncode for Diagnostic<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = 5usize; // 4-byte length prefix + end marker
+    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
     if let Some(ref v) = self.severity {
-      size += 1 + v.encoded_size();
+      size += size_of::<u8>() + v.encoded_size();
     }
     if let Some(ref v) = self.text {
-      size += 1 + 4 + v.len() + 1;
+      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
     }
     if let Some(ref v) = self.hint {
-      size += 1 + 4 + v.len() + 1;
+      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
     }
     if let Some(ref v) = self.file {
-      size += 1 + 4 + v.len() + 1;
+      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
     }
     if let Some(ref v) = self.span {
-      size += 1 + 16;
+      size += size_of::<u8>() + 4usize * (size_of::<i32>());
     }
     size
   }
@@ -368,7 +369,7 @@ pub struct GeneratedFile<'buf> {
 pub type GeneratedFileOwned = GeneratedFile<'static>;
 
 impl<'buf> GeneratedFile<'buf> {
-  pub fn into_owned(self) -> GeneratedFile<'static> {
+  pub fn into_owned(self) -> GeneratedFileOwned {
     GeneratedFile {
       name: self.name.map(|v| Cow::Owned(v.into_owned())),
       insertion_point: self.insertion_point.map(|v| Cow::Owned(v.into_owned())),
@@ -402,18 +403,18 @@ impl<'buf> BebopEncode for GeneratedFile<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = 5usize; // 4-byte length prefix + end marker
+    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
     if let Some(ref v) = self.name {
-      size += 1 + 4 + v.len() + 1;
+      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
     }
     if let Some(ref v) = self.insertion_point {
-      size += 1 + 4 + v.len() + 1;
+      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
     }
     if let Some(ref v) = self.content {
-      size += 1 + 4 + v.len() + 1;
+      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
     }
     if let Some(ref v) = self.generated_code_info {
-      size += 1 + v.encoded_size();
+      size += size_of::<u8>() + v.encoded_size();
     }
     size
   }
@@ -469,7 +470,7 @@ pub struct CodeGeneratorResponse<'buf> {
 pub type CodeGeneratorResponseOwned = CodeGeneratorResponse<'static>;
 
 impl<'buf> CodeGeneratorResponse<'buf> {
-  pub fn into_owned(self) -> CodeGeneratorResponse<'static> {
+  pub fn into_owned(self) -> CodeGeneratorResponseOwned {
     CodeGeneratorResponse {
       error: self.error.map(|v| Cow::Owned(v.into_owned())),
       files: self.files.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
@@ -498,15 +499,15 @@ impl<'buf> BebopEncode for CodeGeneratorResponse<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = 5usize; // 4-byte length prefix + end marker
+    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
     if let Some(ref v) = self.error {
-      size += 1 + 4 + v.len() + 1;
+      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
     }
     if let Some(ref v) = self.files {
-      size += 1 + 4 + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
     }
     if let Some(ref v) = self.diagnostics {
-      size += 1 + 4 + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
     }
     size
   }

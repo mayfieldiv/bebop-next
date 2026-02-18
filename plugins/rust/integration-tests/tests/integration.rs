@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use bebop_runtime::{BebopDecode, BebopEncode};
+use bebop_runtime::{BebopDecode, BebopEncode, BebopFlags};
 
 use bebop_integration_tests::test_types::*;
 
@@ -19,7 +19,7 @@ fn enum_round_trip() {
 
 #[test]
 fn enum_fixed_encoded_size() {
-    assert_eq!(Color::FIXED_ENCODED_SIZE, Some(1));
+    assert_eq!(Color::FIXED_ENCODED_SIZE, 1);
     assert_eq!(Color::Red.encoded_size(), 1);
 }
 
@@ -41,13 +41,6 @@ fn enum_into_base_type() {
     assert_eq!(v, 3);
 }
 
-#[test]
-fn enum_type_alias() {
-    // ColorOwned is just Color (no lifetime parameter)
-    let c: ColorOwned = Color::Red;
-    assert_eq!(c, Color::Red);
-}
-
 // ═══════════════════════════════════════════════════════════════
 // Flags enum
 // ═══════════════════════════════════════════════════════════════
@@ -62,7 +55,7 @@ fn flags_round_trip() {
 
 #[test]
 fn flags_fixed_encoded_size() {
-    assert_eq!(Permissions::FIXED_ENCODED_SIZE, Some(1));
+    assert_eq!(Permissions::FIXED_ENCODED_SIZE, 1);
 }
 
 #[test]
@@ -128,7 +121,7 @@ fn fixed_struct_new_and_round_trip() {
 
 #[test]
 fn fixed_struct_fixed_encoded_size() {
-    assert_eq!(Point::FIXED_ENCODED_SIZE, Some(8));
+    assert_eq!(Point::FIXED_ENCODED_SIZE, 8);
     assert_eq!(Point::new(0.0, 0.0).encoded_size(), 8);
 }
 
@@ -136,12 +129,6 @@ fn fixed_struct_fixed_encoded_size() {
 fn fixed_struct_encoded_size_matches_actual() {
     let p = Point::new(3.14, 2.71);
     assert_eq!(p.encoded_size(), p.to_bytes().len());
-}
-
-#[test]
-fn fixed_struct_type_alias() {
-    // PointOwned is just Point (no lifetime)
-    let _p: PointOwned = Point::new(0.0, 0.0);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -162,7 +149,7 @@ fn composite_fixed_struct_round_trip() {
 #[test]
 fn composite_fixed_struct_fixed_encoded_size() {
     // Point(8) + Color(1) + u8(1) = 10
-    assert_eq!(Pixel::FIXED_ENCODED_SIZE, Some(10));
+    assert_eq!(Pixel::FIXED_ENCODED_SIZE, 10);
 }
 
 #[test]
@@ -177,16 +164,16 @@ fn composite_fixed_struct_encoded_size_matches() {
 
 #[test]
 fn string_struct_new_and_round_trip() {
-    let p = Person::new("Alice".to_string(), 30);
+    let p = Person::new("Alice", 30);
     let bytes = p.to_bytes();
     let p2 = Person::from_bytes(&bytes).unwrap();
-    assert_eq!(&*p2.name, "Alice");
+    assert_eq!(p2.name, "Alice");
     assert_eq!(p2.age, 30);
 }
 
 #[test]
 fn string_struct_zero_copy() {
-    let p = Person::new("Bob".to_string(), 25);
+    let p = Person::new("Bob", 25);
     let bytes = p.to_bytes();
     let decoded = Person::from_bytes(&bytes).unwrap();
     match &decoded.name {
@@ -197,13 +184,13 @@ fn string_struct_zero_copy() {
 
 #[test]
 fn string_struct_into_owned() {
-    let p = Person::new("Charlie".to_string(), 40);
+    let p = Person::new("Charlie", 40);
     let bytes = p.to_bytes();
     let decoded = Person::from_bytes(&bytes).unwrap();
 
     // Convert borrowed → owned, extending lifetime to 'static
     let owned: PersonOwned = decoded.into_owned();
-    assert_eq!(&*owned.name, "Charlie");
+    assert_eq!(owned.name.as_ref(), "Charlie");
     assert_eq!(owned.age, 40);
 
     // Verify it's now owned
@@ -215,20 +202,15 @@ fn string_struct_into_owned() {
 
 #[test]
 fn string_struct_encoded_size_matches() {
-    let p = Person::new("Hello, World!".to_string(), 99);
+    let p = Person::new("Hello, World!", 99);
     assert_eq!(p.encoded_size(), p.to_bytes().len());
-}
-
-#[test]
-fn string_struct_no_fixed_encoded_size() {
-    assert_eq!(<Person as BebopEncode>::FIXED_ENCODED_SIZE, None);
 }
 
 #[test]
 fn string_struct_type_alias() {
     // PersonOwned = Person<'static>
-    let p: PersonOwned = Person::new("Static".to_string(), 1);
-    assert_eq!(&*p.name, "Static");
+    let p: PersonOwned = Person::new("Static", 1);
+    assert_eq!(p.name.as_ref(), "Static");
 }
 
 #[test]
@@ -236,7 +218,7 @@ fn string_struct_empty_string() {
     let p = Person::new(String::new(), 0);
     let bytes = p.to_bytes();
     let p2 = Person::from_bytes(&bytes).unwrap();
-    assert_eq!(&*p2.name, "");
+    assert_eq!(p2.name.as_ref(), "");
     assert_eq!(p2.age, 0);
 }
 
@@ -250,7 +232,7 @@ fn byte_array_struct_round_trip() {
     let bytes = bp.to_bytes();
     let bp2 = BinaryPayload::from_bytes(&bytes).unwrap();
     assert_eq!(bp2.tag, 42);
-    assert_eq!(&*bp2.data, &[0xDE, 0xAD, 0xBE, 0xEF]);
+    assert_eq!(bp2.data.as_ref(), &[0xDE, 0xAD, 0xBE, 0xEF]);
 }
 
 #[test]
@@ -270,7 +252,7 @@ fn byte_array_struct_into_owned() {
     let bytes = bp.to_bytes();
     let decoded = BinaryPayload::from_bytes(&bytes).unwrap();
     let owned: BinaryPayloadOwned = decoded.into_owned();
-    assert_eq!(&*owned.data, &[9, 8, 7]);
+    assert_eq!(owned.data.as_ref(), &[9, 8, 7]);
     match &owned.data {
         Cow::Owned(_) => {}
         Cow::Borrowed(_) => panic!("expected Cow::Owned after into_owned"),
@@ -297,28 +279,18 @@ fn byte_array_struct_encoded_size_matches() {
 
 #[test]
 fn multi_string_struct_round_trip() {
-    let addr = Address::new(
-        "123 Main St".to_string(),
-        "Springfield".to_string(),
-        "US".to_string(),
-        "62704".to_string(),
-    );
+    let addr = Address::new("123 Main St", "Springfield", "US", "62704");
     let bytes = addr.to_bytes();
     let addr2 = Address::from_bytes(&bytes).unwrap();
-    assert_eq!(&*addr2.street, "123 Main St");
-    assert_eq!(&*addr2.city, "Springfield");
-    assert_eq!(&*addr2.country, "US");
-    assert_eq!(&*addr2.zip_code, "62704");
+    assert_eq!(addr2.street.as_ref(), "123 Main St");
+    assert_eq!(addr2.city.as_ref(), "Springfield");
+    assert_eq!(addr2.country.as_ref(), "US");
+    assert_eq!(addr2.zip_code.as_ref(), "62704");
 }
 
 #[test]
 fn multi_string_struct_all_fields_zero_copy() {
-    let addr = Address::new(
-        "A".to_string(),
-        "B".to_string(),
-        "C".to_string(),
-        "D".to_string(),
-    );
+    let addr = Address::new("A", "B", "C", "D");
     let bytes = addr.to_bytes();
     let decoded = Address::from_bytes(&bytes).unwrap();
     assert!(matches!(decoded.street, Cow::Borrowed(_)));
@@ -329,12 +301,7 @@ fn multi_string_struct_all_fields_zero_copy() {
 
 #[test]
 fn multi_string_struct_into_owned() {
-    let addr = Address::new(
-        "A".to_string(),
-        "B".to_string(),
-        "C".to_string(),
-        "D".to_string(),
-    );
+    let addr = Address::new("A", "B", "C", "D");
     let bytes = addr.to_bytes();
     let decoded = Address::from_bytes(&bytes).unwrap();
     let owned: AddressOwned = decoded.into_owned();
@@ -346,12 +313,7 @@ fn multi_string_struct_into_owned() {
 
 #[test]
 fn multi_string_struct_encoded_size_matches() {
-    let addr = Address::new(
-        "Long Street Name".to_string(),
-        "City".to_string(),
-        "Country".to_string(),
-        "12345".to_string(),
-    );
+    let addr = Address::new("Long Street Name", "City", "Country", "12345");
     assert_eq!(addr.encoded_size(), addr.to_bytes().len());
 }
 
@@ -370,7 +332,7 @@ fn fixed_array_struct_round_trip() {
 #[test]
 fn fixed_array_struct_fixed_encoded_size() {
     // 4 * f32(4 bytes) = 16
-    assert_eq!(Matrix2x2::FIXED_ENCODED_SIZE, Some(16));
+    assert_eq!(Matrix2x2::FIXED_ENCODED_SIZE, 16);
 }
 
 #[test]
@@ -454,11 +416,6 @@ fn message_encoded_size_matches() {
     assert_eq!(cmd.encoded_size(), cmd.to_bytes().len());
 }
 
-#[test]
-fn message_no_fixed_encoded_size() {
-    assert_eq!(<DrawCommand as BebopEncode>::FIXED_ENCODED_SIZE, None);
-}
-
 // ═══════════════════════════════════════════════════════════════
 // Message with complex field types
 // ═══════════════════════════════════════════════════════════════
@@ -474,8 +431,8 @@ fn message_with_string_array() {
     let p2 = UserProfile::from_bytes(&bytes).unwrap();
     let tags = p2.tags.as_ref().unwrap();
     assert_eq!(tags.len(), 2);
-    assert_eq!(&*tags[0], "rust");
-    assert_eq!(&*tags[1], "bebop");
+    assert_eq!(tags[0].as_ref(), "rust");
+    assert_eq!(tags[1].as_ref(), "bebop");
 }
 
 #[test]
@@ -496,8 +453,8 @@ fn message_with_string_map() {
     let p2 = UserProfile::from_bytes(&bytes).unwrap();
     let meta2 = p2.metadata.as_ref().unwrap();
     assert_eq!(meta2.len(), 2);
-    assert_eq!(&*meta2[&Cow::Borrowed("theme") as &Cow<str>], "dark");
-    assert_eq!(&*meta2[&Cow::Borrowed("lang") as &Cow<str>], "en");
+    assert_eq!(meta2["theme"].as_ref(), "dark");
+    assert_eq!(meta2["lang"].as_ref(), "en");
 }
 
 #[test]
@@ -631,16 +588,13 @@ fn union_composite_fixed_branch_round_trip() {
 
 #[test]
 fn union_variable_branch_round_trip() {
-    let shape = Shape::Label(TextLabel::new(
-        Point::new(0.0, 0.0),
-        "hello".to_string(),
-    ));
+    let shape = Shape::Label(TextLabel::new(Point::new(0.0, 0.0), "hello"));
     let bytes = shape.to_bytes();
     let shape2 = Shape::from_bytes(&bytes).unwrap();
     match shape2 {
         Shape::Label(lbl) => {
             assert_eq!(lbl.position.x, 0.0);
-            assert_eq!(&*lbl.text, "hello");
+            assert_eq!(lbl.text.as_ref(), "hello");
         }
         _ => panic!("expected Shape::Label"),
     }
@@ -648,10 +602,7 @@ fn union_variable_branch_round_trip() {
 
 #[test]
 fn union_zero_copy_in_variable_branch() {
-    let shape = Shape::Label(TextLabel::new(
-        Point::new(0.0, 0.0),
-        "borrowed".to_string(),
-    ));
+    let shape = Shape::Label(TextLabel::new(Point::new(0.0, 0.0), "borrowed"));
     let bytes = shape.to_bytes();
     let decoded = Shape::from_bytes(&bytes).unwrap();
     match &decoded {
@@ -664,17 +615,14 @@ fn union_zero_copy_in_variable_branch() {
 
 #[test]
 fn union_into_owned() {
-    let shape = Shape::Label(TextLabel::new(
-        Point::new(1.0, 2.0),
-        "owned_test".to_string(),
-    ));
+    let shape = Shape::Label(TextLabel::new(Point::new(1.0, 2.0), "owned_test"));
     let bytes = shape.to_bytes();
     let decoded = Shape::from_bytes(&bytes).unwrap();
     let owned: ShapeOwned = decoded.into_owned();
     match &owned {
         Shape::Label(lbl) => {
             assert!(matches!(lbl.text, Cow::Owned(_)));
-            assert_eq!(&*lbl.text, "owned_test");
+            assert_eq!(lbl.text.as_ref(), "owned_test");
         }
         _ => panic!("expected Shape::Label"),
     }
@@ -701,16 +649,11 @@ fn union_encoded_size_matches() {
     let shapes: Vec<Shape> = vec![
         Shape::Point(Point::new(1.0, 2.0)),
         Shape::Pixel(Pixel::new(Point::new(0.0, 0.0), Color::Red, 128)),
-        Shape::Label(TextLabel::new(Point::new(0.0, 0.0), "test".to_string())),
+        Shape::Label(TextLabel::new(Point::new(0.0, 0.0), "test")),
     ];
     for shape in shapes {
         assert_eq!(shape.encoded_size(), shape.to_bytes().len());
     }
-}
-
-#[test]
-fn union_no_fixed_encoded_size() {
-    assert_eq!(<Shape as BebopEncode>::FIXED_ENCODED_SIZE, None);
 }
 
 #[test]
@@ -757,10 +700,7 @@ fn scene_round_trip() {
     let mut scene = Scene::default();
     scene.shapes = Some(vec![
         Shape::Point(Point::new(1.0, 2.0)),
-        Shape::Label(TextLabel::new(
-            Point::new(3.0, 4.0),
-            "label".to_string(),
-        )),
+        Shape::Label(TextLabel::new(Point::new(3.0, 4.0), "label")),
     ]);
     scene.background = Some(Color::Blue);
     scene.title = Some(Cow::Owned("test scene".to_string()));
@@ -774,7 +714,7 @@ fn scene_round_trip() {
         _ => panic!("expected Point"),
     }
     match &shapes[1] {
-        Shape::Label(lbl) => assert_eq!(&*lbl.text, "label"),
+        Shape::Label(lbl) => assert_eq!(lbl.text.as_ref(), "label"),
         _ => panic!("expected Label"),
     }
     assert_eq!(scene2.background, Some(Color::Blue));
@@ -785,7 +725,7 @@ fn scene_round_trip() {
 fn scene_into_owned() {
     let mut scene = Scene::default();
     scene.shapes = Some(vec![
-        Shape::Label(TextLabel::new(Point::new(0.0, 0.0), "x".to_string())),
+        Shape::Label(TextLabel::new(Point::new(0.0, 0.0), "x")),
     ]);
     scene.title = Some(Cow::Owned("y".to_string()));
 
@@ -819,10 +759,10 @@ fn scene_encoded_size_matches() {
 fn owned_type_usable_as_borrowed() {
     // Person<'static> (PersonOwned) can be used where Person<'buf> is expected
     // because Cow<'static, str> is covariant over the lifetime
-    let owned: PersonOwned = Person::new("test".to_string(), 1);
+    let owned: PersonOwned = Person::new("test", 1);
 
     fn accepts_person(p: &Person) {
-        assert_eq!(&*p.name, "test");
+        assert_eq!(p.name.as_ref(), "test");
     }
 
     accepts_person(&owned);
@@ -831,13 +771,13 @@ fn owned_type_usable_as_borrowed() {
 #[test]
 fn borrowed_can_outlive_buffer_via_into_owned() {
     let owned: PersonOwned = {
-        let bytes = Person::new("temp".to_string(), 42).to_bytes();
+        let bytes = Person::new("temp", 42).to_bytes();
         let decoded = Person::from_bytes(&bytes).unwrap();
         decoded.into_owned()
         // bytes dropped here
     };
     // owned survives past the buffer's lifetime
-    assert_eq!(&*owned.name, "temp");
+    assert_eq!(owned.name.as_ref(), "temp");
     assert_eq!(owned.age, 42);
 }
 
@@ -849,12 +789,12 @@ fn constructing_cow_fields_directly() {
         name: Cow::Borrowed(name),
         age: 100,
     };
-    assert_eq!(&*p.name, "direct_borrow");
+    assert_eq!(p.name.as_ref(), "direct_borrow");
 
     // And it round-trips
     let bytes = p.to_bytes();
     let p2 = Person::from_bytes(&bytes).unwrap();
-    assert_eq!(&*p2.name, "direct_borrow");
+    assert_eq!(p2.name.as_ref(), "direct_borrow");
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -881,10 +821,10 @@ fn message_empty_map() {
 
 #[test]
 fn unicode_string_round_trip() {
-    let p = Person::new("Hello 世界 🌍".to_string(), 1);
+    let p = Person::new("Hello 世界 🌍", 1);
     let bytes = p.to_bytes();
     let p2 = Person::from_bytes(&bytes).unwrap();
-    assert_eq!(&*p2.name, "Hello 世界 🌍");
+    assert_eq!(p2.name.as_ref(), "Hello 世界 🌍");
 }
 
 #[test]
@@ -893,19 +833,19 @@ fn large_byte_array() {
     let bp = BinaryPayload::new(1, data.clone());
     let bytes = bp.to_bytes();
     let bp2 = BinaryPayload::from_bytes(&bytes).unwrap();
-    assert_eq!(&*bp2.data, &data[..]);
+    assert_eq!(bp2.data.as_ref(), &data[..]);
     assert_eq!(bp.encoded_size(), bytes.len());
 }
 
 #[test]
 fn multiple_decode_from_same_buffer() {
     // Decode the same buffer multiple times — all should borrow from it
-    let p = Person::new("shared".to_string(), 1);
+    let p = Person::new("shared", 1);
     let bytes = p.to_bytes();
 
     let d1 = Person::from_bytes(&bytes).unwrap();
     let d2 = Person::from_bytes(&bytes).unwrap();
-    assert_eq!(&*d1.name, &*d2.name);
+    assert_eq!(d1.name.as_ref(), d2.name.as_ref());
     assert!(matches!(d1.name, Cow::Borrowed(_)));
     assert!(matches!(d2.name, Cow::Borrowed(_)));
 }

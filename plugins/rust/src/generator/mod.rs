@@ -128,7 +128,7 @@ impl LifetimeAnalysis {
       }
       TypeKind::Defined => {
         if let Some(ref fqn) = td.defined_fqn {
-          self.lifetime_fqns.contains(&**fqn)
+          self.lifetime_fqns.contains(fqn.as_ref())
         } else {
           false
         }
@@ -186,7 +186,8 @@ impl<'a> RustGenerator<'a> {
     output.push_str("#![allow(warnings)]\n\n");
     output.push_str("use std::borrow::Cow;\n");
     output.push_str("use std::collections::HashMap;\n");
-    output.push_str("use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, DecodeError, F16, BF16};\n");
+    output.push_str("use std::mem::size_of;\n");
+    output.push_str("use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, F16, BF16};\n");
 
     // Cross-module imports for sibling schemas
     for stem in sibling_imports {
