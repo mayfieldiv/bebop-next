@@ -102,19 +102,28 @@ pub fn generate(
     }
   }
   output.push_str(") -> Self {\n");
-  output.push_str("    Self {\n");
+  let mut init_fields: Vec<String> = Vec::with_capacity(fields.len());
   for (i, f) in fields.iter().enumerate() {
     let td = f.r#type.as_ref().unwrap();
     if has_lifetime && type_mapper::is_cow_field(td) {
-      output.push_str(&format!("      {}: {}.into(),\n", fnames[i], fnames[i]));
+      output.push_str(&format!("    let {} = {}.into();\n", fnames[i], fnames[i]));
+      init_fields.push(fnames[i].clone());
     } else if type_mapper::is_cow_field(td) {
       // Defensive fallback for non-lifetime cases.
-      output.push_str(&format!("      {}: Cow::Owned({}),\n", fnames[i], fnames[i]));
+      output.push_str(&format!(
+        "    let {} = Cow::Owned({});\n",
+        fnames[i], fnames[i]
+      ));
+      init_fields.push(fnames[i].clone());
     } else {
-      output.push_str(&format!("      {},\n", fnames[i]));
+      init_fields.push(fnames[i].clone());
     }
   }
-  output.push_str("    }\n");
+  if init_fields.is_empty() {
+    output.push_str("    Self {}\n");
+  } else {
+    output.push_str(&format!("    Self {{ {} }}\n", init_fields.join(", ")));
+  }
   output.push_str("  }\n");
   output.push_str("}\n\n");
 
@@ -182,14 +191,18 @@ pub fn generate(
     let td = f.r#type.as_ref().ok_or_else(|| {
       GeneratorError::MalformedDefinition("struct field missing type".into())
     })?;
-    let read_expr = type_mapper::read_expression_cow(td, "reader", analysis)?;
-    output.push_str(&format!("    let {} = {}?;\n", fnames[i], read_expr));
+    if let Some(read_expr) = type_mapper::borrowed_cow_read_expression(td, "reader") {
+      output.push_str(&format!("    let {} = {};\n", fnames[i], read_expr));
+    } else {
+      let read_expr = type_mapper::read_expression_cow(td, "reader", analysis)?;
+      output.push_str(&format!("    let {} = {}?;\n", fnames[i], read_expr));
+    }
   }
-  output.push_str(&format!("    Ok({} {{\n", name));
-  for fname in &fnames {
-    output.push_str(&format!("      {},\n", fname));
+  if fnames.is_empty() {
+    output.push_str(&format!("    Ok({} {{}})\n", name));
+  } else {
+    output.push_str(&format!("    Ok({} {{ {} }})\n", name, fnames.join(", ")));
   }
-  output.push_str("    })\n");
   output.push_str("  }\n");
   output.push_str("}\n\n");
 
