@@ -102,10 +102,7 @@ impl Point {
   pub const FIXED_ENCODED_SIZE: usize = 8;
 
   pub fn new(x: f32, y: f32) -> Self {
-    Self {
-      x,
-      y,
-    }
+    Self { x, y }
   }
 }
 
@@ -124,10 +121,7 @@ impl<'buf> BebopDecode<'buf> for Point {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
     let x = reader.read_f32()?;
     let y = reader.read_f32()?;
-    Ok(Point {
-      x,
-      y,
-    })
+    Ok(Point { x, y })
   }
 }
 
@@ -143,11 +137,7 @@ impl Pixel {
   pub const FIXED_ENCODED_SIZE: usize = 10;
 
   pub fn new(position: Point, color: Color, alpha: u8) -> Self {
-    Self {
-      position,
-      color,
-      alpha,
-    }
+    Self { position, color, alpha }
   }
 }
 
@@ -168,11 +158,7 @@ impl<'buf> BebopDecode<'buf> for Pixel {
     let position = Point::decode(reader)?;
     let color = Color::decode(reader)?;
     let alpha = reader.read_byte()?;
-    Ok(Pixel {
-      position,
-      color,
-      alpha,
-    })
+    Ok(Pixel { position, color, alpha })
   }
 }
 
@@ -187,10 +173,8 @@ pub type PersonOwned = Person<'static>;
 
 impl<'buf> Person<'buf> {
   pub fn new(name: impl Into<Cow<'buf, str>>, age: u32) -> Self {
-    Self {
-      name: name.into(),
-      age,
-    }
+    let name = name.into();
+    Self { name, age }
   }
 }
 
@@ -216,12 +200,9 @@ impl<'buf> BebopEncode for Person<'buf> {
 
 impl<'buf> BebopDecode<'buf> for Person<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
-    let name = { let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?;
+    let name = Cow::Borrowed(reader.read_str()?);
     let age = reader.read_u32()?;
-    Ok(Person {
-      name,
-      age,
-    })
+    Ok(Person { name, age })
   }
 }
 
@@ -236,10 +217,8 @@ pub type BinaryPayloadOwned = BinaryPayload<'static>;
 
 impl<'buf> BinaryPayload<'buf> {
   pub fn new(tag: u32, data: impl Into<Cow<'buf, [u8]>>) -> Self {
-    Self {
-      tag,
-      data: data.into(),
-    }
+    let data = data.into();
+    Self { tag, data }
   }
 }
 
@@ -266,11 +245,8 @@ impl<'buf> BebopEncode for BinaryPayload<'buf> {
 impl<'buf> BebopDecode<'buf> for BinaryPayload<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
     let tag = reader.read_u32()?;
-    let data = { let _s = reader.read_byte_slice()?; Ok(Cow::Borrowed(_s)) }?;
-    Ok(BinaryPayload {
-      tag,
-      data,
-    })
+    let data = Cow::Borrowed(reader.read_byte_slice()?);
+    Ok(BinaryPayload { tag, data })
   }
 }
 
@@ -374,12 +350,12 @@ impl<'buf> BebopDecode<'buf> for UserProfile<'buf> {
       let tag = reader.read_tag()?;
       if tag == 0 { break; }
       match tag {
-        1 => msg.display_name = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        2 => msg.email = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        1 => msg.display_name = Some(Cow::Borrowed(reader.read_str()?)),
+        2 => msg.email = Some(Cow::Borrowed(reader.read_str()?)),
         3 => msg.age = Some(reader.read_u32()?),
         4 => msg.active = Some(reader.read_bool()?),
-        5 => msg.tags = Some(reader.read_array(|_r| { let _s = _r.read_str()?; Ok(Cow::Borrowed(_s)) })?),
-        6 => msg.metadata = Some(reader.read_map(|_r| Ok(({ let _s = _r.read_str()?; Ok(Cow::Borrowed(_s)) }?, { let _s = _r.read_str()?; Ok(Cow::Borrowed(_s)) }?)))?),
+        5 => msg.tags = Some(reader.read_array(|_r| Ok(Cow::Borrowed(_r.read_str()?)))?),
+        6 => msg.metadata = Some(reader.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, Ok(Cow::Borrowed(_r.read_str()?))?)))?),
         7 => msg.permissions = Some(Permissions::decode(reader)?),
         _ => { reader.skip(end - reader.position())?; }
       }
@@ -463,7 +439,7 @@ impl<'buf> BebopDecode<'buf> for DrawCommand<'buf> {
       match tag {
         1 => msg.target = Some(Point::decode(reader)?),
         2 => msg.color = Some(Color::decode(reader)?),
-        3 => msg.label = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        3 => msg.label = Some(Cow::Borrowed(reader.read_str()?)),
         4 => msg.thickness = Some(reader.read_f32()?),
         _ => { reader.skip(end - reader.position())?; }
       }
@@ -483,10 +459,8 @@ pub type TextLabelOwned = TextLabel<'static>;
 
 impl<'buf> TextLabel<'buf> {
   pub fn new(position: Point, text: impl Into<Cow<'buf, str>>) -> Self {
-    Self {
-      position,
-      text: text.into(),
-    }
+    let text = text.into();
+    Self { position, text }
   }
 }
 
@@ -513,11 +487,8 @@ impl<'buf> BebopEncode for TextLabel<'buf> {
 impl<'buf> BebopDecode<'buf> for TextLabel<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
     let position = Point::decode(reader)?;
-    let text = { let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?;
-    Ok(TextLabel {
-      position,
-      text,
-    })
+    let text = Cow::Borrowed(reader.read_str()?);
+    Ok(TextLabel { position, text })
   }
 }
 
@@ -593,9 +564,7 @@ impl Matrix2x2 {
   pub const FIXED_ENCODED_SIZE: usize = 16;
 
   pub fn new(values: [f32; 4]) -> Self {
-    Self {
-      values,
-    }
+    Self { values }
   }
 }
 
@@ -612,9 +581,7 @@ impl BebopEncode for Matrix2x2 {
 impl<'buf> BebopDecode<'buf> for Matrix2x2 {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
     let values = { let mut _arr = [Default::default(); 4]; for _i in 0..4 { _arr[_i] = reader.read_f32()?; } Ok(_arr) }?;
-    Ok(Matrix2x2 {
-      values,
-    })
+    Ok(Matrix2x2 { values })
   }
 }
 
@@ -631,12 +598,11 @@ pub type AddressOwned = Address<'static>;
 
 impl<'buf> Address<'buf> {
   pub fn new(street: impl Into<Cow<'buf, str>>, city: impl Into<Cow<'buf, str>>, country: impl Into<Cow<'buf, str>>, zip_code: impl Into<Cow<'buf, str>>) -> Self {
-    Self {
-      street: street.into(),
-      city: city.into(),
-      country: country.into(),
-      zip_code: zip_code.into(),
-    }
+    let street = street.into();
+    let city = city.into();
+    let country = country.into();
+    let zip_code = zip_code.into();
+    Self { street, city, country, zip_code }
   }
 }
 
@@ -666,16 +632,11 @@ impl<'buf> BebopEncode for Address<'buf> {
 
 impl<'buf> BebopDecode<'buf> for Address<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
-    let street = { let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?;
-    let city = { let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?;
-    let country = { let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?;
-    let zip_code = { let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?;
-    Ok(Address {
-      street,
-      city,
-      country,
-      zip_code,
-    })
+    let street = Cow::Borrowed(reader.read_str()?);
+    let city = Cow::Borrowed(reader.read_str()?);
+    let country = Cow::Borrowed(reader.read_str()?);
+    let zip_code = Cow::Borrowed(reader.read_str()?);
+    Ok(Address { street, city, country, zip_code })
   }
 }
 
@@ -745,7 +706,7 @@ impl<'buf> BebopDecode<'buf> for Scene<'buf> {
       match tag {
         1 => msg.shapes = Some(reader.read_array(|_r| Shape::decode(_r))?),
         2 => msg.background = Some(Color::decode(reader)?),
-        3 => msg.title = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        3 => msg.title = Some(Cow::Borrowed(reader.read_str()?)),
         _ => { reader.skip(end - reader.position())?; }
       }
     }
@@ -808,8 +769,8 @@ impl<'buf> BebopDecode<'buf> for Inventory<'buf> {
       let tag = reader.read_tag()?;
       if tag == 0 { break; }
       match tag {
-        1 => msg.items = Some(reader.read_map(|_r| Ok(({ let _s = _r.read_str()?; Ok(Cow::Borrowed(_s)) }?, _r.read_u32()?)))?),
-        2 => msg.label = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        1 => msg.items = Some(reader.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, _r.read_u32()?)))?),
+        2 => msg.label = Some(Cow::Borrowed(reader.read_str()?)),
         _ => { reader.skip(end - reader.position())?; }
       }
     }
@@ -863,7 +824,7 @@ impl<'buf> BebopDecode<'buf> for EmptyMessage<'buf> {
       let tag = reader.read_tag()?;
       if tag == 0 { break; }
       match tag {
-        1 => msg.unused_field = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        1 => msg.unused_field = Some(Cow::Borrowed(reader.read_str()?)),
         _ => { reader.skip(end - reader.position())?; }
       }
     }

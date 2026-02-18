@@ -624,7 +624,7 @@ pub fn read_expression_cow(td: &TypeDescriptor, reader: &str, analysis: &Lifetim
   // Scalars — special-case string for zero-copy
   match kind {
     TypeKind::String => {
-      return Ok(format!("{{ let _s = {}.read_str()?; Ok(Cow::Borrowed(_s)) }}", reader));
+      return Ok(format!("Ok(Cow::Borrowed({}.read_str()?))", reader));
     }
     _ => {
       if let Some(method) = scalar_read_method(kind) {
@@ -641,7 +641,7 @@ pub fn read_expression_cow(td: &TypeDescriptor, reader: &str, analysis: &Lifetim
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
       // Byte array → Cow::Borrowed
       if elem.kind == Some(TypeKind::Byte) {
-        return Ok(format!("{{ let _s = {}.read_byte_slice()?; Ok(Cow::Borrowed(_s)) }}", reader));
+        return Ok(format!("Ok(Cow::Borrowed({}.read_byte_slice()?))", reader));
       }
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
       if elem_kind == TypeKind::Defined {
@@ -702,6 +702,25 @@ pub fn read_expression_cow(td: &TypeDescriptor, reader: &str, analysis: &Lifetim
       "cannot generate cow read for type kind: {}",
       kind as u8
     ))),
+  }
+}
+
+/// Returns a direct borrowed `Cow` decode expression when applicable.
+///
+/// This is used by generators that want local statements like:
+/// `let name = Cow::Borrowed(reader.read_str()?);`
+pub fn borrowed_cow_read_expression(td: &TypeDescriptor, reader: &str) -> Option<String> {
+  match td.kind? {
+    TypeKind::String => Some(format!("Cow::Borrowed({}.read_str()?)", reader)),
+    TypeKind::Array => {
+      let elem = td.array_element.as_ref()?;
+      if elem.kind == Some(TypeKind::Byte) {
+        Some(format!("Cow::Borrowed({}.read_byte_slice()?)", reader))
+      } else {
+        None
+      }
+    }
+    _ => None,
   }
 }
 

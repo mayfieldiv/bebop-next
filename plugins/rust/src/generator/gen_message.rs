@@ -296,20 +296,28 @@ pub fn generate(
   for (i, f) in fields.iter().enumerate() {
     let meta = &field_metas[i];
     let td = f.r#type.as_ref().unwrap();
-    let read_expr = type_mapper::read_expression_cow(td, "reader", analysis)?;
 
     match meta.wrap {
       FieldWrap::Boxed => {
+        let read_expr = type_mapper::read_expression_cow(td, "reader", analysis)?;
         output.push_str(&format!(
           "        {} => msg.{} = Some(Box::new({}?)),\n",
           meta.tag, meta.fname, read_expr
         ));
       }
       _ => {
-        output.push_str(&format!(
-          "        {} => msg.{} = Some({}?),\n",
-          meta.tag, meta.fname, read_expr
-        ));
+        if let Some(read_expr) = type_mapper::borrowed_cow_read_expression(td, "reader") {
+          output.push_str(&format!(
+            "        {} => msg.{} = Some({}),\n",
+            meta.tag, meta.fname, read_expr
+          ));
+        } else {
+          let read_expr = type_mapper::read_expression_cow(td, "reader", analysis)?;
+          output.push_str(&format!(
+            "        {} => msg.{} = Some({}?),\n",
+            meta.tag, meta.fname, read_expr
+          ));
+        }
       }
     }
   }
