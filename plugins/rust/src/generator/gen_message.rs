@@ -127,15 +127,13 @@ pub fn generate(
       "pub type {}Owned = {}<'static>;\n\n",
       name, name
     ));
-  } else {
-    output.push_str(&format!("pub type {}Owned = {};\n\n", name, name));
   }
 
   // ── into_owned() (only when has_lifetime) ─────────────────────
   if has_lifetime {
     output.push_str(&format!("impl<'buf> {}<'buf> {{\n", name));
     output.push_str(&format!(
-      "  pub fn into_owned(self) -> {}<'static> {{\n",
+      "  pub fn into_owned(self) -> {}Owned {{\n",
       name
     ));
     output.push_str(&format!("    {} {{\n", name));
@@ -236,7 +234,9 @@ pub fn generate(
 
   // encoded_size()
   output.push_str("  fn encoded_size(&self) -> usize {\n");
-  output.push_str("    let mut size = 5usize; // 4-byte length prefix + end marker\n");
+  output.push_str(
+    "    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker\n",
+  );
   for (i, f) in fields.iter().enumerate() {
     let meta = &field_metas[i];
     let td = f.r#type.as_ref().unwrap();
@@ -249,7 +249,7 @@ pub fn generate(
           meta.fname
         ));
         let size_expr = type_mapper::encoded_size_expression(td, "v", analysis)?;
-        output.push_str(&format!("      size += 1 + {};\n", size_expr));
+        output.push_str(&format!("      size += size_of::<u8>() + {};\n", size_expr));
         output.push_str("    }\n");
       }
       _ => {
@@ -260,7 +260,7 @@ pub fn generate(
         if is_scalar_copy {
           output.push_str(&format!("    if let Some(v) = self.{} {{\n", meta.fname));
           let size_expr = type_mapper::encoded_size_expression(td, "v", analysis)?;
-          output.push_str(&format!("      size += 1 + {};\n", size_expr));
+          output.push_str(&format!("      size += size_of::<u8>() + {};\n", size_expr));
           output.push_str("    }\n");
         } else {
           output.push_str(&format!(
@@ -268,7 +268,7 @@ pub fn generate(
             meta.fname
           ));
           let size_expr = type_mapper::encoded_size_expression(td, "v", analysis)?;
-          output.push_str(&format!("      size += 1 + {};\n", size_expr));
+          output.push_str(&format!("      size += size_of::<u8>() + {};\n", size_expr));
           output.push_str("    }\n");
         }
       }

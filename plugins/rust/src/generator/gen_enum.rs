@@ -34,7 +34,7 @@ pub fn generate(
   );
 
   if is_flags {
-    generate_flags(def, output, &name, base_type, read_method, write_method, byte_size, is_signed, base_kind)?;
+    generate_flags(def, output, &name, base_type, byte_size, is_signed, base_kind)?;
   } else {
     generate_enum(def, output, &name, base_type, read_method, write_method, byte_size, is_signed, base_kind)?;
   }
@@ -83,9 +83,6 @@ fn generate_enum(
   }
   output.push_str("}\n\n");
 
-  // Type alias (enums never have lifetime)
-  output.push_str(&format!("pub type {}Owned = {};\n\n", name, name));
-
   // TryFrom<base_type> for Name
   output.push_str(&format!(
     "impl std::convert::TryFrom<{}> for {} {{\n",
@@ -129,22 +126,23 @@ fn generate_enum(
   ));
   output.push_str("}\n\n");
 
-  // ── impl BebopEncode ──────────────────────────────────────────
-  output.push_str(&format!("impl BebopEncode for {} {{\n", name));
+  // ── FIXED_ENCODED_SIZE ──────────────────────────────────────────
+  output.push_str(&format!("impl {} {{\n", name));
   output.push_str(&format!(
-    "  const FIXED_ENCODED_SIZE: Option<usize> = Some({});\n\n",
+    "  pub const FIXED_ENCODED_SIZE: usize = {};\n",
     byte_size
   ));
+  output.push_str("}\n\n");
+
+  // ── impl BebopEncode ──────────────────────────────────────────
+  output.push_str(&format!("impl BebopEncode for {} {{\n", name));
   output.push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
   output.push_str(&format!(
     "    writer.{}(*self as {});\n",
     write_method, base_type
   ));
   output.push_str("  }\n\n");
-  output.push_str(&format!(
-    "  fn encoded_size(&self) -> usize {{ {} }}\n",
-    byte_size
-  ));
+  output.push_str("  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }\n");
   output.push_str("}\n\n");
 
   // ── impl BebopDecode ──────────────────────────────────────────
@@ -171,8 +169,6 @@ fn generate_flags(
   output: &mut String,
   name: &str,
   base_type: &str,
-  read_method: &str,
-  write_method: &str,
   byte_size: usize,
   is_signed: bool,
   base_kind: TypeKind,
@@ -188,13 +184,14 @@ fn generate_flags(
   output.push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq)]\n");
   output.push_str(&format!("pub struct {}(pub {});\n\n", name, base_type));
 
-  // Type alias (flags never have lifetime)
-  output.push_str(&format!("pub type {}Owned = {};\n\n", name, name));
-
   // Associated constants
   output.push_str(&format!(
     "#[allow(non_upper_case_globals)]\nimpl {} {{\n",
     name
+  ));
+  output.push_str(&format!(
+    "  pub const FIXED_ENCODED_SIZE: usize = {};\n",
+    byte_size
   ));
   // Compute ALL value for all() method
   let mut all_value: u64 = 0;
@@ -220,110 +217,54 @@ fn generate_flags(
   }
   output.push_str("}\n\n");
 
-  // Utility methods
+  // Flags trait impl
   let all_formatted = if is_signed {
     format_signed_value(all_value, base_kind)
   } else {
     format!("{}", all_value)
   };
 
-  output.push_str(&format!("impl {} {{\n", name));
+  output.push_str(&format!("impl BebopFlags for {} {{\n", name));
+  output.push_str(&format!("  type Bits = {};\n", base_type));
   output.push_str(&format!(
-    "  pub fn empty() -> Self {{ Self(0) }}\n"
-  ));
-  output.push_str(&format!(
-    "  pub fn all() -> Self {{ Self({}) }}\n",
+    "  const ALL_BITS: Self::Bits = {};\n",
     all_formatted
   ));
-  output.push_str(&format!(
-    "  pub fn bits(self) -> {} {{ self.0 }}\n",
-    base_type
-  ));
-  output.push_str(&format!(
-    "  pub fn from_bits(bits: {}) -> Option<Self> {{\n    if bits & !Self::all().0 == 0 {{ Some(Self(bits)) }} else {{ None }}\n  }}\n",
-    base_type
-  ));
-  output.push_str(&format!(
-    "  pub fn from_bits_truncate(bits: {}) -> Self {{ Self(bits & Self::all().0) }}\n",
-    base_type
-  ));
-  output.push_str("  pub fn is_empty(self) -> bool { self.0 == 0 }\n");
-  output.push_str(&format!(
-    "  pub fn is_all(self) -> bool {{ self.0 == Self::all().0 }}\n"
-  ));
-  output.push_str("  pub fn contains(self, other: Self) -> bool { (self.0 & other.0) == other.0 }\n");
-  output.push_str("  pub fn intersects(self, other: Self) -> bool { (self.0 & other.0) != 0 }\n");
-  output.push_str("  pub fn insert(&mut self, other: Self) { self.0 |= other.0; }\n");
-  output.push_str("  pub fn remove(&mut self, other: Self) { self.0 &= !other.0; }\n");
-  output.push_str("  pub fn toggle(&mut self, other: Self) { self.0 ^= other.0; }\n");
+  output.push_str("  fn bits(self) -> Self::Bits { self.0 }\n");
+  output.push_str("  fn from_bits_retain(bits: Self::Bits) -> Self { Self(bits) }\n");
   output.push_str("}\n\n");
 
-  // ── impl BebopEncode ──────────────────────────────────────────
-  output.push_str(&format!("impl BebopEncode for {} {{\n", name));
+  // Bitwise operator impls in compact single-line style.
   output.push_str(&format!(
-    "  const FIXED_ENCODED_SIZE: Option<usize> = Some({});\n\n",
-    byte_size
-  ));
-  output.push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
-  output.push_str(&format!("    writer.{}(self.0);\n", write_method));
-  output.push_str("  }\n\n");
-  output.push_str(&format!(
-    "  fn encoded_size(&self) -> usize {{ {} }}\n",
-    byte_size
-  ));
-  output.push_str("}\n\n");
-
-  // ── impl BebopDecode ──────────────────────────────────────────
-  output.push_str(&format!(
-    "impl<'buf> BebopDecode<'buf> for {} {{\n",
+    "impl std::ops::BitOr for {} {{ type Output = Self; fn bitor(self, rhs: Self) -> Self {{ Self(self.0 | rhs.0) }} }}\n",
     name
   ));
-  output.push_str(
-    "  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n",
-  );
-  output.push_str(&format!("    Ok(Self(reader.{}()?))\n", read_method));
-  output.push_str("  }\n");
-  output.push_str("}\n\n");
-
-  // Bitwise operator impls
-  // BitOr
   output.push_str(&format!(
-    "impl std::ops::BitOr for {} {{\n  type Output = Self;\n  fn bitor(self, rhs: Self) -> Self {{ Self(self.0 | rhs.0) }}\n}}\n\n",
+    "impl std::ops::BitOrAssign for {} {{ fn bitor_assign(&mut self, rhs: Self) {{ self.0 |= rhs.0; }} }}\n",
     name
   ));
-  // BitOrAssign
   output.push_str(&format!(
-    "impl std::ops::BitOrAssign for {} {{\n  fn bitor_assign(&mut self, rhs: Self) {{ self.0 |= rhs.0; }}\n}}\n\n",
+    "impl std::ops::BitAnd for {} {{ type Output = Self; fn bitand(self, rhs: Self) -> Self {{ Self(self.0 & rhs.0) }} }}\n",
     name
   ));
-  // BitAnd
   output.push_str(&format!(
-    "impl std::ops::BitAnd for {} {{\n  type Output = Self;\n  fn bitand(self, rhs: Self) -> Self {{ Self(self.0 & rhs.0) }}\n}}\n\n",
+    "impl std::ops::BitAndAssign for {} {{ fn bitand_assign(&mut self, rhs: Self) {{ self.0 &= rhs.0; }} }}\n",
     name
   ));
-  // BitAndAssign
   output.push_str(&format!(
-    "impl std::ops::BitAndAssign for {} {{\n  fn bitand_assign(&mut self, rhs: Self) {{ self.0 &= rhs.0; }}\n}}\n\n",
+    "impl std::ops::BitXor for {} {{ type Output = Self; fn bitxor(self, rhs: Self) -> Self {{ Self(self.0 ^ rhs.0) }} }}\n",
     name
   ));
-  // BitXor
   output.push_str(&format!(
-    "impl std::ops::BitXor for {} {{\n  type Output = Self;\n  fn bitxor(self, rhs: Self) -> Self {{ Self(self.0 ^ rhs.0) }}\n}}\n\n",
+    "impl std::ops::BitXorAssign for {} {{ fn bitxor_assign(&mut self, rhs: Self) {{ self.0 ^= rhs.0; }} }}\n",
     name
   ));
-  // BitXorAssign
   output.push_str(&format!(
-    "impl std::ops::BitXorAssign for {} {{\n  fn bitxor_assign(&mut self, rhs: Self) {{ self.0 ^= rhs.0; }}\n}}\n\n",
+    "impl std::ops::Not for {} {{ type Output = Self; fn not(self) -> Self {{ Self(!self.0) }} }}\n",
     name
   ));
-  // Not
   output.push_str(&format!(
-    "impl std::ops::Not for {} {{\n  type Output = Self;\n  fn not(self) -> Self {{ Self(!self.0) }}\n}}\n\n",
-    name
-  ));
-  // Sub (set difference)
-  output.push_str(&format!(
-    "impl std::ops::Sub for {} {{\n  type Output = Self;\n  fn sub(self, rhs: Self) -> Self {{ Self(self.0 & !rhs.0) }}\n}}\n\n",
+    "impl std::ops::Sub for {} {{ type Output = Self; fn sub(self, rhs: Self) -> Self {{ Self(self.0 & !rhs.0) }} }}\n\n",
     name
   ));
 

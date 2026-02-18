@@ -92,7 +92,7 @@ pub fn generate(
   // ── into_owned() ──────────────────────────────────────────────
   output.push_str(&format!("impl<'buf> {}<'buf> {{\n", name));
   output.push_str(&format!(
-    "  pub fn into_owned(self) -> {}<'static> {{\n",
+    "  pub fn into_owned(self) -> {}Owned {{\n",
     name
   ));
   output.push_str("    match self {\n");
@@ -144,14 +144,14 @@ pub fn generate(
 
   // encoded_size()
   output.push_str("  fn encoded_size(&self) -> usize {\n");
-  output.push_str("    4 + match self {\n"); // 4-byte length prefix
+  output.push_str("    size_of::<u32>() + match self {\n");
   for b in &branch_infos {
     output.push_str(&format!(
-      "      Self::{}(inner) => 1 + inner.encoded_size(),\n",
+      "      Self::{}(inner) => size_of::<u8>() + inner.encoded_size(),\n",
       b.variant
     ));
   }
-  output.push_str("      Self::Unknown(_, data) => 1 + data.len(),\n");
+  output.push_str("      Self::Unknown(_, data) => size_of::<u8>() + data.len(),\n");
   output.push_str("    }\n");
   output.push_str("  }\n");
 

@@ -69,7 +69,7 @@ fn run() -> Result<CodeGeneratorResponse<'static>, GeneratorError> {
 
   // Build the set of files we should generate (full paths)
   let file_set: std::collections::HashSet<&str> =
-    files_to_generate.iter().map(|s| &**s).collect();
+    files_to_generate.iter().map(|s| s.as_ref()).collect();
 
   // Also build a set of file stems for matching imports (which may be relative)
   let file_stem_set: std::collections::HashSet<&str> = file_set
@@ -107,7 +107,7 @@ fn run() -> Result<CodeGeneratorResponse<'static>, GeneratorError> {
       .unwrap_or(&[])
       .iter()
       .filter_map(|imp| {
-        let stem = std::path::Path::new(&**imp)
+        let stem = std::path::Path::new(imp.as_ref())
           .file_stem()
           .and_then(|s| s.to_str())?;
         if stem != file_stem && file_stem_set.contains(stem) {
