@@ -19,18 +19,7 @@ PLUGIN="$RUST_DIR/target/debug/bebopc-gen-rust"
 TMPDIR=$(mktemp -d)
 trap "rm -rf $TMPDIR" EXIT
 
-# Strip the generator preamble from a .bb.rs file.
-# Removes leading comments (//), inner attributes (#![), use statements, and blank lines
-# until we hit the first doc comment (///) or derive attribute (#[derive).
-strip_preamble() {
-  awk '
-    BEGIN { p = 0 }
-    !p && /^(\/\/[^\/]|\/\/$|#!\[|use |$)/ { next }
-    { p = 1; print }
-  ' "$1"
-}
-
-echo "Generating descriptor.bb.rs + plugin.bb.rs..."
+echo "Generating descriptor.rs + plugin.rs..."
 "$BEBOPC" build \
   "$SCHEMAS/bebop/descriptor.bop" \
   "$SCHEMAS/bebop/plugin.bop" \
@@ -40,7 +29,7 @@ echo "Generating descriptor.bb.rs + plugin.bb.rs..."
   -q
 
 mkdir -p "$RUST_DIR/src/generated"
-strip_preamble "$TMPDIR/out/descriptor.bb.rs" > "$RUST_DIR/src/generated/descriptor.bb.rs"
-strip_preamble "$TMPDIR/out/plugin.bb.rs" > "$RUST_DIR/src/generated/plugin.bb.rs"
+cp "$TMPDIR/out/descriptor.rs" "$RUST_DIR/src/generated/descriptor.rs"
+cp "$TMPDIR/out/plugin.rs" "$RUST_DIR/src/generated/plugin.rs"
 
 echo "Done."

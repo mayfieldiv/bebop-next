@@ -1,13 +1,11 @@
 // Types generated from bebop/schemas/bebop/{descriptor,plugin}.bop
 // Regenerate with: ./generate.sh
 
-#![allow(dead_code, unused_imports)]
+mod descriptor;
+mod plugin;
 
-use bebop_runtime::{BebopReader, BebopWriter, DecodeError, BF16, F16};
-use std::collections::HashMap;
-
-include!("descriptor.bb.rs");
-include!("plugin.bb.rs");
+pub use descriptor::*;
+pub use plugin::*;
 
 // ── Hand-written extensions ────────────────────────────────────
 
