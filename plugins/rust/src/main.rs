@@ -7,7 +7,7 @@ use std::io::{self, Read, Write};
 
 use error::GeneratorError;
 use generated::{CodeGeneratorRequest, CodeGeneratorResponse, GeneratedFile};
-use generator::RustGenerator;
+use generator::{LifetimeAnalysis, RustGenerator};
 use wire::{BebopReader, BebopWriter};
 
 fn read_all_stdin() -> io::Result<Vec<u8>> {
@@ -77,6 +77,9 @@ fn run() -> Result<CodeGeneratorResponse, GeneratorError> {
 
   let generator = RustGenerator::new(request.compiler_version);
 
+  // Build lifetime analysis across all schemas so cross-schema type references resolve
+  let analysis = LifetimeAnalysis::build_all(schemas);
+
   let mut generated_files = Vec::new();
 
   for schema in schemas {
@@ -113,7 +116,7 @@ fn run() -> Result<CodeGeneratorResponse, GeneratorError> {
       })
       .collect();
 
-    let code = generator.generate(schema, &sibling_imports)?;
+    let code = generator.generate(schema, &sibling_imports, &analysis)?;
 
     generated_files.push(GeneratedFile {
       name: Some(output_name),
