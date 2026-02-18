@@ -1,0 +1,9 @@
+[package]
+name = "bebopc-gen-rust"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "bebopc-gen-rust"
+path = "src/main.rs"
