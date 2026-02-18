@@ -1,5 +1,5 @@
-use crate::descriptor::DefinitionDescriptor;
 use crate::error::GeneratorError;
+use crate::generated::DefinitionDescriptor;
 
 /// Generate Rust code for a const definition.
 pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), GeneratorError> {
@@ -16,7 +16,7 @@ pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), G
 
   if let Some(ref const_def) = def.const_def {
     let type_kind = const_def
-      .const_type
+      .r#type
       .as_ref()
       .and_then(|t| t.kind)
       .map_or("?".to_string(), |k| format!("{:?}", k));

@@ -1,15 +1,13 @@
-mod descriptor;
 mod error;
+mod generated;
 mod generator;
-mod plugin;
 mod wire;
 
 use std::io::{self, Read, Write};
 
 use error::GeneratorError;
+use generated::{CodeGeneratorRequest, CodeGeneratorResponse, GeneratedFile};
 use generator::RustGenerator;
-use plugin::request::CodeGeneratorRequest;
-use plugin::response::{CodeGeneratorResponse, GeneratedFile};
 use wire::{BebopReader, BebopWriter};
 
 fn read_all_stdin() -> io::Result<Vec<u8>> {
@@ -95,7 +93,7 @@ fn run() -> Result<CodeGeneratorResponse, GeneratorError> {
     generated_files.push(GeneratedFile {
       name: Some(output_name),
       content: Some(code),
-      insertion_point: None,
+      ..Default::default()
     });
   }
 

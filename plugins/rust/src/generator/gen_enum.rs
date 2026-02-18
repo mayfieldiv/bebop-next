@@ -1,5 +1,5 @@
-use crate::descriptor::{DefinitionDescriptor, TypeKind};
 use crate::error::GeneratorError;
+use crate::generated::{DefinitionDescriptor, TypeKind};
 
 use super::naming::type_name;
 use super::type_mapper::{enum_base_rust_type, enum_read_method, enum_write_method, fixed_size};
@@ -26,7 +26,7 @@ pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), G
   let is_flags = enum_def.is_flags.unwrap_or(false);
   let is_signed = matches!(
     base_kind,
-    TypeKind::INT16 | TypeKind::INT32 | TypeKind::INT64
+    TypeKind::INT8 | TypeKind::INT16 | TypeKind::INT32 | TypeKind::INT64
   );
 
   // Doc comment + deprecated
@@ -109,6 +109,7 @@ pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), G
 /// Format a u64 value for a signed enum base type.
 fn format_signed_value(value: u64, kind: TypeKind) -> String {
   match kind {
+    TypeKind::INT8 => format!("{}", value as u8 as i8),
     TypeKind::INT16 => format!("{}", value as u16 as i16),
     TypeKind::INT32 => format!("{}", value as u32 as i32),
     TypeKind::INT64 => format!("{}", value as i64),

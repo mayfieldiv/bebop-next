@@ -1,5 +1,5 @@
-use crate::descriptor::{TypeDescriptor, TypeKind};
 use crate::error::GeneratorError;
+use crate::generated::{TypeDescriptor, TypeKind};
 
 use super::naming::fqn_to_type_name;
 
@@ -77,6 +77,7 @@ pub fn scalar_write_method(kind: TypeKind) -> Option<&'static str> {
 pub fn enum_base_rust_type(kind: TypeKind) -> Result<&'static str, GeneratorError> {
   match kind {
     TypeKind::BYTE => Ok("u8"),
+    TypeKind::INT8 => Ok("i8"),
     TypeKind::INT16 => Ok("i16"),
     TypeKind::UINT16 => Ok("u16"),
     TypeKind::INT32 => Ok("i32"),
@@ -94,6 +95,7 @@ pub fn enum_base_rust_type(kind: TypeKind) -> Result<&'static str, GeneratorErro
 pub fn enum_read_method(kind: TypeKind) -> Result<&'static str, GeneratorError> {
   match kind {
     TypeKind::BYTE => Ok("read_byte"),
+    TypeKind::INT8 => Ok("read_i8"),
     TypeKind::INT16 => Ok("read_i16"),
     TypeKind::UINT16 => Ok("read_u16"),
     TypeKind::INT32 => Ok("read_i32"),
@@ -111,6 +113,7 @@ pub fn enum_read_method(kind: TypeKind) -> Result<&'static str, GeneratorError> 
 pub fn enum_write_method(kind: TypeKind) -> Result<&'static str, GeneratorError> {
   match kind {
     TypeKind::BYTE => Ok("write_byte"),
+    TypeKind::INT8 => Ok("write_i8"),
     TypeKind::INT16 => Ok("write_i16"),
     TypeKind::UINT16 => Ok("write_u16"),
     TypeKind::INT32 => Ok("write_i32"),
