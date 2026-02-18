@@ -74,3 +74,11 @@ pub fn field_name(name: &str) -> String {
 pub fn type_name(name: &str) -> String {
   escape_keyword(&to_pascal_case(name))
 }
+
+/// Extract the simple type name from a fully-qualified name and convert to PascalCase.
+///
+/// `"bebop.TypeKind"` → `"TypeKind"`, `"bebop.DefinitionDescriptor"` → `"DefinitionDescriptor"`.
+pub fn fqn_to_type_name(fqn: &str) -> String {
+  let simple = fqn.rsplit('.').next().unwrap_or(fqn);
+  type_name(simple)
+}
