@@ -40,7 +40,7 @@ impl RustGenerator {
       output.push_str(&format!("// bebopc {}\n", v));
     }
     if let Some(ref edition) = schema.edition {
-      if *edition == Edition::EDITION_2026 {
+      if *edition == Edition::Edition2026 {
         output.push_str("// edition 2026\n");
       }
     }
@@ -94,17 +94,17 @@ impl RustGenerator {
     );
 
     match kind {
-      DefinitionKind::ENUM => gen_enum::generate(def, output)?,
-      DefinitionKind::STRUCT => gen_struct::generate(def, output)?,
-      DefinitionKind::MESSAGE => gen_message::generate(def, output)?,
-      DefinitionKind::UNION => gen_union::generate(def, output)?,
-      DefinitionKind::CONST => gen_const::generate(def, output)?,
-      DefinitionKind::SERVICE => gen_service::generate(def, output)?,
-      DefinitionKind::DECORATOR => { /* Skip decorator definitions */ }
-      _ => {
+      DefinitionKind::Enum => gen_enum::generate(def, output)?,
+      DefinitionKind::Struct => gen_struct::generate(def, output)?,
+      DefinitionKind::Message => gen_message::generate(def, output)?,
+      DefinitionKind::Union => gen_union::generate(def, output)?,
+      DefinitionKind::Const => gen_const::generate(def, output)?,
+      DefinitionKind::Service => gen_service::generate(def, output)?,
+      DefinitionKind::Decorator => { /* Skip decorator definitions */ }
+      DefinitionKind::Unknown => {
         eprintln!(
-          "[bebopc-gen-rust] {}  WARNING: unknown definition kind {}",
-          indent, kind.0
+          "[bebopc-gen-rust] {}  WARNING: unknown definition kind",
+          indent
         );
       }
     }

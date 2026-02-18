@@ -65,9 +65,15 @@ fn run() -> Result<CodeGeneratorResponse, GeneratorError> {
     );
   }
 
-  // Build the set of files we should generate
+  // Build the set of files we should generate (full paths)
   let file_set: std::collections::HashSet<&str> =
     files_to_generate.iter().map(|s| s.as_str()).collect();
+
+  // Also build a set of file stems for matching imports (which may be relative)
+  let file_stem_set: std::collections::HashSet<&str> = file_set
+    .iter()
+    .filter_map(|p| std::path::Path::new(p).file_stem().and_then(|s| s.to_str()))
+    .collect();
 
   let generator = RustGenerator::new(request.compiler_version);
 
@@ -89,16 +95,21 @@ fn run() -> Result<CodeGeneratorResponse, GeneratorError> {
     let output_name = format!("{}.rs", file_stem);
 
     // Compute sibling imports: filter this schema's imports to those also being generated
+    // Match by file stem since import paths may be relative while file_set has absolute paths
     let sibling_imports: Vec<&str> = schema
       .imports
       .as_deref()
       .unwrap_or(&[])
       .iter()
-      .filter(|imp| file_set.contains(imp.as_str()))
       .filter_map(|imp| {
-        std::path::Path::new(imp.as_str())
+        let stem = std::path::Path::new(imp.as_str())
           .file_stem()
-          .and_then(|s| s.to_str())
+          .and_then(|s| s.to_str())?;
+        if stem != file_stem && file_stem_set.contains(stem) {
+          Some(stem)
+        } else {
+          None
+        }
       })
       .collect();
 

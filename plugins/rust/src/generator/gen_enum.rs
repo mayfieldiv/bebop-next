@@ -26,7 +26,7 @@ pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), G
   let is_flags = enum_def.is_flags.unwrap_or(false);
   let is_signed = matches!(
     base_kind,
-    TypeKind::INT8 | TypeKind::INT16 | TypeKind::INT32 | TypeKind::INT64
+    TypeKind::Int8 | TypeKind::Int16 | TypeKind::Int32 | TypeKind::Int64
   );
 
   if is_flags {
@@ -305,10 +305,10 @@ fn generate_flags(
 /// Format a u64 value for a signed enum base type.
 fn format_signed_value(value: u64, kind: TypeKind) -> String {
   match kind {
-    TypeKind::INT8 => format!("{}", value as u8 as i8),
-    TypeKind::INT16 => format!("{}", value as u16 as i16),
-    TypeKind::INT32 => format!("{}", value as u32 as i32),
-    TypeKind::INT64 => format!("{}", value as i64),
+    TypeKind::Int8 => format!("{}", value as u8 as i8),
+    TypeKind::Int16 => format!("{}", value as u16 as i16),
+    TypeKind::Int32 => format!("{}", value as u32 as i32),
+    TypeKind::Int64 => format!("{}", value as i64),
     _ => format!("{}", value),
   }
 }
