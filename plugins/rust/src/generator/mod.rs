@@ -20,7 +20,15 @@ impl RustGenerator {
   }
 
   /// Generate Rust code for a single schema.
-  pub fn generate(&self, schema: &SchemaDescriptor) -> Result<String, GeneratorError> {
+  ///
+  /// `sibling_imports` contains the module stems of other schemas being generated
+  /// alongside this one. For each stem, a `use super::{stem}::*;` is emitted so
+  /// that cross-module type references resolve correctly.
+  pub fn generate(
+    &self,
+    schema: &SchemaDescriptor,
+    sibling_imports: &[&str],
+  ) -> Result<String, GeneratorError> {
     let mut output = String::new();
 
     // File header
@@ -43,10 +51,16 @@ impl RustGenerator {
     output.push_str("// SPDX-License-Identifier: Apache-2.0\n");
     output.push_str("// Copyright (c) 6OVER3 INSTITUTE\n\n");
 
-    // Use preamble
-    output.push_str("#![allow(dead_code, unused_imports)]\n\n");
+    // Inner attributes — scoped to this module only
+    output.push_str("#![allow(warnings)]\n\n");
     output.push_str("use std::collections::HashMap;\n");
-    output.push_str("use bebop_runtime::{BebopReader, BebopWriter, DecodeError, F16, BF16};\n\n");
+    output.push_str("use bebop_runtime::{BebopReader, BebopWriter, DecodeError, F16, BF16};\n");
+
+    // Cross-module imports for sibling schemas
+    for stem in sibling_imports {
+      output.push_str(&format!("use super::{}::*;\n", stem));
+    }
+    output.push('\n');
 
     if let Some(ref definitions) = schema.definitions {
       for def in definitions {

@@ -81,14 +81,28 @@ fn run() -> Result<CodeGeneratorResponse, GeneratorError> {
 
     eprintln!("[bebopc-gen-rust] generating for: {}", path);
 
-    // Derive output filename: foo/bar.bop -> bar.bb.rs
+    // Derive output filename: foo/bar.bop -> bar.rs
     let file_stem = std::path::Path::new(path)
       .file_stem()
       .and_then(|s| s.to_str())
       .unwrap_or("output");
-    let output_name = format!("{}.bb.rs", file_stem);
+    let output_name = format!("{}.rs", file_stem);
 
-    let code = generator.generate(schema)?;
+    // Compute sibling imports: filter this schema's imports to those also being generated
+    let sibling_imports: Vec<&str> = schema
+      .imports
+      .as_deref()
+      .unwrap_or(&[])
+      .iter()
+      .filter(|imp| file_set.contains(imp.as_str()))
+      .filter_map(|imp| {
+        std::path::Path::new(imp.as_str())
+          .file_stem()
+          .and_then(|s| s.to_str())
+      })
+      .collect();
+
+    let code = generator.generate(schema, &sibling_imports)?;
 
     generated_files.push(GeneratedFile {
       name: Some(output_name),
