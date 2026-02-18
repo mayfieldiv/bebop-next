@@ -1,0 +1,117 @@
+// test_types.bop
+//
+// Comprehensive test schema for the Rust code generator.
+// Covers: enums, flags, fixed-size structs, variable-size structs,
+// messages, unions, arrays, maps, byte arrays, fixed arrays,
+// and cross-type references.
+
+edition = "2026"
+package test
+
+import "bebop/decorators.bop"
+
+/// Simple enum with uint8 base type.
+enum Color : uint8 {
+    UNKNOWN = 0;
+    RED = 1;
+    GREEN = 2;
+    BLUE = 3;
+}
+
+/// Flags enum with bitwise operations.
+@flags
+enum Permissions : uint8 {
+    NONE = 0;
+    READ = 1;
+    WRITE = 2;
+    EXECUTE = 4;
+    ALL = 7;
+}
+
+/// Fixed-size struct (all scalar fields).
+struct Point {
+    x: float32;
+    y: float32;
+}
+
+/// Fixed-size struct referencing another struct and an enum.
+struct Pixel {
+    position: Point;
+    color: Color;
+    alpha: uint8;
+}
+
+/// Variable-size struct with a string field (needs lifetime / Cow).
+struct Person {
+    name: string;
+    age: uint32;
+}
+
+/// Variable-size struct with a byte array field (needs lifetime / Cow).
+struct BinaryPayload {
+    tag: uint32;
+    data: byte[];
+}
+
+/// Message with various field types: scalars, strings, arrays, maps.
+message UserProfile {
+    display_name(1): string;
+    email(2): string;
+    age(3): uint32;
+    active(4): bool;
+    tags(5): string[];
+    metadata(6): map[string, string];
+    permissions(7): Permissions;
+}
+
+/// Message referencing fixed-size and enum defined types.
+message DrawCommand {
+    target(1): Point;
+    color(2): Color;
+    label(3): string;
+    thickness(4): float32;
+}
+
+/// Struct used as a union branch (variable-size due to string field).
+struct TextLabel {
+    position: Point;
+    text: string;
+}
+
+/// Union with type-ref branches covering fixed and variable inner types.
+union Shape {
+    point(1): Point;
+    pixel(2): Pixel;
+    label(3): TextLabel;
+}
+
+/// Fixed-array struct (compile-time known element count).
+struct Matrix2x2 {
+    values: float32[4];
+}
+
+/// Struct with multiple string fields (all need Cow).
+struct Address {
+    street: string;
+    city: string;
+    country: string;
+    zip_code: string;
+}
+
+/// Message with array-of-defined-type and nested references.
+message Scene {
+    shapes(1): Shape[];
+    background(2): Color;
+    title(3): string;
+}
+
+/// Message with map[string, defined-type] value.
+message Inventory {
+    items(1): map[string, uint32];
+    label(2): string;
+}
+
+/// Empty message (all fields optional, none set).
+message EmptyMessage {
+    unused_field(1): string;
+}
