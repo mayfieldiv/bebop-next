@@ -144,14 +144,14 @@ pub fn generate(
 
   // encoded_size()
   output.push_str("  fn encoded_size(&self) -> usize {\n");
-  output.push_str("    size_of::<u32>() + match self {\n");
+  output.push_str("    wire::WIRE_LEN_PREFIX_SIZE + match self {\n");
   for b in &branch_infos {
     output.push_str(&format!(
-      "      Self::{}(inner) => size_of::<u8>() + inner.encoded_size(),\n",
+      "      Self::{}(inner) => wire::tagged_size(inner.encoded_size()),\n",
       b.variant
     ));
   }
-  output.push_str("      Self::Unknown(_, data) => size_of::<u8>() + data.len(),\n");
+  output.push_str("      Self::Unknown(_, data) => wire::tagged_size(data.len()),\n");
   output.push_str("    }\n");
   output.push_str("  }\n");
 

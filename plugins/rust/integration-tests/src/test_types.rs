@@ -15,6 +15,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::mem::size_of;
 use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, F16, BF16};
+use bebop_runtime::wire_size as wire;
 
 /// Simple enum with uint8 base type.
 #[repr(u8)]
@@ -209,7 +210,7 @@ impl<'buf> BebopEncode for Person<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    size_of::<u32>() + self.name.len() + size_of::<u8>() + size_of::<u32>()
+    wire::string_size(self.name.len()) + size_of::<u32>()
   }
 }
 
@@ -258,7 +259,7 @@ impl<'buf> BebopEncode for BinaryPayload<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    size_of::<u32>() + size_of::<u32>() + self.data.len()
+    size_of::<u32>() + wire::byte_array_size(self.data.len())
   }
 }
 
@@ -337,27 +338,27 @@ impl<'buf> BebopEncode for UserProfile<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.display_name {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.email {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(v) = self.age {
-      size += size_of::<u8>() + size_of::<u32>();
+      size += wire::tagged_size(size_of::<u32>());
     }
     if let Some(v) = self.active {
-      size += size_of::<u8>() + size_of::<bool>();
+      size += wire::tagged_size(size_of::<bool>());
     }
     if let Some(ref v) = self.tags {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| size_of::<u32>() + _el.len() + size_of::<u8>()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| wire::string_size(_el.len())));
     }
     if let Some(ref v) = self.metadata {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|(_k, _v)| size_of::<u32>() + _k.len() + size_of::<u8>() + size_of::<u32>() + _v.len() + size_of::<u8>()).sum::<usize>();
+      size += wire::tagged_size(wire::map_size(v, |_k, _v| wire::string_size(_k.len()) + wire::string_size(_v.len())));
     }
     if let Some(ref v) = self.permissions {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     size
   }
@@ -433,18 +434,18 @@ impl<'buf> BebopEncode for DrawCommand<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.target {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.color {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.label {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(v) = self.thickness {
-      size += size_of::<u8>() + size_of::<f32>();
+      size += wire::tagged_size(size_of::<f32>());
     }
     size
   }
@@ -505,7 +506,7 @@ impl<'buf> BebopEncode for TextLabel<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    self.position.encoded_size() + size_of::<u32>() + self.text.len() + size_of::<u8>()
+    self.position.encoded_size() + wire::string_size(self.text.len())
   }
 }
 
@@ -555,11 +556,11 @@ impl<'buf> BebopEncode for Shape<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    size_of::<u32>() + match self {
-      Self::Point(inner) => size_of::<u8>() + inner.encoded_size(),
-      Self::Pixel(inner) => size_of::<u8>() + inner.encoded_size(),
-      Self::Label(inner) => size_of::<u8>() + inner.encoded_size(),
-      Self::Unknown(_, data) => size_of::<u8>() + data.len(),
+    wire::WIRE_LEN_PREFIX_SIZE + match self {
+      Self::Point(inner) => wire::tagged_size(inner.encoded_size()),
+      Self::Pixel(inner) => wire::tagged_size(inner.encoded_size()),
+      Self::Label(inner) => wire::tagged_size(inner.encoded_size()),
+      Self::Unknown(_, data) => wire::tagged_size(data.len()),
     }
   }
 }
@@ -659,7 +660,7 @@ impl<'buf> BebopEncode for Address<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    size_of::<u32>() + self.street.len() + size_of::<u8>() + size_of::<u32>() + self.city.len() + size_of::<u8>() + size_of::<u32>() + self.country.len() + size_of::<u8>() + size_of::<u32>() + self.zip_code.len() + size_of::<u8>()
+    wire::string_size(self.street.len()) + wire::string_size(self.city.len()) + wire::string_size(self.country.len()) + wire::string_size(self.zip_code.len())
   }
 }
 
@@ -718,15 +719,15 @@ impl<'buf> BebopEncode for Scene<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.shapes {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|_el| _el.encoded_size()).sum::<usize>();
+      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     if let Some(ref v) = self.background {
-      size += size_of::<u8>() + v.encoded_size();
+      size += wire::tagged_size(v.encoded_size());
     }
     if let Some(ref v) = self.title {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     size
   }
@@ -786,12 +787,12 @@ impl<'buf> BebopEncode for Inventory<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.items {
-      size += size_of::<u8>() + size_of::<u32>() + v.iter().map(|(_k, _v)| size_of::<u32>() + _k.len() + size_of::<u8>() + size_of::<u32>()).sum::<usize>();
+      size += wire::tagged_size(wire::map_size(v, |_k, _v| wire::string_size(_k.len()) + size_of::<u32>()));
     }
     if let Some(ref v) = self.label {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     size
   }
@@ -844,9 +845,9 @@ impl<'buf> BebopEncode for EmptyMessage<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = size_of::<u32>() + size_of::<u8>(); // length prefix + end marker
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.unused_field {
-      size += size_of::<u8>() + size_of::<u32>() + v.len() + size_of::<u8>();
+      size += wire::tagged_size(wire::string_size(v.len()));
     }
     size
   }
