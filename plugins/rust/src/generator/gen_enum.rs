@@ -3,10 +3,14 @@ use crate::generated::{DefinitionDescriptor, TypeKind};
 
 use super::naming::{type_name, variant_name};
 use super::type_mapper::{enum_base_rust_type, enum_read_method, enum_write_method, fixed_size};
-use super::{emit_deprecated, emit_doc_comment};
+use super::{emit_deprecated, emit_doc_comment, LifetimeAnalysis};
 
 /// Generate Rust code for an enum definition.
-pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), GeneratorError> {
+pub fn generate(
+  def: &DefinitionDescriptor,
+  output: &mut String,
+  _analysis: &LifetimeAnalysis,
+) -> Result<(), GeneratorError> {
   let name = type_name(def.name.as_deref().unwrap_or("<unnamed>"));
 
   let enum_def = def
@@ -79,6 +83,9 @@ fn generate_enum(
   }
   output.push_str("}\n\n");
 
+  // Type alias (enums never have lifetime)
+  output.push_str(&format!("pub type {}Owned = {};\n\n", name, name));
+
   // TryFrom<base_type> for Name
   output.push_str(&format!(
     "impl std::convert::TryFrom<{}> for {} {{\n",
@@ -122,28 +129,37 @@ fn generate_enum(
   ));
   output.push_str("}\n\n");
 
-  // decode/encode impl
-  output.push_str(&format!("impl {} {{\n", name));
-  output.push_str(
-    "  pub fn decode(reader: &mut BebopReader) -> Result<Self, DecodeError> {\n",
-  );
+  // ── impl BebopEncode ──────────────────────────────────────────
+  output.push_str(&format!("impl BebopEncode for {} {{\n", name));
   output.push_str(&format!(
-    "    Self::try_from(reader.{}()?)\n",
-    read_method
+    "  const FIXED_ENCODED_SIZE: Option<usize> = Some({});\n\n",
+    byte_size
   ));
-  output.push_str("  }\n\n");
-
-  output.push_str("  pub fn encode(&self, writer: &mut BebopWriter) {\n");
+  output.push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
   output.push_str(&format!(
     "    writer.{}(*self as {});\n",
     write_method, base_type
   ));
   output.push_str("  }\n\n");
-
   output.push_str(&format!(
-    "  pub fn encoded_size(&self) -> usize {{ {} }}\n",
+    "  fn encoded_size(&self) -> usize {{ {} }}\n",
     byte_size
   ));
+  output.push_str("}\n\n");
+
+  // ── impl BebopDecode ──────────────────────────────────────────
+  output.push_str(&format!(
+    "impl<'buf> BebopDecode<'buf> for {} {{\n",
+    name
+  ));
+  output.push_str(
+    "  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n",
+  );
+  output.push_str(&format!(
+    "    Self::try_from(reader.{}()?)\n",
+    read_method
+  ));
+  output.push_str("  }\n");
   output.push_str("}\n\n");
 
   Ok(())
@@ -171,6 +187,9 @@ fn generate_flags(
   // Derive + struct
   output.push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq)]\n");
   output.push_str(&format!("pub struct {}(pub {});\n\n", name, base_type));
+
+  // Type alias (flags never have lifetime)
+  output.push_str(&format!("pub type {}Owned = {};\n\n", name, name));
 
   // Associated constants
   output.push_str(&format!(
@@ -239,22 +258,31 @@ fn generate_flags(
   output.push_str("  pub fn toggle(&mut self, other: Self) { self.0 ^= other.0; }\n");
   output.push_str("}\n\n");
 
-  // decode/encode impl
-  output.push_str(&format!("impl {} {{\n", name));
+  // ── impl BebopEncode ──────────────────────────────────────────
+  output.push_str(&format!("impl BebopEncode for {} {{\n", name));
   output.push_str(&format!(
-    "  pub fn decode(reader: &mut BebopReader) -> Result<Self, DecodeError> {{\n"
-  ));
-  output.push_str(&format!("    Ok(Self(reader.{}()?))\n", read_method));
-  output.push_str("  }\n\n");
-
-  output.push_str("  pub fn encode(&self, writer: &mut BebopWriter) {\n");
-  output.push_str(&format!("    writer.{}(self.0);\n", write_method));
-  output.push_str("  }\n\n");
-
-  output.push_str(&format!(
-    "  pub fn encoded_size(&self) -> usize {{ {} }}\n",
+    "  const FIXED_ENCODED_SIZE: Option<usize> = Some({});\n\n",
     byte_size
   ));
+  output.push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
+  output.push_str(&format!("    writer.{}(self.0);\n", write_method));
+  output.push_str("  }\n\n");
+  output.push_str(&format!(
+    "  fn encoded_size(&self) -> usize {{ {} }}\n",
+    byte_size
+  ));
+  output.push_str("}\n\n");
+
+  // ── impl BebopDecode ──────────────────────────────────────────
+  output.push_str(&format!(
+    "impl<'buf> BebopDecode<'buf> for {} {{\n",
+    name
+  ));
+  output.push_str(
+    "  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n",
+  );
+  output.push_str(&format!("    Ok(Self(reader.{}()?))\n", read_method));
+  output.push_str("  }\n");
   output.push_str("}\n\n");
 
   // Bitwise operator impls

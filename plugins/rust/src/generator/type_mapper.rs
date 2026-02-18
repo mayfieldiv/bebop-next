@@ -2,6 +2,7 @@ use crate::error::GeneratorError;
 use crate::generated::{TypeDescriptor, TypeKind};
 
 use super::naming::fqn_to_type_name;
+use super::LifetimeAnalysis;
 
 /// Map a scalar TypeKind to its Rust type string.
 pub fn scalar_type(kind: TypeKind) -> Option<&'static str> {
@@ -397,5 +398,532 @@ pub fn fixed_size(kind: TypeKind) -> Option<usize> {
     TypeKind::Int128 | TypeKind::Uint128 | TypeKind::Uuid => Some(16),
     TypeKind::Timestamp | TypeKind::Duration => Some(12),
     _ => None,
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Cow-aware functions for zero-copy code generation
+// ═══════════════════════════════════════════════════════════════════
+
+/// Map a scalar TypeKind to its zero-copy Rust type string.
+/// String → `Cow<'buf, str>`, others unchanged.
+fn scalar_type_cow(kind: TypeKind) -> Option<&'static str> {
+  match kind {
+    TypeKind::String => Some("Cow<'buf, str>"),
+    _ => scalar_type(kind),
+  }
+}
+
+/// Returns true if a TypeDescriptor is directly a Cow-wrapped field
+/// (String → Cow<str>, byte array → Cow<[u8]>), as opposed to a defined type
+/// that transitively contains Cow fields.
+pub fn is_cow_field(td: &TypeDescriptor) -> bool {
+  let kind = match td.kind {
+    Some(k) => k,
+    None => return false,
+  };
+  match kind {
+    TypeKind::String => true,
+    TypeKind::Array => {
+      td.array_element
+        .as_ref()
+        .map_or(false, |e| e.kind == Some(TypeKind::Byte))
+    }
+    _ => false,
+  }
+}
+
+/// Map a full TypeDescriptor to its owned parameter type for `new()` constructors.
+///
+/// Like `rust_type()` but uses `TypeName<'static>` for defined types with lifetime,
+/// so the parameter types compile correctly.
+pub fn rust_type_owned(td: &TypeDescriptor, analysis: &LifetimeAnalysis) -> Result<String, GeneratorError> {
+  let kind = td
+    .kind
+    .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
+
+  if let Some(s) = scalar_type(kind) {
+    return Ok(s.to_string());
+  }
+
+  match kind {
+    TypeKind::Array => {
+      let elem = td
+        .array_element
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
+      if elem.kind == Some(TypeKind::Byte) {
+        return Ok("Vec<u8>".to_string());
+      }
+      let inner = rust_type_owned(elem, analysis)?;
+      Ok(format!("Vec<{}>", inner))
+    }
+    TypeKind::FixedArray => {
+      let elem = td
+        .fixed_array_element
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("fixed array missing element type".into()))?;
+      let size = td
+        .fixed_array_size
+        .ok_or_else(|| GeneratorError::MalformedType("fixed array missing size".into()))?;
+      let inner = rust_type_owned(elem, analysis)?;
+      Ok(format!("[{}; {}]", inner, size))
+    }
+    TypeKind::Map => {
+      let key = td
+        .map_key
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("map missing key type".into()))?;
+      let val = td
+        .map_value
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
+      let k = rust_type_owned(key, analysis)?;
+      let v = rust_type_owned(val, analysis)?;
+      Ok(format!("std::collections::HashMap<{}, {}>", k, v))
+    }
+    TypeKind::Defined => {
+      let fqn = td
+        .defined_fqn
+        .as_deref()
+        .ok_or_else(|| GeneratorError::MalformedType("defined type missing fqn".into()))?;
+      let type_name = fqn_to_type_name(fqn);
+      if analysis.lifetime_fqns.contains(fqn) {
+        Ok(format!("{}<'static>", type_name))
+      } else {
+        Ok(type_name)
+      }
+    }
+    _ => Err(GeneratorError::MalformedType(format!(
+      "unknown type kind: {}",
+      kind as u8
+    ))),
+  }
+}
+
+/// Map a full TypeDescriptor to its Rust type string using Cow for borrowed types.
+pub fn rust_type_cow(td: &TypeDescriptor, analysis: &LifetimeAnalysis) -> Result<String, GeneratorError> {
+  let kind = td
+    .kind
+    .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
+
+  if let Some(s) = scalar_type_cow(kind) {
+    return Ok(s.to_string());
+  }
+
+  match kind {
+    TypeKind::Array => {
+      let elem = td
+        .array_element
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
+      // Byte arrays → Cow<'buf, [u8]>
+      if elem.kind == Some(TypeKind::Byte) {
+        return Ok("Cow<'buf, [u8]>".to_string());
+      }
+      let inner = rust_type_cow(elem, analysis)?;
+      Ok(format!("Vec<{}>", inner))
+    }
+    TypeKind::FixedArray => {
+      let elem = td
+        .fixed_array_element
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("fixed array missing element type".into()))?;
+      let size = td
+        .fixed_array_size
+        .ok_or_else(|| GeneratorError::MalformedType("fixed array missing size".into()))?;
+      let inner = rust_type_cow(elem, analysis)?;
+      Ok(format!("[{}; {}]", inner, size))
+    }
+    TypeKind::Map => {
+      let key = td
+        .map_key
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("map missing key type".into()))?;
+      let val = td
+        .map_value
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
+      let k = rust_type_cow(key, analysis)?;
+      let v = rust_type_cow(val, analysis)?;
+      Ok(format!("std::collections::HashMap<{}, {}>", k, v))
+    }
+    TypeKind::Defined => {
+      let fqn = td
+        .defined_fqn
+        .as_deref()
+        .ok_or_else(|| GeneratorError::MalformedType("defined type missing fqn".into()))?;
+      let type_name = fqn_to_type_name(fqn);
+      if analysis.lifetime_fqns.contains(fqn) {
+        Ok(format!("{}<'buf>", type_name))
+      } else {
+        Ok(type_name)
+      }
+    }
+    _ => Err(GeneratorError::MalformedType(format!(
+      "unknown type kind: {}",
+      kind as u8
+    ))),
+  }
+}
+
+/// Generate a zero-copy read expression for a TypeDescriptor.
+///
+/// Returns an expression that produces `Result<T>` — callers append `?` as needed.
+/// Strings are read as `Cow::Borrowed(reader.read_str()?)`, byte arrays as
+/// `Cow::Borrowed(reader.read_byte_slice()?)`.
+pub fn read_expression_cow(td: &TypeDescriptor, reader: &str, analysis: &LifetimeAnalysis) -> Result<String, GeneratorError> {
+  let kind = td
+    .kind
+    .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
+
+  // Scalars — special-case string for zero-copy
+  match kind {
+    TypeKind::String => {
+      return Ok(format!("{{ let _s = {}.read_str()?; Ok(Cow::Borrowed(_s)) }}", reader));
+    }
+    _ => {
+      if let Some(method) = scalar_read_method(kind) {
+        return Ok(format!("{}.{}()", reader, method));
+      }
+    }
+  }
+
+  match kind {
+    TypeKind::Array => {
+      let elem = td
+        .array_element
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
+      // Byte array → Cow::Borrowed
+      if elem.kind == Some(TypeKind::Byte) {
+        return Ok(format!("{{ let _s = {}.read_byte_slice()?; Ok(Cow::Borrowed(_s)) }}", reader));
+      }
+      let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
+      if elem_kind == TypeKind::Defined {
+        let fqn = elem.defined_fqn.as_deref().unwrap_or("");
+        let type_name = fqn_to_type_name(fqn);
+        // For trait-based decode, use closure calling trait method
+        Ok(format!("{}.read_array(|_r| {}::decode(_r))", reader, type_name))
+      } else {
+        let inner = read_expression_cow(elem, "_r", analysis)?;
+        Ok(format!("{}.read_array(|_r| {})", reader, inner))
+      }
+    }
+    TypeKind::FixedArray => {
+      let elem = td
+        .fixed_array_element
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("fixed array missing element type".into()))?;
+      let size = td
+        .fixed_array_size
+        .ok_or_else(|| GeneratorError::MalformedType("fixed array missing size".into()))?;
+      let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
+      if elem_kind == TypeKind::Int32 {
+        Ok(format!("{}.read_fixed_i32_array::<{}>()", reader, size))
+      } else {
+        let inner = read_expression_cow(elem, reader, analysis)?;
+        Ok(format!(
+          "{{ let mut _arr = [Default::default(); {}]; for _i in 0..{} {{ _arr[_i] = {}?; }} Ok(_arr) }}",
+          size, size, inner
+        ))
+      }
+    }
+    TypeKind::Map => {
+      let key = td
+        .map_key
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("map missing key type".into()))?;
+      let val = td
+        .map_value
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
+      let k_expr = read_expression_cow(key, "_r", analysis)?;
+      let v_expr = read_expression_cow(val, "_r", analysis)?;
+      Ok(format!(
+        "{}.read_map(|_r| Ok(({}?, {}?)))",
+        reader, k_expr, v_expr
+      ))
+    }
+    TypeKind::Defined => {
+      let fqn = td
+        .defined_fqn
+        .as_deref()
+        .ok_or_else(|| GeneratorError::MalformedType("defined type missing fqn".into()))?;
+      let type_name = fqn_to_type_name(fqn);
+      // Trait-based decode: Type::decode(reader) via BebopDecode
+      Ok(format!("{}::decode({})", type_name, reader))
+    }
+    _ => Err(GeneratorError::MalformedType(format!(
+      "cannot generate cow read for type kind: {}",
+      kind as u8
+    ))),
+  }
+}
+
+/// Generate a write expression for a TypeDescriptor (Cow-aware).
+///
+/// For Cow<str> we call `writer.write_string(&v)` (Cow derefs to &str).
+/// For Cow<[u8]> we call `writer.write_byte_array(&v)`.
+/// For defined types we call `BebopEncode::encode(v, writer)`.
+pub fn write_expression_cow(
+  td: &TypeDescriptor,
+  value: &str,
+  writer: &str,
+  analysis: &LifetimeAnalysis,
+) -> Result<String, GeneratorError> {
+  let kind = td
+    .kind
+    .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
+
+  // Scalars — Cow<str> derefs to &str, so write_string(&v) works
+  if let Some(method) = scalar_write_method(kind) {
+    if scalar_needs_ref(kind) {
+      return Ok(format!("{}.{}(&{})", writer, method, value));
+    } else {
+      return Ok(format!("{}.{}({})", writer, method, value));
+    }
+  }
+
+  match kind {
+    TypeKind::Array => {
+      let elem = td
+        .array_element
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
+      // Byte array: Cow<[u8]> derefs to &[u8]
+      if elem.kind == Some(TypeKind::Byte) {
+        return Ok(format!("{}.write_byte_array(&{})", writer, value));
+      }
+      let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
+      if elem_kind == TypeKind::Defined {
+        Ok(format!(
+          "{}.write_array(&{}, |_w, _el| _el.encode(_w))",
+          writer, value
+        ))
+      } else if let Some(method) = scalar_write_method(elem_kind) {
+        if scalar_needs_ref(elem_kind) {
+          Ok(format!(
+            "{}.write_array(&{}, |_w, _el| _w.{}(_el))",
+            writer, value, method
+          ))
+        } else {
+          Ok(format!(
+            "{}.write_array(&{}, |_w, _el| _w.{}(*_el))",
+            writer, value, method
+          ))
+        }
+      } else {
+        let inner = write_expression_cow(elem, "_el", "_w", analysis)?;
+        Ok(format!(
+          "{}.write_array(&{}, |_w, _el| {{ {} }})",
+          writer, value, inner
+        ))
+      }
+    }
+    TypeKind::FixedArray => {
+      let elem = td
+        .fixed_array_element
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("fixed array missing element type".into()))?;
+      let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
+      if elem_kind == TypeKind::Int32 {
+        let size = td
+          .fixed_array_size
+          .ok_or_else(|| GeneratorError::MalformedType("fixed array missing size".into()))?;
+        Ok(format!(
+          "{}.write_fixed_i32_array::<{}>(&{})",
+          writer, size, value
+        ))
+      } else {
+        let inner = write_expression_cow(elem, "_el", writer, analysis)?;
+        Ok(format!("for _el in {}.iter() {{ {} }}", value, inner))
+      }
+    }
+    TypeKind::Map => {
+      let key = td
+        .map_key
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("map missing key type".into()))?;
+      let val = td
+        .map_value
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
+      let k_write = write_expression_cow(key, "_k", "_w", analysis)?;
+      let v_write = write_expression_cow(val, "_v", "_w", analysis)?;
+      Ok(format!(
+        "{}.write_map(&{}, |_w, _k, _v| {{ {}; {}; }})",
+        writer, value, k_write, v_write
+      ))
+    }
+    TypeKind::Defined => Ok(format!("{}.encode({})", value, writer)),
+    _ => Err(GeneratorError::MalformedType(format!(
+      "cannot generate cow write for type kind: {}",
+      kind as u8
+    ))),
+  }
+}
+
+/// Generate an expression computing the encoded byte size of a value.
+pub fn encoded_size_expression(td: &TypeDescriptor, value: &str, analysis: &LifetimeAnalysis) -> Result<String, GeneratorError> {
+  let kind = td
+    .kind
+    .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
+
+  // Fixed-size scalars
+  if let Some(sz) = fixed_size(kind) {
+    return Ok(format!("{}", sz));
+  }
+
+  match kind {
+    TypeKind::String => {
+      // 4-byte length prefix + UTF-8 bytes + NUL terminator
+      Ok(format!("4 + {}.len() + 1", value))
+    }
+    TypeKind::Array => {
+      let elem = td
+        .array_element
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
+      // Byte array: 4-byte length prefix + bytes
+      if elem.kind == Some(TypeKind::Byte) {
+        return Ok(format!("4 + {}.len()", value));
+      }
+      let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
+      if let Some(sz) = fixed_size(elem_kind) {
+        // Fixed-size elements: 4 + count * elem_size
+        Ok(format!("4 + {}.len() * {}", value, sz))
+      } else {
+        // Variable-size elements
+        let inner = encoded_size_expression(elem, "_el", analysis)?;
+        Ok(format!(
+          "4 + {}.iter().map(|_el| {}).sum::<usize>()",
+          value, inner
+        ))
+      }
+    }
+    TypeKind::FixedArray => {
+      let elem = td
+        .fixed_array_element
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("fixed array missing element type".into()))?;
+      let size = td
+        .fixed_array_size
+        .ok_or_else(|| GeneratorError::MalformedType("fixed array missing size".into()))?;
+      let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
+      if let Some(sz) = fixed_size(elem_kind) {
+        Ok(format!("{}", size as usize * sz))
+      } else {
+        let inner = encoded_size_expression(elem, "_el", analysis)?;
+        Ok(format!(
+          "{}.iter().map(|_el| {}).sum::<usize>()",
+          value, inner
+        ))
+      }
+    }
+    TypeKind::Map => {
+      let key = td
+        .map_key
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("map missing key type".into()))?;
+      let val = td
+        .map_value
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
+      let k_size = encoded_size_expression(key, "_k", analysis)?;
+      let v_size = encoded_size_expression(val, "_v", analysis)?;
+      Ok(format!(
+        "4 + {}.iter().map(|(_k, _v)| {} + {}).sum::<usize>()",
+        value, k_size, v_size
+      ))
+    }
+    TypeKind::Defined => {
+      Ok(format!("{}.encoded_size()", value))
+    }
+    _ => Err(GeneratorError::MalformedType(format!(
+      "cannot generate encoded_size for type kind: {}",
+      kind as u8
+    ))),
+  }
+}
+
+/// Generate an expression that converts a value from borrowed to owned (Cow → Cow::Owned).
+pub fn into_owned_expression(td: &TypeDescriptor, value: &str, analysis: &LifetimeAnalysis) -> Result<String, GeneratorError> {
+  let kind = td
+    .kind
+    .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
+
+  match kind {
+    // Cow<str> → Cow::Owned(v.into_owned())
+    TypeKind::String => Ok(format!("Cow::Owned({}.into_owned())", value)),
+    TypeKind::Array => {
+      let elem = td
+        .array_element
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
+      // Cow<[u8]> → Cow::Owned(v.into_owned())
+      if elem.kind == Some(TypeKind::Byte) {
+        return Ok(format!("Cow::Owned({}.into_owned())", value));
+      }
+      // Vec of lifetime types → map into_owned
+      if analysis.type_needs_lifetime(elem) {
+        let inner = into_owned_expression(elem, "_e", analysis)?;
+        Ok(format!("{}.into_iter().map(|_e| {}).collect()", value, inner))
+      } else {
+        Ok(value.to_string())
+      }
+    }
+    TypeKind::FixedArray => {
+      let elem = td
+        .fixed_array_element
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("fixed array missing element type".into()))?;
+      if analysis.type_needs_lifetime(elem) {
+        let inner = into_owned_expression(elem, "_e", analysis)?;
+        Ok(format!("{}.map(|_e| {})", value, inner))
+      } else {
+        Ok(value.to_string())
+      }
+    }
+    TypeKind::Map => {
+      let key = td
+        .map_key
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("map missing key type".into()))?;
+      let val = td
+        .map_value
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
+      let k_needs = analysis.type_needs_lifetime(key);
+      let v_needs = analysis.type_needs_lifetime(val);
+      if k_needs || v_needs {
+        let k_expr = if k_needs {
+          into_owned_expression(key, "_k", analysis)?
+        } else {
+          "_k".to_string()
+        };
+        let v_expr = if v_needs {
+          into_owned_expression(val, "_v", analysis)?
+        } else {
+          "_v".to_string()
+        };
+        Ok(format!(
+          "{}.into_iter().map(|(_k, _v)| ({}, {})).collect()",
+          value, k_expr, v_expr
+        ))
+      } else {
+        Ok(value.to_string())
+      }
+    }
+    TypeKind::Defined => {
+      if let Some(ref fqn) = td.defined_fqn {
+        if analysis.lifetime_fqns.contains(fqn) {
+          return Ok(format!("{}.into_owned()", value));
+        }
+      }
+      Ok(value.to_string())
+    }
+    // All other scalars are Copy — pass through
+    _ => Ok(value.to_string()),
   }
 }
