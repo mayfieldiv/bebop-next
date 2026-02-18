@@ -44,8 +44,10 @@ impl RustGenerator {
     output.push_str("// SPDX-License-Identifier: Apache-2.0\n");
     output.push_str("// Copyright (c) 6OVER3 INSTITUTE\n\n");
 
-    // TODO: Emit `use` statements for the Bebop runtime crate
-    // e.g., use bebop::{BebopReader, BebopWriter, BebopRecord};
+    // Use preamble
+    output.push_str("#![allow(dead_code, unused_imports)]\n\n");
+    output.push_str("use std::collections::HashMap;\n");
+    output.push_str("use bebop_runtime::{BebopReader, BebopWriter, DecodeError};\n\n");
 
     if let Some(ref definitions) = schema.definitions {
       for def in definitions {
@@ -102,5 +104,44 @@ impl RustGenerator {
     }
 
     Ok(())
+  }
+}
+
+/// Emit `///` doc comment lines if documentation is present.
+pub fn emit_doc_comment(output: &mut String, doc: &Option<String>) {
+  if let Some(ref text) = doc {
+    for line in text.lines() {
+      output.push_str(&format!("/// {}\n", line));
+    }
+  }
+}
+
+/// Emit `#[deprecated]` attribute if the definition has a `@deprecated` decorator.
+pub fn emit_deprecated(output: &mut String, decorators: &Option<Vec<DecoratorUsage>>) {
+  if let Some(ref decs) = decorators {
+    for dec in decs {
+      if dec.fqn.as_deref() == Some("bebop.deprecated") {
+        // Check for a message argument
+        let msg = dec.args.as_ref().and_then(|args| {
+          args.iter().find_map(|arg| {
+            if let crate::descriptor::LiteralValue {
+              string_value: Some(ref s),
+              ..
+            } = arg.value
+            {
+              Some(s.clone())
+            } else {
+              None
+            }
+          })
+        });
+        if let Some(msg) = msg {
+          output.push_str(&format!("#[deprecated(note = \"{}\")]\n", msg));
+        } else {
+          output.push_str("#[deprecated]\n");
+        }
+        return;
+      }
+    }
   }
 }

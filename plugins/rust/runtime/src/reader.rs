@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use crate::error::DecodeError;
+use crate::DecodeError;
 
 type Result<T> = std::result::Result<T, DecodeError>;
 

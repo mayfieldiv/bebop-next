@@ -4,6 +4,12 @@ version = "0.1.0"
 edition = "2021"
 publish = false
 
+[workspace]
+members = ["runtime"]
+
+[dependencies]
+bebop-runtime = { path = "runtime" }
+
 [[bin]]
 name = "bebopc-gen-rust"
 path = "src/main.rs"

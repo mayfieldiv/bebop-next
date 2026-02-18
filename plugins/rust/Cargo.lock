@@ -3,5 +3,12 @@
 version = 4
 
 [[package]]
+name = "bebop-runtime"
+version = "0.1.0"
+
+[[package]]
 name = "bebopc-gen-rust"
 version = "0.1.0"
+dependencies = [
+ "bebop-runtime",
+]
