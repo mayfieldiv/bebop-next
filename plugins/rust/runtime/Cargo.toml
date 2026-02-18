@@ -1,0 +1,6 @@
+[package]
+name = "bebop-runtime"
+version = "0.1.0"
+edition = "2021"
+description = "Runtime library for Bebop-generated Rust code"
+publish = false

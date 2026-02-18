@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::hash::Hash;
+
 /// Accumulating writer for Bebop wire format.
 ///
 /// All multi-byte integers are little-endian.
@@ -26,6 +29,18 @@ impl BebopWriter {
     self.buf.push(if v { 1 } else { 0 });
   }
 
+  pub fn write_i8(&mut self, v: i8) {
+    self.buf.push(v as u8);
+  }
+
+  pub fn write_u16(&mut self, v: u16) {
+    self.buf.extend_from_slice(&v.to_le_bytes());
+  }
+
+  pub fn write_i16(&mut self, v: i16) {
+    self.buf.extend_from_slice(&v.to_le_bytes());
+  }
+
   pub fn write_u32(&mut self, v: u32) {
     self.buf.extend_from_slice(&v.to_le_bytes());
   }
@@ -42,6 +57,10 @@ impl BebopWriter {
     self.buf.extend_from_slice(&v.to_le_bytes());
   }
 
+  pub fn write_f32(&mut self, v: f32) {
+    self.buf.extend_from_slice(&v.to_le_bytes());
+  }
+
   pub fn write_f64(&mut self, v: f64) {
     self.buf.extend_from_slice(&v.to_le_bytes());
   }
@@ -55,6 +74,24 @@ impl BebopWriter {
     self.write_u32(len);
     self.buf.extend_from_slice(s.as_bytes());
     self.buf.push(0); // NUL terminator
+  }
+
+  // ── UUID ────────────────────────────────────────────────────
+
+  pub fn write_uuid(&mut self, v: &[u8; 16]) {
+    self.buf.extend_from_slice(v);
+  }
+
+  // ── Timestamp / Duration ────────────────────────────────────
+
+  pub fn write_timestamp(&mut self, v: (i64, i32)) {
+    self.write_i64(v.0);
+    self.write_i32(v.1);
+  }
+
+  pub fn write_duration(&mut self, v: (i64, i32)) {
+    self.write_i64(v.0);
+    self.write_i32(v.1);
   }
 
   // ── Message helpers ─────────────────────────────────────────
@@ -90,6 +127,31 @@ impl BebopWriter {
     self.write_u32(items.len() as u32);
     for item in items {
       write_elem(self, item);
+    }
+  }
+
+  /// Write a map: u32 count + (key, value) pairs.
+  pub fn write_map<K: Eq + Hash, V>(
+    &mut self,
+    map: &HashMap<K, V>,
+    mut write_entry: impl FnMut(&mut Self, &K, &V),
+  ) {
+    self.write_u32(map.len() as u32);
+    for (k, v) in map {
+      write_entry(self, k, v);
+    }
+  }
+
+  /// Write a byte array with length prefix: u32 count + bytes.
+  pub fn write_byte_array(&mut self, v: &[u8]) {
+    self.write_u32(v.len() as u32);
+    self.buf.extend_from_slice(v);
+  }
+
+  /// Write a fixed-size i32 array (no length prefix).
+  pub fn write_fixed_i32_array<const N: usize>(&mut self, arr: &[i32; N]) {
+    for item in arr {
+      self.write_i32(*item);
     }
   }
 }

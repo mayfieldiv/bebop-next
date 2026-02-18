@@ -1,5 +1,1 @@
-mod reader;
-mod writer;
-
-pub use reader::BebopReader;
-pub use writer::BebopWriter;
+pub use bebop_runtime::{BebopReader, BebopWriter};
