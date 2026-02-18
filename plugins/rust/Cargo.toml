@@ -5,7 +5,7 @@ edition = "2021"
 publish = false
 
 [workspace]
-members = ["runtime"]
+members = ["runtime", "integration-tests"]
 
 [dependencies]
 bebop-runtime = { path = "runtime" }
