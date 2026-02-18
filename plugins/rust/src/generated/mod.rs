@@ -3,7 +3,7 @@
 
 #![allow(dead_code, unused_imports)]
 
-use bebop_runtime::{BebopReader, BebopWriter, DecodeError};
+use bebop_runtime::{BebopReader, BebopWriter, DecodeError, BF16, F16};
 use std::collections::HashMap;
 
 include!("descriptor.bb.rs");

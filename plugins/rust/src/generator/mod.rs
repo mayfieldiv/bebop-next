@@ -46,7 +46,7 @@ impl RustGenerator {
     // Use preamble
     output.push_str("#![allow(dead_code, unused_imports)]\n\n");
     output.push_str("use std::collections::HashMap;\n");
-    output.push_str("use bebop_runtime::{BebopReader, BebopWriter, DecodeError};\n\n");
+    output.push_str("use bebop_runtime::{BebopReader, BebopWriter, DecodeError, F16, BF16};\n\n");
 
     if let Some(ref definitions) = schema.definitions {
       for def in definitions {
