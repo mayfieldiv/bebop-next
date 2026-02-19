@@ -30,8 +30,8 @@ pub fn to_snake_case(name: &str) -> String {
     } else if ch.is_uppercase() {
       if i > 0 && !result.ends_with('_') {
         // Don't insert underscore between consecutive uppercase chars
-        let prev_upper = name.chars().nth(i - 1).map_or(false, |c| c.is_uppercase());
-        let next_lower = name.chars().nth(i + 1).map_or(false, |c| c.is_lowercase());
+        let prev_upper = name.chars().nth(i - 1).is_some_and(|c| c.is_uppercase());
+        let next_lower = name.chars().nth(i + 1).is_some_and(|c| c.is_lowercase());
         if !prev_upper || next_lower {
           result.push('_');
         }

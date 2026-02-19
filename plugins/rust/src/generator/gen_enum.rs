@@ -56,6 +56,7 @@ pub fn generate(
 }
 
 /// Generate a proper `#[repr(T)]` Rust enum for non-flags enums.
+#[allow(clippy::too_many_arguments)]
 fn generate_enum(
   def: &DefinitionDescriptor,
   enum_def: &EnumDef,
@@ -166,6 +167,7 @@ fn generate_enum(
 }
 
 /// Generate a newtype struct with bitflags utility methods for @flags enums.
+#[allow(clippy::too_many_arguments)]
 fn generate_flags(
   def: &DefinitionDescriptor,
   enum_def: &EnumDef,

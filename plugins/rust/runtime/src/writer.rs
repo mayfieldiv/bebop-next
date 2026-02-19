@@ -12,6 +12,12 @@ pub struct BebopWriter {
   buf: Vec<u8>,
 }
 
+impl Default for BebopWriter {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 impl BebopWriter {
   pub fn new() -> Self {
     Self { buf: Vec::new() }
@@ -27,6 +33,10 @@ impl BebopWriter {
 
   pub fn len(&self) -> usize {
     self.buf.len()
+  }
+
+  pub fn is_empty(&self) -> bool {
+    self.buf.is_empty()
   }
 
   // ── Primitives ──────────────────────────────────────────────
