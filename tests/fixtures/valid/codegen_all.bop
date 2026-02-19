@@ -130,6 +130,7 @@ struct AllScalars {
     f_int128: int128;
     f_uint128: uint128;
     f_float16: float16;
+    f_bfloat16: bfloat16;
     f_float32: float32;
     f_float64: float64;
     f_string: string;
@@ -190,6 +191,7 @@ struct DynamicArrays {
     arr_int128: int128[];
     arr_uint128: uint128[];
     arr_float16: float16[];
+    arr_bfloat16: bfloat16[];
     arr_float32: float32[];
     arr_float64: float64[];
     arr_string: string[];
@@ -229,6 +231,7 @@ struct FixedScalarArrays {
     arr_int128: int128[2];
     arr_uint128: uint128[2];
     arr_float16: float16[8];
+    arr_bfloat16: bfloat16[8];
     arr_float32: float32[3];
     arr_float64: float64[2];
     arr_string: string[3];
@@ -316,6 +319,7 @@ message AllOptionalScalars {
     f_int128(11): int128;
     f_uint128(12): uint128;
     f_float16(13): float16;
+    f_bfloat16(20): bfloat16;
     f_float32(14): float32;
     f_float64(15): float64;
     f_string(16): string;
