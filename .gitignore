@@ -5,6 +5,7 @@ build-*/
 dist/
 node_modules/
 out
+target
 
 # CMake install outputs
 /bin/
@@ -47,6 +48,7 @@ DerivedData/
 
 ## User settings
 xcuserdata/
+.claude/settings.local.json
 
 ## Obj-C/Swift specific
 *.hmap
