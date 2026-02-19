@@ -1,8 +1,6 @@
 use alloc::vec::Vec;
-#[cfg(feature = "alloc")]
 use core::hash::Hash;
 
-#[cfg(feature = "alloc")]
 use crate::HashMap;
 use crate::{bf16, f16};
 
@@ -179,7 +177,6 @@ impl BebopWriter {
   }
 
   /// Write a map: u32 count + (key, value) pairs.
-  #[cfg(feature = "alloc")]
   pub fn write_map<K: Eq + Hash, V>(
     &mut self,
     map: &HashMap<K, V>,

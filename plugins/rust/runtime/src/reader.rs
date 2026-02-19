@@ -1,11 +1,7 @@
-#[cfg(feature = "alloc")]
 use alloc::string::String;
-#[cfg(feature = "alloc")]
 use alloc::vec::Vec;
-#[cfg(feature = "alloc")]
 use core::hash::Hash;
 
-#[cfg(feature = "alloc")]
 use crate::HashMap;
 use crate::{bf16, f16, DecodeError};
 
@@ -144,7 +140,6 @@ impl<'a> BebopReader<'a> {
 
   /// Read a Bebop string: u32 byte_count + UTF-8 bytes + NUL terminator.
   /// The u32 is the number of UTF-8 bytes (NOT including the trailing NUL).
-  #[cfg(feature = "alloc")]
   pub fn read_string(&mut self) -> Result<String> {
     let len = self.read_u32()? as usize;
     self.ensure(len + 1)?; // string bytes + NUL
@@ -199,7 +194,6 @@ impl<'a> BebopReader<'a> {
   // ── Collections ─────────────────────────────────────────────
 
   /// Read a dynamic array: u32 count + elements.
-  #[cfg(feature = "alloc")]
   pub fn read_array<T>(
     &mut self,
     mut read_elem: impl FnMut(&mut Self) -> Result<T>,
@@ -213,7 +207,6 @@ impl<'a> BebopReader<'a> {
   }
 
   /// Read a dynamic map: u32 count + (key, value) pairs.
-  #[cfg(feature = "alloc")]
   pub fn read_map<K: Eq + Hash, V>(
     &mut self,
     mut read_entry: impl FnMut(&mut Self) -> Result<(K, V)>,
@@ -237,7 +230,6 @@ impl<'a> BebopReader<'a> {
   }
 
   /// Read raw bytes.
-  #[cfg(feature = "alloc")]
   pub fn read_bytes(&mut self, count: usize) -> Result<Vec<u8>> {
     self.ensure(count)?;
     let bytes = self.buf[self.pos..self.pos + count].to_vec();
@@ -246,7 +238,6 @@ impl<'a> BebopReader<'a> {
   }
 
   /// Read a byte array with length prefix: u32 count + bytes.
-  #[cfg(feature = "alloc")]
   pub fn read_byte_array(&mut self) -> Result<Vec<u8>> {
     let count = self.read_u32()? as usize;
     self.read_bytes(count)
