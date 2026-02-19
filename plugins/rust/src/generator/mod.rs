@@ -138,6 +138,62 @@ impl LifetimeAnalysis {
   }
 }
 
+fn schema_uses_maps(schema: &SchemaDescriptor) -> bool {
+  schema
+    .definitions
+    .as_deref()
+    .unwrap_or(&[])
+    .iter()
+    .any(definition_uses_maps)
+}
+
+fn definition_uses_maps(def: &DefinitionDescriptor) -> bool {
+  def.struct_def
+    .as_ref()
+    .and_then(|sd| sd.fields.as_deref())
+    .is_some_and(fields_use_maps)
+    || def
+      .message_def
+      .as_ref()
+      .and_then(|md| md.fields.as_deref())
+      .is_some_and(fields_use_maps)
+    || def
+      .service_def
+      .as_ref()
+      .and_then(|sd| sd.methods.as_deref())
+      .is_some_and(|methods| methods.iter().any(method_uses_maps))
+    || def
+      .const_def
+      .as_ref()
+      .and_then(|cd| cd.r#type.as_ref())
+      .is_some_and(type_uses_maps)
+    || def
+      .nested
+      .as_deref()
+      .is_some_and(|nested| nested.iter().any(definition_uses_maps))
+}
+
+fn fields_use_maps(fields: &[FieldDescriptor]) -> bool {
+  fields.iter().any(field_uses_maps)
+}
+
+fn field_uses_maps(field: &FieldDescriptor) -> bool {
+  field.r#type.as_ref().is_some_and(type_uses_maps)
+}
+
+fn method_uses_maps(method: &MethodDescriptor) -> bool {
+  method.request_type.as_ref().is_some_and(type_uses_maps)
+    || method.response_type.as_ref().is_some_and(type_uses_maps)
+}
+
+fn type_uses_maps(ty: &TypeDescriptor) -> bool {
+  ty.kind == Some(TypeKind::Map)
+    || ty.array_element.as_deref().is_some_and(type_uses_maps)
+    || ty.fixed_array_element.as_deref().is_some_and(type_uses_maps)
+    || ty.map_key.as_deref().is_some_and(type_uses_maps)
+    || ty.map_value.as_deref().is_some_and(type_uses_maps)
+}
+
 pub struct RustGenerator {
   pub compiler_version: Option<VersionOwned>,
 }
@@ -184,9 +240,16 @@ impl RustGenerator {
 
     // Inner attributes — scoped to this module only
     output.push_str("#![allow(warnings)]\n\n");
-    output.push_str("use std::borrow::Cow;\n");
-    output.push_str("use std::collections::HashMap;\n");
-    output.push_str("use std::mem::size_of;\n");
+    output.push_str("extern crate alloc;\n");
+    output.push_str("use alloc::borrow::Cow;\n");
+    output.push_str("use alloc::boxed::Box;\n");
+    output.push_str("use alloc::string::String;\n");
+    output.push_str("use alloc::vec;\n");
+    output.push_str("use alloc::vec::Vec;\n");
+    output.push_str("use core::mem::size_of;\n");
+    if schema_uses_maps(schema) {
+      output.push_str("use std::collections::HashMap;\n");
+    }
     output.push_str("use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, f16, bf16};\n");
     output.push_str("use bebop_runtime::wire_size as wire;\n");
 

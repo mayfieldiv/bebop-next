@@ -11,9 +11,14 @@
 
 #![allow(warnings)]
 
-use std::borrow::Cow;
+extern crate alloc;
+use alloc::borrow::Cow;
+use alloc::boxed::Box;
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
+use core::mem::size_of;
 use std::collections::HashMap;
-use std::mem::size_of;
 use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, f16, bf16};
 use bebop_runtime::wire_size as wire;
 
@@ -27,7 +32,7 @@ pub enum Color {
   Blue = 3,
 }
 
-impl std::convert::TryFrom<u8> for Color {
+impl core::convert::TryFrom<u8> for Color {
   type Error = DecodeError;
   fn try_from(value: u8) -> Result<Self, DecodeError> {
     match value {
@@ -82,14 +87,14 @@ impl BebopFlags for Permissions {
   fn from_bits_retain(bits: Self::Bits) -> Self { Self(bits) }
 }
 
-impl std::ops::BitOr for Permissions { type Output = Self; fn bitor(self, rhs: Self) -> Self { Self(self.0 | rhs.0) } }
-impl std::ops::BitOrAssign for Permissions { fn bitor_assign(&mut self, rhs: Self) { self.0 |= rhs.0; } }
-impl std::ops::BitAnd for Permissions { type Output = Self; fn bitand(self, rhs: Self) -> Self { Self(self.0 & rhs.0) } }
-impl std::ops::BitAndAssign for Permissions { fn bitand_assign(&mut self, rhs: Self) { self.0 &= rhs.0; } }
-impl std::ops::BitXor for Permissions { type Output = Self; fn bitxor(self, rhs: Self) -> Self { Self(self.0 ^ rhs.0) } }
-impl std::ops::BitXorAssign for Permissions { fn bitxor_assign(&mut self, rhs: Self) { self.0 ^= rhs.0; } }
-impl std::ops::Not for Permissions { type Output = Self; fn not(self) -> Self { Self(!self.0) } }
-impl std::ops::Sub for Permissions { type Output = Self; fn sub(self, rhs: Self) -> Self { Self(self.0 & !rhs.0) } }
+impl core::ops::BitOr for Permissions { type Output = Self; fn bitor(self, rhs: Self) -> Self { Self(self.0 | rhs.0) } }
+impl core::ops::BitOrAssign for Permissions { fn bitor_assign(&mut self, rhs: Self) { self.0 |= rhs.0; } }
+impl core::ops::BitAnd for Permissions { type Output = Self; fn bitand(self, rhs: Self) -> Self { Self(self.0 & rhs.0) } }
+impl core::ops::BitAndAssign for Permissions { fn bitand_assign(&mut self, rhs: Self) { self.0 &= rhs.0; } }
+impl core::ops::BitXor for Permissions { type Output = Self; fn bitxor(self, rhs: Self) -> Self { Self(self.0 ^ rhs.0) } }
+impl core::ops::BitXorAssign for Permissions { fn bitxor_assign(&mut self, rhs: Self) { self.0 ^= rhs.0; } }
+impl core::ops::Not for Permissions { type Output = Self; fn not(self) -> Self { Self(!self.0) } }
+impl core::ops::Sub for Permissions { type Output = Self; fn sub(self, rhs: Self) -> Self { Self(self.0 & !rhs.0) } }
 
 /// Constants used to validate Rust const generation.
 pub const P_CASE: u8 = 18u8;

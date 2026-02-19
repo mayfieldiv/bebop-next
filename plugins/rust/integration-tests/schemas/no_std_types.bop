@@ -1,0 +1,31 @@
+// no_std_types.bop
+//
+// Integration schema that avoids std-only types (maps) so generated code can
+// compile and run with `bebop-runtime` in `alloc`-only mode.
+
+edition = "2026"
+package test_nostd
+
+/// Fixed-size struct.
+struct Position {
+    x: float32;
+    y: float32;
+}
+
+/// Borrowed string in generated Rust (`Cow<'buf, str>`).
+struct Label {
+    text: string;
+}
+
+/// Borrowed byte array in generated Rust (`Cow<'buf, [u8]>`).
+struct Blob {
+    data: byte[];
+}
+
+/// Message with no map fields.
+message Snapshot {
+    id(1): uint32;
+    title(2): string;
+    points(3): Position[];
+    payload(4): byte[];
+}

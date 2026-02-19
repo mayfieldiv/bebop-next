@@ -5,5 +5,10 @@ edition = "2021"
 description = "Runtime library for Bebop-generated Rust code"
 publish = false
 
+[features]
+default = ["std"]
+std = ["alloc", "half/std"]
+alloc = ["half/alloc"]
+
 [dependencies]
-half = { version = "2.7", features = [] }
+half = { version = "2.7", default-features = false }
