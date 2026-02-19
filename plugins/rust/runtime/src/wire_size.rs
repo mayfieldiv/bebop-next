@@ -1,6 +1,6 @@
-#[cfg(feature = "alloc-map")]
+#[cfg(feature = "alloc")]
 use crate::HashMap;
-#[cfg(feature = "alloc-map")]
+#[cfg(feature = "alloc")]
 use core::hash::BuildHasher;
 use core::mem::size_of;
 
@@ -31,7 +31,7 @@ pub fn array_size<T>(items: &[T], mut elem_size: impl FnMut(&T) -> usize) -> usi
 }
 
 #[inline]
-#[cfg(feature = "alloc-map")]
+#[cfg(feature = "alloc")]
 pub fn map_size<K, V, S>(
   map: &HashMap<K, V, S>,
   mut entry_size: impl FnMut(&K, &V) -> usize,
@@ -93,7 +93,7 @@ mod tests {
   }
 
   #[test]
-  #[cfg(feature = "alloc-map")]
+  #[cfg(feature = "alloc")]
   fn map_size_aggregates_entries() {
     let mut m = HashMap::new();
     m.insert("k1", "v1");

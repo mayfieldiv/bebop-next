@@ -4,6 +4,6 @@
 #[rustfmt::skip]
 pub mod test_types;
 
-#[cfg(feature = "alloc-map")]
+#[cfg(feature = "alloc")]
 #[rustfmt::skip]
 pub mod no_std_types;
