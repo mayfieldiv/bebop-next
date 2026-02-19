@@ -36,7 +36,7 @@ pub fn generate(
         (t.clone(), t, Some(fqn.to_string()))
       } else if let Some(ref bname) = b.name {
         let fqn = b.type_ref_fqn.as_ref();
-        let t = if let Some(ref fqn) = fqn {
+        let t = if let Some(fqn) = fqn {
           fqn_to_type_name(fqn)
         } else {
           type_name(bname)
@@ -91,7 +91,7 @@ pub fn generate(
     let has_lt = b
       .inner_fqn
       .as_ref()
-      .map_or(false, |fqn| analysis.lifetime_fqns.contains(fqn));
+      .is_some_and(|fqn| analysis.lifetime_fqns.contains(fqn));
     if has_lt {
       output.push_str(&format!(
         "      Self::{}(inner) => {}::{}(inner.into_owned()),\n",

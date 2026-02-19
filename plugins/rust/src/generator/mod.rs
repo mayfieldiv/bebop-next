@@ -58,7 +58,7 @@ impl LifetimeAnalysis {
           if fields.iter().any(|f| {
             f.r#type
               .as_ref()
-              .map_or(false, |td| self.type_needs_lifetime(td))
+              .is_some_and(|td| self.type_needs_lifetime(td))
           }) {
             self.lifetime_fqns.insert(fqn);
           }
@@ -70,7 +70,7 @@ impl LifetimeAnalysis {
           if fields.iter().any(|f| {
             f.r#type
               .as_ref()
-              .map_or(false, |td| self.type_needs_lifetime(td))
+              .is_some_and(|td| self.type_needs_lifetime(td))
           }) {
             self.lifetime_fqns.insert(fqn);
           }
@@ -114,16 +114,16 @@ impl LifetimeAnalysis {
       TypeKind::FixedArray => td
         .fixed_array_element
         .as_ref()
-        .map_or(false, |e| self.type_needs_lifetime(e)),
+        .is_some_and(|e| self.type_needs_lifetime(e)),
       TypeKind::Map => {
         let k = td
           .map_key
           .as_ref()
-          .map_or(false, |e| self.type_needs_lifetime(e));
+          .is_some_and(|e| self.type_needs_lifetime(e));
         let v = td
           .map_value
           .as_ref()
-          .map_or(false, |e| self.type_needs_lifetime(e));
+          .is_some_and(|e| self.type_needs_lifetime(e));
         k || v
       }
       TypeKind::Defined => {
@@ -197,14 +197,13 @@ impl RustGenerator {
     output.push('\n');
 
     for def in definitions {
-      self.generate_definition(def, &mut output, 0, &analysis)?;
+      Self::generate_definition(def, &mut output, 0, analysis)?;
     }
 
     Ok(output)
   }
 
   fn generate_definition(
-    &self,
     def: &DefinitionDescriptor,
     output: &mut String,
     depth: usize,
@@ -245,7 +244,7 @@ impl RustGenerator {
     // Process nested definitions
     if let Some(ref nested) = def.nested {
       for child in nested {
-        self.generate_definition(child, output, depth + 1, analysis)?;
+        Self::generate_definition(child, output, depth + 1, analysis)?;
       }
     }
 
