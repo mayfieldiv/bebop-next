@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use bebop_runtime::{BebopDecode, BebopEncode, BebopFlags};
+use bebop_runtime::{BebopDecode, BebopEncode, BebopFlags, bf16, f16};
 
 use bebop_integration_tests::test_types::*;
 
@@ -74,6 +74,127 @@ fn const_string_and_uuid_values() {
             0x17, 0x08,
         ]
     );
+}
+
+#[test]
+fn const_half_values() {
+    assert_eq!(EXAMPLE_CONST_F16.to_bits(), f16::from_f64(1.5).to_bits());
+    assert_eq!(EXAMPLE_CONST_BF16.to_bits(), bf16::from_f64(1.5).to_bits());
+    assert_eq!(EXAMPLE_CONST_F16_FROM_INT.to_bits(), f16::from_f64(1.0).to_bits());
+    assert_eq!(
+        EXAMPLE_CONST_BF16_FROM_INT.to_bits(),
+        bf16::from_f64(2.0).to_bits()
+    );
+
+    assert!(EXAMPLE_CONST_F16_INF.is_infinite() && !EXAMPLE_CONST_F16_INF.is_sign_negative());
+    assert!(
+        EXAMPLE_CONST_BF16_NEG_INF.is_infinite() && EXAMPLE_CONST_BF16_NEG_INF.is_sign_negative()
+    );
+    assert!(EXAMPLE_CONST_F16_NAN.is_nan());
+    assert!(EXAMPLE_CONST_BF16_NAN.is_nan());
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Half-precision types
+// ═══════════════════════════════════════════════════════════════
+
+#[test]
+fn half_precision_scalars_round_trip_preserves_bits() {
+    let src = HalfPrecisionScalars::new(f16::from_bits(0x7E01), bf16::from_bits(0x7FC1));
+    let bytes = src.to_bytes();
+    let decoded = HalfPrecisionScalars::from_bytes(&bytes).unwrap();
+    assert_eq!(decoded.f16_val.to_bits(), 0x7E01);
+    assert_eq!(decoded.bf16_val.to_bits(), 0x7FC1);
+    assert_eq!(src.encoded_size(), bytes.len());
+}
+
+#[test]
+fn half_precision_arrays_round_trip_preserves_bits() {
+    let src = HalfPrecisionArrays::new(
+        vec![f16::from_bits(0x0000), f16::from_bits(0x3C00), f16::from_bits(0xFC00)],
+        vec![
+            bf16::from_bits(0x0000),
+            bf16::from_bits(0x3F80),
+            bf16::from_bits(0xFF80),
+        ],
+        [
+            f16::from_bits(0x0001),
+            f16::from_bits(0x3C00),
+            f16::from_bits(0x7C00),
+            f16::from_bits(0x7E00),
+        ],
+        [
+            bf16::from_bits(0x0001),
+            bf16::from_bits(0x3F80),
+            bf16::from_bits(0x7F80),
+            bf16::from_bits(0x7FC0),
+        ],
+    );
+
+    let bytes = src.to_bytes();
+    let decoded = HalfPrecisionArrays::from_bytes(&bytes).unwrap();
+    assert_eq!(
+        decoded
+            .f16_dynamic
+            .iter()
+            .map(|v| v.to_bits())
+            .collect::<Vec<_>>(),
+        vec![0x0000, 0x3C00, 0xFC00]
+    );
+    assert_eq!(
+        decoded
+            .bf16_dynamic
+            .iter()
+            .map(|v| v.to_bits())
+            .collect::<Vec<_>>(),
+        vec![0x0000, 0x3F80, 0xFF80]
+    );
+    assert_eq!(
+        decoded.f16_fixed.map(|v| v.to_bits()),
+        [0x0001, 0x3C00, 0x7C00, 0x7E00]
+    );
+    assert_eq!(
+        decoded.bf16_fixed.map(|v| v.to_bits()),
+        [0x0001, 0x3F80, 0x7F80, 0x7FC0]
+    );
+    assert_eq!(src.encoded_size(), bytes.len());
+}
+
+#[test]
+fn half_precision_message_some_and_none_round_trip() {
+    let mut msg = HalfPrecisionMessage::default();
+    msg.f16_val = Some(f16::from_bits(0x3555));
+    msg.bf16_val = Some(bf16::from_bits(0x3FC0));
+    msg.f16_arr = Some(vec![f16::from_bits(0x3C00), f16::from_bits(0xBC00)]);
+    msg.bf16_arr = Some(vec![bf16::from_bits(0x3F80), bf16::from_bits(0xBF80)]);
+
+    let bytes = msg.to_bytes();
+    let decoded = HalfPrecisionMessage::from_bytes(&bytes).unwrap();
+    assert_eq!(decoded.f16_val.unwrap().to_bits(), 0x3555);
+    assert_eq!(decoded.bf16_val.unwrap().to_bits(), 0x3FC0);
+    assert_eq!(
+        decoded.f16_arr.unwrap().iter().map(|v| v.to_bits()).collect::<Vec<_>>(),
+        vec![0x3C00, 0xBC00]
+    );
+    assert_eq!(
+        decoded
+            .bf16_arr
+            .unwrap()
+            .iter()
+            .map(|v| v.to_bits())
+            .collect::<Vec<_>>(),
+        vec![0x3F80, 0xBF80]
+    );
+    assert_eq!(msg.encoded_size(), bytes.len());
+
+    let empty = HalfPrecisionMessage::default();
+    let empty_bytes = empty.to_bytes();
+    let decoded_empty = HalfPrecisionMessage::from_bytes(&empty_bytes).unwrap();
+    assert!(decoded_empty.f16_val.is_none());
+    assert!(decoded_empty.bf16_val.is_none());
+    assert!(decoded_empty.f16_arr.is_none());
+    assert!(decoded_empty.bf16_arr.is_none());
+    assert_eq!(empty.encoded_size(), empty_bytes.len());
 }
 
 // ═══════════════════════════════════════════════════════════════

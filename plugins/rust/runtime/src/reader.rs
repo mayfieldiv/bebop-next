@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use crate::{BF16, DecodeError, F16};
+use crate::{DecodeError, bf16, f16};
 
 type Result<T> = std::result::Result<T, DecodeError>;
 
@@ -114,12 +114,12 @@ impl<'a> BebopReader<'a> {
     Ok(u128::from_le_bytes(bytes))
   }
 
-  pub fn read_f16(&mut self) -> Result<F16> {
-    Ok(F16(self.read_u16()?))
+  pub fn read_f16(&mut self) -> Result<f16> {
+    Ok(f16::from_bits(self.read_u16()?))
   }
 
-  pub fn read_bf16(&mut self) -> Result<BF16> {
-    Ok(BF16(self.read_u16()?))
+  pub fn read_bf16(&mut self) -> Result<bf16> {
+    Ok(bf16::from_bits(self.read_u16()?))
   }
 
   pub fn read_f32(&mut self) -> Result<f32> {
