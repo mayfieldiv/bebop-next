@@ -1,14 +1,10 @@
-#[cfg(feature = "alloc")]
 use alloc::vec::Vec;
-#[cfg(feature = "alloc")]
 use core::ops::{BitAnd, BitOr, BitXor, Not};
 
-#[cfg(feature = "alloc")]
 use crate::BebopWriter;
 use crate::{BebopReader, DecodeError};
 
 /// Trait for types that can be encoded into the Bebop wire format.
-#[cfg(feature = "alloc")]
 pub trait BebopEncode {
   /// Encode `self` into the writer.
   fn encode(&self, writer: &mut BebopWriter);
@@ -46,7 +42,6 @@ pub trait BebopDecodeOwned: for<'buf> BebopDecode<'buf> {}
 impl<T: for<'buf> BebopDecode<'buf>> BebopDecodeOwned for T {}
 
 /// Primitive integer types usable as flag bit storage.
-#[cfg(feature = "alloc")]
 pub trait BebopFlagBits:
   Copy
   + Default
@@ -62,7 +57,6 @@ pub trait BebopFlagBits:
   fn decode_bits<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError>;
 }
 
-#[cfg(feature = "alloc")]
 impl BebopFlagBits for u8 {
   const FIXED_ENCODED_SIZE: usize = 1;
 
@@ -75,7 +69,6 @@ impl BebopFlagBits for u8 {
   }
 }
 
-#[cfg(feature = "alloc")]
 impl BebopFlagBits for i8 {
   const FIXED_ENCODED_SIZE: usize = 1;
 
@@ -88,7 +81,6 @@ impl BebopFlagBits for i8 {
   }
 }
 
-#[cfg(feature = "alloc")]
 impl BebopFlagBits for u16 {
   const FIXED_ENCODED_SIZE: usize = 2;
 
@@ -101,7 +93,6 @@ impl BebopFlagBits for u16 {
   }
 }
 
-#[cfg(feature = "alloc")]
 impl BebopFlagBits for i16 {
   const FIXED_ENCODED_SIZE: usize = 2;
 
@@ -114,7 +105,6 @@ impl BebopFlagBits for i16 {
   }
 }
 
-#[cfg(feature = "alloc")]
 impl BebopFlagBits for u32 {
   const FIXED_ENCODED_SIZE: usize = 4;
 
@@ -127,7 +117,6 @@ impl BebopFlagBits for u32 {
   }
 }
 
-#[cfg(feature = "alloc")]
 impl BebopFlagBits for i32 {
   const FIXED_ENCODED_SIZE: usize = 4;
 
@@ -140,7 +129,6 @@ impl BebopFlagBits for i32 {
   }
 }
 
-#[cfg(feature = "alloc")]
 impl BebopFlagBits for u64 {
   const FIXED_ENCODED_SIZE: usize = 8;
 
@@ -153,7 +141,6 @@ impl BebopFlagBits for u64 {
   }
 }
 
-#[cfg(feature = "alloc")]
 impl BebopFlagBits for i64 {
   const FIXED_ENCODED_SIZE: usize = 8;
 
@@ -167,7 +154,6 @@ impl BebopFlagBits for i64 {
 }
 
 /// Shared behavior for generated `@flags` newtypes.
-#[cfg(feature = "alloc")]
 pub trait BebopFlags: Sized + Copy {
   type Bits: BebopFlagBits;
 
@@ -225,7 +211,6 @@ pub trait BebopFlags: Sized + Copy {
   }
 }
 
-#[cfg(feature = "alloc")]
 impl<T> BebopEncode for T
 where
   T: BebopFlags + Copy,
@@ -239,7 +224,6 @@ where
   }
 }
 
-#[cfg(feature = "alloc")]
 impl<'buf, T> BebopDecode<'buf> for T
 where
   T: BebopFlags,
@@ -249,7 +233,7 @@ where
   }
 }
 
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(test)]
 mod tests {
   use alloc::vec;
 
