@@ -1,9 +1,20 @@
 #![cfg(not(feature = "std"))]
+#![no_std]
+#![no_implicit_prelude]
 
-use bebop_runtime::HashMap;
-use bebop_runtime::{BebopDecode, BebopEncode};
+extern crate alloc;
+extern crate bebop_integration_tests;
+extern crate bebop_runtime;
 
-use bebop_integration_tests::test_types::*;
+use ::alloc::vec;
+use ::bebop_runtime::HashMap;
+use ::bebop_runtime::{BebopDecode, BebopEncode};
+use ::core::assert_eq;
+use ::core::convert::{AsRef, Into};
+use ::core::default::Default;
+use ::core::option::Option::Some;
+
+use ::bebop_integration_tests::test_types::*;
 
 #[test]
 fn no_std_point_round_trip() {
