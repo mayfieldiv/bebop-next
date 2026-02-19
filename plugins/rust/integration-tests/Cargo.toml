@@ -6,8 +6,7 @@ publish = false
 
 [features]
 default = ["std"]
-std = ["alloc", "bebop-runtime/std"]
-alloc = ["bebop-runtime/alloc"]
+std = ["bebop-runtime/std"]
 
 [dependencies]
 bebop-runtime = { path = "../runtime", default-features = false }
