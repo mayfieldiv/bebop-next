@@ -96,10 +96,22 @@ pub fn generate(
         }
       }
       if can_emit_expr && !parts.is_empty() {
-        output.push_str(&format!(
-          "  pub const FIXED_ENCODED_SIZE: usize = {};\n\n",
-          parts.join(" + ")
-        ));
+        if parts.len() > 2 {
+          output.push_str("  pub const FIXED_ENCODED_SIZE: usize =\n");
+          output.push_str(&format!("    {}\n", parts[0]));
+          for (i, expr) in parts.iter().enumerate().skip(1) {
+            if i == parts.len() - 1 {
+              output.push_str(&format!("    + {};\n\n", expr));
+            } else {
+              output.push_str(&format!("    + {}\n", expr));
+            }
+          }
+        } else {
+          output.push_str(&format!(
+            "  pub const FIXED_ENCODED_SIZE: usize = {};\n\n",
+            parts.join(" + ")
+          ));
+        }
       } else {
         output.push_str(&format!(
           "  pub const FIXED_ENCODED_SIZE: usize = {};\n\n",
@@ -237,19 +249,15 @@ fn emit_encoded_size_body(
   output: &mut String,
   analysis: &LifetimeAnalysis,
 ) -> Result<(), GeneratorError> {
-  let mut parts: Vec<String> = Vec::new();
+  output.push_str("    let mut size = 0;\n");
   for (i, f) in fields.iter().enumerate() {
     let td = f.r#type.as_ref().ok_or_else(|| {
       GeneratorError::MalformedDefinition("struct field missing type".into())
     })?;
     let expr =
       type_mapper::encoded_size_expression(td, &format!("self.{}", fnames[i]), analysis)?;
-    parts.push(expr);
+    output.push_str(&format!("    size += {};\n", expr));
   }
-  if parts.is_empty() {
-    output.push_str("    0\n");
-  } else {
-    output.push_str(&format!("    {}\n", parts.join(" + ")));
-  }
+  output.push_str("    size\n");
   Ok(())
 }

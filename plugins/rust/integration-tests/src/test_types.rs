@@ -134,7 +134,10 @@ pub struct Pixel {
 }
 
 impl Pixel {
-  pub const FIXED_ENCODED_SIZE: usize = Point::FIXED_ENCODED_SIZE + Color::FIXED_ENCODED_SIZE + size_of::<u8>();
+  pub const FIXED_ENCODED_SIZE: usize =
+    Point::FIXED_ENCODED_SIZE
+    + Color::FIXED_ENCODED_SIZE
+    + size_of::<u8>();
 
   pub fn new(position: Point, color: Color, alpha: u8) -> Self {
     Self { position, color, alpha }
@@ -194,7 +197,10 @@ impl<'buf> BebopEncode for Person<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    wire::string_size(self.name.len()) + size_of::<u32>()
+    let mut size = 0;
+    size += wire::string_size(self.name.len());
+    size += size_of::<u32>();
+    size
   }
 }
 
@@ -238,7 +244,10 @@ impl<'buf> BebopEncode for BinaryPayload<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    size_of::<u32>() + wire::byte_array_size(self.data.len())
+    let mut size = 0;
+    size += size_of::<u32>();
+    size += wire::byte_array_size(self.data.len());
+    size
   }
 }
 
@@ -480,7 +489,10 @@ impl<'buf> BebopEncode for TextLabel<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    self.position.encoded_size() + wire::string_size(self.text.len())
+    let mut size = 0;
+    size += self.position.encoded_size();
+    size += wire::string_size(self.text.len());
+    size
   }
 }
 
@@ -626,7 +638,12 @@ impl<'buf> BebopEncode for Address<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    wire::string_size(self.street.len()) + wire::string_size(self.city.len()) + wire::string_size(self.country.len()) + wire::string_size(self.zip_code.len())
+    let mut size = 0;
+    size += wire::string_size(self.street.len());
+    size += wire::string_size(self.city.len());
+    size += wire::string_size(self.country.len());
+    size += wire::string_size(self.zip_code.len());
+    size
   }
 }
 

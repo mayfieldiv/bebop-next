@@ -533,7 +533,7 @@ impl<'buf> BebopDecode<'buf> for TypeDescriptor<'buf> {
         4 => msg.fixed_array_size = Some(reader.read_u32()?),
         5 => msg.map_key = Some(Box::new(TypeDescriptor::decode(reader)?)),
         6 => msg.map_value = Some(Box::new(TypeDescriptor::decode(reader)?)),
-        7 => msg.defined_fqn = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        7 => msg.defined_fqn = Some(Cow::Borrowed(reader.read_str()?)),
         _ => { reader.skip(end - reader.position())?; }
       }
     }
@@ -681,10 +681,10 @@ impl<'buf> BebopDecode<'buf> for LiteralValue<'buf> {
         2 => msg.bool_value = Some(reader.read_bool()?),
         3 => msg.int_value = Some(reader.read_i64()?),
         4 => msg.float_value = Some(reader.read_f64()?),
-        5 => msg.string_value = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        5 => msg.string_value = Some(Cow::Borrowed(reader.read_str()?)),
         6 => msg.uuid_value = Some(reader.read_uuid()?),
-        7 => msg.raw_value = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        8 => msg.bytes_value = Some({ let _s = reader.read_byte_slice()?; Ok(Cow::Borrowed(_s)) }?),
+        7 => msg.raw_value = Some(Cow::Borrowed(reader.read_str()?)),
+        8 => msg.bytes_value = Some(Cow::Borrowed(reader.read_byte_slice()?)),
         9 => msg.timestamp_value = Some(reader.read_timestamp()?),
         10 => msg.duration_value = Some(reader.read_duration()?),
         _ => { reader.skip(end - reader.position())?; }
@@ -706,10 +706,8 @@ pub type DecoratorArgOwned = DecoratorArg<'static>;
 
 impl<'buf> DecoratorArg<'buf> {
   pub fn new(name: impl Into<Cow<'buf, str>>, value: LiteralValue<'static>) -> Self {
-    Self {
-      name: name.into(),
-      value,
-    }
+    let name = name.into();
+    Self { name, value }
   }
 }
 
@@ -729,18 +727,18 @@ impl<'buf> BebopEncode for DecoratorArg<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    wire::string_size(self.name.len()) + self.value.encoded_size()
+    let mut size = 0;
+    size += wire::string_size(self.name.len());
+    size += self.value.encoded_size();
+    size
   }
 }
 
 impl<'buf> BebopDecode<'buf> for DecoratorArg<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
-    let name = { let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?;
+    let name = Cow::Borrowed(reader.read_str()?);
     let value = LiteralValue::decode(reader)?;
-    Ok(DecoratorArg {
-      name,
-      value,
-    })
+    Ok(DecoratorArg { name, value })
   }
 }
 
@@ -816,9 +814,9 @@ impl<'buf> BebopDecode<'buf> for DecoratorUsage<'buf> {
       let tag = reader.read_tag()?;
       if tag == 0 { break; }
       match tag {
-        1 => msg.fqn = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        1 => msg.fqn = Some(Cow::Borrowed(reader.read_str()?)),
         2 => msg.args = Some(reader.read_array(|_r| DecoratorArg::decode(_r))?),
-        3 => msg.export_data = Some(reader.read_map(|_r| Ok(({ let _s = _r.read_str()?; Ok(Cow::Borrowed(_s)) }?, LiteralValue::decode(_r)?)))?),
+        3 => msg.export_data = Some(reader.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, LiteralValue::decode(_r)?)))?),
         _ => { reader.skip(end - reader.position())?; }
       }
     }
@@ -915,8 +913,8 @@ impl<'buf> BebopDecode<'buf> for FieldDescriptor<'buf> {
       let tag = reader.read_tag()?;
       if tag == 0 { break; }
       match tag {
-        1 => msg.name = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        2 => msg.documentation = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        1 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
+        2 => msg.documentation = Some(Cow::Borrowed(reader.read_str()?)),
         3 => msg.r#type = Some(TypeDescriptor::decode(reader)?),
         4 => msg.index = Some(reader.read_u32()?),
         5 => msg.decorators = Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?),
@@ -1014,11 +1012,11 @@ impl<'buf> BebopDecode<'buf> for EnumMemberDescriptor<'buf> {
       let tag = reader.read_tag()?;
       if tag == 0 { break; }
       match tag {
-        1 => msg.name = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        2 => msg.documentation = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        1 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
+        2 => msg.documentation = Some(Cow::Borrowed(reader.read_str()?)),
         3 => msg.value = Some(reader.read_u64()?),
         4 => msg.decorators = Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?),
-        5 => msg.value_expr = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        5 => msg.value_expr = Some(Cow::Borrowed(reader.read_str()?)),
         _ => { reader.skip(end - reader.position())?; }
       }
     }
@@ -1135,10 +1133,10 @@ impl<'buf> BebopDecode<'buf> for UnionBranchDescriptor<'buf> {
       if tag == 0 { break; }
       match tag {
         1 => msg.discriminator = Some(reader.read_byte()?),
-        2 => msg.documentation = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        3 => msg.inline_fqn = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        4 => msg.type_ref_fqn = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        5 => msg.name = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        2 => msg.documentation = Some(Cow::Borrowed(reader.read_str()?)),
+        3 => msg.inline_fqn = Some(Cow::Borrowed(reader.read_str()?)),
+        4 => msg.type_ref_fqn = Some(Cow::Borrowed(reader.read_str()?)),
+        5 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
         6 => msg.decorators = Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?),
         _ => { reader.skip(end - reader.position())?; }
       }
@@ -1250,8 +1248,8 @@ impl<'buf> BebopDecode<'buf> for MethodDescriptor<'buf> {
       let tag = reader.read_tag()?;
       if tag == 0 { break; }
       match tag {
-        1 => msg.name = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        2 => msg.documentation = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        1 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
+        2 => msg.documentation = Some(Cow::Borrowed(reader.read_str()?)),
         3 => msg.request_type = Some(TypeDescriptor::decode(reader)?),
         4 => msg.response_type = Some(TypeDescriptor::decode(reader)?),
         5 => msg.method_type = Some(MethodType::decode(reader)?),
@@ -1765,8 +1763,8 @@ impl<'buf> BebopDecode<'buf> for DecoratorParamDef<'buf> {
       let tag = reader.read_tag()?;
       if tag == 0 { break; }
       match tag {
-        1 => msg.name = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        2 => msg.description = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        1 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
+        2 => msg.description = Some(Cow::Borrowed(reader.read_str()?)),
         3 => msg.r#type = Some(TypeKind::decode(reader)?),
         4 => msg.required = Some(reader.read_bool()?),
         5 => msg.default_value = Some(LiteralValue::decode(reader)?),
@@ -1871,8 +1869,8 @@ impl<'buf> BebopDecode<'buf> for DecoratorDef<'buf> {
         1 => msg.targets = Some(DecoratorTarget::decode(reader)?),
         2 => msg.allow_multiple = Some(reader.read_bool()?),
         3 => msg.params = Some(reader.read_array(|_r| DecoratorParamDef::decode(_r))?),
-        4 => msg.validate_source = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        5 => msg.export_source = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        4 => msg.validate_source = Some(Cow::Borrowed(reader.read_str()?)),
+        5 => msg.export_source = Some(Cow::Borrowed(reader.read_str()?)),
         _ => { reader.skip(end - reader.position())?; }
       }
     }
@@ -2055,9 +2053,9 @@ impl<'buf> BebopDecode<'buf> for DefinitionDescriptor<'buf> {
       if tag == 0 { break; }
       match tag {
         1 => msg.kind = Some(DefinitionKind::decode(reader)?),
-        2 => msg.name = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        3 => msg.fqn = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        4 => msg.documentation = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        2 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
+        3 => msg.fqn = Some(Cow::Borrowed(reader.read_str()?)),
+        4 => msg.documentation = Some(Cow::Borrowed(reader.read_str()?)),
         5 => msg.visibility = Some(Visibility::decode(reader)?),
         6 => msg.decorators = Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?),
         7 => msg.nested = Some(reader.read_array(|_r| DefinitionDescriptor::decode(_r))?),
@@ -2175,9 +2173,9 @@ impl<'buf> BebopDecode<'buf> for Location<'buf> {
       match tag {
         1 => msg.path = Some(reader.read_array(|_r| _r.read_i32())?),
         2 => msg.span = Some(reader.read_fixed_i32_array::<4>()?),
-        3 => msg.leading_comments = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        4 => msg.trailing_comments = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        5 => msg.detached_comments = Some(reader.read_array(|_r| { let _s = _r.read_str()?; Ok(Cow::Borrowed(_s)) })?),
+        3 => msg.leading_comments = Some(Cow::Borrowed(reader.read_str()?)),
+        4 => msg.trailing_comments = Some(Cow::Borrowed(reader.read_str()?)),
+        5 => msg.detached_comments = Some(reader.read_array(|_r| Ok(Cow::Borrowed(_r.read_str()?)))?),
         _ => { reader.skip(end - reader.position())?; }
       }
     }
@@ -2341,10 +2339,10 @@ impl<'buf> BebopDecode<'buf> for SchemaDescriptor<'buf> {
       let tag = reader.read_tag()?;
       if tag == 0 { break; }
       match tag {
-        1 => msg.path = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        2 => msg.package = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        1 => msg.path = Some(Cow::Borrowed(reader.read_str()?)),
+        2 => msg.package = Some(Cow::Borrowed(reader.read_str()?)),
         3 => msg.edition = Some(Edition::decode(reader)?),
-        4 => msg.imports = Some(reader.read_array(|_r| { let _s = _r.read_str()?; Ok(Cow::Borrowed(_s)) })?),
+        4 => msg.imports = Some(reader.read_array(|_r| Ok(Cow::Borrowed(_r.read_str()?)))?),
         5 => msg.definitions = Some(reader.read_array(|_r| DefinitionDescriptor::decode(_r))?),
         6 => msg.source_code_info = Some(SourceCodeInfo::decode(reader)?),
         _ => { reader.skip(end - reader.position())?; }
