@@ -1,5 +1,5 @@
 use crate::error::GeneratorError;
-use crate::generated::{DefinitionDescriptor, TypeKind};
+use crate::generated::{DefinitionDescriptor, EnumDef, TypeKind};
 
 use super::naming::{type_name, variant_name};
 use super::type_mapper::{enum_base_rust_type, enum_read_method, enum_write_method, fixed_size};
@@ -34,9 +34,22 @@ pub fn generate(
   );
 
   if is_flags {
-    generate_flags(def, output, &name, base_type, byte_size, is_signed, base_kind)?;
+    generate_flags(
+      def, enum_def, output, &name, base_type, byte_size, is_signed, base_kind,
+    )?;
   } else {
-    generate_enum(def, output, &name, base_type, read_method, write_method, byte_size, is_signed, base_kind)?;
+    generate_enum(
+      def,
+      enum_def,
+      output,
+      &name,
+      base_type,
+      read_method,
+      write_method,
+      byte_size,
+      is_signed,
+      base_kind,
+    )?;
   }
 
   Ok(())
@@ -45,6 +58,7 @@ pub fn generate(
 /// Generate a proper `#[repr(T)]` Rust enum for non-flags enums.
 fn generate_enum(
   def: &DefinitionDescriptor,
+  enum_def: &EnumDef,
   output: &mut String,
   name: &str,
   base_type: &str,
@@ -54,7 +68,6 @@ fn generate_enum(
   is_signed: bool,
   base_kind: TypeKind,
 ) -> Result<(), GeneratorError> {
-  let enum_def = def.enum_def.as_ref().unwrap();
   let members = enum_def.members.as_deref().unwrap_or(&[]);
 
   // Doc comment + deprecated
@@ -116,10 +129,7 @@ fn generate_enum(
   output.push_str("}\n\n");
 
   // From<Name> for base_type
-  output.push_str(&format!(
-    "impl From<{}> for {} {{\n",
-    name, base_type
-  ));
+  output.push_str(&format!("impl From<{}> for {} {{\n", name, base_type));
   output.push_str(&format!(
     "  fn from(value: {}) -> {} {{ value as {} }}\n",
     name, base_type, base_type
@@ -146,17 +156,9 @@ fn generate_enum(
   output.push_str("}\n\n");
 
   // ── impl BebopDecode ──────────────────────────────────────────
-  output.push_str(&format!(
-    "impl<'buf> BebopDecode<'buf> for {} {{\n",
-    name
-  ));
-  output.push_str(
-    "  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n",
-  );
-  output.push_str(&format!(
-    "    Self::try_from(reader.{}()?)\n",
-    read_method
-  ));
+  output.push_str(&format!("impl<'buf> BebopDecode<'buf> for {} {{\n", name));
+  output.push_str("  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n");
+  output.push_str(&format!("    Self::try_from(reader.{}()?)\n", read_method));
   output.push_str("  }\n");
   output.push_str("}\n\n");
 
@@ -166,6 +168,7 @@ fn generate_enum(
 /// Generate a newtype struct with bitflags utility methods for @flags enums.
 fn generate_flags(
   def: &DefinitionDescriptor,
+  enum_def: &EnumDef,
   output: &mut String,
   name: &str,
   base_type: &str,
@@ -173,7 +176,6 @@ fn generate_flags(
   is_signed: bool,
   base_kind: TypeKind,
 ) -> Result<(), GeneratorError> {
-  let enum_def = def.enum_def.as_ref().unwrap();
   let members = enum_def.members.as_deref().unwrap_or(&[]);
 
   // Doc comment + deprecated

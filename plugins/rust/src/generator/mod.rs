@@ -138,12 +138,12 @@ impl LifetimeAnalysis {
   }
 }
 
-pub struct RustGenerator<'a> {
-  pub compiler_version: Option<&'a Version<'a>>,
+pub struct RustGenerator {
+  pub compiler_version: Option<VersionOwned>,
 }
 
-impl<'a> RustGenerator<'a> {
-  pub fn new(compiler_version: Option<&'a Version<'a>>) -> Self {
+impl RustGenerator {
+  pub fn new(compiler_version: Option<VersionOwned>) -> Self {
     Self { compiler_version }
   }
 
@@ -167,7 +167,7 @@ impl<'a> RustGenerator<'a> {
     if let Some(ref path) = schema.path {
       output.push_str(&format!("// source: {}\n", path));
     }
-    if let Some(v) = self.compiler_version {
+    if let Some(v) = &self.compiler_version {
       output.push_str(&format!("// bebopc {}\n", v));
     }
     if let Some(ref edition) = schema.edition {

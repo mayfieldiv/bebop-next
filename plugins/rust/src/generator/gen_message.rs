@@ -1,5 +1,5 @@
 use crate::error::GeneratorError;
-use crate::generated::{DefinitionDescriptor, TypeKind};
+use crate::generated::{DefinitionDescriptor, TypeDescriptor, TypeKind};
 
 use super::naming::{field_name, type_name};
 use super::type_mapper;
@@ -16,26 +16,20 @@ enum FieldWrap {
 }
 
 /// Determine wrapping for a message field.
-fn field_wrap(field_type: &crate::generated::TypeDescriptor, own_fqn: &str) -> FieldWrap {
+fn field_wrap(field_type: &TypeDescriptor<'_>, own_fqn: &str) -> FieldWrap {
   let kind = field_type.kind.unwrap_or(TypeKind::Unknown);
 
   // Direct self-reference: field's DEFINED fqn == own fqn
-  if kind == TypeKind::Defined {
-    if let Some(ref fqn) = field_type.defined_fqn {
-      if fqn == own_fqn {
-        return FieldWrap::Boxed;
-      }
-    }
+  if kind == TypeKind::Defined && field_type.defined_fqn.as_deref() == Some(own_fqn) {
+    return FieldWrap::Boxed;
   }
 
   // Array of self: element is DEFINED with fqn == own fqn — Vec provides indirection
   if kind == TypeKind::Array {
-    if let Some(ref elem) = field_type.array_element {
+    if let Some(elem) = field_type.array_element.as_ref() {
       if elem.kind == Some(TypeKind::Defined) {
-        if let Some(ref fqn) = elem.defined_fqn {
-          if fqn == own_fqn {
-            return FieldWrap::VecIndirect;
-          }
+        if elem.defined_fqn.as_deref() == Some(own_fqn) {
+          return FieldWrap::VecIndirect;
         }
       }
     }
@@ -64,14 +58,17 @@ pub fn generate(
   let lt = if has_lifetime { "<'buf>" } else { "" };
 
   // Pre-compute field metadata
-  struct FieldMeta {
+  struct FieldMeta<'a> {
     fname: String,
     cow_type: String,
     tag: u32,
     wrap: FieldWrap,
+    td: &'a TypeDescriptor<'a>,
+    kind: TypeKind,
+    needs_owned: bool,
   }
 
-  let field_metas: Vec<FieldMeta> = fields
+  let field_metas: Vec<FieldMeta<'_>> = fields
     .iter()
     .map(|f| {
       let fname = field_name(f.name.as_deref().unwrap_or("unknown"));
@@ -89,6 +86,9 @@ pub fn generate(
         cow_type,
         tag,
         wrap,
+        td,
+        kind: td.kind.unwrap_or(TypeKind::Unknown),
+        needs_owned: analysis.type_needs_lifetime(td),
       })
     })
     .collect::<Result<Vec<_>, GeneratorError>>()?;
@@ -100,8 +100,7 @@ pub fn generate(
   // ── Derive + struct definition ────────────────────────────────
   output.push_str("#[derive(Debug, Clone, Default)]\n");
   output.push_str(&format!("pub struct {}{} {{\n", name, lt));
-  for (i, f) in fields.iter().enumerate() {
-    let meta = &field_metas[i];
+  for (f, meta) in fields.iter().zip(&field_metas) {
     emit_doc_comment(output, &f.documentation);
     emit_deprecated(output, &f.decorators);
     match meta.wrap {
@@ -123,51 +122,35 @@ pub fn generate(
 
   // ── Type alias ────────────────────────────────────────────────
   if has_lifetime {
-    output.push_str(&format!(
-      "pub type {}Owned = {}<'static>;\n\n",
-      name, name
-    ));
+    output.push_str(&format!("pub type {}Owned = {}<'static>;\n\n", name, name));
   }
 
   // ── into_owned() (only when has_lifetime) ─────────────────────
   if has_lifetime {
     output.push_str(&format!("impl<'buf> {}<'buf> {{\n", name));
-    output.push_str(&format!(
-      "  pub fn into_owned(self) -> {}Owned {{\n",
-      name
-    ));
+    output.push_str(&format!("  pub fn into_owned(self) -> {}Owned {{\n", name));
     output.push_str(&format!("    {} {{\n", name));
-    for (i, f) in fields.iter().enumerate() {
-      let meta = &field_metas[i];
-      let td = f.r#type.as_ref().unwrap();
-      let needs_owned = analysis.type_needs_lifetime(td);
+    for meta in &field_metas {
       match meta.wrap {
         FieldWrap::Boxed => {
-          if needs_owned {
+          if meta.needs_owned {
             output.push_str(&format!(
               "      {}: self.{}.map(|v| Box::new(v.into_owned())),\n",
               meta.fname, meta.fname
             ));
           } else {
-            output.push_str(&format!(
-              "      {}: self.{},\n",
-              meta.fname, meta.fname
-            ));
+            output.push_str(&format!("      {}: self.{},\n", meta.fname, meta.fname));
           }
         }
         _ => {
-          if needs_owned {
-            let inner_expr =
-              type_mapper::into_owned_expression(td, "v", analysis)?;
+          if meta.needs_owned {
+            let inner_expr = type_mapper::into_owned_expression(meta.td, "v", analysis)?;
             output.push_str(&format!(
               "      {}: self.{}.map(|v| {}),\n",
               meta.fname, meta.fname, inner_expr
             ));
           } else {
-            output.push_str(&format!(
-              "      {}: self.{},\n",
-              meta.fname, meta.fname
-            ));
+            output.push_str(&format!("      {}: self.{},\n", meta.fname, meta.fname));
           }
         }
       }
@@ -178,20 +161,13 @@ pub fn generate(
   }
 
   // ── impl BebopEncode ──────────────────────────────────────────
-  output.push_str(&format!(
-    "impl{} BebopEncode for {}{} {{\n",
-    lt, name, lt
-  ));
+  output.push_str(&format!("impl{} BebopEncode for {}{} {{\n", lt, name, lt));
 
   // encode()
   output.push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
   output.push_str("    let pos = writer.reserve_message_length();\n");
 
-  for (i, f) in fields.iter().enumerate() {
-    let meta = &field_metas[i];
-    let td = f.r#type.as_ref().unwrap();
-    let kind = td.kind.unwrap_or(TypeKind::Unknown);
-
+  for meta in &field_metas {
     match meta.wrap {
       FieldWrap::Boxed => {
         output.push_str(&format!(
@@ -199,19 +175,18 @@ pub fn generate(
           meta.fname
         ));
         output.push_str(&format!("      writer.write_tag({});\n", meta.tag));
-        let write_stmt = type_mapper::write_expression_cow(td, "v", "writer", analysis)?;
+        let write_stmt = type_mapper::write_expression_cow(meta.td, "v", "writer", analysis)?;
         output.push_str(&format!("      {};\n", write_stmt));
         output.push_str("    }\n");
       }
       _ => {
-        let is_scalar_copy = kind.is_scalar()
-          && kind != TypeKind::String
-          && kind != TypeKind::Uuid;
+        let is_scalar_copy =
+          meta.kind.is_scalar() && meta.kind != TypeKind::String && meta.kind != TypeKind::Uuid;
 
         if is_scalar_copy {
           output.push_str(&format!("    if let Some(v) = self.{} {{\n", meta.fname));
           output.push_str(&format!("      writer.write_tag({});\n", meta.tag));
-          let write_stmt = type_mapper::write_expression_cow(td, "v", "writer", analysis)?;
+          let write_stmt = type_mapper::write_expression_cow(meta.td, "v", "writer", analysis)?;
           output.push_str(&format!("      {};\n", write_stmt));
           output.push_str("    }\n");
         } else {
@@ -220,7 +195,7 @@ pub fn generate(
             meta.fname
           ));
           output.push_str(&format!("      writer.write_tag({});\n", meta.tag));
-          let write_stmt = type_mapper::write_expression_cow(td, "v", "writer", analysis)?;
+          let write_stmt = type_mapper::write_expression_cow(meta.td, "v", "writer", analysis)?;
           output.push_str(&format!("      {};\n", write_stmt));
           output.push_str("    }\n");
         }
@@ -235,38 +210,42 @@ pub fn generate(
   // encoded_size()
   output.push_str("  fn encoded_size(&self) -> usize {\n");
   output.push_str("    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;\n");
-  for (i, f) in fields.iter().enumerate() {
-    let meta = &field_metas[i];
-    let td = f.r#type.as_ref().unwrap();
-    let kind = td.kind.unwrap_or(TypeKind::Unknown);
-
+  for meta in &field_metas {
     match meta.wrap {
       FieldWrap::Boxed => {
         output.push_str(&format!(
           "    if let Some(ref v) = self.{} {{\n",
           meta.fname
         ));
-        let size_expr = type_mapper::encoded_size_expression(td, "v", analysis)?;
-        output.push_str(&format!("      size += wire::tagged_size({});\n", size_expr));
+        let size_expr = type_mapper::encoded_size_expression(meta.td, "v", analysis)?;
+        output.push_str(&format!(
+          "      size += wire::tagged_size({});\n",
+          size_expr
+        ));
         output.push_str("    }\n");
       }
       _ => {
-        let is_scalar_copy = kind.is_scalar()
-          && kind != TypeKind::String
-          && kind != TypeKind::Uuid;
+        let is_scalar_copy =
+          meta.kind.is_scalar() && meta.kind != TypeKind::String && meta.kind != TypeKind::Uuid;
 
         if is_scalar_copy {
           output.push_str(&format!("    if let Some(v) = self.{} {{\n", meta.fname));
-          let size_expr = type_mapper::encoded_size_expression(td, "v", analysis)?;
-          output.push_str(&format!("      size += wire::tagged_size({});\n", size_expr));
+          let size_expr = type_mapper::encoded_size_expression(meta.td, "v", analysis)?;
+          output.push_str(&format!(
+            "      size += wire::tagged_size({});\n",
+            size_expr
+          ));
           output.push_str("    }\n");
         } else {
           output.push_str(&format!(
             "    if let Some(ref v) = self.{} {{\n",
             meta.fname
           ));
-          let size_expr = type_mapper::encoded_size_expression(td, "v", analysis)?;
-          output.push_str(&format!("      size += wire::tagged_size({});\n", size_expr));
+          let size_expr = type_mapper::encoded_size_expression(meta.td, "v", analysis)?;
+          output.push_str(&format!(
+            "      size += wire::tagged_size({});\n",
+            size_expr
+          ));
           output.push_str("    }\n");
         }
       }
@@ -282,9 +261,7 @@ pub fn generate(
     "impl<'buf> BebopDecode<'buf> for {}{} {{\n",
     name, lt
   ));
-  output.push_str(
-    "  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n",
-  );
+  output.push_str("  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n");
   output.push_str("    let length = reader.read_message_length()? as usize;\n");
   output.push_str("    let end = reader.position() + length;\n");
   output.push_str("    let mut msg = Self::default();\n\n");
@@ -293,26 +270,23 @@ pub fn generate(
   output.push_str("      if tag == 0 { break; }\n");
   output.push_str("      match tag {\n");
 
-  for (i, f) in fields.iter().enumerate() {
-    let meta = &field_metas[i];
-    let td = f.r#type.as_ref().unwrap();
-
+  for meta in &field_metas {
     match meta.wrap {
       FieldWrap::Boxed => {
-        let read_expr = type_mapper::read_expression_cow(td, "reader", analysis)?;
+        let read_expr = type_mapper::read_expression_cow(meta.td, "reader", analysis)?;
         output.push_str(&format!(
           "        {} => msg.{} = Some(Box::new({}?)),\n",
           meta.tag, meta.fname, read_expr
         ));
       }
       _ => {
-        if let Some(read_expr) = type_mapper::borrowed_cow_read_expression(td, "reader") {
+        if let Some(read_expr) = type_mapper::borrowed_cow_read_expression(meta.td, "reader") {
           output.push_str(&format!(
             "        {} => msg.{} = Some({}),\n",
             meta.tag, meta.fname, read_expr
           ));
         } else {
-          let read_expr = type_mapper::read_expression_cow(td, "reader", analysis)?;
+          let read_expr = type_mapper::read_expression_cow(meta.td, "reader", analysis)?;
           output.push_str(&format!(
             "        {} => msg.{} = Some({}?),\n",
             meta.tag, meta.fname, read_expr
