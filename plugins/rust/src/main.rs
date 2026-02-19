@@ -27,37 +27,37 @@ fn run() -> Result<CodeGeneratorResponse<'static>, GeneratorError> {
   eprintln!("[bebopc-gen-rust] read {} bytes from stdin", input.len());
 
   let mut reader = BebopReader::new(&input);
-  let request = CodeGeneratorRequest::decode(&mut reader)?;
+  let request = CodeGeneratorRequest::decode(&mut reader)?.into_owned();
 
   // Log compiler version
-  if let Some(ref v) = request.compiler_version {
+  if let Some(v) = &request.compiler_version {
     eprintln!("[bebopc-gen-rust] compiler version: {}", v);
   }
 
   // Log parameters
-  if let Some(ref param) = request.parameter {
+  if let Some(param) = &request.parameter {
     eprintln!("[bebopc-gen-rust] parameter: {}", param);
   }
 
   // Log host options
-  if let Some(ref opts) = request.host_options {
+  if let Some(opts) = &request.host_options {
     for (k, v) in opts {
       eprintln!("[bebopc-gen-rust] option: {} = {}", k, v);
     }
   }
 
   // Log files to generate
-  let files_to_generate = request.files_to_generate.as_deref().unwrap_or(&[]);
+  let files_to_generate = request.files_to_generate.unwrap_or_default();
   eprintln!(
     "[bebopc-gen-rust] files_to_generate: {:?}",
     files_to_generate
   );
 
   // Log schemas
-  let schemas = request.schemas.as_deref().unwrap_or(&[]);
+  let schemas = request.schemas.unwrap_or_default();
   eprintln!("[bebopc-gen-rust] {} schema(s) received", schemas.len());
 
-  for schema in schemas {
+  for schema in &schemas {
     let path = schema.path.as_deref().unwrap_or("<no path>");
     let def_count = schema.definitions.as_ref().map_or(0, |d| d.len());
     let import_count = schema.imports.as_ref().map_or(0, |i| i.len());
@@ -77,14 +77,14 @@ fn run() -> Result<CodeGeneratorResponse<'static>, GeneratorError> {
     .filter_map(|p| std::path::Path::new(p).file_stem().and_then(|s| s.to_str()))
     .collect();
 
-  let generator = RustGenerator::new(request.compiler_version.as_ref());
+  let generator = RustGenerator::new(request.compiler_version);
 
   // Build lifetime analysis across all schemas so cross-schema type references resolve
-  let analysis = LifetimeAnalysis::build_all(schemas);
+  let analysis = LifetimeAnalysis::build_all(&schemas);
 
   let mut generated_files = Vec::new();
 
-  for schema in schemas {
+  for schema in &schemas {
     let path = match schema.path.as_deref() {
       Some(p) if file_set.contains(p) => p,
       _ => continue,
@@ -103,9 +103,8 @@ fn run() -> Result<CodeGeneratorResponse<'static>, GeneratorError> {
     // Match by file stem since import paths may be relative while file_set has absolute paths
     let sibling_imports: Vec<&str> = schema
       .imports
-      .as_deref()
-      .unwrap_or(&[])
       .iter()
+      .flatten()
       .filter_map(|imp| {
         let stem = std::path::Path::new(imp.as_ref())
           .file_stem()

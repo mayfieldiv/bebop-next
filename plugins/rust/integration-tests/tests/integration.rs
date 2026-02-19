@@ -190,7 +190,7 @@ fn string_struct_into_owned() {
 
     // Convert borrowed → owned, extending lifetime to 'static
     let owned: PersonOwned = decoded.into_owned();
-    assert_eq!(owned.name.as_ref(), "Charlie");
+    assert_eq!(owned.name, "Charlie");
     assert_eq!(owned.age, 40);
 
     // Verify it's now owned
@@ -210,7 +210,7 @@ fn string_struct_encoded_size_matches() {
 fn string_struct_type_alias() {
     // PersonOwned = Person<'static>
     let p: PersonOwned = Person::new("Static", 1);
-    assert_eq!(p.name.as_ref(), "Static");
+    assert_eq!(p.name, "Static");
 }
 
 #[test]
@@ -218,7 +218,7 @@ fn string_struct_empty_string() {
     let p = Person::new(String::new(), 0);
     let bytes = p.to_bytes();
     let p2 = Person::from_bytes(&bytes).unwrap();
-    assert_eq!(p2.name.as_ref(), "");
+    assert_eq!(p2.name, "");
     assert_eq!(p2.age, 0);
 }
 
@@ -232,7 +232,7 @@ fn byte_array_struct_round_trip() {
     let bytes = bp.to_bytes();
     let bp2 = BinaryPayload::from_bytes(&bytes).unwrap();
     assert_eq!(bp2.tag, 42);
-    assert_eq!(bp2.data.as_ref(), &[0xDE, 0xAD, 0xBE, 0xEF]);
+    assert_eq!(&*bp2.data, &[0xDE, 0xAD, 0xBE, 0xEF]);
 }
 
 #[test]
@@ -252,7 +252,7 @@ fn byte_array_struct_into_owned() {
     let bytes = bp.to_bytes();
     let decoded = BinaryPayload::from_bytes(&bytes).unwrap();
     let owned: BinaryPayloadOwned = decoded.into_owned();
-    assert_eq!(owned.data.as_ref(), &[9, 8, 7]);
+    assert_eq!(&*owned.data, &[9, 8, 7]);
     match &owned.data {
         Cow::Owned(_) => {}
         Cow::Borrowed(_) => panic!("expected Cow::Owned after into_owned"),
@@ -282,10 +282,10 @@ fn multi_string_struct_round_trip() {
     let addr = Address::new("123 Main St", "Springfield", "US", "62704");
     let bytes = addr.to_bytes();
     let addr2 = Address::from_bytes(&bytes).unwrap();
-    assert_eq!(addr2.street.as_ref(), "123 Main St");
-    assert_eq!(addr2.city.as_ref(), "Springfield");
-    assert_eq!(addr2.country.as_ref(), "US");
-    assert_eq!(addr2.zip_code.as_ref(), "62704");
+    assert_eq!(addr2.street, "123 Main St");
+    assert_eq!(addr2.city, "Springfield");
+    assert_eq!(addr2.country, "US");
+    assert_eq!(addr2.zip_code, "62704");
 }
 
 #[test]
@@ -363,11 +363,12 @@ fn message_round_trip_partial() {
 
     let bytes = cmd.to_bytes();
     let cmd2 = DrawCommand::from_bytes(&bytes).unwrap();
-    assert_eq!(cmd2.target.as_ref().unwrap().x, 5.0);
-    assert_eq!(cmd2.target.as_ref().unwrap().y, 10.0);
     assert_eq!(cmd2.color, Some(Color::Blue));
     assert!(cmd2.label.is_none());
     assert!(cmd2.thickness.is_none());
+    let target = cmd2.target.unwrap();
+    assert_eq!(target.x, 5.0);
+    assert_eq!(target.y, 10.0);
 }
 
 #[test]
@@ -380,7 +381,7 @@ fn message_round_trip_full() {
 
     let bytes = cmd.to_bytes();
     let cmd2 = DrawCommand::from_bytes(&bytes).unwrap();
-    assert_eq!(cmd2.target.as_ref().unwrap().x, 1.0);
+    assert_eq!(cmd2.target.unwrap().x, 1.0);
     assert_eq!(cmd2.color, Some(Color::Red));
     assert_eq!(cmd2.label.as_deref(), Some("test label"));
     assert_eq!(cmd2.thickness, Some(2.5));
@@ -429,10 +430,10 @@ fn message_with_string_array() {
     ]);
     let bytes = profile.to_bytes();
     let p2 = UserProfile::from_bytes(&bytes).unwrap();
-    let tags = p2.tags.as_ref().unwrap();
+    let tags = p2.tags.unwrap();
     assert_eq!(tags.len(), 2);
-    assert_eq!(tags[0].as_ref(), "rust");
-    assert_eq!(tags[1].as_ref(), "bebop");
+    assert_eq!(tags[0], "rust");
+    assert_eq!(tags[1], "bebop");
 }
 
 #[test]
@@ -451,10 +452,10 @@ fn message_with_string_map() {
 
     let bytes = profile.to_bytes();
     let p2 = UserProfile::from_bytes(&bytes).unwrap();
-    let meta2 = p2.metadata.as_ref().unwrap();
+    let meta2 = p2.metadata.unwrap();
     assert_eq!(meta2.len(), 2);
-    assert_eq!(meta2["theme"].as_ref(), "dark");
-    assert_eq!(meta2["lang"].as_ref(), "en");
+    assert_eq!(meta2["theme"], "dark");
+    assert_eq!(meta2["lang"], "en");
 }
 
 #[test]
@@ -479,8 +480,8 @@ fn message_with_all_fields() {
     assert_eq!(p2.email.as_deref(), Some("alice@example.com"));
     assert_eq!(p2.age, Some(30));
     assert_eq!(p2.active, Some(true));
-    assert_eq!(p2.tags.as_ref().unwrap().len(), 1);
-    assert_eq!(p2.metadata.as_ref().unwrap().len(), 1);
+    assert_eq!(p2.tags.unwrap().len(), 1);
+    assert_eq!(p2.metadata.unwrap().len(), 1);
     assert_eq!(p2.permissions, Some(Permissions::READ | Permissions::WRITE));
 }
 
@@ -517,7 +518,7 @@ fn message_with_map_string_uint32() {
 
     let bytes = inv.to_bytes();
     let inv2 = Inventory::from_bytes(&bytes).unwrap();
-    let items2 = inv2.items.as_ref().unwrap();
+    let items2 = inv2.items.unwrap();
     assert_eq!(items2.len(), 2);
     assert_eq!(items2[&Cow::Borrowed("sword") as &Cow<str>], 1);
     assert_eq!(items2[&Cow::Borrowed("potion") as &Cow<str>], 5);
@@ -594,7 +595,7 @@ fn union_variable_branch_round_trip() {
     match shape2 {
         Shape::Label(lbl) => {
             assert_eq!(lbl.position.x, 0.0);
-            assert_eq!(lbl.text.as_ref(), "hello");
+            assert_eq!(lbl.text, "hello");
         }
         _ => panic!("expected Shape::Label"),
     }
@@ -622,7 +623,7 @@ fn union_into_owned() {
     match &owned {
         Shape::Label(lbl) => {
             assert!(matches!(lbl.text, Cow::Owned(_)));
-            assert_eq!(lbl.text.as_ref(), "owned_test");
+            assert_eq!(lbl.text, "owned_test");
         }
         _ => panic!("expected Shape::Label"),
     }
@@ -707,14 +708,14 @@ fn scene_round_trip() {
 
     let bytes = scene.to_bytes();
     let scene2 = Scene::from_bytes(&bytes).unwrap();
-    let shapes = scene2.shapes.as_ref().unwrap();
+    let shapes = scene2.shapes.unwrap();
     assert_eq!(shapes.len(), 2);
     match &shapes[0] {
         Shape::Point(p) => assert_eq!(p.x, 1.0),
         _ => panic!("expected Point"),
     }
     match &shapes[1] {
-        Shape::Label(lbl) => assert_eq!(lbl.text.as_ref(), "label"),
+        Shape::Label(lbl) => assert_eq!(lbl.text, "label"),
         _ => panic!("expected Label"),
     }
     assert_eq!(scene2.background, Some(Color::Blue));
@@ -733,7 +734,7 @@ fn scene_into_owned() {
     let decoded = Scene::from_bytes(&bytes).unwrap();
     let owned: SceneOwned = decoded.into_owned();
     assert_eq!(owned.title.as_deref(), Some("y"));
-    match &owned.shapes.as_ref().unwrap()[0] {
+    match &owned.shapes.unwrap()[0] {
         Shape::Label(lbl) => assert!(matches!(lbl.text, Cow::Owned(_))),
         _ => panic!("expected Label"),
     }
@@ -762,7 +763,7 @@ fn owned_type_usable_as_borrowed() {
     let owned: PersonOwned = Person::new("test", 1);
 
     fn accepts_person(p: &Person) {
-        assert_eq!(p.name.as_ref(), "test");
+        assert_eq!(p.name, "test");
     }
 
     accepts_person(&owned);
@@ -777,7 +778,7 @@ fn borrowed_can_outlive_buffer_via_into_owned() {
         // bytes dropped here
     };
     // owned survives past the buffer's lifetime
-    assert_eq!(owned.name.as_ref(), "temp");
+    assert_eq!(owned.name, "temp");
     assert_eq!(owned.age, 42);
 }
 
@@ -789,12 +790,12 @@ fn constructing_cow_fields_directly() {
         name: Cow::Borrowed(name),
         age: 100,
     };
-    assert_eq!(p.name.as_ref(), "direct_borrow");
+    assert_eq!(p.name, "direct_borrow");
 
     // And it round-trips
     let bytes = p.to_bytes();
     let p2 = Person::from_bytes(&bytes).unwrap();
-    assert_eq!(p2.name.as_ref(), "direct_borrow");
+    assert_eq!(p2.name, "direct_borrow");
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -807,7 +808,7 @@ fn message_empty_string_array() {
     profile.tags = Some(vec![]);
     let bytes = profile.to_bytes();
     let p2 = UserProfile::from_bytes(&bytes).unwrap();
-    assert_eq!(p2.tags.as_ref().unwrap().len(), 0);
+    assert_eq!(p2.tags.unwrap().len(), 0);
 }
 
 #[test]
@@ -816,7 +817,7 @@ fn message_empty_map() {
     profile.metadata = Some(HashMap::new());
     let bytes = profile.to_bytes();
     let p2 = UserProfile::from_bytes(&bytes).unwrap();
-    assert_eq!(p2.metadata.as_ref().unwrap().len(), 0);
+    assert_eq!(p2.metadata.unwrap().len(), 0);
 }
 
 #[test]
@@ -824,7 +825,7 @@ fn unicode_string_round_trip() {
     let p = Person::new("Hello 世界 🌍", 1);
     let bytes = p.to_bytes();
     let p2 = Person::from_bytes(&bytes).unwrap();
-    assert_eq!(p2.name.as_ref(), "Hello 世界 🌍");
+    assert_eq!(p2.name, "Hello 世界 🌍");
 }
 
 #[test]
@@ -833,7 +834,7 @@ fn large_byte_array() {
     let bp = BinaryPayload::new(1, data.clone());
     let bytes = bp.to_bytes();
     let bp2 = BinaryPayload::from_bytes(&bytes).unwrap();
-    assert_eq!(bp2.data.as_ref(), &data[..]);
+    assert_eq!(bp2.data, &data[..]);
     assert_eq!(bp.encoded_size(), bytes.len());
 }
 
@@ -845,7 +846,7 @@ fn multiple_decode_from_same_buffer() {
 
     let d1 = Person::from_bytes(&bytes).unwrap();
     let d2 = Person::from_bytes(&bytes).unwrap();
-    assert_eq!(d1.name.as_ref(), d2.name.as_ref());
+    assert_eq!(d1.name, d2.name);
     assert!(matches!(d1.name, Cow::Borrowed(_)));
     assert!(matches!(d2.name, Cow::Borrowed(_)));
 }

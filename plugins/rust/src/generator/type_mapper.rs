@@ -448,7 +448,9 @@ pub fn fixed_size_expr(kind: TypeKind) -> Option<&'static str> {
 /// Return a constant Rust expression for a type's fixed encoded size.
 ///
 /// Returns `Ok(None)` for variable-size types.
-pub fn fixed_encoded_size_expression(td: &TypeDescriptor) -> Result<Option<String>, GeneratorError> {
+pub fn fixed_encoded_size_expression(
+  td: &TypeDescriptor,
+) -> Result<Option<String>, GeneratorError> {
   let kind = td
     .kind
     .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
@@ -510,11 +512,10 @@ pub fn is_cow_field(td: &TypeDescriptor) -> bool {
   };
   match kind {
     TypeKind::String => true,
-    TypeKind::Array => {
-      td.array_element
-        .as_ref()
-        .map_or(false, |e| e.kind == Some(TypeKind::Byte))
-    }
+    TypeKind::Array => td
+      .array_element
+      .as_ref()
+      .map_or(false, |e| e.kind == Some(TypeKind::Byte)),
     _ => false,
   }
 }
@@ -523,7 +524,10 @@ pub fn is_cow_field(td: &TypeDescriptor) -> bool {
 ///
 /// Like `rust_type()` but uses `TypeName<'static>` for defined types with lifetime,
 /// so the parameter types compile correctly.
-pub fn rust_type_owned(td: &TypeDescriptor, analysis: &LifetimeAnalysis) -> Result<String, GeneratorError> {
+pub fn rust_type_owned(
+  td: &TypeDescriptor,
+  analysis: &LifetimeAnalysis,
+) -> Result<String, GeneratorError> {
   let kind = td
     .kind
     .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
@@ -588,7 +592,10 @@ pub fn rust_type_owned(td: &TypeDescriptor, analysis: &LifetimeAnalysis) -> Resu
 }
 
 /// Map a full TypeDescriptor to its Rust type string using Cow for borrowed types.
-pub fn rust_type_cow(td: &TypeDescriptor, analysis: &LifetimeAnalysis) -> Result<String, GeneratorError> {
+pub fn rust_type_cow(
+  td: &TypeDescriptor,
+  analysis: &LifetimeAnalysis,
+) -> Result<String, GeneratorError> {
   let kind = td
     .kind
     .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
@@ -658,7 +665,11 @@ pub fn rust_type_cow(td: &TypeDescriptor, analysis: &LifetimeAnalysis) -> Result
 /// Returns an expression that produces `Result<T>` — callers append `?` as needed.
 /// Strings are read as `Cow::Borrowed(reader.read_str()?)`, byte arrays as
 /// `Cow::Borrowed(reader.read_byte_slice()?)`.
-pub fn read_expression_cow(td: &TypeDescriptor, reader: &str, analysis: &LifetimeAnalysis) -> Result<String, GeneratorError> {
+pub fn read_expression_cow(
+  td: &TypeDescriptor,
+  reader: &str,
+  analysis: &LifetimeAnalysis,
+) -> Result<String, GeneratorError> {
   let kind = td
     .kind
     .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
@@ -690,7 +701,10 @@ pub fn read_expression_cow(td: &TypeDescriptor, reader: &str, analysis: &Lifetim
         let fqn = elem.defined_fqn.as_deref().unwrap_or("");
         let type_name = fqn_to_type_name(fqn);
         // For trait-based decode, use closure calling trait method
-        Ok(format!("{}.read_array(|_r| {}::decode(_r))", reader, type_name))
+        Ok(format!(
+          "{}.read_array(|_r| {}::decode(_r))",
+          reader, type_name
+        ))
       } else {
         let inner = read_expression_cow(elem, "_r", analysis)?;
         Ok(format!("{}.read_array(|_r| {})", reader, inner))
@@ -897,7 +911,11 @@ fn collection_ref(value: &str) -> String {
   }
 }
 
-pub fn encoded_size_expression(td: &TypeDescriptor, value: &str, analysis: &LifetimeAnalysis) -> Result<String, GeneratorError> {
+pub fn encoded_size_expression(
+  td: &TypeDescriptor,
+  value: &str,
+  analysis: &LifetimeAnalysis,
+) -> Result<String, GeneratorError> {
   let kind = td
     .kind
     .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
@@ -908,9 +926,7 @@ pub fn encoded_size_expression(td: &TypeDescriptor, value: &str, analysis: &Life
   }
 
   match kind {
-    TypeKind::String => {
-      Ok(format!("wire::string_size({}.len())", value))
-    }
+    TypeKind::String => Ok(format!("wire::string_size({}.len())", value)),
     TypeKind::Array => {
       let elem = td
         .array_element
@@ -922,7 +938,10 @@ pub fn encoded_size_expression(td: &TypeDescriptor, value: &str, analysis: &Life
       let items_ref = collection_ref(value);
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
       if let Some(sz_expr) = fixed_size_expr(elem_kind) {
-        Ok(format!("wire::array_size({}, |_el| ({}))", items_ref, sz_expr))
+        Ok(format!(
+          "wire::array_size({}, |_el| ({}))",
+          items_ref, sz_expr
+        ))
       } else {
         let inner = encoded_size_expression(elem, "_el", analysis)?;
         Ok(format!("wire::array_size({}, |_el| {})", items_ref, inner))
@@ -964,9 +983,7 @@ pub fn encoded_size_expression(td: &TypeDescriptor, value: &str, analysis: &Life
         map_ref, k_size, v_size
       ))
     }
-    TypeKind::Defined => {
-      Ok(format!("{}.encoded_size()", value))
-    }
+    TypeKind::Defined => Ok(format!("{}.encoded_size()", value)),
     _ => Err(GeneratorError::MalformedType(format!(
       "cannot generate encoded_size for type kind: {}",
       kind as u8
@@ -975,7 +992,11 @@ pub fn encoded_size_expression(td: &TypeDescriptor, value: &str, analysis: &Life
 }
 
 /// Generate an expression that converts a value from borrowed to owned (Cow → Cow::Owned).
-pub fn into_owned_expression(td: &TypeDescriptor, value: &str, analysis: &LifetimeAnalysis) -> Result<String, GeneratorError> {
+pub fn into_owned_expression(
+  td: &TypeDescriptor,
+  value: &str,
+  analysis: &LifetimeAnalysis,
+) -> Result<String, GeneratorError> {
   let kind = td
     .kind
     .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
@@ -995,7 +1016,10 @@ pub fn into_owned_expression(td: &TypeDescriptor, value: &str, analysis: &Lifeti
       // Vec of lifetime types → map into_owned
       if analysis.type_needs_lifetime(elem) {
         let inner = into_owned_expression(elem, "_e", analysis)?;
-        Ok(format!("{}.into_iter().map(|_e| {}).collect()", value, inner))
+        Ok(format!(
+          "{}.into_iter().map(|_e| {}).collect()",
+          value, inner
+        ))
       } else {
         Ok(value.to_string())
       }
