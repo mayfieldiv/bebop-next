@@ -19,5 +19,5 @@ pub use reader::BebopReader;
 #[cfg(feature = "std")]
 pub use std::collections::HashMap;
 pub use traits::{BebopDecode, BebopDecodeOwned};
-pub use traits::{BebopEncode, BebopFlagBits, BebopFlags};
+pub use traits::{BebopEncode, BebopFlagBits, BebopFlags, FixedScalar};
 pub use writer::BebopWriter;

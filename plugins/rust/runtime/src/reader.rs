@@ -2,6 +2,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use core::hash::Hash;
 
+use crate::traits::FixedScalar;
 use crate::HashMap;
 use crate::{bf16, f16, DecodeError};
 
@@ -220,13 +221,18 @@ impl<'a> BebopReader<'a> {
     Ok(map)
   }
 
-  /// Read a fixed-size i32 array (no length prefix).
-  pub fn read_fixed_i32_array<const N: usize>(&mut self) -> Result<[i32; N]> {
-    let mut arr = [0i32; N];
+  /// Read a fixed-size array of any scalar type (no length prefix).
+  pub fn read_fixed_array<T: FixedScalar, const N: usize>(&mut self) -> Result<[T; N]> {
+    let mut arr = [T::default(); N];
     for item in &mut arr {
-      *item = self.read_i32()?;
+      *item = T::read_from(self)?;
     }
     Ok(arr)
+  }
+
+  /// Read a fixed-size i32 array (no length prefix).
+  pub fn read_fixed_i32_array<const N: usize>(&mut self) -> Result<[i32; N]> {
+    self.read_fixed_array::<i32, N>()
   }
 
   /// Read raw bytes.
