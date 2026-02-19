@@ -1,4 +1,4 @@
-#![cfg(feature = "alloc-map")]
+#![cfg(all(feature = "alloc", not(feature = "std")))]
 
 use bebop_runtime::HashMap;
 use bebop_runtime::{BebopDecode, BebopEncode};

@@ -15,7 +15,7 @@ mod writer;
 pub use error::DecodeError;
 pub use half::bf16;
 pub use half::f16;
-#[cfg(all(feature = "alloc-map", not(feature = "std")))]
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 pub use hashbrown::HashMap;
 pub use reader::BebopReader;
 #[cfg(feature = "std")]
