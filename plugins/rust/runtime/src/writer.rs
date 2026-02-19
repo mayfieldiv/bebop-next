@@ -1,6 +1,7 @@
 use alloc::vec::Vec;
 use core::hash::Hash;
 
+use crate::traits::FixedScalar;
 use crate::HashMap;
 use crate::{bf16, f16};
 
@@ -194,10 +195,15 @@ impl BebopWriter {
     self.buf.extend_from_slice(v);
   }
 
+  /// Write a fixed-size array of any scalar type (no length prefix).
+  pub fn write_fixed_array<T: FixedScalar, const N: usize>(&mut self, arr: &[T; N]) {
+    for item in arr {
+      item.write_to(self);
+    }
+  }
+
   /// Write a fixed-size i32 array (no length prefix).
   pub fn write_fixed_i32_array<const N: usize>(&mut self, arr: &[i32; N]) {
-    for item in arr {
-      self.write_i32(*item);
-    }
+    self.write_fixed_array::<i32, N>(arr);
   }
 }

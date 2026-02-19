@@ -233,6 +233,147 @@ where
   }
 }
 
+/// Scalar types that can appear in fixed-size arrays.
+pub trait FixedScalar: Copy + Default {
+  fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError>;
+  fn write_to(self, writer: &mut BebopWriter);
+}
+
+impl FixedScalar for bool {
+  fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    reader.read_bool()
+  }
+  fn write_to(self, writer: &mut BebopWriter) {
+    writer.write_bool(self);
+  }
+}
+
+impl FixedScalar for u8 {
+  fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    reader.read_byte()
+  }
+  fn write_to(self, writer: &mut BebopWriter) {
+    writer.write_byte(self);
+  }
+}
+
+impl FixedScalar for i8 {
+  fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    reader.read_i8()
+  }
+  fn write_to(self, writer: &mut BebopWriter) {
+    writer.write_i8(self);
+  }
+}
+
+impl FixedScalar for i16 {
+  fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    reader.read_i16()
+  }
+  fn write_to(self, writer: &mut BebopWriter) {
+    writer.write_i16(self);
+  }
+}
+
+impl FixedScalar for u16 {
+  fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    reader.read_u16()
+  }
+  fn write_to(self, writer: &mut BebopWriter) {
+    writer.write_u16(self);
+  }
+}
+
+impl FixedScalar for i32 {
+  fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    reader.read_i32()
+  }
+  fn write_to(self, writer: &mut BebopWriter) {
+    writer.write_i32(self);
+  }
+}
+
+impl FixedScalar for u32 {
+  fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    reader.read_u32()
+  }
+  fn write_to(self, writer: &mut BebopWriter) {
+    writer.write_u32(self);
+  }
+}
+
+impl FixedScalar for i64 {
+  fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    reader.read_i64()
+  }
+  fn write_to(self, writer: &mut BebopWriter) {
+    writer.write_i64(self);
+  }
+}
+
+impl FixedScalar for u64 {
+  fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    reader.read_u64()
+  }
+  fn write_to(self, writer: &mut BebopWriter) {
+    writer.write_u64(self);
+  }
+}
+
+impl FixedScalar for i128 {
+  fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    reader.read_i128()
+  }
+  fn write_to(self, writer: &mut BebopWriter) {
+    writer.write_i128(self);
+  }
+}
+
+impl FixedScalar for u128 {
+  fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    reader.read_u128()
+  }
+  fn write_to(self, writer: &mut BebopWriter) {
+    writer.write_u128(self);
+  }
+}
+
+impl FixedScalar for crate::f16 {
+  fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    reader.read_f16()
+  }
+  fn write_to(self, writer: &mut BebopWriter) {
+    writer.write_f16(self);
+  }
+}
+
+impl FixedScalar for crate::bf16 {
+  fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    reader.read_bf16()
+  }
+  fn write_to(self, writer: &mut BebopWriter) {
+    writer.write_bf16(self);
+  }
+}
+
+impl FixedScalar for f32 {
+  fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    reader.read_f32()
+  }
+  fn write_to(self, writer: &mut BebopWriter) {
+    writer.write_f32(self);
+  }
+}
+
+impl FixedScalar for f64 {
+  fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    reader.read_f64()
+  }
+  fn write_to(self, writer: &mut BebopWriter) {
+    writer.write_f64(self);
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use alloc::vec;
@@ -320,5 +461,62 @@ mod tests {
     assert_eq!(SignedFlags::from_bits(7), Some(SignedFlags(7)));
     assert_eq!(SignedFlags::from_bits(-1), None);
     assert_eq!(SignedFlags::from_bits_truncate(-1), SignedFlags(7));
+  }
+
+  #[test]
+  fn fixed_scalar_i32_roundtrip() {
+    use super::FixedScalar;
+    use crate::{BebopReader, BebopWriter};
+
+    let input: [i32; 3] = [1, -2, 3];
+    let mut writer = BebopWriter::new();
+    for v in &input {
+      v.write_to(&mut writer);
+    }
+    let bytes = writer.into_bytes();
+    let mut reader = BebopReader::new(&bytes);
+    let mut output = [0i32; 3];
+    for item in &mut output {
+      *item = i32::read_from(&mut reader).unwrap();
+    }
+    assert_eq!(input, output);
+  }
+
+  #[test]
+  fn fixed_scalar_f32_roundtrip() {
+    use super::FixedScalar;
+    use crate::{BebopReader, BebopWriter};
+
+    let input: [f32; 2] = [1.5, -3.25];
+    let mut writer = BebopWriter::new();
+    for v in &input {
+      v.write_to(&mut writer);
+    }
+    let bytes = writer.into_bytes();
+    let mut reader = BebopReader::new(&bytes);
+    let mut output = [0.0f32; 2];
+    for item in &mut output {
+      *item = f32::read_from(&mut reader).unwrap();
+    }
+    assert_eq!(input, output);
+  }
+
+  #[test]
+  fn fixed_scalar_bool_roundtrip() {
+    use super::FixedScalar;
+    use crate::{BebopReader, BebopWriter};
+
+    let input: [bool; 3] = [true, false, true];
+    let mut writer = BebopWriter::new();
+    for v in &input {
+      v.write_to(&mut writer);
+    }
+    let bytes = writer.into_bytes();
+    let mut reader = BebopReader::new(&bytes);
+    let mut output = [false; 3];
+    for item in &mut output {
+      *item = bool::read_from(&mut reader).unwrap();
+    }
+    assert_eq!(input, output);
   }
 }
