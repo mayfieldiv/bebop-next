@@ -7,9 +7,8 @@ publish = false
 
 [features]
 default = ["std"]
-std = ["alloc", "half/std"]
-alloc = ["half/alloc", "dep:hashbrown"]
+std = ["half/std"]
 
 [dependencies]
-half = { version = "2.7", default-features = false }
-hashbrown = { version = "0.15", optional = true }
+half = { version = "2.7", default-features = false, features = ["alloc"] }
+hashbrown = { version = "0.15" }
