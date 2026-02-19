@@ -1,5 +1,6 @@
-#![cfg(feature = "alloc")]
+#![cfg(feature = "alloc-map")]
 
+use bebop_runtime::HashMap;
 use bebop_runtime::{BebopDecode, BebopEncode};
 
 use bebop_integration_tests::no_std_types::*;
@@ -40,6 +41,10 @@ fn no_std_snapshot_round_trip() {
   snapshot.title = Some("demo".into());
   snapshot.points = Some(points);
   snapshot.payload = Some((&[9u8, 8, 7][..]).into());
+  let mut counts = HashMap::new();
+  counts.insert("alpha".into(), 1u32);
+  counts.insert("beta".into(), 2u32);
+  snapshot.counts = Some(counts);
 
   let bytes = snapshot.to_bytes();
   let decoded = Snapshot::from_bytes(&bytes).unwrap();
@@ -48,5 +53,18 @@ fn no_std_snapshot_round_trip() {
   assert_eq!(decoded.title.as_deref(), Some("demo"));
   assert_eq!(decoded.points.as_ref().map(|v| v.len()), Some(2));
   assert_eq!(decoded.payload.as_deref(), Some(&[9u8, 8, 7][..]));
+  assert_eq!(decoded.counts.as_ref().map(|m| m.len()), Some(2));
+  assert_eq!(
+    decoded
+      .counts
+      .as_ref()
+      .and_then(|m| m.get("alpha"))
+      .copied(),
+    Some(1)
+  );
+  assert_eq!(
+    decoded.counts.as_ref().and_then(|m| m.get("beta")).copied(),
+    Some(2)
+  );
   assert_eq!(snapshot.encoded_size(), bytes.len());
 }

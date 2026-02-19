@@ -18,7 +18,7 @@ use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::mem::size_of;
-use std::collections::HashMap;
+use bebop_runtime::HashMap;
 use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, f16, bf16};
 use bebop_runtime::wire_size as wire;
 
@@ -315,7 +315,7 @@ pub struct UserProfile<'buf> {
   pub age: Option<u32>,
   pub active: Option<bool>,
   pub tags: Option<Vec<Cow<'buf, str>>>,
-  pub metadata: Option<std::collections::HashMap<Cow<'buf, str>, Cow<'buf, str>>>,
+  pub metadata: Option<HashMap<Cow<'buf, str>, Cow<'buf, str>>>,
   pub permissions: Option<Permissions>,
 }
 
@@ -928,7 +928,7 @@ impl<'buf> BebopDecode<'buf> for Scene<'buf> {
 /// Message with map[string, defined-type] value.
 #[derive(Debug, Clone, Default)]
 pub struct Inventory<'buf> {
-  pub items: Option<std::collections::HashMap<Cow<'buf, str>, u32>>,
+  pub items: Option<HashMap<Cow<'buf, str>, u32>>,
   pub label: Option<Cow<'buf, str>>,
 }
 
