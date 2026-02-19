@@ -74,27 +74,18 @@ pub fn generate(
     } else {
       ""
     };
-    output.push_str(&format!(
-      "  {}({}{}),\n",
-      b.variant, b.inner_type, inner_lt
-    ));
+    output.push_str(&format!("  {}({}{}),\n", b.variant, b.inner_type, inner_lt));
   }
   // Unknown variant for forward compatibility
   output.push_str("  Unknown(u8, Cow<'buf, [u8]>),\n");
   output.push_str("}\n\n");
 
   // ── Type alias ────────────────────────────────────────────────
-  output.push_str(&format!(
-    "pub type {}Owned = {}<'static>;\n\n",
-    name, name
-  ));
+  output.push_str(&format!("pub type {}Owned = {}<'static>;\n\n", name, name));
 
   // ── into_owned() ──────────────────────────────────────────────
   output.push_str(&format!("impl<'buf> {}<'buf> {{\n", name));
-  output.push_str(&format!(
-    "  pub fn into_owned(self) -> {}Owned {{\n",
-    name
-  ));
+  output.push_str(&format!("  pub fn into_owned(self) -> {}Owned {{\n", name));
   output.push_str("    match self {\n");
   for b in &branch_infos {
     let has_lt = b
@@ -122,10 +113,7 @@ pub fn generate(
   output.push_str("}\n\n");
 
   // ── impl BebopEncode ──────────────────────────────────────────
-  output.push_str(&format!(
-    "impl<'buf> BebopEncode for {}<'buf> {{\n",
-    name
-  ));
+  output.push_str(&format!("impl<'buf> BebopEncode for {}<'buf> {{\n", name));
 
   // encode()
   output.push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
@@ -137,7 +125,9 @@ pub fn generate(
       b.variant, b.disc
     ));
   }
-  output.push_str("      Self::Unknown(disc, data) => { writer.write_byte(*disc); writer.write_raw(data); }\n");
+  output.push_str(
+    "      Self::Unknown(disc, data) => { writer.write_byte(*disc); writer.write_raw(data); }\n",
+  );
   output.push_str("    }\n");
   output.push_str("    writer.fill_message_length(pos);\n");
   output.push_str("  }\n\n");
@@ -162,9 +152,7 @@ pub fn generate(
     "impl<'buf> BebopDecode<'buf> for {}<'buf> {{\n",
     name
   ));
-  output.push_str(
-    "  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n",
-  );
+  output.push_str("  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n");
   output.push_str("    let length = reader.read_message_length()? as usize;\n");
   output.push_str("    let start = reader.position();\n");
   output.push_str("    let discriminator = reader.read_byte()?;\n");
