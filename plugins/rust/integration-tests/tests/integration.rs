@@ -297,7 +297,7 @@ fn fixed_struct_fixed_encoded_size() {
 
 #[test]
 fn fixed_struct_encoded_size_matches_actual() {
-  let p = Point::new(3.14, 2.71);
+  let p = Point::new(core::f32::consts::PI, core::f32::consts::E);
   assert_eq!(p.encoded_size(), p.to_bytes().len());
 }
 
