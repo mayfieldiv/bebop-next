@@ -3,9 +3,9 @@ use alloc::vec::Vec;
 #[cfg(feature = "alloc")]
 use core::ops::{BitAnd, BitOr, BitXor, Not};
 
-use crate::{BebopReader, DecodeError};
 #[cfg(feature = "alloc")]
 use crate::BebopWriter;
+use crate::{BebopReader, DecodeError};
 
 /// Trait for types that can be encoded into the Bebop wire format.
 #[cfg(feature = "alloc")]

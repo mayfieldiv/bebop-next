@@ -1,9 +1,9 @@
 use alloc::vec::Vec;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc-map")]
 use core::hash::Hash;
-#[cfg(feature = "std")]
-use std::collections::HashMap;
 
+#[cfg(feature = "alloc-map")]
+use crate::HashMap;
 use crate::{bf16, f16};
 
 /// Accumulating writer for Bebop wire format.
@@ -27,7 +27,9 @@ impl BebopWriter {
   }
 
   pub fn with_capacity(cap: usize) -> Self {
-    Self { buf: Vec::with_capacity(cap) }
+    Self {
+      buf: Vec::with_capacity(cap),
+    }
   }
 
   pub fn into_bytes(self) -> Vec<u8> {
@@ -177,7 +179,7 @@ impl BebopWriter {
   }
 
   /// Write a map: u32 count + (key, value) pairs.
-  #[cfg(feature = "std")]
+  #[cfg(feature = "alloc-map")]
   pub fn write_map<K: Eq + Hash, V>(
     &mut self,
     map: &HashMap<K, V>,

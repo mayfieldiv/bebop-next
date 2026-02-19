@@ -18,6 +18,7 @@ use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::mem::size_of;
+use bebop_runtime::HashMap;
 use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, f16, bf16};
 use bebop_runtime::wire_size as wire;
 
@@ -146,6 +147,7 @@ pub struct Snapshot<'buf> {
   pub title: Option<Cow<'buf, str>>,
   pub points: Option<Vec<Position>>,
   pub payload: Option<Cow<'buf, [u8]>>,
+  pub counts: Option<HashMap<Cow<'buf, str>, u32>>,
 }
 
 pub type SnapshotOwned = Snapshot<'static>;
@@ -157,6 +159,7 @@ impl<'buf> Snapshot<'buf> {
       title: self.title.map(|v| Cow::Owned(v.into_owned())),
       points: self.points,
       payload: self.payload.map(|v| Cow::Owned(v.into_owned())),
+      counts: self.counts.map(|v| v.into_iter().map(|(_k, _v)| (Cow::Owned(_k.into_owned()), _v)).collect()),
     }
   }
 }
@@ -180,6 +183,10 @@ impl<'buf> BebopEncode for Snapshot<'buf> {
       writer.write_tag(4);
       writer.write_byte_array(&v);
     }
+    if let Some(ref v) = self.counts {
+      writer.write_tag(5);
+      writer.write_map(&v, |_w, _k, _v| { _w.write_string(&_k); _w.write_u32(*_v); });
+    }
     writer.write_end_marker();
     writer.fill_message_length(pos);
   }
@@ -197,6 +204,9 @@ impl<'buf> BebopEncode for Snapshot<'buf> {
     }
     if let Some(ref v) = self.payload {
       size += wire::tagged_size(wire::byte_array_size(v.len()));
+    }
+    if let Some(ref v) = self.counts {
+      size += wire::tagged_size(wire::map_size(v, |_k, _v| wire::string_size(_k.len()) + size_of::<u32>()));
     }
     size
   }
@@ -216,6 +226,7 @@ impl<'buf> BebopDecode<'buf> for Snapshot<'buf> {
         2 => msg.title = Some(Cow::Borrowed(reader.read_str()?)),
         3 => msg.points = Some(reader.read_array(|_r| Position::decode(_r))?),
         4 => msg.payload = Some(Cow::Borrowed(reader.read_byte_slice()?)),
+        5 => msg.counts = Some(reader.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, _r.read_u32()?)))?),
         _ => { reader.skip(end - reader.position())?; }
       }
     }

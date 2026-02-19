@@ -18,7 +18,7 @@ use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::mem::size_of;
-use std::collections::HashMap;
+use bebop_runtime::HashMap;
 use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, f16, bf16};
 use bebop_runtime::wire_size as wire;
 use super::descriptor::*;
@@ -106,7 +106,7 @@ pub struct CodeGeneratorRequest<'buf> {
   pub schemas: Option<Vec<SchemaDescriptor<'buf>>>,
 /// Host compiler options passed to bebopc. Use to adjust output based
 /// on global settings.
-  pub host_options: Option<std::collections::HashMap<Cow<'buf, str>, Cow<'buf, str>>>,
+  pub host_options: Option<HashMap<Cow<'buf, str>, Cow<'buf, str>>>,
 }
 
 pub type CodeGeneratorRequestOwned = CodeGeneratorRequest<'static>;

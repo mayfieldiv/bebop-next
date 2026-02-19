@@ -1,9 +1,9 @@
 #![no_std]
 
-#[cfg(feature = "std")]
-extern crate std;
 #[cfg(feature = "alloc")]
 extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std;
 
 mod error;
 mod reader;
@@ -13,11 +13,15 @@ pub mod wire_size;
 mod writer;
 
 pub use error::DecodeError;
+pub use half::bf16;
+pub use half::f16;
+#[cfg(all(feature = "alloc-map", not(feature = "std")))]
+pub use hashbrown::HashMap;
 pub use reader::BebopReader;
+#[cfg(feature = "std")]
+pub use std::collections::HashMap;
 pub use traits::{BebopDecode, BebopDecodeOwned};
 #[cfg(feature = "alloc")]
 pub use traits::{BebopEncode, BebopFlagBits, BebopFlags};
 #[cfg(feature = "alloc")]
 pub use writer::BebopWriter;
-pub use half::bf16;
-pub use half::f16;

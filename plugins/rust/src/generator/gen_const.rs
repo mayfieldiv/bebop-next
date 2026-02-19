@@ -27,7 +27,10 @@ pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), G
 
   emit_doc_comment(output, &def.documentation);
   emit_deprecated(output, &def.decorators);
-  output.push_str(&format!("pub const {}: {} = {};\n\n", name, rust_type, literal));
+  output.push_str(&format!(
+    "pub const {}: {} = {};\n\n",
+    name, rust_type, literal
+  ));
 
   Ok(())
 }
@@ -52,8 +55,9 @@ fn const_rust_type(td: &TypeDescriptor) -> Result<&'static str, GeneratorError> 
         ))
       }
     }
-    _ => scalar_type(kind)
-      .ok_or_else(|| GeneratorError::MalformedType(format!("unsupported const type kind: {}", kind as u8))),
+    _ => scalar_type(kind).ok_or_else(|| {
+      GeneratorError::MalformedType(format!("unsupported const type kind: {}", kind as u8))
+    }),
   }
 }
 
