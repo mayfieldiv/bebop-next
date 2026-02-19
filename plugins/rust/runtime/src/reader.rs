@@ -2,10 +2,10 @@
 use alloc::string::String;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
-#[cfg(feature = "alloc-map")]
+#[cfg(feature = "alloc")]
 use core::hash::Hash;
 
-#[cfg(feature = "alloc-map")]
+#[cfg(feature = "alloc")]
 use crate::HashMap;
 use crate::{bf16, f16, DecodeError};
 
@@ -213,7 +213,7 @@ impl<'a> BebopReader<'a> {
   }
 
   /// Read a dynamic map: u32 count + (key, value) pairs.
-  #[cfg(feature = "alloc-map")]
+  #[cfg(feature = "alloc")]
   pub fn read_map<K: Eq + Hash, V>(
     &mut self,
     mut read_entry: impl FnMut(&mut Self) -> Result<(K, V)>,
