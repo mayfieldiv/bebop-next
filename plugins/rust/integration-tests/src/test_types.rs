@@ -91,6 +91,33 @@ impl std::ops::BitXorAssign for Permissions { fn bitxor_assign(&mut self, rhs: S
 impl std::ops::Not for Permissions { type Output = Self; fn not(self) -> Self { Self(!self.0) } }
 impl std::ops::Sub for Permissions { type Output = Self; fn sub(self, rhs: Self) -> Self { Self(self.0 & !rhs.0) } }
 
+/// Constants used to validate Rust const generation.
+pub const P_CASE: u8 = 18u8;
+
+pub const EXAMPLE_CONST_INT32: i32 = -123i32;
+
+pub const EXAMPLE_CONST_UINT64: u64 = 1254130450431u64;
+
+pub const EXAMPLE_CONST_FLOAT64: f64 = 123456780000.0f64;
+
+pub const EXAMPLE_CONST_INF: f64 = f64::INFINITY;
+
+pub const EXAMPLE_CONST_NEG_INF: f64 = f64::NEG_INFINITY;
+
+pub const EXAMPLE_CONST_NAN: f64 = f64::NAN;
+
+pub const EXAMPLE_CONST_FALSE: bool = false;
+
+pub const EXAMPLE_CONST_TRUE: bool = true;
+
+pub const HTTP_STATUS_OK: u32 = 200u32;
+
+pub const FEATURE_FLAG_ENABLED: bool = true;
+
+pub const EXAMPLE_CONST_STRING: &str = "hello \"world\"\nwith newlines";
+
+pub const EXAMPLE_CONST_GUID: [u8; 16] = [0xE2, 0x15, 0xA9, 0x46, 0xB2, 0x6F, 0x45, 0x67, 0xA2, 0x76, 0x13, 0x13, 0x6F, 0x0A, 0x17, 0x08];
+
 /// Fixed-size struct (all scalar fields).
 #[derive(Debug, Clone)]
 pub struct Point {

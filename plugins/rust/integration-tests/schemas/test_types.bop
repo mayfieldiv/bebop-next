@@ -28,6 +28,22 @@ enum Permissions : uint8 {
     ALL = 7;
 }
 
+/// Constants used to validate Rust const generation.
+const byte PCase = 0x12;
+const int32 exampleConstInt32 = -123;
+const uint64 exampleConstUint64 = 0x123ffffffff;
+const float64 exampleConstFloat64 = 123.45678e9;
+const float64 exampleConstInf = inf;
+const float64 exampleConstNegInf = -inf;
+const float64 exampleConstNan = nan;
+const bool exampleConstFalse = false;
+const bool exampleConstTrue = true;
+const uint32 HTTP_STATUS_OK = 200;
+const bool FEATURE_FLAG_ENABLED = true;
+const string exampleConstString = "hello ""world""
+with newlines";
+const guid exampleConstGuid = "e215a946-b26f-4567-a276-13136f0a1708";
+
 /// Fixed-size struct (all scalar fields).
 struct Point {
     x: float32;
