@@ -21,8 +21,6 @@ pub fn escape_keyword(name: &str) -> String {
 ///
 /// Handles PascalCase, camelCase, and SCREAMING_SNAKE_CASE inputs.
 pub fn to_snake_case(name: &str) -> String {
-  // TODO: Implement proper case conversion
-  // For now, do a basic PascalCase -> snake_case conversion
   let mut result = String::new();
   for (i, ch) in name.chars().enumerate() {
     if ch == '_' {
@@ -46,9 +44,7 @@ pub fn to_snake_case(name: &str) -> String {
 
 /// Convert a name to PascalCase (for type names).
 pub fn to_pascal_case(name: &str) -> String {
-  // TODO: Implement proper case conversion
-  // For now, handle snake_case -> PascalCase
-  name
+  to_snake_case(name)
     .split('_')
     .filter(|s| !s.is_empty())
     .map(|s| {
@@ -56,13 +52,20 @@ pub fn to_pascal_case(name: &str) -> String {
       match chars.next() {
         Some(c) => {
           let mut result = c.to_uppercase().to_string();
-          result.extend(chars);
+          for ch in chars {
+            result.push(ch.to_ascii_lowercase());
+          }
           result
         }
         None => String::new(),
       }
     })
     .collect()
+}
+
+/// Convert a name to SCREAMING_SNAKE_CASE (for constants).
+pub fn to_screaming_snake_case(name: &str) -> String {
+  to_snake_case(name).to_ascii_uppercase()
 }
 
 /// Convert a SCREAMING_SNAKE_CASE name to PascalCase for enum variant names.
@@ -96,6 +99,11 @@ pub fn field_name(name: &str) -> String {
 /// Escape and convert a type name to idiomatic Rust.
 pub fn type_name(name: &str) -> String {
   escape_keyword(&to_pascal_case(name))
+}
+
+/// Convert a const name to idiomatic Rust SCREAMING_SNAKE_CASE.
+pub fn const_name(name: &str) -> String {
+  to_screaming_snake_case(name)
 }
 
 /// Extract the simple type name from a fully-qualified name and convert to PascalCase.
