@@ -1,4 +1,7 @@
 #![cfg(feature = "std")]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::field_reassign_with_default)]
+#![allow(clippy::bool_assert_comparison)]
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -53,10 +56,10 @@ fn const_scalar_values() {
   assert_eq!(EXAMPLE_CONST_INT32, -123);
   assert_eq!(EXAMPLE_CONST_UINT64, 0x123ffffffff);
   assert_eq!(EXAMPLE_CONST_FLOAT64, 123.45678e9);
-  assert_eq!(EXAMPLE_CONST_FALSE, false);
-  assert_eq!(EXAMPLE_CONST_TRUE, true);
+  assert!(!EXAMPLE_CONST_FALSE);
+  assert!(EXAMPLE_CONST_TRUE);
   assert_eq!(HTTP_STATUS_OK, 200);
-  assert_eq!(FEATURE_FLAG_ENABLED, true);
+  assert!(FEATURE_FLAG_ENABLED);
 }
 
 #[test]

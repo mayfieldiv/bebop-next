@@ -9,9 +9,6 @@ cd "$RUST_DIR"
 echo "Checking formatting..."
 cargo fmt --all -- --check
 
-echo "Running clippy..."
-cargo clippy --workspace --all-targets --all-features
-
 echo "Compiler checks..."
 cargo check -p bebopc-gen-rust
 cargo check -p bebop-runtime
@@ -26,5 +23,8 @@ cargo test -p bebop-runtime --no-default-features
 echo "Integration tests..."
 cargo test -p bebop-integration-tests
 cargo test -p bebop-integration-tests --no-default-features
+
+echo "Running clippy..."
+cargo clippy --workspace --all-targets --all-features -- -D warnings
 
 echo "All checks passed."
