@@ -31,4 +31,14 @@ echo "Generating test_types.rs..."
 
 cp "$TMPDIR/out/test_types.rs" "$INT_DIR/src/test_types.rs"
 
+echo "Generating no_std_types.rs..."
+"$BEBOPC" build \
+  "$INT_DIR/schemas/no_std_types.bop" \
+  -I "$SCHEMAS" \
+  --plugin=rust="$PLUGIN" \
+  --rust_out="$TMPDIR/out" \
+  -q 2>/dev/null
+
+cp "$TMPDIR/out/no_std_types.rs" "$INT_DIR/src/no_std_types.rs"
+
 echo "Done."

@@ -1,6 +1,8 @@
+use core::mem::size_of;
+#[cfg(feature = "std")]
 use std::collections::HashMap;
+#[cfg(feature = "std")]
 use std::hash::BuildHasher;
-use std::mem::size_of;
 
 /// Wire size of a u32 length prefix.
 pub const WIRE_LEN_PREFIX_SIZE: usize = size_of::<u32>();
@@ -29,6 +31,7 @@ pub fn array_size<T>(items: &[T], mut elem_size: impl FnMut(&T) -> usize) -> usi
 }
 
 #[inline]
+#[cfg(feature = "std")]
 pub fn map_size<K, V, S>(
   map: &HashMap<K, V, S>,
   mut entry_size: impl FnMut(&K, &V) -> usize,
@@ -81,6 +84,7 @@ mod tests {
   }
 
   #[test]
+  #[cfg(feature = "std")]
   fn map_size_aggregates_entries() {
     let mut m = HashMap::new();
     m.insert("k1", "v1");
