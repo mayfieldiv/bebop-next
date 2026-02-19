@@ -1,9 +1,16 @@
 use crate::error::GeneratorError;
-use crate::generated::DefinitionDescriptor;
+use crate::generated::{DefinitionDescriptor, TypeDescriptor};
 
 use super::naming::{field_name, type_name};
 use super::type_mapper;
 use super::{emit_deprecated, emit_doc_comment, LifetimeAnalysis};
+
+struct StructFieldMeta<'a> {
+  fname: String,
+  cow_type: String,
+  owned_type: String,
+  td: &'a TypeDescriptor<'a>,
+}
 
 /// Generate Rust code for a struct definition.
 pub fn generate(
@@ -29,29 +36,20 @@ pub fn generate(
     format!("impl {} {{\n", name)
   };
 
-  // Collect field info upfront
-  let fnames: Vec<String> = fields
-    .iter()
-    .map(|f| field_name(f.name.as_deref().unwrap_or("unknown")))
-    .collect();
-
-  let cow_types: Vec<String> = fields
+  // Collect field metadata once and reuse it through generation.
+  let field_metas: Vec<StructFieldMeta<'_>> = fields
     .iter()
     .map(|f| {
-      let td = f.r#type.as_ref().ok_or_else(|| {
-        GeneratorError::MalformedDefinition("struct field missing type".into())
-      })?;
-      type_mapper::rust_type_cow(td, analysis)
-    })
-    .collect::<Result<Vec<_>, GeneratorError>>()?;
-
-  let owned_types: Vec<String> = fields
-    .iter()
-    .map(|f| {
-      let td = f.r#type.as_ref().ok_or_else(|| {
-        GeneratorError::MalformedDefinition("struct field missing type".into())
-      })?;
-      type_mapper::rust_type_owned(td, analysis)
+      let td = f
+        .r#type
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedDefinition("struct field missing type".into()))?;
+      Ok(StructFieldMeta {
+        fname: field_name(f.name.as_deref().unwrap_or("unknown")),
+        cow_type: type_mapper::rust_type_cow(td, analysis)?,
+        owned_type: type_mapper::rust_type_owned(td, analysis)?,
+        td,
+      })
     })
     .collect::<Result<Vec<_>, GeneratorError>>()?;
 
@@ -62,32 +60,26 @@ pub fn generate(
   // ── Derive + struct definition ────────────────────────────────
   output.push_str("#[derive(Debug, Clone)]\n");
   output.push_str(&format!("pub struct {}{} {{\n", name, lt));
-  for (i, f) in fields.iter().enumerate() {
+  for (f, meta) in fields.iter().zip(&field_metas) {
     emit_doc_comment(output, &f.documentation);
     emit_deprecated(output, &f.decorators);
-    output.push_str(&format!("  pub {}: {},\n", fnames[i], cow_types[i]));
+    output.push_str(&format!("  pub {}: {},\n", meta.fname, meta.cow_type));
   }
   output.push_str("}\n\n");
 
   // ── Type alias ────────────────────────────────────────────────
   if has_lifetime {
-    output.push_str(&format!(
-      "pub type {}Owned = {}<'static>;\n\n",
-      name, name
-    ));
+    output.push_str(&format!("pub type {}Owned = {}<'static>;\n\n", name, name));
   }
 
   // ── new() constructor + FIXED_ENCODED_SIZE ──────────────────────
   output.push_str(&impl_header);
   if let Some(fs) = struct_def.fixed_size {
     if fs > 0 {
-      let mut parts: Vec<String> = Vec::with_capacity(fields.len());
+      let mut parts: Vec<String> = Vec::with_capacity(field_metas.len());
       let mut can_emit_expr = true;
-      for f in fields {
-        let td = f.r#type.as_ref().ok_or_else(|| {
-          GeneratorError::MalformedDefinition("struct field missing type".into())
-        })?;
-        match type_mapper::fixed_encoded_size_expression(td)? {
+      for meta in &field_metas {
+        match type_mapper::fixed_encoded_size_expression(meta.td)? {
           Some(expr) => parts.push(expr),
           None => {
             can_emit_expr = false;
@@ -121,35 +113,34 @@ pub fn generate(
     }
   }
   output.push_str("  pub fn new(");
-  for (i, fname) in fnames.iter().enumerate() {
+  for (i, meta) in field_metas.iter().enumerate() {
     if i > 0 {
       output.push_str(", ");
     }
-    let td = fields[i].r#type.as_ref().ok_or_else(|| {
-      GeneratorError::MalformedDefinition("struct field missing type".into())
-    })?;
-    if has_lifetime && type_mapper::is_cow_field(td) {
-      output.push_str(&format!("{}: impl Into<{}>", fname, cow_types[i]));
+    if has_lifetime && type_mapper::is_cow_field(meta.td) {
+      output.push_str(&format!("{}: impl Into<{}>", meta.fname, meta.cow_type));
     } else {
-      output.push_str(&format!("{}: {}", fname, owned_types[i]));
+      output.push_str(&format!("{}: {}", meta.fname, meta.owned_type));
     }
   }
   output.push_str(") -> Self {\n");
-  let mut init_fields: Vec<String> = Vec::with_capacity(fields.len());
-  for (i, f) in fields.iter().enumerate() {
-    let td = f.r#type.as_ref().unwrap();
-    if has_lifetime && type_mapper::is_cow_field(td) {
-      output.push_str(&format!("    let {} = {}.into();\n", fnames[i], fnames[i]));
-      init_fields.push(fnames[i].clone());
-    } else if type_mapper::is_cow_field(td) {
+  let mut init_fields: Vec<String> = Vec::with_capacity(field_metas.len());
+  for meta in &field_metas {
+    if has_lifetime && type_mapper::is_cow_field(meta.td) {
+      output.push_str(&format!(
+        "    let {} = {}.into();\n",
+        meta.fname, meta.fname
+      ));
+      init_fields.push(meta.fname.clone());
+    } else if type_mapper::is_cow_field(meta.td) {
       // Defensive fallback for non-lifetime cases.
       output.push_str(&format!(
         "    let {} = Cow::Owned({});\n",
-        fnames[i], fnames[i]
+        meta.fname, meta.fname
       ));
-      init_fields.push(fnames[i].clone());
+      init_fields.push(meta.fname.clone());
     } else {
-      init_fields.push(fnames[i].clone());
+      init_fields.push(meta.fname.clone());
     }
   }
   if init_fields.is_empty() {
@@ -163,16 +154,12 @@ pub fn generate(
   // ── into_owned() (only when has_lifetime) ─────────────────────
   if has_lifetime {
     output.push_str(&format!("impl<'buf> {}<'buf> {{\n", name));
-    output.push_str(&format!(
-      "  pub fn into_owned(self) -> {}Owned {{\n",
-      name
-    ));
+    output.push_str(&format!("  pub fn into_owned(self) -> {}Owned {{\n", name));
     output.push_str(&format!("    {} {{\n", name));
-    for (i, f) in fields.iter().enumerate() {
-      let td = f.r#type.as_ref().unwrap();
+    for meta in &field_metas {
       let expr =
-        type_mapper::into_owned_expression(td, &format!("self.{}", fnames[i]), analysis)?;
-      output.push_str(&format!("      {}: {},\n", fnames[i], expr));
+        type_mapper::into_owned_expression(meta.td, &format!("self.{}", meta.fname), analysis)?;
+      output.push_str(&format!("      {}: {},\n", meta.fname, expr));
     }
     output.push_str("    }\n");
     output.push_str("  }\n");
@@ -180,19 +167,17 @@ pub fn generate(
   }
 
   // ── impl BebopEncode ──────────────────────────────────────────
-  output.push_str(&format!(
-    "impl{} BebopEncode for {}{} {{\n",
-    lt, name, lt
-  ));
+  output.push_str(&format!("impl{} BebopEncode for {}{} {{\n", lt, name, lt));
 
   // encode()
   output.push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
-  for (i, f) in fields.iter().enumerate() {
-    let td = f.r#type.as_ref().ok_or_else(|| {
-      GeneratorError::MalformedDefinition("struct field missing type".into())
-    })?;
-    let write_stmt =
-      type_mapper::write_expression_cow(td, &format!("self.{}", fnames[i]), "writer", analysis)?;
+  for meta in &field_metas {
+    let write_stmt = type_mapper::write_expression_cow(
+      meta.td,
+      &format!("self.{}", meta.fname),
+      "writer",
+      analysis,
+    )?;
     output.push_str(&format!("    {};\n", write_stmt));
   }
   output.push_str("  }\n\n");
@@ -203,10 +188,10 @@ pub fn generate(
     if fs > 0 {
       output.push_str("    Self::FIXED_ENCODED_SIZE\n");
     } else {
-      emit_encoded_size_body(fields, &fnames, output, analysis)?;
+      emit_encoded_size_body(&field_metas, output, analysis)?;
     }
   } else {
-    emit_encoded_size_body(fields, &fnames, output, analysis)?;
+    emit_encoded_size_body(&field_metas, output, analysis)?;
   }
   output.push_str("  }\n");
 
@@ -217,24 +202,24 @@ pub fn generate(
     "impl<'buf> BebopDecode<'buf> for {}{} {{\n",
     name, lt
   ));
-  output.push_str(
-    "  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n",
-  );
-  for (i, f) in fields.iter().enumerate() {
-    let td = f.r#type.as_ref().ok_or_else(|| {
-      GeneratorError::MalformedDefinition("struct field missing type".into())
-    })?;
-    if let Some(read_expr) = type_mapper::borrowed_cow_read_expression(td, "reader") {
-      output.push_str(&format!("    let {} = {};\n", fnames[i], read_expr));
+  output.push_str("  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n");
+  for meta in &field_metas {
+    if let Some(read_expr) = type_mapper::borrowed_cow_read_expression(meta.td, "reader") {
+      output.push_str(&format!("    let {} = {};\n", meta.fname, read_expr));
     } else {
-      let read_expr = type_mapper::read_expression_cow(td, "reader", analysis)?;
-      output.push_str(&format!("    let {} = {}?;\n", fnames[i], read_expr));
+      let read_expr = type_mapper::read_expression_cow(meta.td, "reader", analysis)?;
+      output.push_str(&format!("    let {} = {}?;\n", meta.fname, read_expr));
     }
   }
-  if fnames.is_empty() {
+  if field_metas.is_empty() {
     output.push_str(&format!("    Ok({} {{}})\n", name));
   } else {
-    output.push_str(&format!("    Ok({} {{ {} }})\n", name, fnames.join(", ")));
+    let init_fields = field_metas
+      .iter()
+      .map(|meta| meta.fname.as_str())
+      .collect::<Vec<_>>()
+      .join(", ");
+    output.push_str(&format!("    Ok({} {{ {} }})\n", name, init_fields));
   }
   output.push_str("  }\n");
   output.push_str("}\n\n");
@@ -244,18 +229,14 @@ pub fn generate(
 
 /// Emit the body of `encoded_size()` for variable-size structs.
 fn emit_encoded_size_body(
-  fields: &[crate::generated::FieldDescriptor],
-  fnames: &[String],
+  field_metas: &[StructFieldMeta<'_>],
   output: &mut String,
   analysis: &LifetimeAnalysis,
 ) -> Result<(), GeneratorError> {
   output.push_str("    let mut size = 0;\n");
-  for (i, f) in fields.iter().enumerate() {
-    let td = f.r#type.as_ref().ok_or_else(|| {
-      GeneratorError::MalformedDefinition("struct field missing type".into())
-    })?;
+  for meta in field_metas {
     let expr =
-      type_mapper::encoded_size_expression(td, &format!("self.{}", fnames[i]), analysis)?;
+      type_mapper::encoded_size_expression(meta.td, &format!("self.{}", meta.fname), analysis)?;
     output.push_str(&format!("    size += {};\n", expr));
   }
   output.push_str("    size\n");
