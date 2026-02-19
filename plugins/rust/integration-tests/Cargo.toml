@@ -4,5 +4,10 @@ version = "0.1.0"
 edition = "2021"
 publish = false
 
+[features]
+default = ["std"]
+std = ["alloc", "bebop-runtime/std"]
+alloc = ["bebop-runtime/alloc"]
+
 [dependencies]
-bebop-runtime = { path = "../runtime" }
+bebop-runtime = { path = "../runtime", default-features = false }

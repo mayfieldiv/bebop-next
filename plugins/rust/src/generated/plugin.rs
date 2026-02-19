@@ -11,9 +11,14 @@
 
 #![allow(warnings)]
 
-use std::borrow::Cow;
+extern crate alloc;
+use alloc::borrow::Cow;
+use alloc::boxed::Box;
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
+use core::mem::size_of;
 use std::collections::HashMap;
-use std::mem::size_of;
 use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, f16, bf16};
 use bebop_runtime::wire_size as wire;
 use super::descriptor::*;
@@ -198,7 +203,7 @@ pub enum DiagnosticSeverity {
   Hint = 3,
 }
 
-impl std::convert::TryFrom<u8> for DiagnosticSeverity {
+impl core::convert::TryFrom<u8> for DiagnosticSeverity {
   type Error = DecodeError;
   fn try_from(value: u8) -> Result<Self, DecodeError> {
     match value {

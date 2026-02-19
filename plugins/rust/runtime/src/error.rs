@@ -1,4 +1,4 @@
-use std::fmt;
+use core::fmt;
 
 #[derive(Debug)]
 pub enum DecodeError {
@@ -25,4 +25,5 @@ impl fmt::Display for DecodeError {
   }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for DecodeError {}
