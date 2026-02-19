@@ -148,7 +148,8 @@ fn schema_uses_maps(schema: &SchemaDescriptor) -> bool {
 }
 
 fn definition_uses_maps(def: &DefinitionDescriptor) -> bool {
-  def.struct_def
+  def
+    .struct_def
     .as_ref()
     .and_then(|sd| sd.fields.as_deref())
     .is_some_and(fields_use_maps)
@@ -189,7 +190,10 @@ fn method_uses_maps(method: &MethodDescriptor) -> bool {
 fn type_uses_maps(ty: &TypeDescriptor) -> bool {
   ty.kind == Some(TypeKind::Map)
     || ty.array_element.as_deref().is_some_and(type_uses_maps)
-    || ty.fixed_array_element.as_deref().is_some_and(type_uses_maps)
+    || ty
+      .fixed_array_element
+      .as_deref()
+      .is_some_and(type_uses_maps)
     || ty.map_key.as_deref().is_some_and(type_uses_maps)
     || ty.map_value.as_deref().is_some_and(type_uses_maps)
 }
@@ -248,7 +252,7 @@ impl RustGenerator {
     output.push_str("use alloc::vec::Vec;\n");
     output.push_str("use core::mem::size_of;\n");
     if schema_uses_maps(schema) {
-      output.push_str("use std::collections::HashMap;\n");
+      output.push_str("use bebop_runtime::HashMap;\n");
     }
     output.push_str("use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, f16, bf16};\n");
     output.push_str("use bebop_runtime::wire_size as wire;\n");

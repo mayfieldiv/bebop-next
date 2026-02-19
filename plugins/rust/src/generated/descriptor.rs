@@ -18,7 +18,7 @@ use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::mem::size_of;
-use std::collections::HashMap;
+use bebop_runtime::HashMap;
 use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, f16, bf16};
 use bebop_runtime::wire_size as wire;
 
@@ -760,7 +760,7 @@ pub struct DecoratorUsage<'buf> {
 /// Arguments passed at the usage site, in declaration order.
   pub args: Option<Vec<DecoratorArg<'buf>>>,
 /// Results from the decorator's export block.
-  pub export_data: Option<std::collections::HashMap<Cow<'buf, str>, LiteralValue<'buf>>>,
+  pub export_data: Option<HashMap<Cow<'buf, str>, LiteralValue<'buf>>>,
 }
 
 pub type DecoratorUsageOwned = DecoratorUsage<'static>;

@@ -7,8 +7,10 @@ publish = false
 
 [features]
 default = ["std"]
-std = ["alloc", "half/std"]
+std = ["alloc-map", "half/std"]
 alloc = ["half/alloc"]
+alloc-map = ["alloc", "dep:hashbrown"]
 
 [dependencies]
 half = { version = "2.7", default-features = false }
+hashbrown = { version = "0.15", optional = true }
