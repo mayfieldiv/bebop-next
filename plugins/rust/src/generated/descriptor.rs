@@ -14,7 +14,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::mem::size_of;
-use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, F16, BF16};
+use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, f16, bf16};
 use bebop_runtime::wire_size as wire;
 
 /// Scalar and compound type kinds.

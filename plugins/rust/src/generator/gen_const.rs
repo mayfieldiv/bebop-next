@@ -52,9 +52,6 @@ fn const_rust_type(td: &TypeDescriptor) -> Result<&'static str, GeneratorError> 
         ))
       }
     }
-    TypeKind::Float16 | TypeKind::Bfloat16 => Err(GeneratorError::MalformedType(
-      "const float16/bfloat16 is not supported by the Rust generator yet".into(),
-    )),
     _ => scalar_type(kind)
       .ok_or_else(|| GeneratorError::MalformedType(format!("unsupported const type kind: {}", kind as u8))),
   }
@@ -83,7 +80,11 @@ fn literal_value(value: &LiteralValue, ty: &TypeDescriptor) -> Result<String, Ge
       let v = value
         .int_value
         .ok_or_else(|| GeneratorError::MalformedDefinition("int literal missing value".into()))?;
-      Ok(format!("{}{}", v, int_suffix(type_kind)?))
+      match type_kind {
+        TypeKind::Float16 => Ok(format!("f16::from_f64_const({}f64)", v)),
+        TypeKind::Bfloat16 => Ok(format!("bf16::from_f64_const({}f64)", v)),
+        _ => Ok(format!("{}{}", v, int_suffix(type_kind)?)),
+      }
     }
     LiteralKind::Float => {
       let v = value
@@ -92,6 +93,8 @@ fn literal_value(value: &LiteralValue, ty: &TypeDescriptor) -> Result<String, Ge
       match type_kind {
         TypeKind::Float32 => Ok(float_literal(v, "f32")),
         TypeKind::Float64 => Ok(float_literal(v, "f64")),
+        TypeKind::Float16 => Ok(half_literal(v, "f16")),
+        TypeKind::Bfloat16 => Ok(half_literal(v, "bf16")),
         _ => Err(GeneratorError::MalformedType(
           "float literal used with non-float const type".into(),
         )),
@@ -155,6 +158,19 @@ fn float_literal(value: f64, suffix: &str) -> String {
     return format!("{}::INFINITY", suffix);
   }
   format!("{:?}{}", value, suffix)
+}
+
+fn half_literal(value: f64, half_type: &str) -> String {
+  if value.is_nan() {
+    return format!("{}::NAN", half_type);
+  }
+  if value.is_infinite() {
+    if value.is_sign_negative() {
+      return format!("{}::NEG_INFINITY", half_type);
+    }
+    return format!("{}::INFINITY", half_type);
+  }
+  format!("{}::from_f64_const({:?}f64)", half_type, value)
 }
 
 fn escape_rust_string(value: &str) -> String {
