@@ -137,6 +137,7 @@ pub fn enum_write_method(kind: TypeKind) -> Result<&'static str, GeneratorError>
 }
 
 /// Map a full TypeDescriptor to its Rust type string.
+#[allow(dead_code)] // Kept for non-Cow generation paths during ongoing refactor.
 pub fn rust_type(td: &TypeDescriptor) -> Result<String, GeneratorError> {
   let kind = td
     .kind
@@ -200,6 +201,7 @@ pub fn rust_type(td: &TypeDescriptor) -> Result<String, GeneratorError> {
 /// Generate a read expression for a TypeDescriptor.
 ///
 /// Returns an expression that produces `Result<T>` — callers append `?` as needed.
+#[allow(dead_code)] // Kept for non-Cow generation paths during ongoing refactor.
 pub fn read_expression(td: &TypeDescriptor, reader: &str) -> Result<String, GeneratorError> {
   let kind = td
     .kind
@@ -289,6 +291,7 @@ fn scalar_needs_ref(kind: TypeKind) -> bool {
 }
 
 /// Generate a write statement for a TypeDescriptor.
+#[allow(dead_code)] // Kept for non-Cow generation paths during ongoing refactor.
 pub fn write_expression(
   td: &TypeDescriptor,
   value: &str,
@@ -515,7 +518,7 @@ pub fn is_cow_field(td: &TypeDescriptor) -> bool {
     TypeKind::Array => td
       .array_element
       .as_ref()
-      .map_or(false, |e| e.kind == Some(TypeKind::Byte)),
+      .is_some_and(|e| e.kind == Some(TypeKind::Byte)),
     _ => false,
   }
 }
@@ -668,7 +671,7 @@ pub fn rust_type_cow(
 pub fn read_expression_cow(
   td: &TypeDescriptor,
   reader: &str,
-  analysis: &LifetimeAnalysis,
+  _analysis: &LifetimeAnalysis,
 ) -> Result<String, GeneratorError> {
   let kind = td
     .kind
@@ -706,7 +709,7 @@ pub fn read_expression_cow(
           reader, type_name
         ))
       } else {
-        let inner = read_expression_cow(elem, "_r", analysis)?;
+        let inner = read_expression_cow(elem, "_r", _analysis)?;
         Ok(format!("{}.read_array(|_r| {})", reader, inner))
       }
     }
@@ -722,7 +725,7 @@ pub fn read_expression_cow(
       if elem_kind == TypeKind::Int32 {
         Ok(format!("{}.read_fixed_i32_array::<{}>()", reader, size))
       } else {
-        let inner = read_expression_cow(elem, reader, analysis)?;
+        let inner = read_expression_cow(elem, reader, _analysis)?;
         Ok(format!(
           "{{ let mut _arr = [Default::default(); {}]; for _i in 0..{} {{ _arr[_i] = {}?; }} Ok(_arr) }}",
           size, size, inner
@@ -738,8 +741,8 @@ pub fn read_expression_cow(
         .map_value
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
-      let k_expr = read_expression_cow(key, "_r", analysis)?;
-      let v_expr = read_expression_cow(val, "_r", analysis)?;
+      let k_expr = read_expression_cow(key, "_r", _analysis)?;
+      let v_expr = read_expression_cow(val, "_r", _analysis)?;
       Ok(format!(
         "{}.read_map(|_r| Ok(({}?, {}?)))",
         reader, k_expr, v_expr
@@ -789,7 +792,7 @@ pub fn write_expression_cow(
   td: &TypeDescriptor,
   value: &str,
   writer: &str,
-  analysis: &LifetimeAnalysis,
+  _analysis: &LifetimeAnalysis,
 ) -> Result<String, GeneratorError> {
   let kind = td
     .kind
@@ -833,7 +836,7 @@ pub fn write_expression_cow(
           ))
         }
       } else {
-        let inner = write_expression_cow(elem, "_el", "_w", analysis)?;
+        let inner = write_expression_cow(elem, "_el", "_w", _analysis)?;
         Ok(format!(
           "{}.write_array(&{}, |_w, _el| {{ {} }})",
           writer, value, inner
@@ -861,7 +864,7 @@ pub fn write_expression_cow(
         } else {
           "_el"
         };
-        let inner = write_expression_cow(elem, elem_val, writer, analysis)?;
+        let inner = write_expression_cow(elem, elem_val, writer, _analysis)?;
         Ok(format!("for _el in {}.iter() {{ {} }}", value, inner))
       }
     }
@@ -887,8 +890,8 @@ pub fn write_expression_cow(
       } else {
         "_v"
       };
-      let k_write = write_expression_cow(key, k_val, "_w", analysis)?;
-      let v_write = write_expression_cow(val, v_val, "_w", analysis)?;
+      let k_write = write_expression_cow(key, k_val, "_w", _analysis)?;
+      let v_write = write_expression_cow(val, v_val, "_w", _analysis)?;
       Ok(format!(
         "{}.write_map(&{}, |_w, _k, _v| {{ {}; {}; }})",
         writer, value, k_write, v_write
@@ -914,7 +917,7 @@ fn collection_ref(value: &str) -> String {
 pub fn encoded_size_expression(
   td: &TypeDescriptor,
   value: &str,
-  analysis: &LifetimeAnalysis,
+  _analysis: &LifetimeAnalysis,
 ) -> Result<String, GeneratorError> {
   let kind = td
     .kind
@@ -943,7 +946,7 @@ pub fn encoded_size_expression(
           items_ref, sz_expr
         ))
       } else {
-        let inner = encoded_size_expression(elem, "_el", analysis)?;
+        let inner = encoded_size_expression(elem, "_el", _analysis)?;
         Ok(format!("wire::array_size({}, |_el| {})", items_ref, inner))
       }
     }
@@ -959,7 +962,7 @@ pub fn encoded_size_expression(
       if let Some(sz_expr) = fixed_size_expr(elem_kind) {
         Ok(format!("{}usize * ({})", size as usize, sz_expr))
       } else {
-        let inner = encoded_size_expression(elem, "_el", analysis)?;
+        let inner = encoded_size_expression(elem, "_el", _analysis)?;
         Ok(format!(
           "{}.iter().map(|_el| {}).sum::<usize>()",
           value, inner
@@ -975,8 +978,8 @@ pub fn encoded_size_expression(
         .map_value
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
-      let k_size = encoded_size_expression(key, "_k", analysis)?;
-      let v_size = encoded_size_expression(val, "_v", analysis)?;
+      let k_size = encoded_size_expression(key, "_k", _analysis)?;
+      let v_size = encoded_size_expression(val, "_v", _analysis)?;
       let map_ref = collection_ref(value);
       Ok(format!(
         "wire::map_size({}, |_k, _v| {} + {})",

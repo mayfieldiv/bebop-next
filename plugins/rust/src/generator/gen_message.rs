@@ -27,10 +27,8 @@ fn field_wrap(field_type: &TypeDescriptor<'_>, own_fqn: &str) -> FieldWrap {
   // Array of self: element is DEFINED with fqn == own fqn — Vec provides indirection
   if kind == TypeKind::Array {
     if let Some(elem) = field_type.array_element.as_ref() {
-      if elem.kind == Some(TypeKind::Defined) {
-        if elem.defined_fqn.as_deref() == Some(own_fqn) {
-          return FieldWrap::VecIndirect;
-        }
+      if elem.kind == Some(TypeKind::Defined) && elem.defined_fqn.as_deref() == Some(own_fqn) {
+        return FieldWrap::VecIndirect;
       }
     }
   }
