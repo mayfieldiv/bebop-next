@@ -1,8 +1,8 @@
+#[cfg(feature = "alloc-map")]
+use crate::HashMap;
+#[cfg(feature = "alloc-map")]
+use core::hash::BuildHasher;
 use core::mem::size_of;
-#[cfg(feature = "std")]
-use std::collections::HashMap;
-#[cfg(feature = "std")]
-use std::hash::BuildHasher;
 
 /// Wire size of a u32 length prefix.
 pub const WIRE_LEN_PREFIX_SIZE: usize = size_of::<u32>();
@@ -31,7 +31,7 @@ pub fn array_size<T>(items: &[T], mut elem_size: impl FnMut(&T) -> usize) -> usi
 }
 
 #[inline]
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc-map")]
 pub fn map_size<K, V, S>(
   map: &HashMap<K, V, S>,
   mut entry_size: impl FnMut(&K, &V) -> usize,
@@ -53,8 +53,14 @@ mod tests {
 
   #[test]
   fn string_size_empty_and_non_empty() {
-    assert_eq!(string_size(0), WIRE_LEN_PREFIX_SIZE + WIRE_NUL_TERMINATOR_SIZE);
-    assert_eq!(string_size(5), WIRE_LEN_PREFIX_SIZE + 5 + WIRE_NUL_TERMINATOR_SIZE);
+    assert_eq!(
+      string_size(0),
+      WIRE_LEN_PREFIX_SIZE + WIRE_NUL_TERMINATOR_SIZE
+    );
+    assert_eq!(
+      string_size(5),
+      WIRE_LEN_PREFIX_SIZE + 5 + WIRE_NUL_TERMINATOR_SIZE
+    );
   }
 
   #[test]
@@ -73,7 +79,10 @@ mod tests {
   fn array_size_fixed_and_variable() {
     let fixed = [10u32, 20u32, 30u32];
     let fixed_sz = array_size(&fixed, |_| size_of::<u32>());
-    assert_eq!(fixed_sz, WIRE_LEN_PREFIX_SIZE + fixed.len() * size_of::<u32>());
+    assert_eq!(
+      fixed_sz,
+      WIRE_LEN_PREFIX_SIZE + fixed.len() * size_of::<u32>()
+    );
 
     let variable = ["a", "xyz"];
     let var_sz = array_size(&variable, |s| string_size(s.len()));
@@ -84,14 +93,15 @@ mod tests {
   }
 
   #[test]
-  #[cfg(feature = "std")]
+  #[cfg(feature = "alloc-map")]
   fn map_size_aggregates_entries() {
     let mut m = HashMap::new();
     m.insert("k1", "v1");
     m.insert("k2", "value2");
     let computed = map_size(&m, |k, v| string_size(k.len()) + string_size(v.len()));
     let expected = WIRE_LEN_PREFIX_SIZE
-      + m.iter()
+      + m
+        .iter()
         .map(|(k, v)| string_size(k.len()) + string_size(v.len()))
         .sum::<usize>();
     assert_eq!(computed, expected);

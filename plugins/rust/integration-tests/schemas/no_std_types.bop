@@ -28,4 +28,5 @@ message Snapshot {
     title(2): string;
     points(3): Position[];
     payload(4): byte[];
+    counts(5): map[string, uint32];
 }

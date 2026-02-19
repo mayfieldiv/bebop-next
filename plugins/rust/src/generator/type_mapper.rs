@@ -182,7 +182,7 @@ pub fn rust_type(td: &TypeDescriptor) -> Result<String, GeneratorError> {
         .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
       let k = rust_type(key)?;
       let v = rust_type(val)?;
-      Ok(format!("std::collections::HashMap<{}, {}>", k, v))
+      Ok(format!("HashMap<{}, {}>", k, v))
     }
     TypeKind::Defined => {
       let fqn = td
@@ -573,7 +573,7 @@ pub fn rust_type_owned(
         .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
       let k = rust_type_owned(key, analysis)?;
       let v = rust_type_owned(val, analysis)?;
-      Ok(format!("std::collections::HashMap<{}, {}>", k, v))
+      Ok(format!("HashMap<{}, {}>", k, v))
     }
     TypeKind::Defined => {
       let fqn = td
@@ -642,7 +642,7 @@ pub fn rust_type_cow(
         .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
       let k = rust_type_cow(key, analysis)?;
       let v = rust_type_cow(val, analysis)?;
-      Ok(format!("std::collections::HashMap<{}, {}>", k, v))
+      Ok(format!("HashMap<{}, {}>", k, v))
     }
     TypeKind::Defined => {
       let fqn = td
