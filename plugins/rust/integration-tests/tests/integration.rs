@@ -1,3 +1,5 @@
+#![cfg(feature = "std")]
+
 use std::borrow::Cow;
 use std::collections::HashMap;
 
