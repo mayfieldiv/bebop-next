@@ -42,6 +42,41 @@ fn enum_into_base_type() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// Consts
+// ═══════════════════════════════════════════════════════════════
+
+#[test]
+fn const_scalar_values() {
+    assert_eq!(P_CASE, 0x12);
+    assert_eq!(EXAMPLE_CONST_INT32, -123);
+    assert_eq!(EXAMPLE_CONST_UINT64, 0x123ffffffff);
+    assert_eq!(EXAMPLE_CONST_FLOAT64, 123.45678e9);
+    assert_eq!(EXAMPLE_CONST_FALSE, false);
+    assert_eq!(EXAMPLE_CONST_TRUE, true);
+    assert_eq!(HTTP_STATUS_OK, 200);
+    assert_eq!(FEATURE_FLAG_ENABLED, true);
+}
+
+#[test]
+fn const_float_special_values() {
+    assert!(EXAMPLE_CONST_INF.is_infinite() && EXAMPLE_CONST_INF.is_sign_positive());
+    assert!(EXAMPLE_CONST_NEG_INF.is_infinite() && EXAMPLE_CONST_NEG_INF.is_sign_negative());
+    assert!(EXAMPLE_CONST_NAN.is_nan());
+}
+
+#[test]
+fn const_string_and_uuid_values() {
+    assert_eq!(EXAMPLE_CONST_STRING, "hello \"world\"\nwith newlines");
+    assert_eq!(
+        EXAMPLE_CONST_GUID,
+        [
+            0xE2, 0x15, 0xA9, 0x46, 0xB2, 0x6F, 0x45, 0x67, 0xA2, 0x76, 0x13, 0x13, 0x6F, 0x0A,
+            0x17, 0x08,
+        ]
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Flags enum
 // ═══════════════════════════════════════════════════════════════
 
