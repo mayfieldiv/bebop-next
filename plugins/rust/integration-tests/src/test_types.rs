@@ -14,7 +14,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::mem::size_of;
-use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, F16, BF16};
+use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, f16, bf16};
 use bebop_runtime::wire_size as wire;
 
 /// Simple enum with uint8 base type.
@@ -117,6 +117,22 @@ pub const FEATURE_FLAG_ENABLED: bool = true;
 pub const EXAMPLE_CONST_STRING: &str = "hello \"world\"\nwith newlines";
 
 pub const EXAMPLE_CONST_GUID: [u8; 16] = [0xE2, 0x15, 0xA9, 0x46, 0xB2, 0x6F, 0x45, 0x67, 0xA2, 0x76, 0x13, 0x13, 0x6F, 0x0A, 0x17, 0x08];
+
+pub const EXAMPLE_CONST_F16: f16 = f16::from_f64_const(1.5f64);
+
+pub const EXAMPLE_CONST_BF16: bf16 = bf16::from_f64_const(1.5f64);
+
+pub const EXAMPLE_CONST_F16_INF: f16 = f16::INFINITY;
+
+pub const EXAMPLE_CONST_BF16_NEG_INF: bf16 = bf16::NEG_INFINITY;
+
+pub const EXAMPLE_CONST_F16_NAN: f16 = f16::NAN;
+
+pub const EXAMPLE_CONST_BF16_NAN: bf16 = bf16::NAN;
+
+pub const EXAMPLE_CONST_F16_FROM_INT: f16 = f16::from_f64_const(1f64);
+
+pub const EXAMPLE_CONST_BF16_FROM_INT: bf16 = bf16::from_f64_const(2f64);
 
 /// Fixed-size struct (all scalar fields).
 #[derive(Debug, Clone)]
@@ -621,6 +637,152 @@ impl<'buf> BebopDecode<'buf> for Matrix2x2 {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
     let values = { let mut _arr = [Default::default(); 4]; for _i in 0..4 { _arr[_i] = reader.read_f32()?; } Ok(_arr) }?;
     Ok(Matrix2x2 { values })
+  }
+}
+
+/// Fixed-size and variable-size half-precision scalar coverage.
+#[derive(Debug, Clone)]
+pub struct HalfPrecisionScalars {
+  pub f16_val: f16,
+  pub bf16_val: bf16,
+}
+
+impl HalfPrecisionScalars {
+  pub const FIXED_ENCODED_SIZE: usize = size_of::<f16>() + size_of::<bf16>();
+
+  pub fn new(f16_val: f16, bf16_val: bf16) -> Self {
+    Self { f16_val, bf16_val }
+  }
+}
+
+impl BebopEncode for HalfPrecisionScalars {
+  fn encode(&self, writer: &mut BebopWriter) {
+    writer.write_f16(self.f16_val);
+    writer.write_bf16(self.bf16_val);
+  }
+
+  fn encoded_size(&self) -> usize {
+    Self::FIXED_ENCODED_SIZE
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for HalfPrecisionScalars {
+  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    let f16_val = reader.read_f16()?;
+    let bf16_val = reader.read_bf16()?;
+    Ok(HalfPrecisionScalars { f16_val, bf16_val })
+  }
+}
+
+#[derive(Debug, Clone)]
+pub struct HalfPrecisionArrays {
+  pub f16_dynamic: Vec<f16>,
+  pub bf16_dynamic: Vec<bf16>,
+  pub f16_fixed: [f16; 4],
+  pub bf16_fixed: [bf16; 4],
+}
+
+impl HalfPrecisionArrays {
+  pub fn new(f16_dynamic: Vec<f16>, bf16_dynamic: Vec<bf16>, f16_fixed: [f16; 4], bf16_fixed: [bf16; 4]) -> Self {
+    Self { f16_dynamic, bf16_dynamic, f16_fixed, bf16_fixed }
+  }
+}
+
+impl BebopEncode for HalfPrecisionArrays {
+  fn encode(&self, writer: &mut BebopWriter) {
+    writer.write_array(&self.f16_dynamic, |_w, _el| _w.write_f16(*_el));
+    writer.write_array(&self.bf16_dynamic, |_w, _el| _w.write_bf16(*_el));
+    for _el in self.f16_fixed.iter() { writer.write_f16(*_el) };
+    for _el in self.bf16_fixed.iter() { writer.write_bf16(*_el) };
+  }
+
+  fn encoded_size(&self) -> usize {
+    let mut size = 0;
+    size += wire::array_size(&self.f16_dynamic, |_el| (size_of::<f16>()));
+    size += wire::array_size(&self.bf16_dynamic, |_el| (size_of::<bf16>()));
+    size += 4usize * (size_of::<f16>());
+    size += 4usize * (size_of::<bf16>());
+    size
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for HalfPrecisionArrays {
+  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    let f16_dynamic = reader.read_array(|_r| _r.read_f16())?;
+    let bf16_dynamic = reader.read_array(|_r| _r.read_bf16())?;
+    let f16_fixed = { let mut _arr = [Default::default(); 4]; for _i in 0..4 { _arr[_i] = reader.read_f16()?; } Ok(_arr) }?;
+    let bf16_fixed = { let mut _arr = [Default::default(); 4]; for _i in 0..4 { _arr[_i] = reader.read_bf16()?; } Ok(_arr) }?;
+    Ok(HalfPrecisionArrays { f16_dynamic, bf16_dynamic, f16_fixed, bf16_fixed })
+  }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct HalfPrecisionMessage {
+  pub f16_val: Option<f16>,
+  pub bf16_val: Option<bf16>,
+  pub f16_arr: Option<Vec<f16>>,
+  pub bf16_arr: Option<Vec<bf16>>,
+}
+
+impl BebopEncode for HalfPrecisionMessage {
+  fn encode(&self, writer: &mut BebopWriter) {
+    let pos = writer.reserve_message_length();
+    if let Some(v) = self.f16_val {
+      writer.write_tag(1);
+      writer.write_f16(v);
+    }
+    if let Some(v) = self.bf16_val {
+      writer.write_tag(2);
+      writer.write_bf16(v);
+    }
+    if let Some(ref v) = self.f16_arr {
+      writer.write_tag(3);
+      writer.write_array(&v, |_w, _el| _w.write_f16(*_el));
+    }
+    if let Some(ref v) = self.bf16_arr {
+      writer.write_tag(4);
+      writer.write_array(&v, |_w, _el| _w.write_bf16(*_el));
+    }
+    writer.write_end_marker();
+    writer.fill_message_length(pos);
+  }
+
+  fn encoded_size(&self) -> usize {
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    if let Some(v) = self.f16_val {
+      size += wire::tagged_size(size_of::<f16>());
+    }
+    if let Some(v) = self.bf16_val {
+      size += wire::tagged_size(size_of::<bf16>());
+    }
+    if let Some(ref v) = self.f16_arr {
+      size += wire::tagged_size(wire::array_size(v, |_el| (size_of::<f16>())));
+    }
+    if let Some(ref v) = self.bf16_arr {
+      size += wire::tagged_size(wire::array_size(v, |_el| (size_of::<bf16>())));
+    }
+    size
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for HalfPrecisionMessage {
+  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    let length = reader.read_message_length()? as usize;
+    let end = reader.position() + length;
+    let mut msg = Self::default();
+
+    while reader.position() < end {
+      let tag = reader.read_tag()?;
+      if tag == 0 { break; }
+      match tag {
+        1 => msg.f16_val = Some(reader.read_f16()?),
+        2 => msg.bf16_val = Some(reader.read_bf16()?),
+        3 => msg.f16_arr = Some(reader.read_array(|_r| _r.read_f16())?),
+        4 => msg.bf16_arr = Some(reader.read_array(|_r| _r.read_bf16())?),
+        _ => { reader.skip(end - reader.position())?; }
+      }
+    }
+    Ok(msg)
   }
 }
 

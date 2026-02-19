@@ -43,6 +43,14 @@ const bool FEATURE_FLAG_ENABLED = true;
 const string exampleConstString = "hello ""world""
 with newlines";
 const guid exampleConstGuid = "e215a946-b26f-4567-a276-13136f0a1708";
+const float16 exampleConstF16 = 1.5;
+const bfloat16 exampleConstBf16 = 1.5;
+const float16 exampleConstF16Inf = inf;
+const bfloat16 exampleConstBf16NegInf = -inf;
+const float16 exampleConstF16Nan = nan;
+const bfloat16 exampleConstBf16Nan = nan;
+const float16 exampleConstF16FromInt = 1;
+const bfloat16 exampleConstBf16FromInt = 2;
 
 /// Fixed-size struct (all scalar fields).
 struct Point {
@@ -104,6 +112,26 @@ union Shape {
 /// Fixed-array struct (compile-time known element count).
 struct Matrix2x2 {
     values: float32[4];
+}
+
+/// Fixed-size and variable-size half-precision scalar coverage.
+struct HalfPrecisionScalars {
+    f16_val: float16;
+    bf16_val: bfloat16;
+}
+
+struct HalfPrecisionArrays {
+    f16_dynamic: float16[];
+    bf16_dynamic: bfloat16[];
+    f16_fixed: float16[4];
+    bf16_fixed: bfloat16[4];
+}
+
+message HalfPrecisionMessage {
+    f16_val(1): float16;
+    bf16_val(2): bfloat16;
+    f16_arr(3): float16[];
+    bf16_arr(4): bfloat16[];
 }
 
 /// Struct with multiple string fields (all need Cow).
