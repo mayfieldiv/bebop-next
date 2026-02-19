@@ -34,12 +34,8 @@ pub type VersionOwned = Version<'static>;
 
 impl<'buf> Version<'buf> {
   pub fn new(major: i32, minor: i32, patch: i32, suffix: impl Into<Cow<'buf, str>>) -> Self {
-    Self {
-      major,
-      minor,
-      patch,
-      suffix: suffix.into(),
-    }
+    let suffix = suffix.into();
+    Self { major, minor, patch, suffix }
   }
 }
 
@@ -63,7 +59,12 @@ impl<'buf> BebopEncode for Version<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    size_of::<i32>() + size_of::<i32>() + size_of::<i32>() + wire::string_size(self.suffix.len())
+    let mut size = 0;
+    size += size_of::<i32>();
+    size += size_of::<i32>();
+    size += size_of::<i32>();
+    size += wire::string_size(self.suffix.len());
+    size
   }
 }
 
@@ -72,13 +73,8 @@ impl<'buf> BebopDecode<'buf> for Version<'buf> {
     let major = reader.read_i32()?;
     let minor = reader.read_i32()?;
     let patch = reader.read_i32()?;
-    let suffix = { let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?;
-    Ok(Version {
-      major,
-      minor,
-      patch,
-      suffix,
-    })
+    let suffix = Cow::Borrowed(reader.read_str()?);
+    Ok(Version { major, minor, patch, suffix })
   }
 }
 
@@ -180,11 +176,11 @@ impl<'buf> BebopDecode<'buf> for CodeGeneratorRequest<'buf> {
       let tag = reader.read_tag()?;
       if tag == 0 { break; }
       match tag {
-        1 => msg.files_to_generate = Some(reader.read_array(|_r| { let _s = _r.read_str()?; Ok(Cow::Borrowed(_s)) })?),
-        2 => msg.parameter = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        1 => msg.files_to_generate = Some(reader.read_array(|_r| Ok(Cow::Borrowed(_r.read_str()?)))?),
+        2 => msg.parameter = Some(Cow::Borrowed(reader.read_str()?)),
         3 => msg.compiler_version = Some(Version::decode(reader)?),
         4 => msg.schemas = Some(reader.read_array(|_r| SchemaDescriptor::decode(_r))?),
-        5 => msg.host_options = Some(reader.read_map(|_r| Ok(({ let _s = _r.read_str()?; Ok(Cow::Borrowed(_s)) }?, { let _s = _r.read_str()?; Ok(Cow::Borrowed(_s)) }?)))?),
+        5 => msg.host_options = Some(reader.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, Ok(Cow::Borrowed(_r.read_str()?))?)))?),
         _ => { reader.skip(end - reader.position())?; }
       }
     }
@@ -327,9 +323,9 @@ impl<'buf> BebopDecode<'buf> for Diagnostic<'buf> {
       if tag == 0 { break; }
       match tag {
         1 => msg.severity = Some(DiagnosticSeverity::decode(reader)?),
-        2 => msg.text = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        3 => msg.hint = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        4 => msg.file = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        2 => msg.text = Some(Cow::Borrowed(reader.read_str()?)),
+        3 => msg.hint = Some(Cow::Borrowed(reader.read_str()?)),
+        4 => msg.file = Some(Cow::Borrowed(reader.read_str()?)),
         5 => msg.span = Some(reader.read_fixed_i32_array::<4>()?),
         _ => { reader.skip(end - reader.position())?; }
       }
@@ -431,9 +427,9 @@ impl<'buf> BebopDecode<'buf> for GeneratedFile<'buf> {
       let tag = reader.read_tag()?;
       if tag == 0 { break; }
       match tag {
-        1 => msg.name = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        2 => msg.insertion_point = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
-        3 => msg.content = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        1 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
+        2 => msg.insertion_point = Some(Cow::Borrowed(reader.read_str()?)),
+        3 => msg.content = Some(Cow::Borrowed(reader.read_str()?)),
         4 => msg.generated_code_info = Some(SourceCodeInfo::decode(reader)?),
         _ => { reader.skip(end - reader.position())?; }
       }
@@ -524,7 +520,7 @@ impl<'buf> BebopDecode<'buf> for CodeGeneratorResponse<'buf> {
       let tag = reader.read_tag()?;
       if tag == 0 { break; }
       match tag {
-        1 => msg.error = Some({ let _s = reader.read_str()?; Ok(Cow::Borrowed(_s)) }?),
+        1 => msg.error = Some(Cow::Borrowed(reader.read_str()?)),
         2 => msg.files = Some(reader.read_array(|_r| GeneratedFile::decode(_r))?),
         3 => msg.diagnostics = Some(reader.read_array(|_r| Diagnostic::decode(_r))?),
         _ => { reader.skip(end - reader.position())?; }
