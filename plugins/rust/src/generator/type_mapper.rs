@@ -82,6 +82,28 @@ pub fn scalar_write_method(kind: TypeKind) -> Option<&'static str> {
   }
 }
 
+/// Returns true if the TypeKind is a primitive scalar with a FixedScalar impl.
+fn is_fixed_scalar(kind: TypeKind) -> bool {
+  matches!(
+    kind,
+    TypeKind::Bool
+      | TypeKind::Byte
+      | TypeKind::Int8
+      | TypeKind::Int16
+      | TypeKind::Uint16
+      | TypeKind::Int32
+      | TypeKind::Uint32
+      | TypeKind::Int64
+      | TypeKind::Uint64
+      | TypeKind::Int128
+      | TypeKind::Uint128
+      | TypeKind::Float16
+      | TypeKind::Bfloat16
+      | TypeKind::Float32
+      | TypeKind::Float64
+  )
+}
+
 /// Map an enum base TypeKind to its Rust integer type.
 pub fn enum_base_rust_type(kind: TypeKind) -> Result<&'static str, GeneratorError> {
   match kind {
@@ -243,8 +265,9 @@ pub fn read_expression(td: &TypeDescriptor, reader: &str) -> Result<String, Gene
         .fixed_array_size
         .ok_or_else(|| GeneratorError::MalformedType("fixed array missing size".into()))?;
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
-      if elem_kind == TypeKind::Int32 {
-        Ok(format!("{}.read_fixed_i32_array::<{}>()", reader, size))
+      if is_fixed_scalar(elem_kind) {
+        let ty = scalar_type(elem_kind).unwrap();
+        Ok(format!("{}.read_fixed_array::<{}, {}>()", reader, ty, size))
       } else {
         // General fixed array: read N elements
         let inner = read_expression(elem, reader)?;
@@ -353,13 +376,14 @@ pub fn write_expression(
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("fixed array missing element type".into()))?;
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
-      if elem_kind == TypeKind::Int32 {
+      if is_fixed_scalar(elem_kind) {
         let size = td
           .fixed_array_size
           .ok_or_else(|| GeneratorError::MalformedType("fixed array missing size".into()))?;
+        let ty = scalar_type(elem_kind).unwrap();
         Ok(format!(
-          "{}.write_fixed_i32_array::<{}>(&{})",
-          writer, size, value
+          "{}.write_fixed_array::<{}, {}>(&{})",
+          writer, ty, size, value
         ))
       } else {
         // General: write each element — iter() yields &T, dereference for by-value methods
@@ -722,8 +746,9 @@ pub fn read_expression_cow(
         .fixed_array_size
         .ok_or_else(|| GeneratorError::MalformedType("fixed array missing size".into()))?;
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
-      if elem_kind == TypeKind::Int32 {
-        Ok(format!("{}.read_fixed_i32_array::<{}>()", reader, size))
+      if is_fixed_scalar(elem_kind) {
+        let ty = scalar_type(elem_kind).unwrap();
+        Ok(format!("{}.read_fixed_array::<{}, {}>()", reader, ty, size))
       } else {
         let inner = read_expression_cow(elem, reader, _analysis)?;
         Ok(format!(
@@ -849,13 +874,14 @@ pub fn write_expression_cow(
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("fixed array missing element type".into()))?;
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
-      if elem_kind == TypeKind::Int32 {
+      if is_fixed_scalar(elem_kind) {
         let size = td
           .fixed_array_size
           .ok_or_else(|| GeneratorError::MalformedType("fixed array missing size".into()))?;
+        let ty = scalar_type(elem_kind).unwrap();
         Ok(format!(
-          "{}.write_fixed_i32_array::<{}>(&{})",
-          writer, size, value
+          "{}.write_fixed_array::<{}, {}>(&{})",
+          writer, ty, size, value
         ))
       } else {
         // iter() yields &T — dereference for scalar write methods that take T by value

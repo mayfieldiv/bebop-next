@@ -630,7 +630,7 @@ impl Matrix2x2 {
 
 impl BebopEncode for Matrix2x2 {
   fn encode(&self, writer: &mut BebopWriter) {
-    for _el in self.values.iter() { writer.write_f32(*_el) };
+    writer.write_fixed_array::<f32, 4>(&self.values);
   }
 
   fn encoded_size(&self) -> usize {
@@ -640,7 +640,7 @@ impl BebopEncode for Matrix2x2 {
 
 impl<'buf> BebopDecode<'buf> for Matrix2x2 {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
-    let values = { let mut _arr = [Default::default(); 4]; for _i in 0..4 { _arr[_i] = reader.read_f32()?; } Ok(_arr) }?;
+    let values = reader.read_fixed_array::<f32, 4>()?;
     Ok(Matrix2x2 { values })
   }
 }
@@ -697,8 +697,8 @@ impl BebopEncode for HalfPrecisionArrays {
   fn encode(&self, writer: &mut BebopWriter) {
     writer.write_array(&self.f16_dynamic, |_w, _el| _w.write_f16(*_el));
     writer.write_array(&self.bf16_dynamic, |_w, _el| _w.write_bf16(*_el));
-    for _el in self.f16_fixed.iter() { writer.write_f16(*_el) };
-    for _el in self.bf16_fixed.iter() { writer.write_bf16(*_el) };
+    writer.write_fixed_array::<f16, 4>(&self.f16_fixed);
+    writer.write_fixed_array::<bf16, 4>(&self.bf16_fixed);
   }
 
   fn encoded_size(&self) -> usize {
@@ -715,8 +715,8 @@ impl<'buf> BebopDecode<'buf> for HalfPrecisionArrays {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
     let f16_dynamic = reader.read_array(|_r| _r.read_f16())?;
     let bf16_dynamic = reader.read_array(|_r| _r.read_bf16())?;
-    let f16_fixed = { let mut _arr = [Default::default(); 4]; for _i in 0..4 { _arr[_i] = reader.read_f16()?; } Ok(_arr) }?;
-    let bf16_fixed = { let mut _arr = [Default::default(); 4]; for _i in 0..4 { _arr[_i] = reader.read_bf16()?; } Ok(_arr) }?;
+    let f16_fixed = reader.read_fixed_array::<f16, 4>()?;
+    let bf16_fixed = reader.read_fixed_array::<bf16, 4>()?;
     Ok(HalfPrecisionArrays { f16_dynamic, bf16_dynamic, f16_fixed, bf16_fixed })
   }
 }

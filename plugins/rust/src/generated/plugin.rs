@@ -290,7 +290,7 @@ impl<'buf> BebopEncode for Diagnostic<'buf> {
     }
     if let Some(ref v) = self.span {
       writer.write_tag(5);
-      writer.write_fixed_i32_array::<4>(&v);
+      writer.write_fixed_array::<i32, 4>(&v);
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
@@ -331,7 +331,7 @@ impl<'buf> BebopDecode<'buf> for Diagnostic<'buf> {
         2 => msg.text = Some(Cow::Borrowed(reader.read_str()?)),
         3 => msg.hint = Some(Cow::Borrowed(reader.read_str()?)),
         4 => msg.file = Some(Cow::Borrowed(reader.read_str()?)),
-        5 => msg.span = Some(reader.read_fixed_i32_array::<4>()?),
+        5 => msg.span = Some(reader.read_fixed_array::<i32, 4>()?),
         _ => { reader.skip(end - reader.position())?; }
       }
     }

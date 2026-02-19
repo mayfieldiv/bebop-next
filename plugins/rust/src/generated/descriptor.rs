@@ -2127,7 +2127,7 @@ impl<'buf> BebopEncode for Location<'buf> {
     }
     if let Some(ref v) = self.span {
       writer.write_tag(2);
-      writer.write_fixed_i32_array::<4>(&v);
+      writer.write_fixed_array::<i32, 4>(&v);
     }
     if let Some(ref v) = self.leading_comments {
       writer.write_tag(3);
@@ -2177,7 +2177,7 @@ impl<'buf> BebopDecode<'buf> for Location<'buf> {
       if tag == 0 { break; }
       match tag {
         1 => msg.path = Some(reader.read_array(|_r| _r.read_i32())?),
-        2 => msg.span = Some(reader.read_fixed_i32_array::<4>()?),
+        2 => msg.span = Some(reader.read_fixed_array::<i32, 4>()?),
         3 => msg.leading_comments = Some(Cow::Borrowed(reader.read_str()?)),
         4 => msg.trailing_comments = Some(Cow::Borrowed(reader.read_str()?)),
         5 => msg.detached_comments = Some(reader.read_array(|_r| Ok(Cow::Borrowed(_r.read_str()?)))?),
