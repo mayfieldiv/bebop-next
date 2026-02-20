@@ -44,15 +44,15 @@ Full spec compliance checklist: [[spec-compliance]]
 | ~~Dead code cleanup~~ | ~~Done~~ | [[dead-code-cleanup]] |
 | ~~Rename _cow functions~~ | ~~Done~~ | [[rename-cow-functions]] |
 | ~~Insertion points~~ | ~~Done~~ | [[insertion-points]] |
-| Visibility (pub/pub(crate)) | Medium | [[visibility-support]] |
+| ~~Visibility (pub/pub(crate))~~ | ~~Done~~ | [[archived/visibility-support]] |
 | Reflection metadata | Low | [[reflection]] |
 | ~~PartialEq/Hash derives~~ | ~~Done~~ | [[derive-traits]] |
 | Bulk scalar arrays | Low | [[bulk-array-optimization]] |
 | Timestamp/Duration newtypes | Low | [[temporal-newtypes]] |
 | ~~UUID crate integration~~ | ~~Done~~ | [[uuid-integration]] |
-| Serde integration | Low | [[serde-integration]] |
+| ~~Serde integration~~ | ~~Done~~ | [[serde-integration]] |
 | ~~Fixed array generics~~ | ~~Done~~ | [[fixed-array-generics]] |
-| Deprecated encode behavior | Low (investigation) | [[deprecated-field-encoding]] |
+| ~~Deprecated encode behavior~~ | ~~Documented~~ | [[deprecated-field-encoding]] |
 
 ## Architecture Notes
 
