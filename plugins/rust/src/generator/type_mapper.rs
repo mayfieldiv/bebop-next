@@ -443,7 +443,7 @@ pub fn read_expression(
   match kind {
     TypeKind::String => {
       return Ok(format!(
-        "Ok(alloc::borrow::Cow::Borrowed({}.read_str()?))",
+        "::core::result::Result::Ok(alloc::borrow::Cow::Borrowed({}.read_str()?))",
         reader
       ));
     }
@@ -463,7 +463,7 @@ pub fn read_expression(
       // Byte array → Cow::Borrowed
       if elem.kind == Some(TypeKind::Byte) {
         return Ok(format!(
-          "Ok(alloc::borrow::Cow::Borrowed({}.read_byte_slice()?))",
+          "::core::result::Result::Ok(alloc::borrow::Cow::Borrowed({}.read_byte_slice()?))",
           reader
         ));
       }
@@ -496,7 +496,7 @@ pub fn read_expression(
       } else {
         let inner = read_expression(elem, reader, _analysis)?;
         Ok(format!(
-          "{{ let mut _arr = [Default::default(); {}]; for _i in 0..{} {{ _arr[_i] = {}?; }} Ok(_arr) }}",
+          "{{ let mut _arr = [::core::default::Default::default(); {}]; for _i in 0..{} {{ _arr[_i] = {}?; }} ::core::result::Result::Ok(_arr) }}",
           size, size, inner
         ))
       }
@@ -513,7 +513,7 @@ pub fn read_expression(
       let k_expr = read_expression(key, "_r", _analysis)?;
       let v_expr = read_expression(val, "_r", _analysis)?;
       Ok(format!(
-        "{}.read_map(|_r| Ok(({}?, {}?)))",
+        "{}.read_map(|_r| ::core::result::Result::Ok(({}?, {}?)))",
         reader, k_expr, v_expr
       ))
     }

@@ -512,7 +512,9 @@ impl RustGenerator {
     output.push_str("extern crate alloc;\n");
     output.push_str("extern crate bebop_runtime;\n");
     output.push_str("extern crate core;\n");
-    output.push_str("use core::prelude::rust_2021::*;\n");
+    output.push_str("use core::convert::Into as _;\n");
+    output.push_str("use core::iter::IntoIterator as _;\n");
+    output.push_str("use core::iter::Iterator as _;\n");
     output.push_str("use alloc::vec;\n");
     output.push_str("use bebop_runtime::{BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopReader, BebopTimestamp, BebopWriter, DecodeError, bf16, f16};\n");
     output.push_str("use bebop_runtime::wire_size as wire;\n");
