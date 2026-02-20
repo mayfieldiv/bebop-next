@@ -1,6 +1,6 @@
 # Rename _cow Functions After Dead Code Removal
 
-- [x] Rename `_cow` suffixed functions to their canonical names #rust-plugin #cleanup 🔽 🆔 rename-cow ⛔ dead-code
+- [x] Rename `_cow` suffixed functions to their canonical names #rust-plugin #cleanup 🆔 rename-cow ⛔ dead-code 🔽 ✅ 2026-02-19
 
 After [[dead-code-cleanup]] removes the old non-Cow functions, the `_cow` suffix on the surviving functions becomes meaningless:
 

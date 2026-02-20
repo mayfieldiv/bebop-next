@@ -1,6 +1,6 @@
 # Consider Newtype Wrappers for Timestamp/Duration
 
-- [ ] Evaluate newtype wrappers for timestamp and duration #rust-plugin 🔽
+- [x] Evaluate newtype wrappers for timestamp and duration #rust-plugin 🔽
 
 Currently `timestamp` and `duration` map to bare `(i64, i32)` tuples (seconds + nanos). This works but provides no type safety or convenience methods.
 

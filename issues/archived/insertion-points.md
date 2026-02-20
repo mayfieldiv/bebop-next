@@ -1,6 +1,6 @@
 # Add Insertion Point Markers
 
-- [x] Add insertion point markers to generated code #rust-plugin ✅
+- [x] Add insertion point markers to generated code #rust-plugin ✅ ✅ 2026-02-19
 
 Both C and Swift emit `// @@bebop_insertion_point(...)` comments throughout generated code. These markers allow downstream plugins or tooling to inject additional code at well-known locations. Rust now emits the same marker family.
 

@@ -1,6 +1,6 @@
 # Remove Dead Code in type_mapper.rs
 
-- [x] Remove dead non-Cow generation paths in `type_mapper.rs` #rust-plugin #cleanup ⏫
+- [x] Remove dead non-Cow generation paths in `type_mapper.rs` #rust-plugin #cleanup ⏫ ✅ 2026-02-19
 
 Three functions in `plugins/rust/src/generator/type_mapper.rs` are marked `#[allow(dead_code)]` with the comment "Kept for non-Cow generation paths during ongoing refactor":
 
