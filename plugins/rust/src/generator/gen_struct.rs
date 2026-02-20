@@ -171,15 +171,19 @@ pub fn generate(
 
   // encode()
   output.push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(encode_start:{})\n",
+    name
+  ));
   for meta in &field_metas {
-    let write_stmt = type_mapper::write_expression(
-      meta.td,
-      &format!("self.{}", meta.fname),
-      "writer",
-      analysis,
-    )?;
+    let write_stmt =
+      type_mapper::write_expression(meta.td, &format!("self.{}", meta.fname), "writer", analysis)?;
     output.push_str(&format!("    {};\n", write_stmt));
   }
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(encode_end:{})\n",
+    name
+  ));
   output.push_str("  }\n\n");
 
   // encoded_size()
@@ -203,6 +207,10 @@ pub fn generate(
     name, lt
   ));
   output.push_str("  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n");
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(decode_start:{})\n",
+    name
+  ));
   for meta in &field_metas {
     if let Some(read_expr) = type_mapper::borrowed_cow_read_expression(meta.td, "reader") {
       output.push_str(&format!("    let {} = {};\n", meta.fname, read_expr));
@@ -211,6 +219,10 @@ pub fn generate(
       output.push_str(&format!("    let {} = {}?;\n", meta.fname, read_expr));
     }
   }
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(decode_end:{})\n",
+    name
+  ));
   if field_metas.is_empty() {
     output.push_str(&format!("    Ok({} {{}})\n", name));
   } else {
@@ -222,6 +234,13 @@ pub fn generate(
     output.push_str(&format!("    Ok({} {{ {} }})\n", name, init_fields));
   }
   output.push_str("  }\n");
+  output.push_str("}\n\n");
+
+  output.push_str(&format!("impl{} {}{} {{\n", lt, name, lt));
+  output.push_str(&format!(
+    "  // @@bebop_insertion_point(struct_scope:{})\n",
+    name
+  ));
   output.push_str("}\n\n");
 
   Ok(())
