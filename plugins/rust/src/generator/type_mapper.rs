@@ -24,8 +24,8 @@ pub fn scalar_type(kind: TypeKind) -> Option<&'static str> {
     TypeKind::Float16 => Some("f16"),
     TypeKind::Bfloat16 => Some("bf16"),
     TypeKind::Uuid => Some("Uuid"),
-    TypeKind::Timestamp => Some("(i64, i32)"),
-    TypeKind::Duration => Some("(i64, i32)"),
+    TypeKind::Timestamp => Some("BebopTimestamp"),
+    TypeKind::Duration => Some("BebopDuration"),
     _ => None,
   }
 }

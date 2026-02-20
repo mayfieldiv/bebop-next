@@ -19,7 +19,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::mem::size_of;
 use bebop_runtime::HashMap;
-use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, Uuid, f16, bf16};
+use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, Uuid, f16, bf16, BebopTimestamp, BebopDuration};
 use bebop_runtime::wire_size as wire;
 
 /// Scalar and compound type kinds.
@@ -565,9 +565,9 @@ pub struct LiteralValue<'buf> {
 /// When `kind == BYTES`.
   pub bytes_value: Option<Cow<'buf, [u8]>>,
 /// When `kind == TIMESTAMP`.
-  pub timestamp_value: Option<(i64, i32)>,
+  pub timestamp_value: Option<BebopTimestamp>,
 /// When `kind == DURATION`.
-  pub duration_value: Option<(i64, i32)>,
+  pub duration_value: Option<BebopDuration>,
 }
 
 pub type LiteralValueOwned = LiteralValue<'static>;
