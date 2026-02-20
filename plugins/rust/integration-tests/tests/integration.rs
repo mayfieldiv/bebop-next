@@ -1019,6 +1019,105 @@ fn multiple_decode_from_same_buffer() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// Additional coverage
+// ═══════════════════════════════════════════════════════════════
+
+#[test]
+fn forward_reference_struct_round_trip() {
+  let a = ForwardRefA::new(ForwardRefB::new("defined later"));
+  let bytes = a.to_bytes();
+  let decoded = ForwardRefA::from_bytes(&bytes).unwrap();
+  assert_eq!(decoded.b.value, "defined later");
+  assert_eq!(a.encoded_size(), bytes.len());
+}
+
+#[test]
+fn deprecated_message_fields_round_trip() {
+  let mut msg = DeprecatedFieldsMessage::default();
+  msg.current_name = Some(Cow::Owned("current".to_string()));
+  msg.legacy_name = Some(Cow::Owned("legacy".to_string()));
+  msg.legacy_enabled = Some(true);
+
+  let bytes = msg.to_bytes();
+  let decoded = DeprecatedFieldsMessage::from_bytes(&bytes).unwrap();
+  assert_eq!(decoded.current_name.as_deref(), Some("current"));
+  assert_eq!(decoded.legacy_name.as_deref(), Some("legacy"));
+  assert_eq!(decoded.legacy_enabled, Some(true));
+  assert_eq!(msg.encoded_size(), bytes.len());
+}
+
+#[test]
+fn integer_key_maps_round_trip() {
+  let mut msg = IntegerKeyMaps::default();
+  let mut labels = HashMap::new();
+  labels.insert(7u32, Cow::Owned("seven".to_string()));
+  labels.insert(42u32, Cow::Owned("forty-two".to_string()));
+  let mut flags = HashMap::new();
+  flags.insert(-1i64, false);
+  flags.insert(1_000_000_000_000i64, true);
+  msg.labels_by_id = Some(labels);
+  msg.flags_by_id = Some(flags);
+
+  let bytes = msg.to_bytes();
+  let decoded = IntegerKeyMaps::from_bytes(&bytes).unwrap();
+  let labels2 = decoded.labels_by_id.unwrap();
+  let flags2 = decoded.flags_by_id.unwrap();
+  assert_eq!(labels2[&7], "seven");
+  assert_eq!(labels2[&42], "forty-two");
+  assert!(!flags2[&-1]);
+  assert!(flags2[&1_000_000_000_000]);
+  assert_eq!(msg.encoded_size(), bytes.len());
+}
+
+#[test]
+fn integer_key_maps_empty_round_trip() {
+  let mut msg = IntegerKeyMaps::default();
+  msg.labels_by_id = Some(HashMap::new());
+  msg.flags_by_id = Some(HashMap::new());
+
+  let bytes = msg.to_bytes();
+  let decoded = IntegerKeyMaps::from_bytes(&bytes).unwrap();
+  assert_eq!(decoded.labels_by_id.unwrap().len(), 0);
+  assert_eq!(decoded.flags_by_id.unwrap().len(), 0);
+}
+
+#[test]
+fn deep_nested_collections_round_trip() {
+  let mut branch_a = HashMap::new();
+  branch_a.insert(Cow::Owned("left".to_string()), NestedLeaf::new("alpha"));
+  let mut branch_b = HashMap::new();
+  branch_b.insert(Cow::Owned("right".to_string()), NestedLeaf::new("beta"));
+
+  let mut nested = HashMap::new();
+  nested.insert(Cow::Owned("bucket".to_string()), vec![branch_a, branch_b]);
+
+  let mut msg = DeepNestedCollections::default();
+  msg.nested = Some(nested);
+
+  let bytes = msg.to_bytes();
+  let decoded = DeepNestedCollections::from_bytes(&bytes).unwrap();
+  let nested2 = decoded.nested.unwrap();
+  let bucket = &nested2[&Cow::Borrowed("bucket") as &Cow<str>];
+  assert_eq!(bucket.len(), 2);
+  assert_eq!(bucket[0][&Cow::Borrowed("left") as &Cow<str>].label, "alpha");
+  assert_eq!(bucket[1][&Cow::Borrowed("right") as &Cow<str>].label, "beta");
+  assert_eq!(msg.encoded_size(), bytes.len());
+}
+
+#[test]
+fn deep_nested_collections_empty_round_trip() {
+  let mut msg = DeepNestedCollections::default();
+  let mut nested = HashMap::new();
+  nested.insert(Cow::Owned("bucket".to_string()), Vec::new());
+  msg.nested = Some(nested);
+
+  let bytes = msg.to_bytes();
+  let decoded = DeepNestedCollections::from_bytes(&bytes).unwrap();
+  let nested2 = decoded.nested.unwrap();
+  assert!(nested2[&Cow::Borrowed("bucket") as &Cow<str>].is_empty());
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Temporal types
 // ═══════════════════════════════════════════════════════════════
 

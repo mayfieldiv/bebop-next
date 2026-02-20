@@ -172,3 +172,37 @@ message ScheduleEntry {
     duration(2): duration;
     label(3): string;
 }
+
+/// Forward reference coverage: A references B before B is declared.
+struct ForwardRefA {
+    b: ForwardRefB;
+}
+
+struct ForwardRefB {
+    value: string;
+}
+
+/// Message with deprecated fields that should still round-trip on the wire.
+message DeprecatedFieldsMessage {
+    current_name(1): string;
+    @deprecated("legacy wire compatibility")
+    legacy_name(2): string;
+    @deprecated
+    legacy_enabled(3): bool;
+}
+
+/// Integer-key map coverage.
+message IntegerKeyMaps {
+    labels_by_id(1): map[uint32, string];
+    flags_by_id(2): map[int64, bool];
+}
+
+/// Nested type used by deep compound collections.
+struct NestedLeaf {
+    label: string;
+}
+
+/// Deeply nested map/array/defined-type composition.
+message DeepNestedCollections {
+    nested(1): map[string, map[string, NestedLeaf][]];
+}
