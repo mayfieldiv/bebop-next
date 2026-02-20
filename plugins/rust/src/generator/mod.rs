@@ -507,8 +507,12 @@ impl RustGenerator {
     output.push_str("// Copyright (c) 6OVER3 INSTITUTE\n\n");
 
     // Inner attributes — scoped to this module only
-    output.push_str("#![allow(warnings)]\n\n");
+    output.push_str("#![allow(warnings)]\n");
+    output.push_str("#![no_implicit_prelude]\n\n");
     output.push_str("extern crate alloc;\n");
+    output.push_str("extern crate bebop_runtime;\n");
+    output.push_str("extern crate core;\n");
+    output.push_str("use core::prelude::rust_2021::*;\n");
     output.push_str("use alloc::vec;\n");
     output.push_str("use bebop_runtime::{BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopReader, BebopTimestamp, BebopWriter, DecodeError, bf16, f16};\n");
     output.push_str("use bebop_runtime::wire_size as wire;\n");
