@@ -46,7 +46,7 @@ Full spec compliance checklist: [[spec-compliance]]
 | ~~Insertion points~~ | ~~Done~~ | [[insertion-points]] |
 | Visibility (pub/pub(crate)) | Medium | [[visibility-support]] |
 | Reflection metadata | Low | [[reflection]] |
-| PartialEq/Hash derives | Low | [[derive-traits]] |
+| ~~PartialEq/Hash derives~~ | ~~Done~~ | [[derive-traits]] |
 | Bulk scalar arrays | Low | [[bulk-array-optimization]] |
 | Timestamp/Duration newtypes | Low | [[temporal-newtypes]] |
 | UUID crate integration | Low | [[uuid-integration]] |

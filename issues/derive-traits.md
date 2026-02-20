@@ -1,25 +1,34 @@
 # Add PartialEq / Hash Derives Where Possible
 
-- [ ] Derive PartialEq, Eq, Hash on types that qualify #rust-plugin 🔽
+- [x] Derive PartialEq, Eq, Hash on types that qualify #rust-plugin ✅
 
-Currently:
-- **Enums**: derive `Debug, Clone, Copy, PartialEq, Eq` — correct
-- **Flags**: derive `Debug, Clone, Copy, PartialEq, Eq` — correct
-- **Structs**: derive `Debug, Clone` only
-- **Messages**: derive `Debug, Clone, Default` only
-- **Unions**: derive `Debug, Clone` only
+## Implemented
+
+- **Enums / Flags**: now derive `Hash` in addition to existing `PartialEq`/`Eq`
+- **Structs**:
+  - always derive `PartialEq`
+  - derive `Eq` when the type graph has no floating-point fields
+  - derive `Hash` when the type graph has no floating-point fields and no map fields
+- **Messages**:
+  - always derive `PartialEq` (plus existing `Default`)
+  - derive `Eq` when no floating-point fields transitively
+  - derive `Hash` when no floating-point fields and no map fields transitively
+- **Unions**:
+  - always derive `PartialEq`
+  - derive `Eq` when no floating-point branch payloads transitively
+  - derive `Hash` when no floating-point or map-containing branch payloads transitively
 
 Swift generates explicit `==` and `hash(into:)` for messages. Rust types without `PartialEq` can't be compared or used in assertions, which hurts ergonomics.
 
-## Complication: Floats
-Types containing `f32`, `f64`, `f16`, or `bf16` cannot derive `Eq` or `Hash` since floats don't implement those traits. Types with `Cow<[u8]>` can't derive Hash trivially either, though `[u8]` does implement Hash.
+## Notes
 
-## Proposed Approach
-During code generation, check if a type (transitively) contains any float fields:
-- **No floats**: derive `PartialEq, Eq, Hash` in addition to `Debug, Clone`
-- **Has floats**: derive `PartialEq` only (via the existing float `PartialEq` impls), skip `Eq` and `Hash`
+- Float kinds considered: `f32`, `f64`, `f16`, `bf16`
+- Map-containing types (`HashMap<...>`) can derive `Eq` but not `Hash`, so `Hash` is gated separately from `Eq`
+- Implemented via generator pre-pass (`LifetimeAnalysis`) with transitive trait eligibility tracking
 
-This could reuse the `LifetimeAnalysis` pattern — do a pre-pass to determine which types contain floats.
+## Validation
 
-## Alternative
-Always derive `PartialEq` (it works for floats), and add `Eq + Hash` only for types without floats. This is the minimum useful improvement.
+- Added unit coverage in `plugins/rust/src/generator/mod.rs`:
+  - verifies derive output for float-containing types
+  - verifies map-containing types keep `Eq` but omit `Hash`
+  - verifies enums include `Hash`
