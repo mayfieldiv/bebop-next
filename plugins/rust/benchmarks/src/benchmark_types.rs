@@ -17,12 +17,15 @@ use alloc::boxed::Box;
 use alloc::string::String as StdString;
 use alloc::vec;
 use alloc::vec::Vec;
-use core::mem::size_of;
-use bebop_runtime::HashMap;
-use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, Uuid, f16, bf16, BebopTimestamp, BebopDuration};
-use bebop_runtime::wire_size as wire;
 #[cfg(feature = "serde")]
 use bebop_runtime::serde;
+use bebop_runtime::wire_size as wire;
+use bebop_runtime::HashMap;
+use bebop_runtime::{
+  bf16, f16, BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopReader, BebopTimestamp,
+  BebopWriter, DecodeError, Uuid,
+};
+use core::mem::size_of;
 
 // @@bebop_insertion_point(imports)
 
@@ -38,10 +41,20 @@ pub struct Person<'buf> {
 pub type PersonOwned = Person<'static>;
 
 impl<'buf> Person<'buf> {
-  pub fn new(id: i32, name: impl Into<Cow<'buf, str>>, email: impl Into<Cow<'buf, str>>, age: i32) -> Self {
+  pub fn new(
+    id: i32,
+    name: impl Into<Cow<'buf, str>>,
+    email: impl Into<Cow<'buf, str>>,
+    age: i32,
+  ) -> Self {
     let name = name.into();
     let email = email.into();
-    Self { id, name, email, age }
+    Self {
+      id,
+      name,
+      email,
+      age,
+    }
   }
 }
 
@@ -84,7 +97,12 @@ impl<'buf> BebopDecode<'buf> for Person<'buf> {
     let email = Cow::Borrowed(reader.read_str()?);
     let age = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Person)
-    Ok(Person { id, name, email, age })
+    Ok(Person {
+      id,
+      name,
+      email,
+      age,
+    })
   }
 }
 
@@ -104,8 +122,22 @@ pub struct Order {
 }
 
 impl Order {
-  pub fn new(order_id: i64, customer_id: i64, item_ids: Vec<i64>, quantities: Vec<i32>, total: f64, timestamp: i64) -> Self {
-    Self { order_id, customer_id, item_ids, quantities, total, timestamp }
+  pub fn new(
+    order_id: i64,
+    customer_id: i64,
+    item_ids: Vec<i64>,
+    quantities: Vec<i32>,
+    total: f64,
+    timestamp: i64,
+  ) -> Self {
+    Self {
+      order_id,
+      customer_id,
+      item_ids,
+      quantities,
+      total,
+      timestamp,
+    }
   }
 }
 
@@ -143,7 +175,14 @@ impl<'buf> BebopDecode<'buf> for Order {
     let total = reader.read_f64()?;
     let timestamp = reader.read_i64()?;
     // @@bebop_insertion_point(decode_end:Order)
-    Ok(Order { order_id, customer_id, item_ids, quantities, total, timestamp })
+    Ok(Order {
+      order_id,
+      customer_id,
+      item_ids,
+      quantities,
+      total,
+      timestamp,
+    })
   }
 }
 
@@ -166,11 +205,23 @@ pub struct Event<'buf> {
 pub type EventOwned = Event<'static>;
 
 impl<'buf> Event<'buf> {
-  pub fn new(id: i64, r#type: impl Into<Cow<'buf, str>>, source: impl Into<Cow<'buf, str>>, timestamp: i64, payload: impl Into<Cow<'buf, [u8]>>) -> Self {
+  pub fn new(
+    id: i64,
+    r#type: impl Into<Cow<'buf, str>>,
+    source: impl Into<Cow<'buf, str>>,
+    timestamp: i64,
+    payload: impl Into<Cow<'buf, [u8]>>,
+  ) -> Self {
     let r#type = r#type.into();
     let source = source.into();
     let payload = payload.into();
-    Self { id, r#type, source, timestamp, payload }
+    Self {
+      id,
+      r#type,
+      source,
+      timestamp,
+      payload,
+    }
   }
 }
 
@@ -217,7 +268,13 @@ impl<'buf> BebopDecode<'buf> for Event<'buf> {
     let timestamp = reader.read_i64()?;
     let payload = Cow::Borrowed(reader.read_byte_slice()?);
     // @@bebop_insertion_point(decode_end:Event)
-    Ok(Event { id, r#type, source, timestamp, payload })
+    Ok(Event {
+      id,
+      r#type,
+      source,
+      timestamp,
+      payload,
+    })
   }
 }
 
@@ -275,11 +332,15 @@ impl<'buf> BebopDecode<'buf> for TreeNode {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.value = Some(reader.read_i32()?),
         2 => msg.children = Some(reader.read_array(|_r| TreeNode::decode(_r))?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
     // @@bebop_insertion_point(decode_end:TreeNode)
@@ -293,8 +354,7 @@ impl TreeNode {
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct JsonNull {
-}
+pub struct JsonNull {}
 
 impl JsonNull {
   pub fn new() -> Self {
@@ -361,29 +421,51 @@ impl<'buf> BebopEncode for JsonValue<'buf> {
     // @@bebop_insertion_point(encode_start:JsonValue)
     let pos = writer.reserve_message_length();
     match self {
-      Self::Null(inner) => { writer.write_byte(1); inner.encode(writer); }
-      Self::Bool(inner) => { writer.write_byte(2); inner.encode(writer); }
-      Self::Number(inner) => { writer.write_byte(3); inner.encode(writer); }
-      Self::String(inner) => { writer.write_byte(4); inner.encode(writer); }
-      Self::List(inner) => { writer.write_byte(5); inner.encode(writer); }
-      Self::Object(inner) => { writer.write_byte(6); inner.encode(writer); }
+      Self::Null(inner) => {
+        writer.write_byte(1);
+        inner.encode(writer);
+      }
+      Self::Bool(inner) => {
+        writer.write_byte(2);
+        inner.encode(writer);
+      }
+      Self::Number(inner) => {
+        writer.write_byte(3);
+        inner.encode(writer);
+      }
+      Self::String(inner) => {
+        writer.write_byte(4);
+        inner.encode(writer);
+      }
+      Self::List(inner) => {
+        writer.write_byte(5);
+        inner.encode(writer);
+      }
+      Self::Object(inner) => {
+        writer.write_byte(6);
+        inner.encode(writer);
+      }
       // @@bebop_insertion_point(encode_switch:JsonValue)
-      Self::Unknown(disc, data) => { writer.write_byte(*disc); writer.write_raw(data); }
+      Self::Unknown(disc, data) => {
+        writer.write_byte(*disc);
+        writer.write_raw(data);
+      }
     }
     writer.fill_message_length(pos);
     // @@bebop_insertion_point(encode_end:JsonValue)
   }
 
   fn encoded_size(&self) -> usize {
-    wire::WIRE_LEN_PREFIX_SIZE + match self {
-      Self::Null(inner) => wire::tagged_size(inner.encoded_size()),
-      Self::Bool(inner) => wire::tagged_size(inner.encoded_size()),
-      Self::Number(inner) => wire::tagged_size(inner.encoded_size()),
-      Self::String(inner) => wire::tagged_size(inner.encoded_size()),
-      Self::List(inner) => wire::tagged_size(inner.encoded_size()),
-      Self::Object(inner) => wire::tagged_size(inner.encoded_size()),
-      Self::Unknown(_, data) => wire::tagged_size(data.len()),
-    }
+    wire::WIRE_LEN_PREFIX_SIZE
+      + match self {
+        Self::Null(inner) => wire::tagged_size(inner.encoded_size()),
+        Self::Bool(inner) => wire::tagged_size(inner.encoded_size()),
+        Self::Number(inner) => wire::tagged_size(inner.encoded_size()),
+        Self::String(inner) => wire::tagged_size(inner.encoded_size()),
+        Self::List(inner) => wire::tagged_size(inner.encoded_size()),
+        Self::Object(inner) => wire::tagged_size(inner.encoded_size()),
+        Self::Unknown(_, data) => wire::tagged_size(data.len()),
+      }
   }
 }
 
@@ -458,10 +540,14 @@ impl<'buf> BebopDecode<'buf> for Bool {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.value = Some(reader.read_bool()?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
     // @@bebop_insertion_point(decode_end:Bool)
@@ -515,10 +601,14 @@ impl<'buf> BebopDecode<'buf> for Number {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.value = Some(reader.read_f64()?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
     // @@bebop_insertion_point(decode_end:Number)
@@ -582,10 +672,14 @@ impl<'buf> BebopDecode<'buf> for String<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.value = Some(Cow::Borrowed(reader.read_str()?)),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
     // @@bebop_insertion_point(decode_end:String)
@@ -608,7 +702,9 @@ pub type ListOwned = List<'static>;
 impl<'buf> List<'buf> {
   pub fn into_owned(self) -> ListOwned {
     List {
-      values: self.values.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      values: self
+        .values
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
@@ -649,10 +745,14 @@ impl<'buf> BebopDecode<'buf> for List<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.values = Some(reader.read_array(|_r| JsonValue::decode(_r))?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
     // @@bebop_insertion_point(decode_end:List)
@@ -675,7 +775,11 @@ pub type ObjectOwned = Object<'static>;
 impl<'buf> Object<'buf> {
   pub fn into_owned(self) -> ObjectOwned {
     Object {
-      fields: self.fields.map(|v| v.into_iter().map(|(_k, _v)| (Cow::Owned(_k.into_owned()), _v.into_owned())).collect()),
+      fields: self.fields.map(|v| {
+        v.into_iter()
+          .map(|(_k, _v)| (Cow::Owned(_k.into_owned()), _v.into_owned()))
+          .collect()
+      }),
     }
   }
 }
@@ -691,7 +795,10 @@ impl<'buf> BebopEncode for Object<'buf> {
     // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.fields {
       writer.write_tag(1);
-      writer.write_map(&v, |_w, _k, _v| { _w.write_string(&_k); _v.encode(_w); });
+      writer.write_map(&v, |_w, _k, _v| {
+        _w.write_string(&_k);
+        _v.encode(_w);
+      });
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
@@ -701,7 +808,9 @@ impl<'buf> BebopEncode for Object<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.fields {
-      size += wire::tagged_size(wire::map_size(v, |_k, _v| wire::string_size(_k.len()) + _v.encoded_size()));
+      size += wire::tagged_size(wire::map_size(v, |_k, _v| {
+        wire::string_size(_k.len()) + _v.encoded_size()
+      }));
     }
     size
   }
@@ -716,10 +825,19 @@ impl<'buf> BebopDecode<'buf> for Object<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
-        1 => msg.fields = Some(reader.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, JsonValue::decode(_r)?)))?),
-        _ => { reader.skip(end - reader.position())?; }
+        1 => {
+          msg.fields = Some(
+            reader
+              .read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, JsonValue::decode(_r)?)))?,
+          )
+        }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
     // @@bebop_insertion_point(decode_end:Object)
@@ -746,7 +864,11 @@ impl<'buf> Document<'buf> {
     Document {
       title: self.title.map(|v| Cow::Owned(v.into_owned())),
       body: self.body.map(|v| Cow::Owned(v.into_owned())),
-      metadata: self.metadata.map(|v| v.into_iter().map(|(_k, _v)| (Cow::Owned(_k.into_owned()), _v.into_owned())).collect()),
+      metadata: self.metadata.map(|v| {
+        v.into_iter()
+          .map(|(_k, _v)| (Cow::Owned(_k.into_owned()), _v.into_owned()))
+          .collect()
+      }),
     }
   }
 }
@@ -770,7 +892,10 @@ impl<'buf> BebopEncode for Document<'buf> {
     }
     if let Some(ref v) = self.metadata {
       writer.write_tag(3);
-      writer.write_map(&v, |_w, _k, _v| { _w.write_string(&_k); _v.encode(_w); });
+      writer.write_map(&v, |_w, _k, _v| {
+        _w.write_string(&_k);
+        _v.encode(_w);
+      });
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
@@ -786,7 +911,9 @@ impl<'buf> BebopEncode for Document<'buf> {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.metadata {
-      size += wire::tagged_size(wire::map_size(v, |_k, _v| wire::string_size(_k.len()) + _v.encoded_size()));
+      size += wire::tagged_size(wire::map_size(v, |_k, _v| {
+        wire::string_size(_k.len()) + _v.encoded_size()
+      }));
     }
     size
   }
@@ -801,12 +928,21 @@ impl<'buf> BebopDecode<'buf> for Document<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.title = Some(Cow::Borrowed(reader.read_str()?)),
         2 => msg.body = Some(Cow::Borrowed(reader.read_str()?)),
-        3 => msg.metadata = Some(reader.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, JsonValue::decode(_r)?)))?),
-        _ => { reader.skip(end - reader.position())?; }
+        3 => {
+          msg.metadata = Some(
+            reader
+              .read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, JsonValue::decode(_r)?)))?,
+          )
+        }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
     // @@bebop_insertion_point(decode_end:Document)
@@ -836,13 +972,18 @@ impl core::convert::TryFrom<u8> for ChunkKind {
       1 => Ok(Self::Paragraph),
       2 => Ok(Self::Chapter),
       3 => Ok(Self::Heading),
-      _ => Err(DecodeError::InvalidEnum { type_name: "ChunkKind", value: value as u64 }),
+      _ => Err(DecodeError::InvalidEnum {
+        type_name: "ChunkKind",
+        value: value as u64,
+      }),
     }
   }
 }
 
 impl From<ChunkKind> for u8 {
-  fn from(value: ChunkKind) -> u8 { value as u8 }
+  fn from(value: ChunkKind) -> u8 {
+    value as u8
+  }
 }
 
 impl ChunkKind {
@@ -857,7 +998,9 @@ impl BebopEncode for ChunkKind {
     // @@bebop_insertion_point(encode_end:ChunkKind)
   }
 
-  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
+  fn encoded_size(&self) -> usize {
+    Self::FIXED_ENCODED_SIZE
+  }
 }
 
 impl<'buf> BebopDecode<'buf> for ChunkKind {
@@ -879,9 +1022,7 @@ pub struct TextSpan {
 
 impl TextSpan {
   pub const FIXED_ENCODED_SIZE: usize =
-    size_of::<u32>()
-    + size_of::<u32>()
-    + ChunkKind::FIXED_ENCODED_SIZE;
+    size_of::<u32>() + size_of::<u32>() + ChunkKind::FIXED_ENCODED_SIZE;
 
   pub fn new(start: u32, len: u32, kind: ChunkKind) -> Self {
     Self { start, len, kind }
@@ -1069,9 +1210,17 @@ pub struct EmbeddingBatch<'buf> {
 pub type EmbeddingBatchOwned = EmbeddingBatch<'static>;
 
 impl<'buf> EmbeddingBatch<'buf> {
-  pub fn new(model: impl Into<Cow<'buf, str>>, embeddings: Vec<EmbeddingBf16>, usage_tokens: u32) -> Self {
+  pub fn new(
+    model: impl Into<Cow<'buf, str>>,
+    embeddings: Vec<EmbeddingBf16>,
+    usage_tokens: u32,
+  ) -> Self {
     let model = model.into();
-    Self { model, embeddings, usage_tokens }
+    Self {
+      model,
+      embeddings,
+      usage_tokens,
+    }
   }
 }
 
@@ -1110,7 +1259,11 @@ impl<'buf> BebopDecode<'buf> for EmbeddingBatch<'buf> {
     let embeddings = reader.read_array(|_r| EmbeddingBf16::decode(_r))?;
     let usage_tokens = reader.read_u32()?;
     // @@bebop_insertion_point(decode_end:EmbeddingBatch)
-    Ok(EmbeddingBatch { model, embeddings, usage_tokens })
+    Ok(EmbeddingBatch {
+      model,
+      embeddings,
+      usage_tokens,
+    })
   }
 }
 
@@ -1131,7 +1284,11 @@ pub type TokenLogprobOwned = TokenLogprob<'static>;
 impl<'buf> TokenLogprob<'buf> {
   pub fn new(token: impl Into<Cow<'buf, str>>, token_id: u32, logprob: f32) -> Self {
     let token = token.into();
-    Self { token, token_id, logprob }
+    Self {
+      token,
+      token_id,
+      logprob,
+    }
   }
 }
 
@@ -1170,7 +1327,11 @@ impl<'buf> BebopDecode<'buf> for TokenLogprob<'buf> {
     let token_id = reader.read_u32()?;
     let logprob = reader.read_f32()?;
     // @@bebop_insertion_point(decode_end:TokenLogprob)
-    Ok(TokenLogprob { token, token_id, logprob })
+    Ok(TokenLogprob {
+      token,
+      token_id,
+      logprob,
+    })
   }
 }
 
@@ -1195,7 +1356,11 @@ impl<'buf> TokenAlternatives<'buf> {
 impl<'buf> TokenAlternatives<'buf> {
   pub fn into_owned(self) -> TokenAlternativesOwned {
     TokenAlternatives {
-      top_tokens: self.top_tokens.into_iter().map(|_e| _e.into_owned()).collect(),
+      top_tokens: self
+        .top_tokens
+        .into_iter()
+        .map(|_e| _e.into_owned())
+        .collect(),
     }
   }
 }
@@ -1239,10 +1404,20 @@ pub struct LlmStreamChunk<'buf> {
 pub type LlmStreamChunkOwned = LlmStreamChunk<'static>;
 
 impl<'buf> LlmStreamChunk<'buf> {
-  pub fn new(chunk_id: u32, tokens: Vec<StdString>, logprobs: Vec<TokenAlternatives<'static>>, finish_reason: impl Into<Cow<'buf, str>>) -> Self {
-    let tokens = tokens.into_iter().map(Cow::Owned).collect();
+  pub fn new(
+    chunk_id: u32,
+    tokens: Vec<StdString>,
+    logprobs: Vec<TokenAlternatives<'static>>,
+    finish_reason: impl Into<Cow<'buf, str>>,
+  ) -> Self {
+    let tokens = tokens.into_iter().map(|_e| Cow::Owned(_e)).collect();
     let finish_reason = finish_reason.into();
-    Self { chunk_id, tokens, logprobs, finish_reason }
+    Self {
+      chunk_id,
+      tokens,
+      logprobs,
+      finish_reason,
+    }
   }
 }
 
@@ -1250,8 +1425,16 @@ impl<'buf> LlmStreamChunk<'buf> {
   pub fn into_owned(self) -> LlmStreamChunkOwned {
     LlmStreamChunk {
       chunk_id: self.chunk_id,
-      tokens: self.tokens.into_iter().map(|_e| Cow::Owned(_e.into_owned())).collect(),
-      logprobs: self.logprobs.into_iter().map(|_e| _e.into_owned()).collect(),
+      tokens: self
+        .tokens
+        .into_iter()
+        .map(|_e| Cow::Owned(_e.into_owned()))
+        .collect(),
+      logprobs: self
+        .logprobs
+        .into_iter()
+        .map(|_e| _e.into_owned())
+        .collect(),
       finish_reason: Cow::Owned(self.finish_reason.into_owned()),
     }
   }
@@ -1285,7 +1468,12 @@ impl<'buf> BebopDecode<'buf> for LlmStreamChunk<'buf> {
     let logprobs = reader.read_array(|_r| TokenAlternatives::decode(_r))?;
     let finish_reason = Cow::Borrowed(reader.read_str()?);
     // @@bebop_insertion_point(decode_end:LlmStreamChunk)
-    Ok(LlmStreamChunk { chunk_id, tokens, logprobs, finish_reason })
+    Ok(LlmStreamChunk {
+      chunk_id,
+      tokens,
+      logprobs,
+      finish_reason,
+    })
   }
 }
 
@@ -1307,10 +1495,24 @@ pub struct TensorShard<'buf> {
 pub type TensorShardOwned = TensorShard<'static>;
 
 impl<'buf> TensorShard<'buf> {
-  pub fn new(name: impl Into<Cow<'buf, str>>, shape: Vec<u32>, dtype: impl Into<Cow<'buf, str>>, data: Vec<bf16>, offset: u64, total_elements: u64) -> Self {
+  pub fn new(
+    name: impl Into<Cow<'buf, str>>,
+    shape: Vec<u32>,
+    dtype: impl Into<Cow<'buf, str>>,
+    data: Vec<bf16>,
+    offset: u64,
+    total_elements: u64,
+  ) -> Self {
     let name = name.into();
     let dtype = dtype.into();
-    Self { name, shape, dtype, data, offset, total_elements }
+    Self {
+      name,
+      shape,
+      dtype,
+      data,
+      offset,
+      total_elements,
+    }
   }
 }
 
@@ -1361,7 +1563,14 @@ impl<'buf> BebopDecode<'buf> for TensorShard<'buf> {
     let offset = reader.read_u64()?;
     let total_elements = reader.read_u64()?;
     // @@bebop_insertion_point(decode_end:TensorShard)
-    Ok(TensorShard { name, shape, dtype, data, offset, total_elements })
+    Ok(TensorShard {
+      name,
+      shape,
+      dtype,
+      data,
+      offset,
+      total_elements,
+    })
   }
 }
 
@@ -1379,12 +1588,18 @@ pub struct InferenceTiming {
 
 impl InferenceTiming {
   pub const FIXED_ENCODED_SIZE: usize =
-    size_of::<i64>() + size_of::<i32>()
-    + size_of::<i64>() + size_of::<i32>()
-    + size_of::<f32>();
+    size_of::<i64>() + size_of::<i32>() + size_of::<i64>() + size_of::<i32>() + size_of::<f32>();
 
-  pub fn new(queue_time: BebopDuration, inference_time: BebopDuration, tokens_per_second: f32) -> Self {
-    Self { queue_time, inference_time, tokens_per_second }
+  pub fn new(
+    queue_time: BebopDuration,
+    inference_time: BebopDuration,
+    tokens_per_second: f32,
+  ) -> Self {
+    Self {
+      queue_time,
+      inference_time,
+      tokens_per_second,
+    }
   }
 }
 
@@ -1409,7 +1624,11 @@ impl<'buf> BebopDecode<'buf> for InferenceTiming {
     let inference_time = reader.read_duration()?;
     let tokens_per_second = reader.read_f32()?;
     // @@bebop_insertion_point(decode_end:InferenceTiming)
-    Ok(InferenceTiming { queue_time, inference_time, tokens_per_second })
+    Ok(InferenceTiming {
+      queue_time,
+      inference_time,
+      tokens_per_second,
+    })
   }
 }
 
@@ -1427,7 +1646,11 @@ pub struct InferenceResponse {
 
 impl InferenceResponse {
   pub fn new(request_id: Uuid, embeddings: Vec<EmbeddingBf16>, timing: InferenceTiming) -> Self {
-    Self { request_id, embeddings, timing }
+    Self {
+      request_id,
+      embeddings,
+      timing,
+    }
   }
 }
 
@@ -1456,7 +1679,11 @@ impl<'buf> BebopDecode<'buf> for InferenceResponse {
     let embeddings = reader.read_array(|_r| EmbeddingBf16::decode(_r))?;
     let timing = InferenceTiming::decode(reader)?;
     // @@bebop_insertion_point(decode_end:InferenceResponse)
-    Ok(InferenceResponse { request_id, embeddings, timing })
+    Ok(InferenceResponse {
+      request_id,
+      embeddings,
+      timing,
+    })
   }
 }
 

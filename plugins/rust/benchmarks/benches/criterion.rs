@@ -182,31 +182,104 @@ fn bench_scalar_encode(c: &mut Criterion) {
 fn bench_scalar_decode(c: &mut Criterion) {
   let mut g = c.benchmark_group("scalar_decode");
 
-  bench_scalar_decode_case(&mut g, "byte", |w| w.write_byte(0x7f), |r| r.read_byte().unwrap());
-  bench_scalar_decode_case(&mut g, "bool", |w| w.write_bool(true), |r| r.read_bool().unwrap());
+  bench_scalar_decode_case(
+    &mut g,
+    "byte",
+    |w| w.write_byte(0x7f),
+    |r| r.read_byte().unwrap(),
+  );
+  bench_scalar_decode_case(
+    &mut g,
+    "bool",
+    |w| w.write_bool(true),
+    |r| r.read_bool().unwrap(),
+  );
   bench_scalar_decode_case(&mut g, "i8", |w| w.write_i8(-7), |r| r.read_i8().unwrap());
-  bench_scalar_decode_case(&mut g, "u16", |w| w.write_u16(42), |r| r.read_u16().unwrap());
-  bench_scalar_decode_case(&mut g, "i16", |w| w.write_i16(-42), |r| r.read_i16().unwrap());
-  bench_scalar_decode_case(&mut g, "u32", |w| w.write_u32(123_456), |r| r.read_u32().unwrap());
-  bench_scalar_decode_case(&mut g, "i32", |w| w.write_i32(-123_456), |r| r.read_i32().unwrap());
-  bench_scalar_decode_case(&mut g, "u64", |w| w.write_u64(123_456_789_000), |r| r.read_u64().unwrap());
-  bench_scalar_decode_case(&mut g, "i64", |w| w.write_i64(-123_456_789_000), |r| r.read_i64().unwrap());
-  bench_scalar_decode_case(&mut g, "u128", |w| w.write_u128(123_456_789_000_000_000_000u128), |r| r.read_u128().unwrap());
-  bench_scalar_decode_case(&mut g, "i128", |w| w.write_i128(-123_456_789_000_000_000_000i128), |r| r.read_i128().unwrap());
-  bench_scalar_decode_case(&mut g, "f16", |w| w.write_f16(f16::from_f32(1.234)), |r| r.read_f16().unwrap());
-  bench_scalar_decode_case(&mut g, "bf16", |w| w.write_bf16(bf16::from_f32(2.345)), |r| r.read_bf16().unwrap());
-  bench_scalar_decode_case(&mut g, "f32", |w| w.write_f32(12.345_f32), |r| r.read_f32().unwrap());
-  bench_scalar_decode_case(&mut g, "f64", |w| w.write_f64(123.456_f64), |r| r.read_f64().unwrap());
-  bench_scalar_decode_case(&mut g, "string", |w| w.write_string("benchmark-scalar"), |r| {
-    r.read_string().unwrap()
-  });
+  bench_scalar_decode_case(
+    &mut g,
+    "u16",
+    |w| w.write_u16(42),
+    |r| r.read_u16().unwrap(),
+  );
+  bench_scalar_decode_case(
+    &mut g,
+    "i16",
+    |w| w.write_i16(-42),
+    |r| r.read_i16().unwrap(),
+  );
+  bench_scalar_decode_case(
+    &mut g,
+    "u32",
+    |w| w.write_u32(123_456),
+    |r| r.read_u32().unwrap(),
+  );
+  bench_scalar_decode_case(
+    &mut g,
+    "i32",
+    |w| w.write_i32(-123_456),
+    |r| r.read_i32().unwrap(),
+  );
+  bench_scalar_decode_case(
+    &mut g,
+    "u64",
+    |w| w.write_u64(123_456_789_000),
+    |r| r.read_u64().unwrap(),
+  );
+  bench_scalar_decode_case(
+    &mut g,
+    "i64",
+    |w| w.write_i64(-123_456_789_000),
+    |r| r.read_i64().unwrap(),
+  );
+  bench_scalar_decode_case(
+    &mut g,
+    "u128",
+    |w| w.write_u128(123_456_789_000_000_000_000u128),
+    |r| r.read_u128().unwrap(),
+  );
+  bench_scalar_decode_case(
+    &mut g,
+    "i128",
+    |w| w.write_i128(-123_456_789_000_000_000_000i128),
+    |r| r.read_i128().unwrap(),
+  );
+  bench_scalar_decode_case(
+    &mut g,
+    "f16",
+    |w| w.write_f16(f16::from_f32(1.234)),
+    |r| r.read_f16().unwrap(),
+  );
+  bench_scalar_decode_case(
+    &mut g,
+    "bf16",
+    |w| w.write_bf16(bf16::from_f32(2.345)),
+    |r| r.read_bf16().unwrap(),
+  );
+  bench_scalar_decode_case(
+    &mut g,
+    "f32",
+    |w| w.write_f32(12.345_f32),
+    |r| r.read_f32().unwrap(),
+  );
+  bench_scalar_decode_case(
+    &mut g,
+    "f64",
+    |w| w.write_f64(123.456_f64),
+    |r| r.read_f64().unwrap(),
+  );
+  bench_scalar_decode_case(
+    &mut g,
+    "string",
+    |w| w.write_string("benchmark-scalar"),
+    |r| r.read_string().unwrap(),
+  );
   bench_scalar_decode_case(
     &mut g,
     "uuid",
     |w| {
       w.write_uuid(Uuid::from_bytes([
-        0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe,
-        0x11, 0x22,
+        0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe, 0x11,
+        0x22,
       ]));
     },
     |r| r.read_uuid().unwrap(),
@@ -242,11 +315,15 @@ fn bench_structs_and_messages(c: &mut Criterion) {
   let person_bytes = person.to_bytes();
   let mut g = c.benchmark_group("Person");
   g.throughput(Throughput::Bytes(person.encoded_size() as u64));
-  g.bench_function("encode", |b| b.iter(|| black_box(person.clone()).to_bytes()));
+  g.bench_function("encode", |b| {
+    b.iter(|| black_box(person.clone()).to_bytes())
+  });
   g.bench_function("decode", |b| {
     b.iter(|| black_box(bt::Person::from_bytes(&person_bytes).unwrap()))
   });
-  g.bench_function("encoded_size", |b| b.iter(|| black_box(person.encoded_size())));
+  g.bench_function("encoded_size", |b| {
+    b.iter(|| black_box(person.encoded_size()))
+  });
   g.bench_function("into_owned", |b| {
     b.iter(|| {
       let decoded = bt::Person::from_bytes(&person_bytes).unwrap();
@@ -259,24 +336,28 @@ fn bench_structs_and_messages(c: &mut Criterion) {
   let span_bytes = span.to_bytes();
   let mut g = c.benchmark_group("TextSpan");
   g.throughput(Throughput::Bytes(span.encoded_size() as u64));
-  g.bench_function("encode", |b| {
-    b.iter(|| black_box(span.clone()).to_bytes())
-  });
+  g.bench_function("encode", |b| b.iter(|| black_box(span.clone()).to_bytes()));
   g.bench_function("decode", |b| {
     b.iter(|| black_box(bt::TextSpan::from_bytes(&span_bytes).unwrap()))
   });
-  g.bench_function("encoded_size", |b| b.iter(|| black_box(span.encoded_size())));
+  g.bench_function("encoded_size", |b| {
+    b.iter(|| black_box(span.encoded_size()))
+  });
   g.finish();
 
   let embedding = fixtures::embedding_bf16_1536();
   let embedding_bytes = embedding.to_bytes();
   let mut g = c.benchmark_group("EmbeddingBf16");
   g.throughput(Throughput::Bytes(embedding.encoded_size() as u64));
-  g.bench_function("encode", |b| b.iter(|| black_box(embedding.clone()).to_bytes()));
+  g.bench_function("encode", |b| {
+    b.iter(|| black_box(embedding.clone()).to_bytes())
+  });
   g.bench_function("decode", |b| {
     b.iter(|| black_box(bt::EmbeddingBf16::from_bytes(&embedding_bytes).unwrap()))
   });
-  g.bench_function("encoded_size", |b| b.iter(|| black_box(embedding.encoded_size())));
+  g.bench_function("encoded_size", |b| {
+    b.iter(|| black_box(embedding.encoded_size()))
+  });
   g.finish();
 
   let tree = fixtures::tree_deep(32);
@@ -287,7 +368,9 @@ fn bench_structs_and_messages(c: &mut Criterion) {
   g.bench_function("decode", |b| {
     b.iter(|| black_box(bt::TreeNode::from_bytes(&tree_bytes).unwrap()))
   });
-  g.bench_function("encoded_size", |b| b.iter(|| black_box(tree.encoded_size())));
+  g.bench_function("encoded_size", |b| {
+    b.iter(|| black_box(tree.encoded_size()))
+  });
   g.finish();
 
   let json = fixtures::json_large(3, 3);
@@ -298,7 +381,9 @@ fn bench_structs_and_messages(c: &mut Criterion) {
   g.bench_function("decode", |b| {
     b.iter(|| black_box(bt::JsonValue::from_bytes(&json_bytes).unwrap()))
   });
-  g.bench_function("encoded_size", |b| b.iter(|| black_box(json.encoded_size())));
+  g.bench_function("encoded_size", |b| {
+    b.iter(|| black_box(json.encoded_size()))
+  });
   g.bench_function("into_owned", |b| {
     b.iter(|| {
       let decoded = bt::JsonValue::from_bytes(&json_bytes).unwrap();
@@ -311,11 +396,15 @@ fn bench_structs_and_messages(c: &mut Criterion) {
   let document_bytes = document.to_bytes();
   let mut g = c.benchmark_group("Document");
   g.throughput(Throughput::Bytes(document.encoded_size() as u64));
-  g.bench_function("encode", |b| b.iter(|| black_box(document.clone()).to_bytes()));
+  g.bench_function("encode", |b| {
+    b.iter(|| black_box(document.clone()).to_bytes())
+  });
   g.bench_function("decode", |b| {
     b.iter(|| black_box(bt::Document::from_bytes(&document_bytes).unwrap()))
   });
-  g.bench_function("encoded_size", |b| b.iter(|| black_box(document.encoded_size())));
+  g.bench_function("encoded_size", |b| {
+    b.iter(|| black_box(document.encoded_size()))
+  });
   g.bench_function("into_owned", |b| {
     b.iter(|| {
       let decoded = bt::Document::from_bytes(&document_bytes).unwrap();
@@ -332,7 +421,9 @@ fn bench_structs_and_messages(c: &mut Criterion) {
   g.bench_function("decode", |b| {
     b.iter(|| black_box(bt::TensorShard::from_bytes(&shard_bytes).unwrap()))
   });
-  g.bench_function("encoded_size", |b| b.iter(|| black_box(shard.encoded_size())));
+  g.bench_function("encoded_size", |b| {
+    b.iter(|| black_box(shard.encoded_size()))
+  });
   g.bench_function("into_owned", |b| {
     b.iter(|| {
       let decoded = bt::TensorShard::from_bytes(&shard_bytes).unwrap();
@@ -345,11 +436,15 @@ fn bench_structs_and_messages(c: &mut Criterion) {
   let response_bytes = response.to_bytes();
   let mut g = c.benchmark_group("InferenceResponse");
   g.throughput(Throughput::Bytes(response.encoded_size() as u64));
-  g.bench_function("encode", |b| b.iter(|| black_box(response.clone()).to_bytes()));
+  g.bench_function("encode", |b| {
+    b.iter(|| black_box(response.clone()).to_bytes())
+  });
   g.bench_function("decode", |b| {
     b.iter(|| black_box(bt::InferenceResponse::from_bytes(&response_bytes).unwrap()))
   });
-  g.bench_function("encoded_size", |b| b.iter(|| black_box(response.encoded_size())));
+  g.bench_function("encoded_size", |b| {
+    b.iter(|| black_box(response.encoded_size()))
+  });
   g.finish();
 }
 

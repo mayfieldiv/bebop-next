@@ -1099,8 +1099,14 @@ fn deep_nested_collections_round_trip() {
   let nested2 = decoded.nested.unwrap();
   let bucket = &nested2[&Cow::Borrowed("bucket") as &Cow<str>];
   assert_eq!(bucket.len(), 2);
-  assert_eq!(bucket[0][&Cow::Borrowed("left") as &Cow<str>].label, "alpha");
-  assert_eq!(bucket[1][&Cow::Borrowed("right") as &Cow<str>].label, "beta");
+  assert_eq!(
+    bucket[0][&Cow::Borrowed("left") as &Cow<str>].label,
+    "alpha"
+  );
+  assert_eq!(
+    bucket[1][&Cow::Borrowed("right") as &Cow<str>].label,
+    "beta"
+  );
   assert_eq!(msg.encoded_size(), bytes.len());
 }
 
