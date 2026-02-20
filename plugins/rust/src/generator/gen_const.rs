@@ -3,7 +3,7 @@ use crate::generated::{DefinitionDescriptor, LiteralKind, LiteralValue, TypeDesc
 
 use super::naming::const_name;
 use super::type_mapper::scalar_type;
-use super::{emit_deprecated, emit_doc_comment};
+use super::{emit_deprecated, emit_doc_comment, visibility_keyword};
 
 /// Generate Rust code for a const definition.
 pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), GeneratorError> {
@@ -25,11 +25,13 @@ pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), G
   let rust_type = const_rust_type(ty)?;
   let literal = literal_value(value, ty)?;
 
+  let vis = visibility_keyword(def);
+
   emit_doc_comment(output, &def.documentation);
   emit_deprecated(output, &def.decorators);
   output.push_str(&format!(
-    "pub const {}: {} = {};\n\n",
-    name, rust_type, literal
+    "{} const {}: {} = {};\n\n",
+    vis, name, rust_type, literal
   ));
 
   Ok(())

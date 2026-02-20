@@ -13,6 +13,17 @@ use std::collections::{HashMap, HashSet};
 use crate::error::GeneratorError;
 use crate::generated::*;
 
+/// Return the Rust visibility keyword for a definition.
+///
+/// `Visibility::Local` → `"pub(crate)"`, everything else → `"pub"`.
+pub fn visibility_keyword(def: &DefinitionDescriptor) -> &'static str {
+  if def.visibility == Some(Visibility::Local) {
+    "pub(crate)"
+  } else {
+    "pub"
+  }
+}
+
 /// Pre-computed lifetime and kind information for all definitions in a schema.
 pub struct LifetimeAnalysis {
   /// FQNs of enum definitions (never need a lifetime parameter).
@@ -599,9 +610,9 @@ mod tests {
   use std::borrow::Cow;
 
   use crate::generated::{
-    DefinitionDescriptor, DefinitionKind, EnumDef, EnumMemberDescriptor, FieldDescriptor,
-    MessageDef, SchemaDescriptor, StructDef, TypeDescriptor, TypeKind, UnionBranchDescriptor,
-    UnionDef,
+    ConstDef, DefinitionDescriptor, DefinitionKind, EnumDef, EnumMemberDescriptor, FieldDescriptor,
+    LiteralKind, LiteralValue, MessageDef, SchemaDescriptor, StructDef, TypeDescriptor, TypeKind,
+    UnionBranchDescriptor, UnionDef, Visibility,
   };
 
   fn scalar_type(kind: TypeKind) -> TypeDescriptor<'static> {
@@ -906,5 +917,233 @@ mod tests {
 
     // Enums are always hashable since they're integer-backed.
     assert!(output.contains("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\npub enum Status"));
+  }
+
+  #[test]
+  fn emits_pub_crate_for_local_visibility() {
+    let payload = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Struct),
+      name: Some(Cow::Borrowed("Payload")),
+      fqn: Some(Cow::Borrowed("test.Payload")),
+      visibility: Some(Visibility::Local),
+      struct_def: Some(StructDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("id")),
+          r#type: Some(scalar_type(TypeKind::Int32)),
+          index: Some(0),
+          ..Default::default()
+        }]),
+        fixed_size: Some(4),
+        ..Default::default()
+      }),
+      ..Default::default()
+    };
+
+    let msg = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Message),
+      name: Some(Cow::Borrowed("Msg")),
+      fqn: Some(Cow::Borrowed("test.Msg")),
+      visibility: Some(Visibility::Local),
+      message_def: Some(MessageDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("id")),
+          r#type: Some(scalar_type(TypeKind::Int32)),
+          index: Some(1),
+          ..Default::default()
+        }]),
+      }),
+      ..Default::default()
+    };
+
+    let status = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Enum),
+      name: Some(Cow::Borrowed("Status")),
+      fqn: Some(Cow::Borrowed("test.Status")),
+      visibility: Some(Visibility::Local),
+      enum_def: Some(EnumDef {
+        base_type: Some(TypeKind::Uint32),
+        members: Some(vec![EnumMemberDescriptor {
+          name: Some(Cow::Borrowed("OK")),
+          value: Some(1),
+          ..Default::default()
+        }]),
+        is_flags: Some(false),
+      }),
+      ..Default::default()
+    };
+
+    let flags = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Enum),
+      name: Some(Cow::Borrowed("Perms")),
+      fqn: Some(Cow::Borrowed("test.Perms")),
+      visibility: Some(Visibility::Local),
+      enum_def: Some(EnumDef {
+        base_type: Some(TypeKind::Uint32),
+        members: Some(vec![EnumMemberDescriptor {
+          name: Some(Cow::Borrowed("READ")),
+          value: Some(1),
+          ..Default::default()
+        }]),
+        is_flags: Some(true),
+      }),
+      ..Default::default()
+    };
+
+    let result_union = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Union),
+      name: Some(Cow::Borrowed("ResultUnion")),
+      fqn: Some(Cow::Borrowed("test.ResultUnion")),
+      visibility: Some(Visibility::Local),
+      union_def: Some(UnionDef {
+        branches: Some(vec![UnionBranchDescriptor {
+          discriminator: Some(1),
+          name: Some(Cow::Borrowed("payload")),
+          type_ref_fqn: Some(Cow::Borrowed("test.Payload")),
+          ..Default::default()
+        }]),
+      }),
+      ..Default::default()
+    };
+
+    let schema = SchemaDescriptor {
+      path: Some(Cow::Borrowed("local.bop")),
+      definitions: Some(vec![payload, msg, status, flags, result_union]),
+      ..Default::default()
+    };
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::new(None)
+      .generate(&schema, &[], &analysis)
+      .expect("generator should succeed");
+
+    // Struct: definition and fields
+    assert!(
+      output.contains("pub(crate) struct Payload"),
+      "struct should use pub(crate)"
+    );
+    assert!(
+      output.contains("  pub(crate) id: i32,"),
+      "struct field should use pub(crate)"
+    );
+
+    // Message: definition and fields
+    assert!(
+      output.contains("pub(crate) struct Msg"),
+      "message should use pub(crate)"
+    );
+    assert!(
+      output.contains("  pub(crate) id: Option<i32>,"),
+      "message field should use pub(crate)"
+    );
+
+    // Enum
+    assert!(
+      output.contains("pub(crate) enum Status"),
+      "enum should use pub(crate)"
+    );
+
+    // Flags: struct and inner field
+    assert!(
+      output.contains("pub(crate) struct Perms(pub(crate) u32)"),
+      "flags struct should use pub(crate)"
+    );
+
+    // Union: definition and type alias
+    assert!(
+      output.contains("pub(crate) enum ResultUnion<'buf>"),
+      "union should use pub(crate)"
+    );
+    assert!(
+      output.contains("pub(crate) type ResultUnionOwned"),
+      "union type alias should use pub(crate)"
+    );
+
+    // Verify no bare `pub ` (without `(crate)`) on definitions
+    assert!(
+      !output.contains("\npub struct "),
+      "should not contain bare `pub struct`"
+    );
+    assert!(
+      !output.contains("\npub enum "),
+      "should not contain bare `pub enum`"
+    );
+    assert!(
+      !output.contains("\npub type "),
+      "should not contain bare `pub type`"
+    );
+  }
+
+  #[test]
+  fn emits_pub_for_export_visibility() {
+    let payload = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Struct),
+      name: Some(Cow::Borrowed("Payload")),
+      fqn: Some(Cow::Borrowed("test.Payload")),
+      visibility: Some(Visibility::Export),
+      struct_def: Some(StructDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("id")),
+          r#type: Some(scalar_type(TypeKind::Int32)),
+          index: Some(0),
+          ..Default::default()
+        }]),
+        fixed_size: Some(4),
+        ..Default::default()
+      }),
+      ..Default::default()
+    };
+
+    let schema = SchemaDescriptor {
+      path: Some(Cow::Borrowed("export.bop")),
+      definitions: Some(vec![payload]),
+      ..Default::default()
+    };
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::new(None)
+      .generate(&schema, &[], &analysis)
+      .expect("generator should succeed");
+
+    assert!(
+      output.contains("pub struct Payload"),
+      "Export visibility should emit pub"
+    );
+    assert!(
+      output.contains("  pub id: i32,"),
+      "Export visibility fields should emit pub"
+    );
+  }
+
+  #[test]
+  fn emits_pub_crate_for_local_const() {
+    let my_const = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Const),
+      name: Some(Cow::Borrowed("MY_VALUE")),
+      fqn: Some(Cow::Borrowed("test.MY_VALUE")),
+      visibility: Some(Visibility::Local),
+      const_def: Some(ConstDef {
+        r#type: Some(scalar_type(TypeKind::Int32)),
+        value: Some(LiteralValue {
+          kind: Some(LiteralKind::Int),
+          int_value: Some(42),
+          ..Default::default()
+        }),
+      }),
+      ..Default::default()
+    };
+
+    let schema = SchemaDescriptor {
+      path: Some(Cow::Borrowed("const.bop")),
+      definitions: Some(vec![my_const]),
+      ..Default::default()
+    };
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::new(None)
+      .generate(&schema, &[], &analysis)
+      .expect("generator should succeed");
+
+    assert!(
+      output.contains("pub(crate) const MY_VALUE: i32 = 42i32;"),
+      "local const should use pub(crate), got: {}",
+      output
+    );
   }
 }
