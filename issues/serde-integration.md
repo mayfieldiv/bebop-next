@@ -1,10 +1,10 @@
 # Feature-Gated Serde Support
 
-- [ ] Add optional serde derives for generated types #rust-plugin 🔽
+- [x] Add optional serde derives for generated types #rust-plugin 🔽
 
-Swift generates full `Codable` conformance for all types (CodingKeys, JSON encode/decode). The Rust plugin generates no `serde` support. This is likely intentional for `no_std`, but serde is the standard for Rust serialization interop.
+Implemented in runtime and generator on 2026-02-20.
 
-## Proposed Approach
+## Implemented
 Feature-gated in the runtime:
 ```toml
 [dependencies]
@@ -14,7 +14,7 @@ serde = { version = "1", features = ["derive"], optional = true }
 serde = ["dep:serde"]
 ```
 
-When enabled, generated types would include:
+When enabled, generated types include:
 ```rust
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // or via cfg_attr:
@@ -22,16 +22,11 @@ When enabled, generated types would include:
 pub struct Foo { ... }
 ```
 
-## Complications
-- `Cow<'buf, str>` serializes fine with serde (as a string)
-- `Cow<'buf, [u8]>` needs `#[serde(with = "serde_bytes")]` or similar for efficient byte array serialization
-- `f16`/`bf16` from the `half` crate have optional serde support behind their own feature flags
-- `[u8; 16]` (UUID) serializes as an array by default — may want a hex string representation
-- Timestamps `(i64, i32)` serialize as tuples — may want a more structured JSON representation
-- The `Unknown` variant on unions contains raw `Cow<[u8]>` which needs care
+## Notes
+- `Cow<'buf, str>` serializes natively
+- `Cow<'buf, [u8]>` uses serde bytes support
+- `f16`/`bf16` serde support is enabled via the `half` crate feature
+- UUID serde support is enabled via the `uuid` crate feature
+- Generated code uses `cfg_attr(feature = "serde", ...)`, so serde is zero-cost when disabled
 
-## Generator Changes
-The generator would need a plugin option (e.g., `serde = true`) to conditionally emit `#[cfg_attr(feature = "serde", derive(...))]` on each type. Would also need `#[serde(rename = "originalName")]` attributes if field names differ from schema names.
-
-## Priority
-Low — this is a convenience feature. Users can manually implement serde for their types if needed.
+No plugin host option is required; serde is controlled by Cargo feature flags.
