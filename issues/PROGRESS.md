@@ -40,7 +40,7 @@ Full spec compliance checklist: [[spec-compliance]]
 | Feature | Priority | Issue |
 |---|---|---|
 | Services/RPC | High | [[services-rpc]] |
-| Dead code cleanup | High (quick win) | [[dead-code-cleanup]] |
+| ~~Dead code cleanup~~ | ~~Done~~ | [[dead-code-cleanup]] |
 | Rename _cow functions | Medium | [[rename-cow-functions]] |
 | Insertion points | Medium | [[insertion-points]] |
 | Visibility (pub/pub(crate)) | Medium | [[visibility-support]] |
