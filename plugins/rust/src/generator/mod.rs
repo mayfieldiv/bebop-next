@@ -486,7 +486,7 @@ impl RustGenerator {
     if schema_uses_maps(schema) {
       output.push_str("use bebop_runtime::HashMap;\n");
     }
-    output.push_str("use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, Uuid, f16, bf16};\n");
+    output.push_str("use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, Uuid, f16, bf16, BebopTimestamp, BebopDuration};\n");
     output.push_str("use bebop_runtime::wire_size as wire;\n");
 
     // Cross-module imports for sibling schemas
