@@ -6,8 +6,9 @@ use serde::{Deserialize, Deserializer, Serializer};
 ///
 /// Serialization uses `serde_bytes` for compact binary representations in
 /// non-human-readable formats. Deserialization returns an owned buffer.
-pub fn serialize<S>(bytes: &Cow<'_, [u8]>, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize<S, B>(bytes: &B, serializer: S) -> Result<S::Ok, S::Error>
 where
+  B: AsRef<[u8]> + ?Sized,
   S: Serializer,
 {
   serde_bytes::serialize(bytes.as_ref(), serializer)
