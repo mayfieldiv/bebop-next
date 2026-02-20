@@ -46,7 +46,7 @@ pub fn generate(
         .ok_or_else(|| GeneratorError::MalformedDefinition("struct field missing type".into()))?;
       Ok(StructFieldMeta {
         fname: field_name(f.name.as_deref().unwrap_or("unknown")),
-        cow_type: type_mapper::rust_type_cow(td, analysis)?,
+        cow_type: type_mapper::rust_type(td, analysis)?,
         owned_type: type_mapper::rust_type_owned(td, analysis)?,
         td,
       })
@@ -172,7 +172,7 @@ pub fn generate(
   // encode()
   output.push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
   for meta in &field_metas {
-    let write_stmt = type_mapper::write_expression_cow(
+    let write_stmt = type_mapper::write_expression(
       meta.td,
       &format!("self.{}", meta.fname),
       "writer",
@@ -207,7 +207,7 @@ pub fn generate(
     if let Some(read_expr) = type_mapper::borrowed_cow_read_expression(meta.td, "reader") {
       output.push_str(&format!("    let {} = {};\n", meta.fname, read_expr));
     } else {
-      let read_expr = type_mapper::read_expression_cow(meta.td, "reader", analysis)?;
+      let read_expr = type_mapper::read_expression(meta.td, "reader", analysis)?;
       output.push_str(&format!("    let {} = {}?;\n", meta.fname, read_expr));
     }
   }
