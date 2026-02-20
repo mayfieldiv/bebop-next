@@ -84,6 +84,8 @@ fn generate_enum(
 
   // Enum definition with repr
   output.push_str(&format!("#[repr({})]\n", base_type));
+  output
+    .push_str("#[cfg_attr(feature = \"serde\", derive(serde::Serialize, serde::Deserialize))]\n");
   output.push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\n");
   output.push_str(&format!("{} enum {} {{\n", vis, name));
 
@@ -214,6 +216,8 @@ fn generate_flags(
   emit_deprecated(output, &def.decorators);
 
   // Derive + struct
+  output
+    .push_str("#[cfg_attr(feature = \"serde\", derive(serde::Serialize, serde::Deserialize))]\n");
   output.push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\n");
   output.push_str(&format!(
     "{} struct {}({} {});\n\n",

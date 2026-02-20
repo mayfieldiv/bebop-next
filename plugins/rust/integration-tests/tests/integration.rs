@@ -6,7 +6,9 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use bebop_runtime::{bf16, f16, BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopTimestamp, Uuid};
+use bebop_runtime::{
+  bf16, f16, BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopTimestamp, Uuid,
+};
 
 use bebop_integration_tests::test_types::*;
 
@@ -1022,7 +1024,10 @@ fn multiple_decode_from_same_buffer() {
 
 #[test]
 fn timestamped_event_round_trip() {
-  let ts = BebopTimestamp { seconds: 1_700_000_000, nanos: 123_456_789 };
+  let ts = BebopTimestamp {
+    seconds: 1_700_000_000,
+    nanos: 123_456_789,
+  };
   let evt = TimestampedEvent::new(ts, "deploy");
   let bytes = evt.to_bytes();
   let evt2 = TimestampedEvent::from_bytes(&bytes).unwrap();
@@ -1032,7 +1037,10 @@ fn timestamped_event_round_trip() {
 
 #[test]
 fn timestamped_event_encoded_size_matches() {
-  let ts = BebopTimestamp { seconds: 0, nanos: 0 };
+  let ts = BebopTimestamp {
+    seconds: 0,
+    nanos: 0,
+  };
   let evt = TimestampedEvent::new(ts, "test");
   assert_eq!(evt.encoded_size(), evt.to_bytes().len());
 }
@@ -1040,26 +1048,53 @@ fn timestamped_event_encoded_size_matches() {
 #[test]
 fn schedule_entry_round_trip_full() {
   let mut entry = ScheduleEntry::default();
-  entry.start = Some(BebopTimestamp { seconds: 1_700_000_000, nanos: 0 });
-  entry.duration = Some(BebopDuration { seconds: 3600, nanos: 0 });
+  entry.start = Some(BebopTimestamp {
+    seconds: 1_700_000_000,
+    nanos: 0,
+  });
+  entry.duration = Some(BebopDuration {
+    seconds: 3600,
+    nanos: 0,
+  });
   entry.label = Some(Cow::Owned("meeting".to_string()));
 
   let bytes = entry.to_bytes();
   let entry2 = ScheduleEntry::from_bytes(&bytes).unwrap();
-  assert_eq!(entry2.start, Some(BebopTimestamp { seconds: 1_700_000_000, nanos: 0 }));
-  assert_eq!(entry2.duration, Some(BebopDuration { seconds: 3600, nanos: 0 }));
+  assert_eq!(
+    entry2.start,
+    Some(BebopTimestamp {
+      seconds: 1_700_000_000,
+      nanos: 0
+    })
+  );
+  assert_eq!(
+    entry2.duration,
+    Some(BebopDuration {
+      seconds: 3600,
+      nanos: 0
+    })
+  );
   assert_eq!(entry2.label.as_deref(), Some("meeting"));
 }
 
 #[test]
 fn schedule_entry_round_trip_partial() {
   let mut entry = ScheduleEntry::default();
-  entry.start = Some(BebopTimestamp { seconds: 100, nanos: 500 });
+  entry.start = Some(BebopTimestamp {
+    seconds: 100,
+    nanos: 500,
+  });
   // duration and label left as None
 
   let bytes = entry.to_bytes();
   let entry2 = ScheduleEntry::from_bytes(&bytes).unwrap();
-  assert_eq!(entry2.start, Some(BebopTimestamp { seconds: 100, nanos: 500 }));
+  assert_eq!(
+    entry2.start,
+    Some(BebopTimestamp {
+      seconds: 100,
+      nanos: 500
+    })
+  );
   assert!(entry2.duration.is_none());
   assert!(entry2.label.is_none());
 }
@@ -1067,8 +1102,95 @@ fn schedule_entry_round_trip_partial() {
 #[test]
 fn schedule_entry_encoded_size_matches() {
   let mut entry = ScheduleEntry::default();
-  entry.start = Some(BebopTimestamp { seconds: 42, nanos: 1 });
-  entry.duration = Some(BebopDuration { seconds: 10, nanos: 999 });
+  entry.start = Some(BebopTimestamp {
+    seconds: 42,
+    nanos: 1,
+  });
+  entry.duration = Some(BebopDuration {
+    seconds: 10,
+    nanos: 999,
+  });
   entry.label = Some(Cow::Owned("x".to_string()));
   assert_eq!(entry.encoded_size(), entry.to_bytes().len());
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Serde
+// ═══════════════════════════════════════════════════════════════
+
+#[cfg(feature = "serde")]
+#[test]
+fn serde_struct_round_trip_json() {
+  let person = Person::new("Alice", 30);
+  let json = serde_json::to_string(&person).unwrap();
+  let decoded: PersonOwned = serde_json::from_str(&json).unwrap();
+  assert_eq!(decoded.name, "Alice");
+  assert_eq!(decoded.age, 30);
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn serde_byte_array_struct_round_trip_json() {
+  let payload = BinaryPayload::new(7, vec![1, 2, 3, 4]);
+  let json = serde_json::to_string(&payload).unwrap();
+  let decoded: BinaryPayload = serde_json::from_str(&json).unwrap();
+  assert_eq!(decoded.tag, 7);
+  assert_eq!(decoded.data.as_ref(), &[1, 2, 3, 4]);
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn serde_message_round_trip_json() {
+  let mut profile = UserProfile::default();
+  profile.display_name = Some(Cow::Owned("alice".to_string()));
+  profile.email = Some(Cow::Owned("alice@example.com".to_string()));
+  profile.age = Some(42);
+  profile.active = Some(true);
+  profile.tags = Some(vec![Cow::Owned("admin".to_string())]);
+  let mut meta = HashMap::new();
+  meta.insert(
+    Cow::Owned("language".to_string()),
+    Cow::Owned("rust".to_string()),
+  );
+  profile.metadata = Some(meta);
+  profile.permissions = Some(Permissions::READ | Permissions::WRITE);
+
+  let json = serde_json::to_string(&profile).unwrap();
+  let decoded: UserProfileOwned = serde_json::from_str(&json).unwrap();
+  assert_eq!(decoded.display_name.as_deref(), Some("alice"));
+  assert_eq!(decoded.email.as_deref(), Some("alice@example.com"));
+  assert_eq!(decoded.age, Some(42));
+  assert_eq!(decoded.active, Some(true));
+  assert_eq!(
+    decoded.permissions,
+    Some(Permissions::READ | Permissions::WRITE)
+  );
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn serde_enum_and_flags_round_trip_json() {
+  let enum_json = serde_json::to_string(&Color::Blue).unwrap();
+  let enum_decoded: Color = serde_json::from_str(&enum_json).unwrap();
+  assert_eq!(enum_decoded, Color::Blue);
+
+  let flags_json = serde_json::to_string(&(Permissions::READ | Permissions::WRITE)).unwrap();
+  let flags_decoded: Permissions = serde_json::from_str(&flags_json).unwrap();
+  assert_eq!(flags_decoded, Permissions::READ | Permissions::WRITE);
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn serde_union_round_trip_json() {
+  let shape = Shape::Label(TextLabel::new(Point::new(1.0, 2.0), "json label"));
+  let json = serde_json::to_string(&shape).unwrap();
+  let decoded: ShapeOwned = serde_json::from_str(&json).unwrap();
+  match decoded {
+    Shape::Label(label) => {
+      assert_eq!(label.position.x, 1.0);
+      assert_eq!(label.position.y, 2.0);
+      assert_eq!(label.text, "json label");
+    }
+    _ => panic!("expected Shape::Label"),
+  }
 }
