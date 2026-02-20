@@ -8,3 +8,4 @@
 - [x] Expand integration coverage for forward refs, deprecated fields, integer map keys, deep nesting, empty collections, and serde round-trips #rust-plugin 🔺
 - [x] Eliminate benchmark post-generation patching by fixing generator constructor/derive output and formatting generation scripts #rust-plugin 🔺
 - [x] Harden generated Rust against schema type-name shadowing (`String`, `Vec`, `Box`, `Cow`, `HashMap`, `Uuid`) by emitting qualified paths and collision-safe preamble imports #rust-plugin 🔺 ✅ 2026-02-20
+- [x] Enforce `no_implicit_prelude` compatibility in generated Rust preambles (explicit core prelude import + extern crates) #rust-plugin 🔺 ✅ 2026-02-20
