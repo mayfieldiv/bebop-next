@@ -19,7 +19,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::mem::size_of;
 use bebop_runtime::HashMap;
-use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, f16, bf16};
+use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, Uuid, f16, bf16};
 use bebop_runtime::wire_size as wire;
 
 /// Scalar and compound type kinds.
@@ -558,7 +558,7 @@ pub struct LiteralValue<'buf> {
   pub int_value: Option<i64>,
   pub float_value: Option<f64>,
   pub string_value: Option<Cow<'buf, str>>,
-  pub uuid_value: Option<[u8; 16]>,
+  pub uuid_value: Option<Uuid>,
 /// Original source text before `$(...)` expansion. Only set for string
 /// literals that contained environment variable references.
   pub raw_value: Option<Cow<'buf, str>>,
@@ -612,9 +612,9 @@ impl<'buf> BebopEncode for LiteralValue<'buf> {
       writer.write_tag(5);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.uuid_value {
+    if let Some(v) = self.uuid_value {
       writer.write_tag(6);
-      writer.write_uuid(&v);
+      writer.write_uuid(v);
     }
     if let Some(ref v) = self.raw_value {
       writer.write_tag(7);
@@ -653,8 +653,8 @@ impl<'buf> BebopEncode for LiteralValue<'buf> {
     if let Some(ref v) = self.string_value {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.uuid_value {
-      size += wire::tagged_size(size_of::<[u8; 16]>());
+    if let Some(v) = self.uuid_value {
+      size += wire::tagged_size(size_of::<Uuid>());
     }
     if let Some(ref v) = self.raw_value {
       size += wire::tagged_size(wire::string_size(v.len()));

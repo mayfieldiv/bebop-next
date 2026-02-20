@@ -151,10 +151,10 @@ impl<'a> BebopReader<'a> {
 
   // ── UUID ────────────────────────────────────────────────────
 
-  pub fn read_uuid(&mut self) -> Result<[u8; 16]> {
+  pub fn read_uuid(&mut self) -> Result<uuid::Uuid> {
     self.ensure(16)?;
     let bytes: [u8; 16] = self.advance(16).try_into().unwrap();
-    Ok(bytes)
+    Ok(uuid::Uuid::from_bytes(bytes))
   }
 
   // ── Timestamp / Duration ────────────────────────────────────

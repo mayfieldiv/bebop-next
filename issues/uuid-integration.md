@@ -1,6 +1,6 @@
 # Optional uuid Crate Integration
 
-- [ ] Add optional uuid crate integration #rust-plugin 🔽
+- [x] Add uuid crate integration #rust-plugin ✅
 
 Currently `uuid` maps to `[u8; 16]` — a raw byte array. This is correct and minimal, but the `uuid` crate is ubiquitous in the Rust ecosystem.
 

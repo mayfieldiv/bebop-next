@@ -118,8 +118,8 @@ impl BebopWriter {
 
   // ── UUID ────────────────────────────────────────────────────
 
-  pub fn write_uuid(&mut self, v: &[u8; 16]) {
-    self.buf.extend_from_slice(v);
+  pub fn write_uuid(&mut self, v: uuid::Uuid) {
+    self.buf.extend_from_slice(v.as_bytes());
   }
 
   // ── Timestamp / Duration ────────────────────────────────────

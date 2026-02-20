@@ -112,7 +112,7 @@ fn literal_value(value: &LiteralValue, ty: &TypeDescriptor) -> Result<String, Ge
     LiteralKind::Uuid => value
       .uuid_value
       .as_ref()
-      .map(|bytes| format!("[{}]", format_hex_bytes(bytes)))
+      .map(|bytes| format!("Uuid::from_bytes([{}])", format_hex_bytes(bytes.as_bytes())))
       .ok_or_else(|| GeneratorError::MalformedDefinition("uuid literal missing value".into())),
     LiteralKind::Bytes => value
       .bytes_value

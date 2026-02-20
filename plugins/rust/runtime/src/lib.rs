@@ -20,4 +20,5 @@ pub use reader::BebopReader;
 pub use std::collections::HashMap;
 pub use traits::{BebopDecode, BebopDecodeOwned};
 pub use traits::{BebopEncode, BebopFlagBits, BebopFlags, FixedScalar};
+pub use uuid::Uuid;
 pub use writer::BebopWriter;

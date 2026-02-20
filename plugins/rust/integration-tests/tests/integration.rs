@@ -6,7 +6,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use bebop_runtime::{bf16, f16, BebopDecode, BebopEncode, BebopFlags};
+use bebop_runtime::{bf16, f16, BebopDecode, BebopEncode, BebopFlags, Uuid};
 
 use bebop_integration_tests::test_types::*;
 
@@ -74,10 +74,10 @@ fn const_string_and_uuid_values() {
   assert_eq!(EXAMPLE_CONST_STRING, "hello \"world\"\nwith newlines");
   assert_eq!(
     EXAMPLE_CONST_GUID,
-    [
+    Uuid::from_bytes([
       0xE2, 0x15, 0xA9, 0x46, 0xB2, 0x6F, 0x45, 0x67, 0xA2, 0x76, 0x13, 0x13, 0x6F, 0x0A, 0x17,
       0x08,
-    ]
+    ])
   );
 }
 

@@ -19,7 +19,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::mem::size_of;
 use bebop_runtime::HashMap;
-use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, f16, bf16};
+use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, Uuid, f16, bf16};
 use bebop_runtime::wire_size as wire;
 
 /// Simple enum with uint8 base type.
@@ -121,7 +121,7 @@ pub const FEATURE_FLAG_ENABLED: bool = true;
 
 pub const EXAMPLE_CONST_STRING: &str = "hello \"world\"\nwith newlines";
 
-pub const EXAMPLE_CONST_GUID: [u8; 16] = [0xE2, 0x15, 0xA9, 0x46, 0xB2, 0x6F, 0x45, 0x67, 0xA2, 0x76, 0x13, 0x13, 0x6F, 0x0A, 0x17, 0x08];
+pub const EXAMPLE_CONST_GUID: Uuid = Uuid::from_bytes([0xE2, 0x15, 0xA9, 0x46, 0xB2, 0x6F, 0x45, 0x67, 0xA2, 0x76, 0x13, 0x13, 0x6F, 0x0A, 0x17, 0x08]);
 
 pub const EXAMPLE_CONST_F16: f16 = f16::from_f64_const(1.5f64);
 
