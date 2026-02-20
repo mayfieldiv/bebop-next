@@ -140,7 +140,10 @@ pub fn generate(
       output.push_str(", ");
     }
     if has_lifetime && type_mapper::is_cow_field(meta.td) {
-      output.push_str(&format!("{}: impl Into<{}>", meta.fname, meta.cow_type));
+      output.push_str(&format!(
+        "{}: impl ::core::convert::Into<{}>",
+        meta.fname, meta.cow_type
+      ));
     } else {
       output.push_str(&format!("{}: {}", meta.fname, meta.owned_type));
     }
@@ -150,7 +153,7 @@ pub fn generate(
   for meta in &field_metas {
     if has_lifetime && type_mapper::is_cow_field(meta.td) {
       output.push_str(&format!(
-        "    let {} = {}.into();\n",
+        "    let {} = ::core::convert::Into::into({});\n",
         meta.fname, meta.fname
       ));
       init_fields.push(meta.fname.clone());
@@ -234,7 +237,9 @@ pub fn generate(
     "impl<'buf> BebopDecode<'buf> for {}{} {{\n",
     name, lt
   ));
-  output.push_str("  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n");
+  output.push_str(
+    "  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {\n",
+  );
   output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_start:{})\n",
     name
@@ -252,14 +257,17 @@ pub fn generate(
     name
   ));
   if field_metas.is_empty() {
-    output.push_str(&format!("    Ok({} {{}})\n", name));
+    output.push_str(&format!("    ::core::result::Result::Ok({} {{}})\n", name));
   } else {
     let init_fields = field_metas
       .iter()
       .map(|meta| meta.fname.as_str())
       .collect::<Vec<_>>()
       .join(", ");
-    output.push_str(&format!("    Ok({} {{ {} }})\n", name, init_fields));
+    output.push_str(&format!(
+      "    ::core::result::Result::Ok({} {{ {} }})\n",
+      name, init_fields
+    ));
   }
   output.push_str("  }\n");
   output.push_str("}\n\n");

@@ -209,7 +209,7 @@ pub fn generate(
     match meta.wrap {
       FieldWrap::Boxed => {
         output.push_str(&format!(
-          "    if let Some(ref v) = self.{} {{\n",
+          "    if let ::core::option::Option::Some(ref v) = self.{} {{\n",
           meta.fname
         ));
         output.push_str(&format!("      writer.write_tag({});\n", meta.tag));
@@ -221,14 +221,17 @@ pub fn generate(
         let is_scalar_copy = meta.kind.is_scalar() && meta.kind != TypeKind::String;
 
         if is_scalar_copy {
-          output.push_str(&format!("    if let Some(v) = self.{} {{\n", meta.fname));
+          output.push_str(&format!(
+            "    if let ::core::option::Option::Some(v) = self.{} {{\n",
+            meta.fname
+          ));
           output.push_str(&format!("      writer.write_tag({});\n", meta.tag));
           let write_stmt = type_mapper::write_expression(meta.td, "v", "writer", analysis)?;
           output.push_str(&format!("      {};\n", write_stmt));
           output.push_str("    }\n");
         } else {
           output.push_str(&format!(
-            "    if let Some(ref v) = self.{} {{\n",
+            "    if let ::core::option::Option::Some(ref v) = self.{} {{\n",
             meta.fname
           ));
           output.push_str(&format!("      writer.write_tag({});\n", meta.tag));
@@ -255,7 +258,7 @@ pub fn generate(
     match meta.wrap {
       FieldWrap::Boxed => {
         output.push_str(&format!(
-          "    if let Some(ref v) = self.{} {{\n",
+          "    if let ::core::option::Option::Some(ref v) = self.{} {{\n",
           meta.fname
         ));
         let size_expr = type_mapper::encoded_size_expression(meta.td, "v", analysis)?;
@@ -269,7 +272,10 @@ pub fn generate(
         let is_scalar_copy = meta.kind.is_scalar() && meta.kind != TypeKind::String;
 
         if is_scalar_copy {
-          output.push_str(&format!("    if let Some(v) = self.{} {{\n", meta.fname));
+          output.push_str(&format!(
+            "    if let ::core::option::Option::Some(v) = self.{} {{\n",
+            meta.fname
+          ));
           let size_expr = type_mapper::encoded_size_expression(meta.td, "v", analysis)?;
           output.push_str(&format!(
             "      size += wire::tagged_size({});\n",
@@ -278,7 +284,7 @@ pub fn generate(
           output.push_str("    }\n");
         } else {
           output.push_str(&format!(
-            "    if let Some(ref v) = self.{} {{\n",
+            "    if let ::core::option::Option::Some(ref v) = self.{} {{\n",
             meta.fname
           ));
           let size_expr = type_mapper::encoded_size_expression(meta.td, "v", analysis)?;
@@ -301,14 +307,16 @@ pub fn generate(
     "impl<'buf> BebopDecode<'buf> for {}{} {{\n",
     name, lt
   ));
-  output.push_str("  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n");
+  output.push_str(
+    "  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {\n",
+  );
   output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_start:{})\n",
     name
   ));
   output.push_str("    let length = reader.read_message_length()? as usize;\n");
   output.push_str("    let end = reader.position() + length;\n");
-  output.push_str("    let mut msg = Self::default();\n\n");
+  output.push_str("    let mut msg = <Self as ::core::default::Default>::default();\n\n");
   output.push_str("    while reader.position() < end {\n");
   output.push_str("      let tag = reader.read_tag()?;\n");
   output.push_str("      if tag == 0 { break; }\n");
@@ -319,20 +327,20 @@ pub fn generate(
       FieldWrap::Boxed => {
         let read_expr = type_mapper::read_expression(meta.td, "reader", analysis)?;
         output.push_str(&format!(
-          "        {} => msg.{} = Some(alloc::boxed::Box::new({}?)),\n",
+          "        {} => msg.{} = ::core::option::Option::Some(alloc::boxed::Box::new({}?)),\n",
           meta.tag, meta.fname, read_expr
         ));
       }
       _ => {
         if let Some(read_expr) = type_mapper::borrowed_cow_read_expression(meta.td, "reader") {
           output.push_str(&format!(
-            "        {} => msg.{} = Some({}),\n",
+            "        {} => msg.{} = ::core::option::Option::Some({}),\n",
             meta.tag, meta.fname, read_expr
           ));
         } else {
           let read_expr = type_mapper::read_expression(meta.td, "reader", analysis)?;
           output.push_str(&format!(
-            "        {} => msg.{} = Some({}?),\n",
+            "        {} => msg.{} = ::core::option::Option::Some({}?),\n",
             meta.tag, meta.fname, read_expr
           ));
         }
@@ -347,7 +355,7 @@ pub fn generate(
     "    // @@bebop_insertion_point(decode_end:{})\n",
     name
   ));
-  output.push_str("    Ok(msg)\n");
+  output.push_str("    ::core::result::Result::Ok(msg)\n");
   output.push_str("  }\n");
 
   output.push_str("}\n\n");

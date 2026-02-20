@@ -184,7 +184,9 @@ pub fn generate(
     "impl<'buf> BebopDecode<'buf> for {}<'buf> {{\n",
     name
   ));
-  output.push_str("  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n");
+  output.push_str(
+    "  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {\n",
+  );
   output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_start:{})\n",
     name
@@ -195,7 +197,7 @@ pub fn generate(
   output.push_str("    let value = match discriminator {\n");
   for b in &branch_infos {
     output.push_str(&format!(
-      "      {} => Ok(Self::{}({}::decode(reader)?)),\n",
+      "      {} => ::core::result::Result::Ok(Self::{}({}::decode(reader)?)),\n",
       b.disc, b.variant, b.inner_type
     ));
   }
@@ -206,7 +208,9 @@ pub fn generate(
   output.push_str("      _ => {\n");
   output.push_str("        let remaining = length - (reader.position() - start);\n");
   output.push_str("        let data = reader.read_raw_bytes(remaining)?;\n");
-  output.push_str("        Ok(Self::Unknown(discriminator, alloc::borrow::Cow::Borrowed(data)))\n");
+  output.push_str(
+    "        ::core::result::Result::Ok(Self::Unknown(discriminator, alloc::borrow::Cow::Borrowed(data)))\n",
+  );
   output.push_str("      }\n");
   output.push_str("    };\n");
   output.push_str(&format!(
