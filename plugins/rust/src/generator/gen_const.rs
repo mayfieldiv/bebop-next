@@ -3,10 +3,14 @@ use crate::generated::{DefinitionDescriptor, LiteralKind, LiteralValue, TypeDesc
 
 use super::naming::const_name;
 use super::type_mapper::scalar_type;
-use super::{emit_deprecated, emit_doc_comment, visibility_keyword};
+use super::{emit_deprecated, emit_doc_comment, visibility_keyword, GeneratorOptions};
 
 /// Generate Rust code for a const definition.
-pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), GeneratorError> {
+pub fn generate(
+  def: &DefinitionDescriptor,
+  output: &mut String,
+  options: &GeneratorOptions,
+) -> Result<(), GeneratorError> {
   let const_def = def
     .const_def
     .as_ref()
@@ -25,7 +29,7 @@ pub fn generate(def: &DefinitionDescriptor, output: &mut String) -> Result<(), G
   let rust_type = const_rust_type(ty)?;
   let literal = literal_value(value, ty)?;
 
-  let vis = visibility_keyword(def);
+  let vis = visibility_keyword(def, options);
 
   emit_doc_comment(output, &def.documentation);
   emit_deprecated(output, &def.decorators);
@@ -123,11 +127,21 @@ fn literal_value(value: &LiteralValue, ty: &TypeDescriptor) -> Result<String, Ge
       .ok_or_else(|| GeneratorError::MalformedDefinition("bytes literal missing value".into())),
     LiteralKind::Timestamp => value
       .timestamp_value
-      .map(|v| format!("BebopTimestamp {{ seconds: {}i64, nanos: {}i32 }}", v.seconds, v.nanos))
+      .map(|v| {
+        format!(
+          "BebopTimestamp {{ seconds: {}i64, nanos: {}i32 }}",
+          v.seconds, v.nanos
+        )
+      })
       .ok_or_else(|| GeneratorError::MalformedDefinition("timestamp literal missing value".into())),
     LiteralKind::Duration => value
       .duration_value
-      .map(|v| format!("BebopDuration {{ seconds: {}i64, nanos: {}i32 }}", v.seconds, v.nanos))
+      .map(|v| {
+        format!(
+          "BebopDuration {{ seconds: {}i64, nanos: {}i32 }}",
+          v.seconds, v.nanos
+        )
+      })
       .ok_or_else(|| GeneratorError::MalformedDefinition("duration literal missing value".into())),
     LiteralKind::Unknown => Err(GeneratorError::MalformedDefinition(
       "const literal has unknown kind".into(),

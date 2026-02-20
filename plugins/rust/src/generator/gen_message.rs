@@ -3,7 +3,9 @@ use crate::generated::{DefinitionDescriptor, TypeDescriptor, TypeKind};
 
 use super::naming::{field_name, type_name};
 use super::type_mapper;
-use super::{emit_deprecated, emit_doc_comment, visibility_keyword, LifetimeAnalysis};
+use super::{
+  emit_deprecated, emit_doc_comment, visibility_keyword, GeneratorOptions, LifetimeAnalysis,
+};
 
 /// Wrapping strategy for a message field.
 enum FieldWrap {
@@ -40,6 +42,7 @@ fn field_wrap(field_type: &TypeDescriptor<'_>, own_fqn: &str) -> FieldWrap {
 pub fn generate(
   def: &DefinitionDescriptor,
   output: &mut String,
+  options: &GeneratorOptions,
   analysis: &LifetimeAnalysis,
 ) -> Result<(), GeneratorError> {
   let name = type_name(def.name.as_deref().unwrap_or("<unnamed>"));
@@ -51,7 +54,7 @@ pub fn generate(
     .ok_or_else(|| GeneratorError::MalformedDefinition("message missing message_def".into()))?;
 
   let fields = message_def.fields.as_deref().unwrap_or(&[]);
-  let vis = visibility_keyword(def);
+  let vis = visibility_keyword(def, options);
   let has_lifetime = analysis.lifetime_fqns.contains(own_fqn);
 
   let lt = if has_lifetime { "<'buf>" } else { "" };
@@ -128,7 +131,10 @@ pub fn generate(
 
   // ── Type alias ────────────────────────────────────────────────
   if has_lifetime {
-    output.push_str(&format!("{} type {}Owned = {}<'static>;\n\n", vis, name, name));
+    output.push_str(&format!(
+      "{} type {}Owned = {}<'static>;\n\n",
+      vis, name, name
+    ));
   }
 
   // ── into_owned() (only when has_lifetime) ─────────────────────
@@ -190,8 +196,7 @@ pub fn generate(
         output.push_str("    }\n");
       }
       _ => {
-        let is_scalar_copy =
-          meta.kind.is_scalar() && meta.kind != TypeKind::String;
+        let is_scalar_copy = meta.kind.is_scalar() && meta.kind != TypeKind::String;
 
         if is_scalar_copy {
           output.push_str(&format!("    if let Some(v) = self.{} {{\n", meta.fname));
@@ -239,8 +244,7 @@ pub fn generate(
         output.push_str("    }\n");
       }
       _ => {
-        let is_scalar_copy =
-          meta.kind.is_scalar() && meta.kind != TypeKind::String;
+        let is_scalar_copy = meta.kind.is_scalar() && meta.kind != TypeKind::String;
 
         if is_scalar_copy {
           output.push_str(&format!("    if let Some(v) = self.{} {{\n", meta.fname));
