@@ -23,7 +23,9 @@ use bebop_runtime::{
   bf16, f16, BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopReader, BebopTimestamp,
   BebopWriter, DecodeError,
 };
-use core::prelude::rust_2021::*;
+use core::convert::Into as _;
+use core::iter::IntoIterator as _;
+use core::iter::Iterator as _;
 
 // @@bebop_insertion_point(imports)
 
@@ -68,33 +70,33 @@ pub enum TypeKind {
 
 impl ::core::convert::TryFrom<u8> for TypeKind {
   type Error = DecodeError;
-  fn try_from(value: u8) -> Result<Self, DecodeError> {
+  fn try_from(value: u8) -> ::core::result::Result<Self, DecodeError> {
     match value {
-      0 => Ok(Self::Unknown),
-      1 => Ok(Self::Bool),
-      2 => Ok(Self::Byte),
-      3 => Ok(Self::Int8),
-      4 => Ok(Self::Int16),
-      5 => Ok(Self::Uint16),
-      6 => Ok(Self::Int32),
-      7 => Ok(Self::Uint32),
-      8 => Ok(Self::Int64),
-      9 => Ok(Self::Uint64),
-      10 => Ok(Self::Int128),
-      11 => Ok(Self::Uint128),
-      12 => Ok(Self::Float16),
-      13 => Ok(Self::Float32),
-      14 => Ok(Self::Float64),
-      15 => Ok(Self::Bfloat16),
-      16 => Ok(Self::String),
-      17 => Ok(Self::Uuid),
-      18 => Ok(Self::Timestamp),
-      19 => Ok(Self::Duration),
-      20 => Ok(Self::Array),
-      21 => Ok(Self::FixedArray),
-      22 => Ok(Self::Map),
-      23 => Ok(Self::Defined),
-      _ => Err(DecodeError::InvalidEnum {
+      0 => ::core::result::Result::Ok(Self::Unknown),
+      1 => ::core::result::Result::Ok(Self::Bool),
+      2 => ::core::result::Result::Ok(Self::Byte),
+      3 => ::core::result::Result::Ok(Self::Int8),
+      4 => ::core::result::Result::Ok(Self::Int16),
+      5 => ::core::result::Result::Ok(Self::Uint16),
+      6 => ::core::result::Result::Ok(Self::Int32),
+      7 => ::core::result::Result::Ok(Self::Uint32),
+      8 => ::core::result::Result::Ok(Self::Int64),
+      9 => ::core::result::Result::Ok(Self::Uint64),
+      10 => ::core::result::Result::Ok(Self::Int128),
+      11 => ::core::result::Result::Ok(Self::Uint128),
+      12 => ::core::result::Result::Ok(Self::Float16),
+      13 => ::core::result::Result::Ok(Self::Float32),
+      14 => ::core::result::Result::Ok(Self::Float64),
+      15 => ::core::result::Result::Ok(Self::Bfloat16),
+      16 => ::core::result::Result::Ok(Self::String),
+      17 => ::core::result::Result::Ok(Self::Uuid),
+      18 => ::core::result::Result::Ok(Self::Timestamp),
+      19 => ::core::result::Result::Ok(Self::Duration),
+      20 => ::core::result::Result::Ok(Self::Array),
+      21 => ::core::result::Result::Ok(Self::FixedArray),
+      22 => ::core::result::Result::Ok(Self::Map),
+      23 => ::core::result::Result::Ok(Self::Defined),
+      _ => ::core::result::Result::Err(DecodeError::InvalidEnum {
         type_name: "TypeKind",
         value: value as u64,
       }),
@@ -102,7 +104,7 @@ impl ::core::convert::TryFrom<u8> for TypeKind {
   }
 }
 
-impl From<TypeKind> for u8 {
+impl ::core::convert::From<TypeKind> for u8 {
   fn from(value: TypeKind) -> u8 {
     value as u8
   }
@@ -126,11 +128,11 @@ impl BebopEncode for TypeKind {
 }
 
 impl<'buf> BebopDecode<'buf> for TypeKind {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:TypeKind)
     let value = reader.read_byte()?;
     // @@bebop_insertion_point(decode_end:TypeKind)
-    Self::try_from(value)
+    ::core::convert::TryFrom::try_from(value)
   }
 }
 
@@ -154,17 +156,17 @@ pub enum DefinitionKind {
 
 impl ::core::convert::TryFrom<u8> for DefinitionKind {
   type Error = DecodeError;
-  fn try_from(value: u8) -> Result<Self, DecodeError> {
+  fn try_from(value: u8) -> ::core::result::Result<Self, DecodeError> {
     match value {
-      0 => Ok(Self::Unknown),
-      1 => Ok(Self::Enum),
-      2 => Ok(Self::Struct),
-      3 => Ok(Self::Message),
-      4 => Ok(Self::Union),
-      5 => Ok(Self::Service),
-      6 => Ok(Self::Const),
-      7 => Ok(Self::Decorator),
-      _ => Err(DecodeError::InvalidEnum {
+      0 => ::core::result::Result::Ok(Self::Unknown),
+      1 => ::core::result::Result::Ok(Self::Enum),
+      2 => ::core::result::Result::Ok(Self::Struct),
+      3 => ::core::result::Result::Ok(Self::Message),
+      4 => ::core::result::Result::Ok(Self::Union),
+      5 => ::core::result::Result::Ok(Self::Service),
+      6 => ::core::result::Result::Ok(Self::Const),
+      7 => ::core::result::Result::Ok(Self::Decorator),
+      _ => ::core::result::Result::Err(DecodeError::InvalidEnum {
         type_name: "DefinitionKind",
         value: value as u64,
       }),
@@ -172,7 +174,7 @@ impl ::core::convert::TryFrom<u8> for DefinitionKind {
   }
 }
 
-impl From<DefinitionKind> for u8 {
+impl ::core::convert::From<DefinitionKind> for u8 {
   fn from(value: DefinitionKind) -> u8 {
     value as u8
   }
@@ -196,11 +198,11 @@ impl BebopEncode for DefinitionKind {
 }
 
 impl<'buf> BebopDecode<'buf> for DefinitionKind {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:DefinitionKind)
     let value = reader.read_byte()?;
     // @@bebop_insertion_point(decode_end:DefinitionKind)
-    Self::try_from(value)
+    ::core::convert::TryFrom::try_from(value)
   }
 }
 
@@ -225,14 +227,14 @@ pub enum MethodType {
 
 impl ::core::convert::TryFrom<u8> for MethodType {
   type Error = DecodeError;
-  fn try_from(value: u8) -> Result<Self, DecodeError> {
+  fn try_from(value: u8) -> ::core::result::Result<Self, DecodeError> {
     match value {
-      0 => Ok(Self::Unknown),
-      1 => Ok(Self::Unary),
-      2 => Ok(Self::ServerStream),
-      3 => Ok(Self::ClientStream),
-      4 => Ok(Self::DuplexStream),
-      _ => Err(DecodeError::InvalidEnum {
+      0 => ::core::result::Result::Ok(Self::Unknown),
+      1 => ::core::result::Result::Ok(Self::Unary),
+      2 => ::core::result::Result::Ok(Self::ServerStream),
+      3 => ::core::result::Result::Ok(Self::ClientStream),
+      4 => ::core::result::Result::Ok(Self::DuplexStream),
+      _ => ::core::result::Result::Err(DecodeError::InvalidEnum {
         type_name: "MethodType",
         value: value as u64,
       }),
@@ -240,7 +242,7 @@ impl ::core::convert::TryFrom<u8> for MethodType {
   }
 }
 
-impl From<MethodType> for u8 {
+impl ::core::convert::From<MethodType> for u8 {
   fn from(value: MethodType) -> u8 {
     value as u8
   }
@@ -264,11 +266,11 @@ impl BebopEncode for MethodType {
 }
 
 impl<'buf> BebopDecode<'buf> for MethodType {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:MethodType)
     let value = reader.read_byte()?;
     // @@bebop_insertion_point(decode_end:MethodType)
-    Self::try_from(value)
+    ::core::convert::TryFrom::try_from(value)
   }
 }
 
@@ -290,12 +292,12 @@ pub enum Visibility {
 
 impl ::core::convert::TryFrom<u8> for Visibility {
   type Error = DecodeError;
-  fn try_from(value: u8) -> Result<Self, DecodeError> {
+  fn try_from(value: u8) -> ::core::result::Result<Self, DecodeError> {
     match value {
-      0 => Ok(Self::Default),
-      1 => Ok(Self::Export),
-      2 => Ok(Self::Local),
-      _ => Err(DecodeError::InvalidEnum {
+      0 => ::core::result::Result::Ok(Self::Default),
+      1 => ::core::result::Result::Ok(Self::Export),
+      2 => ::core::result::Result::Ok(Self::Local),
+      _ => ::core::result::Result::Err(DecodeError::InvalidEnum {
         type_name: "Visibility",
         value: value as u64,
       }),
@@ -303,7 +305,7 @@ impl ::core::convert::TryFrom<u8> for Visibility {
   }
 }
 
-impl From<Visibility> for u8 {
+impl ::core::convert::From<Visibility> for u8 {
   fn from(value: Visibility) -> u8 {
     value as u8
   }
@@ -327,11 +329,11 @@ impl BebopEncode for Visibility {
 }
 
 impl<'buf> BebopDecode<'buf> for Visibility {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:Visibility)
     let value = reader.read_byte()?;
     // @@bebop_insertion_point(decode_end:Visibility)
-    Self::try_from(value)
+    ::core::convert::TryFrom::try_from(value)
   }
 }
 
@@ -354,18 +356,18 @@ pub enum LiteralKind {
 
 impl ::core::convert::TryFrom<u8> for LiteralKind {
   type Error = DecodeError;
-  fn try_from(value: u8) -> Result<Self, DecodeError> {
+  fn try_from(value: u8) -> ::core::result::Result<Self, DecodeError> {
     match value {
-      0 => Ok(Self::Unknown),
-      1 => Ok(Self::Bool),
-      2 => Ok(Self::Int),
-      3 => Ok(Self::Float),
-      4 => Ok(Self::String),
-      5 => Ok(Self::Uuid),
-      6 => Ok(Self::Bytes),
-      7 => Ok(Self::Timestamp),
-      8 => Ok(Self::Duration),
-      _ => Err(DecodeError::InvalidEnum {
+      0 => ::core::result::Result::Ok(Self::Unknown),
+      1 => ::core::result::Result::Ok(Self::Bool),
+      2 => ::core::result::Result::Ok(Self::Int),
+      3 => ::core::result::Result::Ok(Self::Float),
+      4 => ::core::result::Result::Ok(Self::String),
+      5 => ::core::result::Result::Ok(Self::Uuid),
+      6 => ::core::result::Result::Ok(Self::Bytes),
+      7 => ::core::result::Result::Ok(Self::Timestamp),
+      8 => ::core::result::Result::Ok(Self::Duration),
+      _ => ::core::result::Result::Err(DecodeError::InvalidEnum {
         type_name: "LiteralKind",
         value: value as u64,
       }),
@@ -373,7 +375,7 @@ impl ::core::convert::TryFrom<u8> for LiteralKind {
   }
 }
 
-impl From<LiteralKind> for u8 {
+impl ::core::convert::From<LiteralKind> for u8 {
   fn from(value: LiteralKind) -> u8 {
     value as u8
   }
@@ -397,11 +399,11 @@ impl BebopEncode for LiteralKind {
 }
 
 impl<'buf> BebopDecode<'buf> for LiteralKind {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:LiteralKind)
     let value = reader.read_byte()?;
     // @@bebop_insertion_point(decode_end:LiteralKind)
-    Self::try_from(value)
+    ::core::convert::TryFrom::try_from(value)
   }
 }
 
@@ -496,12 +498,12 @@ pub enum Edition {
 
 impl ::core::convert::TryFrom<i32> for Edition {
   type Error = DecodeError;
-  fn try_from(value: i32) -> Result<Self, DecodeError> {
+  fn try_from(value: i32) -> ::core::result::Result<Self, DecodeError> {
     match value {
-      0 => Ok(Self::Unknown),
-      1000 => Ok(Self::Edition2026),
-      2147483647 => Ok(Self::Max),
-      _ => Err(DecodeError::InvalidEnum {
+      0 => ::core::result::Result::Ok(Self::Unknown),
+      1000 => ::core::result::Result::Ok(Self::Edition2026),
+      2147483647 => ::core::result::Result::Ok(Self::Max),
+      _ => ::core::result::Result::Err(DecodeError::InvalidEnum {
         type_name: "Edition",
         value: value as u64,
       }),
@@ -509,7 +511,7 @@ impl ::core::convert::TryFrom<i32> for Edition {
   }
 }
 
-impl From<Edition> for i32 {
+impl ::core::convert::From<Edition> for i32 {
   fn from(value: Edition) -> i32 {
     value as i32
   }
@@ -533,11 +535,11 @@ impl BebopEncode for Edition {
 }
 
 impl<'buf> BebopDecode<'buf> for Edition {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:Edition)
     let value = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Edition)
-    Self::try_from(value)
+    ::core::convert::TryFrom::try_from(value)
   }
 }
 
@@ -610,31 +612,31 @@ impl<'buf> BebopEncode for TypeDescriptor<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.kind {
+    if let ::core::option::Option::Some(ref v) = self.kind {
       writer.write_tag(1);
       v.encode(writer);
     }
-    if let Some(ref v) = self.array_element {
+    if let ::core::option::Option::Some(ref v) = self.array_element {
       writer.write_tag(2);
       v.encode(writer);
     }
-    if let Some(ref v) = self.fixed_array_element {
+    if let ::core::option::Option::Some(ref v) = self.fixed_array_element {
       writer.write_tag(3);
       v.encode(writer);
     }
-    if let Some(v) = self.fixed_array_size {
+    if let ::core::option::Option::Some(v) = self.fixed_array_size {
       writer.write_tag(4);
       writer.write_u32(v);
     }
-    if let Some(ref v) = self.map_key {
+    if let ::core::option::Option::Some(ref v) = self.map_key {
       writer.write_tag(5);
       v.encode(writer);
     }
-    if let Some(ref v) = self.map_value {
+    if let ::core::option::Option::Some(ref v) = self.map_value {
       writer.write_tag(6);
       v.encode(writer);
     }
-    if let Some(ref v) = self.defined_fqn {
+    if let ::core::option::Option::Some(ref v) = self.defined_fqn {
       writer.write_tag(7);
       writer.write_string(&v);
     }
@@ -645,25 +647,25 @@ impl<'buf> BebopEncode for TypeDescriptor<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.kind {
+    if let ::core::option::Option::Some(ref v) = self.kind {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(ref v) = self.array_element {
+    if let ::core::option::Option::Some(ref v) = self.array_element {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(ref v) = self.fixed_array_element {
+    if let ::core::option::Option::Some(ref v) = self.fixed_array_element {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(v) = self.fixed_array_size {
+    if let ::core::option::Option::Some(v) = self.fixed_array_size {
       size += wire::tagged_size(::core::mem::size_of::<u32>());
     }
-    if let Some(ref v) = self.map_key {
+    if let ::core::option::Option::Some(ref v) = self.map_key {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(ref v) = self.map_value {
+    if let ::core::option::Option::Some(ref v) = self.map_value {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(ref v) = self.defined_fqn {
+    if let ::core::option::Option::Some(ref v) = self.defined_fqn {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
     size
@@ -671,11 +673,11 @@ impl<'buf> BebopEncode for TypeDescriptor<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for TypeDescriptor<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:TypeDescriptor)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -683,22 +685,35 @@ impl<'buf> BebopDecode<'buf> for TypeDescriptor<'buf> {
         break;
       }
       match tag {
-        1 => msg.kind = Some(TypeKind::decode(reader)?),
-        2 => msg.array_element = Some(alloc::boxed::Box::new(TypeDescriptor::decode(reader)?)),
-        3 => {
-          msg.fixed_array_element = Some(alloc::boxed::Box::new(TypeDescriptor::decode(reader)?))
+        1 => msg.kind = ::core::option::Option::Some(TypeKind::decode(reader)?),
+        2 => {
+          msg.array_element =
+            ::core::option::Option::Some(alloc::boxed::Box::new(TypeDescriptor::decode(reader)?))
         }
-        4 => msg.fixed_array_size = Some(reader.read_u32()?),
-        5 => msg.map_key = Some(alloc::boxed::Box::new(TypeDescriptor::decode(reader)?)),
-        6 => msg.map_value = Some(alloc::boxed::Box::new(TypeDescriptor::decode(reader)?)),
-        7 => msg.defined_fqn = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        3 => {
+          msg.fixed_array_element =
+            ::core::option::Option::Some(alloc::boxed::Box::new(TypeDescriptor::decode(reader)?))
+        }
+        4 => msg.fixed_array_size = ::core::option::Option::Some(reader.read_u32()?),
+        5 => {
+          msg.map_key =
+            ::core::option::Option::Some(alloc::boxed::Box::new(TypeDescriptor::decode(reader)?))
+        }
+        6 => {
+          msg.map_value =
+            ::core::option::Option::Some(alloc::boxed::Box::new(TypeDescriptor::decode(reader)?))
+        }
+        7 => {
+          msg.defined_fqn =
+            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
         _ => {
           reader.skip(end - reader.position())?;
         }
       }
     }
     // @@bebop_insertion_point(decode_end:TypeDescriptor)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -767,43 +782,43 @@ impl<'buf> BebopEncode for LiteralValue<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.kind {
+    if let ::core::option::Option::Some(ref v) = self.kind {
       writer.write_tag(1);
       v.encode(writer);
     }
-    if let Some(v) = self.bool_value {
+    if let ::core::option::Option::Some(v) = self.bool_value {
       writer.write_tag(2);
       writer.write_bool(v);
     }
-    if let Some(v) = self.int_value {
+    if let ::core::option::Option::Some(v) = self.int_value {
       writer.write_tag(3);
       writer.write_i64(v);
     }
-    if let Some(v) = self.float_value {
+    if let ::core::option::Option::Some(v) = self.float_value {
       writer.write_tag(4);
       writer.write_f64(v);
     }
-    if let Some(ref v) = self.string_value {
+    if let ::core::option::Option::Some(ref v) = self.string_value {
       writer.write_tag(5);
       writer.write_string(&v);
     }
-    if let Some(v) = self.uuid_value {
+    if let ::core::option::Option::Some(v) = self.uuid_value {
       writer.write_tag(6);
       writer.write_uuid(v);
     }
-    if let Some(ref v) = self.raw_value {
+    if let ::core::option::Option::Some(ref v) = self.raw_value {
       writer.write_tag(7);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.bytes_value {
+    if let ::core::option::Option::Some(ref v) = self.bytes_value {
       writer.write_tag(8);
       writer.write_byte_array(&v);
     }
-    if let Some(v) = self.timestamp_value {
+    if let ::core::option::Option::Some(v) = self.timestamp_value {
       writer.write_tag(9);
       writer.write_timestamp(v);
     }
-    if let Some(v) = self.duration_value {
+    if let ::core::option::Option::Some(v) = self.duration_value {
       writer.write_tag(10);
       writer.write_duration(v);
     }
@@ -814,34 +829,34 @@ impl<'buf> BebopEncode for LiteralValue<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.kind {
+    if let ::core::option::Option::Some(ref v) = self.kind {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(v) = self.bool_value {
+    if let ::core::option::Option::Some(v) = self.bool_value {
       size += wire::tagged_size(::core::mem::size_of::<bool>());
     }
-    if let Some(v) = self.int_value {
+    if let ::core::option::Option::Some(v) = self.int_value {
       size += wire::tagged_size(::core::mem::size_of::<i64>());
     }
-    if let Some(v) = self.float_value {
+    if let ::core::option::Option::Some(v) = self.float_value {
       size += wire::tagged_size(::core::mem::size_of::<f64>());
     }
-    if let Some(ref v) = self.string_value {
+    if let ::core::option::Option::Some(ref v) = self.string_value {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(v) = self.uuid_value {
+    if let ::core::option::Option::Some(v) = self.uuid_value {
       size += wire::tagged_size(::core::mem::size_of::<::bebop_runtime::Uuid>());
     }
-    if let Some(ref v) = self.raw_value {
+    if let ::core::option::Option::Some(ref v) = self.raw_value {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.bytes_value {
+    if let ::core::option::Option::Some(ref v) = self.bytes_value {
       size += wire::tagged_size(wire::byte_array_size(v.len()));
     }
-    if let Some(v) = self.timestamp_value {
+    if let ::core::option::Option::Some(v) = self.timestamp_value {
       size += wire::tagged_size(::core::mem::size_of::<i64>() + ::core::mem::size_of::<i32>());
     }
-    if let Some(v) = self.duration_value {
+    if let ::core::option::Option::Some(v) = self.duration_value {
       size += wire::tagged_size(::core::mem::size_of::<i64>() + ::core::mem::size_of::<i32>());
     }
     size
@@ -849,11 +864,11 @@ impl<'buf> BebopEncode for LiteralValue<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for LiteralValue<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:LiteralValue)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -861,23 +876,32 @@ impl<'buf> BebopDecode<'buf> for LiteralValue<'buf> {
         break;
       }
       match tag {
-        1 => msg.kind = Some(LiteralKind::decode(reader)?),
-        2 => msg.bool_value = Some(reader.read_bool()?),
-        3 => msg.int_value = Some(reader.read_i64()?),
-        4 => msg.float_value = Some(reader.read_f64()?),
-        5 => msg.string_value = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        6 => msg.uuid_value = Some(reader.read_uuid()?),
-        7 => msg.raw_value = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        8 => msg.bytes_value = Some(alloc::borrow::Cow::Borrowed(reader.read_byte_slice()?)),
-        9 => msg.timestamp_value = Some(reader.read_timestamp()?),
-        10 => msg.duration_value = Some(reader.read_duration()?),
+        1 => msg.kind = ::core::option::Option::Some(LiteralKind::decode(reader)?),
+        2 => msg.bool_value = ::core::option::Option::Some(reader.read_bool()?),
+        3 => msg.int_value = ::core::option::Option::Some(reader.read_i64()?),
+        4 => msg.float_value = ::core::option::Option::Some(reader.read_f64()?),
+        5 => {
+          msg.string_value =
+            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        6 => msg.uuid_value = ::core::option::Option::Some(reader.read_uuid()?),
+        7 => {
+          msg.raw_value =
+            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        8 => {
+          msg.bytes_value =
+            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_byte_slice()?))
+        }
+        9 => msg.timestamp_value = ::core::option::Option::Some(reader.read_timestamp()?),
+        10 => msg.duration_value = ::core::option::Option::Some(reader.read_duration()?),
         _ => {
           reader.skip(end - reader.position())?;
         }
       }
     }
     // @@bebop_insertion_point(decode_end:LiteralValue)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -897,8 +921,11 @@ pub struct DecoratorArg<'buf> {
 pub type DecoratorArgOwned = DecoratorArg<'static>;
 
 impl<'buf> DecoratorArg<'buf> {
-  pub fn new(name: impl Into<alloc::borrow::Cow<'buf, str>>, value: LiteralValue<'static>) -> Self {
-    let name = name.into();
+  pub fn new(
+    name: impl ::core::convert::Into<alloc::borrow::Cow<'buf, str>>,
+    value: LiteralValue<'static>,
+  ) -> Self {
+    let name = ::core::convert::Into::into(name);
     Self { name, value }
   }
 }
@@ -929,12 +956,12 @@ impl<'buf> BebopEncode for DecoratorArg<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for DecoratorArg<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:DecoratorArg)
     let name = alloc::borrow::Cow::Borrowed(reader.read_str()?);
     let value = LiteralValue::decode(reader)?;
     // @@bebop_insertion_point(decode_end:DecoratorArg)
-    Ok(DecoratorArg { name, value })
+    ::core::result::Result::Ok(DecoratorArg { name, value })
   }
 }
 
@@ -988,15 +1015,15 @@ impl<'buf> BebopEncode for DecoratorUsage<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.fqn {
+    if let ::core::option::Option::Some(ref v) = self.fqn {
       writer.write_tag(1);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.args {
+    if let ::core::option::Option::Some(ref v) = self.args {
       writer.write_tag(2);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
-    if let Some(ref v) = self.export_data {
+    if let ::core::option::Option::Some(ref v) = self.export_data {
       writer.write_tag(3);
       writer.write_map(&v, |_w, _k, _v| {
         _w.write_string(&_k);
@@ -1010,13 +1037,13 @@ impl<'buf> BebopEncode for DecoratorUsage<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.fqn {
+    if let ::core::option::Option::Some(ref v) = self.fqn {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.args {
+    if let ::core::option::Option::Some(ref v) = self.args {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
-    if let Some(ref v) = self.export_data {
+    if let ::core::option::Option::Some(ref v) = self.export_data {
       size += wire::tagged_size(wire::map_size(v, |_k, _v| {
         wire::string_size(_k.len()) + _v.encoded_size()
       }));
@@ -1026,11 +1053,11 @@ impl<'buf> BebopEncode for DecoratorUsage<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for DecoratorUsage<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:DecoratorUsage)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -1038,12 +1065,16 @@ impl<'buf> BebopDecode<'buf> for DecoratorUsage<'buf> {
         break;
       }
       match tag {
-        1 => msg.fqn = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        2 => msg.args = Some(reader.read_array(|_r| DecoratorArg::decode(_r))?),
+        1 => {
+          msg.fqn = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        2 => {
+          msg.args = ::core::option::Option::Some(reader.read_array(|_r| DecoratorArg::decode(_r))?)
+        }
         3 => {
-          msg.export_data = Some(reader.read_map(|_r| {
-            Ok((
-              Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))?,
+          msg.export_data = ::core::option::Option::Some(reader.read_map(|_r| {
+            ::core::result::Result::Ok((
+              ::core::result::Result::Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))?,
               LiteralValue::decode(_r)?,
             ))
           })?)
@@ -1054,7 +1085,7 @@ impl<'buf> BebopDecode<'buf> for DecoratorUsage<'buf> {
       }
     }
     // @@bebop_insertion_point(decode_end:DecoratorUsage)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -1107,23 +1138,23 @@ impl<'buf> BebopEncode for FieldDescriptor<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.name {
+    if let ::core::option::Option::Some(ref v) = self.name {
       writer.write_tag(1);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.documentation {
+    if let ::core::option::Option::Some(ref v) = self.documentation {
       writer.write_tag(2);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.r#type {
+    if let ::core::option::Option::Some(ref v) = self.r#type {
       writer.write_tag(3);
       v.encode(writer);
     }
-    if let Some(v) = self.index {
+    if let ::core::option::Option::Some(v) = self.index {
       writer.write_tag(4);
       writer.write_u32(v);
     }
-    if let Some(ref v) = self.decorators {
+    if let ::core::option::Option::Some(ref v) = self.decorators {
       writer.write_tag(5);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
@@ -1134,19 +1165,19 @@ impl<'buf> BebopEncode for FieldDescriptor<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.name {
+    if let ::core::option::Option::Some(ref v) = self.name {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.documentation {
+    if let ::core::option::Option::Some(ref v) = self.documentation {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.r#type {
+    if let ::core::option::Option::Some(ref v) = self.r#type {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(v) = self.index {
+    if let ::core::option::Option::Some(v) = self.index {
       size += wire::tagged_size(::core::mem::size_of::<u32>());
     }
-    if let Some(ref v) = self.decorators {
+    if let ::core::option::Option::Some(ref v) = self.decorators {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
@@ -1154,11 +1185,11 @@ impl<'buf> BebopEncode for FieldDescriptor<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for FieldDescriptor<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:FieldDescriptor)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -1166,18 +1197,26 @@ impl<'buf> BebopDecode<'buf> for FieldDescriptor<'buf> {
         break;
       }
       match tag {
-        1 => msg.name = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        2 => msg.documentation = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        3 => msg.r#type = Some(TypeDescriptor::decode(reader)?),
-        4 => msg.index = Some(reader.read_u32()?),
-        5 => msg.decorators = Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?),
+        1 => {
+          msg.name = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        2 => {
+          msg.documentation =
+            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        3 => msg.r#type = ::core::option::Option::Some(TypeDescriptor::decode(reader)?),
+        4 => msg.index = ::core::option::Option::Some(reader.read_u32()?),
+        5 => {
+          msg.decorators =
+            ::core::option::Option::Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?)
+        }
         _ => {
           reader.skip(end - reader.position())?;
         }
       }
     }
     // @@bebop_insertion_point(decode_end:FieldDescriptor)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -1230,23 +1269,23 @@ impl<'buf> BebopEncode for EnumMemberDescriptor<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.name {
+    if let ::core::option::Option::Some(ref v) = self.name {
       writer.write_tag(1);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.documentation {
+    if let ::core::option::Option::Some(ref v) = self.documentation {
       writer.write_tag(2);
       writer.write_string(&v);
     }
-    if let Some(v) = self.value {
+    if let ::core::option::Option::Some(v) = self.value {
       writer.write_tag(3);
       writer.write_u64(v);
     }
-    if let Some(ref v) = self.decorators {
+    if let ::core::option::Option::Some(ref v) = self.decorators {
       writer.write_tag(4);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
-    if let Some(ref v) = self.value_expr {
+    if let ::core::option::Option::Some(ref v) = self.value_expr {
       writer.write_tag(5);
       writer.write_string(&v);
     }
@@ -1257,19 +1296,19 @@ impl<'buf> BebopEncode for EnumMemberDescriptor<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.name {
+    if let ::core::option::Option::Some(ref v) = self.name {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.documentation {
+    if let ::core::option::Option::Some(ref v) = self.documentation {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(v) = self.value {
+    if let ::core::option::Option::Some(v) = self.value {
       size += wire::tagged_size(::core::mem::size_of::<u64>());
     }
-    if let Some(ref v) = self.decorators {
+    if let ::core::option::Option::Some(ref v) = self.decorators {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
-    if let Some(ref v) = self.value_expr {
+    if let ::core::option::Option::Some(ref v) = self.value_expr {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
     size
@@ -1277,11 +1316,11 @@ impl<'buf> BebopEncode for EnumMemberDescriptor<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for EnumMemberDescriptor<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:EnumMemberDescriptor)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -1289,18 +1328,29 @@ impl<'buf> BebopDecode<'buf> for EnumMemberDescriptor<'buf> {
         break;
       }
       match tag {
-        1 => msg.name = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        2 => msg.documentation = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        3 => msg.value = Some(reader.read_u64()?),
-        4 => msg.decorators = Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?),
-        5 => msg.value_expr = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        1 => {
+          msg.name = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        2 => {
+          msg.documentation =
+            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        3 => msg.value = ::core::option::Option::Some(reader.read_u64()?),
+        4 => {
+          msg.decorators =
+            ::core::option::Option::Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?)
+        }
+        5 => {
+          msg.value_expr =
+            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
         _ => {
           reader.skip(end - reader.position())?;
         }
       }
     }
     // @@bebop_insertion_point(decode_end:EnumMemberDescriptor)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -1369,27 +1419,27 @@ impl<'buf> BebopEncode for UnionBranchDescriptor<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(v) = self.discriminator {
+    if let ::core::option::Option::Some(v) = self.discriminator {
       writer.write_tag(1);
       writer.write_byte(v);
     }
-    if let Some(ref v) = self.documentation {
+    if let ::core::option::Option::Some(ref v) = self.documentation {
       writer.write_tag(2);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.inline_fqn {
+    if let ::core::option::Option::Some(ref v) = self.inline_fqn {
       writer.write_tag(3);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.type_ref_fqn {
+    if let ::core::option::Option::Some(ref v) = self.type_ref_fqn {
       writer.write_tag(4);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.name {
+    if let ::core::option::Option::Some(ref v) = self.name {
       writer.write_tag(5);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.decorators {
+    if let ::core::option::Option::Some(ref v) = self.decorators {
       writer.write_tag(6);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
@@ -1400,22 +1450,22 @@ impl<'buf> BebopEncode for UnionBranchDescriptor<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(v) = self.discriminator {
+    if let ::core::option::Option::Some(v) = self.discriminator {
       size += wire::tagged_size(::core::mem::size_of::<u8>());
     }
-    if let Some(ref v) = self.documentation {
+    if let ::core::option::Option::Some(ref v) = self.documentation {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.inline_fqn {
+    if let ::core::option::Option::Some(ref v) = self.inline_fqn {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.type_ref_fqn {
+    if let ::core::option::Option::Some(ref v) = self.type_ref_fqn {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.name {
+    if let ::core::option::Option::Some(ref v) = self.name {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.decorators {
+    if let ::core::option::Option::Some(ref v) = self.decorators {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
@@ -1423,11 +1473,11 @@ impl<'buf> BebopEncode for UnionBranchDescriptor<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for UnionBranchDescriptor<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:UnionBranchDescriptor)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -1435,19 +1485,33 @@ impl<'buf> BebopDecode<'buf> for UnionBranchDescriptor<'buf> {
         break;
       }
       match tag {
-        1 => msg.discriminator = Some(reader.read_byte()?),
-        2 => msg.documentation = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        3 => msg.inline_fqn = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        4 => msg.type_ref_fqn = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        5 => msg.name = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        6 => msg.decorators = Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?),
+        1 => msg.discriminator = ::core::option::Option::Some(reader.read_byte()?),
+        2 => {
+          msg.documentation =
+            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        3 => {
+          msg.inline_fqn =
+            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        4 => {
+          msg.type_ref_fqn =
+            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        5 => {
+          msg.name = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        6 => {
+          msg.decorators =
+            ::core::option::Option::Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?)
+        }
         _ => {
           reader.skip(end - reader.position())?;
         }
       }
     }
     // @@bebop_insertion_point(decode_end:UnionBranchDescriptor)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -1500,31 +1564,31 @@ impl<'buf> BebopEncode for MethodDescriptor<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.name {
+    if let ::core::option::Option::Some(ref v) = self.name {
       writer.write_tag(1);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.documentation {
+    if let ::core::option::Option::Some(ref v) = self.documentation {
       writer.write_tag(2);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.request_type {
+    if let ::core::option::Option::Some(ref v) = self.request_type {
       writer.write_tag(3);
       v.encode(writer);
     }
-    if let Some(ref v) = self.response_type {
+    if let ::core::option::Option::Some(ref v) = self.response_type {
       writer.write_tag(4);
       v.encode(writer);
     }
-    if let Some(ref v) = self.method_type {
+    if let ::core::option::Option::Some(ref v) = self.method_type {
       writer.write_tag(5);
       v.encode(writer);
     }
-    if let Some(v) = self.id {
+    if let ::core::option::Option::Some(v) = self.id {
       writer.write_tag(6);
       writer.write_u32(v);
     }
-    if let Some(ref v) = self.decorators {
+    if let ::core::option::Option::Some(ref v) = self.decorators {
       writer.write_tag(7);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
@@ -1535,25 +1599,25 @@ impl<'buf> BebopEncode for MethodDescriptor<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.name {
+    if let ::core::option::Option::Some(ref v) = self.name {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.documentation {
+    if let ::core::option::Option::Some(ref v) = self.documentation {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.request_type {
+    if let ::core::option::Option::Some(ref v) = self.request_type {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(ref v) = self.response_type {
+    if let ::core::option::Option::Some(ref v) = self.response_type {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(ref v) = self.method_type {
+    if let ::core::option::Option::Some(ref v) = self.method_type {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(v) = self.id {
+    if let ::core::option::Option::Some(v) = self.id {
       size += wire::tagged_size(::core::mem::size_of::<u32>());
     }
-    if let Some(ref v) = self.decorators {
+    if let ::core::option::Option::Some(ref v) = self.decorators {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
@@ -1561,11 +1625,11 @@ impl<'buf> BebopEncode for MethodDescriptor<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for MethodDescriptor<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:MethodDescriptor)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -1573,20 +1637,28 @@ impl<'buf> BebopDecode<'buf> for MethodDescriptor<'buf> {
         break;
       }
       match tag {
-        1 => msg.name = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        2 => msg.documentation = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        3 => msg.request_type = Some(TypeDescriptor::decode(reader)?),
-        4 => msg.response_type = Some(TypeDescriptor::decode(reader)?),
-        5 => msg.method_type = Some(MethodType::decode(reader)?),
-        6 => msg.id = Some(reader.read_u32()?),
-        7 => msg.decorators = Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?),
+        1 => {
+          msg.name = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        2 => {
+          msg.documentation =
+            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        3 => msg.request_type = ::core::option::Option::Some(TypeDescriptor::decode(reader)?),
+        4 => msg.response_type = ::core::option::Option::Some(TypeDescriptor::decode(reader)?),
+        5 => msg.method_type = ::core::option::Option::Some(MethodType::decode(reader)?),
+        6 => msg.id = ::core::option::Option::Some(reader.read_u32()?),
+        7 => {
+          msg.decorators =
+            ::core::option::Option::Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?)
+        }
         _ => {
           reader.skip(end - reader.position())?;
         }
       }
     }
     // @@bebop_insertion_point(decode_end:MethodDescriptor)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -1631,15 +1703,15 @@ impl<'buf> BebopEncode for EnumDef<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.base_type {
+    if let ::core::option::Option::Some(ref v) = self.base_type {
       writer.write_tag(1);
       v.encode(writer);
     }
-    if let Some(ref v) = self.members {
+    if let ::core::option::Option::Some(ref v) = self.members {
       writer.write_tag(2);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
-    if let Some(v) = self.is_flags {
+    if let ::core::option::Option::Some(v) = self.is_flags {
       writer.write_tag(3);
       writer.write_bool(v);
     }
@@ -1650,13 +1722,13 @@ impl<'buf> BebopEncode for EnumDef<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.base_type {
+    if let ::core::option::Option::Some(ref v) = self.base_type {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(ref v) = self.members {
+    if let ::core::option::Option::Some(ref v) = self.members {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
-    if let Some(v) = self.is_flags {
+    if let ::core::option::Option::Some(v) = self.is_flags {
       size += wire::tagged_size(::core::mem::size_of::<bool>());
     }
     size
@@ -1664,11 +1736,11 @@ impl<'buf> BebopEncode for EnumDef<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for EnumDef<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:EnumDef)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -1676,16 +1748,19 @@ impl<'buf> BebopDecode<'buf> for EnumDef<'buf> {
         break;
       }
       match tag {
-        1 => msg.base_type = Some(TypeKind::decode(reader)?),
-        2 => msg.members = Some(reader.read_array(|_r| EnumMemberDescriptor::decode(_r))?),
-        3 => msg.is_flags = Some(reader.read_bool()?),
+        1 => msg.base_type = ::core::option::Option::Some(TypeKind::decode(reader)?),
+        2 => {
+          msg.members =
+            ::core::option::Option::Some(reader.read_array(|_r| EnumMemberDescriptor::decode(_r))?)
+        }
+        3 => msg.is_flags = ::core::option::Option::Some(reader.read_bool()?),
         _ => {
           reader.skip(end - reader.position())?;
         }
       }
     }
     // @@bebop_insertion_point(decode_end:EnumDef)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -1731,15 +1806,15 @@ impl<'buf> BebopEncode for StructDef<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.fields {
+    if let ::core::option::Option::Some(ref v) = self.fields {
       writer.write_tag(1);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
-    if let Some(v) = self.is_mutable {
+    if let ::core::option::Option::Some(v) = self.is_mutable {
       writer.write_tag(2);
       writer.write_bool(v);
     }
-    if let Some(v) = self.fixed_size {
+    if let ::core::option::Option::Some(v) = self.fixed_size {
       writer.write_tag(3);
       writer.write_u32(v);
     }
@@ -1750,13 +1825,13 @@ impl<'buf> BebopEncode for StructDef<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.fields {
+    if let ::core::option::Option::Some(ref v) = self.fields {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
-    if let Some(v) = self.is_mutable {
+    if let ::core::option::Option::Some(v) = self.is_mutable {
       size += wire::tagged_size(::core::mem::size_of::<bool>());
     }
-    if let Some(v) = self.fixed_size {
+    if let ::core::option::Option::Some(v) = self.fixed_size {
       size += wire::tagged_size(::core::mem::size_of::<u32>());
     }
     size
@@ -1764,11 +1839,11 @@ impl<'buf> BebopEncode for StructDef<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for StructDef<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:StructDef)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -1776,16 +1851,19 @@ impl<'buf> BebopDecode<'buf> for StructDef<'buf> {
         break;
       }
       match tag {
-        1 => msg.fields = Some(reader.read_array(|_r| FieldDescriptor::decode(_r))?),
-        2 => msg.is_mutable = Some(reader.read_bool()?),
-        3 => msg.fixed_size = Some(reader.read_u32()?),
+        1 => {
+          msg.fields =
+            ::core::option::Option::Some(reader.read_array(|_r| FieldDescriptor::decode(_r))?)
+        }
+        2 => msg.is_mutable = ::core::option::Option::Some(reader.read_bool()?),
+        3 => msg.fixed_size = ::core::option::Option::Some(reader.read_u32()?),
         _ => {
           reader.skip(end - reader.position())?;
         }
       }
     }
     // @@bebop_insertion_point(decode_end:StructDef)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -1823,7 +1901,7 @@ impl<'buf> BebopEncode for MessageDef<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.fields {
+    if let ::core::option::Option::Some(ref v) = self.fields {
       writer.write_tag(1);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
@@ -1834,7 +1912,7 @@ impl<'buf> BebopEncode for MessageDef<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.fields {
+    if let ::core::option::Option::Some(ref v) = self.fields {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
@@ -1842,11 +1920,11 @@ impl<'buf> BebopEncode for MessageDef<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for MessageDef<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:MessageDef)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -1854,14 +1932,17 @@ impl<'buf> BebopDecode<'buf> for MessageDef<'buf> {
         break;
       }
       match tag {
-        1 => msg.fields = Some(reader.read_array(|_r| FieldDescriptor::decode(_r))?),
+        1 => {
+          msg.fields =
+            ::core::option::Option::Some(reader.read_array(|_r| FieldDescriptor::decode(_r))?)
+        }
         _ => {
           reader.skip(end - reader.position())?;
         }
       }
     }
     // @@bebop_insertion_point(decode_end:MessageDef)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -1899,7 +1980,7 @@ impl<'buf> BebopEncode for UnionDef<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.branches {
+    if let ::core::option::Option::Some(ref v) = self.branches {
       writer.write_tag(1);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
@@ -1910,7 +1991,7 @@ impl<'buf> BebopEncode for UnionDef<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.branches {
+    if let ::core::option::Option::Some(ref v) = self.branches {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
@@ -1918,11 +1999,11 @@ impl<'buf> BebopEncode for UnionDef<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for UnionDef<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:UnionDef)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -1930,14 +2011,17 @@ impl<'buf> BebopDecode<'buf> for UnionDef<'buf> {
         break;
       }
       match tag {
-        1 => msg.branches = Some(reader.read_array(|_r| UnionBranchDescriptor::decode(_r))?),
+        1 => {
+          msg.branches =
+            ::core::option::Option::Some(reader.read_array(|_r| UnionBranchDescriptor::decode(_r))?)
+        }
         _ => {
           reader.skip(end - reader.position())?;
         }
       }
     }
     // @@bebop_insertion_point(decode_end:UnionDef)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -1973,7 +2057,7 @@ impl<'buf> BebopEncode for ServiceDef<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.methods {
+    if let ::core::option::Option::Some(ref v) = self.methods {
       writer.write_tag(1);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
@@ -1984,7 +2068,7 @@ impl<'buf> BebopEncode for ServiceDef<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.methods {
+    if let ::core::option::Option::Some(ref v) = self.methods {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
@@ -1992,11 +2076,11 @@ impl<'buf> BebopEncode for ServiceDef<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for ServiceDef<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:ServiceDef)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -2004,14 +2088,17 @@ impl<'buf> BebopDecode<'buf> for ServiceDef<'buf> {
         break;
       }
       match tag {
-        1 => msg.methods = Some(reader.read_array(|_r| MethodDescriptor::decode(_r))?),
+        1 => {
+          msg.methods =
+            ::core::option::Option::Some(reader.read_array(|_r| MethodDescriptor::decode(_r))?)
+        }
         _ => {
           reader.skip(end - reader.position())?;
         }
       }
     }
     // @@bebop_insertion_point(decode_end:ServiceDef)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -2054,11 +2141,11 @@ impl<'buf> BebopEncode for ConstDef<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.r#type {
+    if let ::core::option::Option::Some(ref v) = self.r#type {
       writer.write_tag(1);
       v.encode(writer);
     }
-    if let Some(ref v) = self.value {
+    if let ::core::option::Option::Some(ref v) = self.value {
       writer.write_tag(2);
       v.encode(writer);
     }
@@ -2069,10 +2156,10 @@ impl<'buf> BebopEncode for ConstDef<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.r#type {
+    if let ::core::option::Option::Some(ref v) = self.r#type {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(ref v) = self.value {
+    if let ::core::option::Option::Some(ref v) = self.value {
       size += wire::tagged_size(v.encoded_size());
     }
     size
@@ -2080,11 +2167,11 @@ impl<'buf> BebopEncode for ConstDef<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for ConstDef<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:ConstDef)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -2092,15 +2179,15 @@ impl<'buf> BebopDecode<'buf> for ConstDef<'buf> {
         break;
       }
       match tag {
-        1 => msg.r#type = Some(TypeDescriptor::decode(reader)?),
-        2 => msg.value = Some(LiteralValue::decode(reader)?),
+        1 => msg.r#type = ::core::option::Option::Some(TypeDescriptor::decode(reader)?),
+        2 => msg.value = ::core::option::Option::Some(LiteralValue::decode(reader)?),
         _ => {
           reader.skip(end - reader.position())?;
         }
       }
     }
     // @@bebop_insertion_point(decode_end:ConstDef)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -2162,27 +2249,27 @@ impl<'buf> BebopEncode for DecoratorParamDef<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.name {
+    if let ::core::option::Option::Some(ref v) = self.name {
       writer.write_tag(1);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.description {
+    if let ::core::option::Option::Some(ref v) = self.description {
       writer.write_tag(2);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.r#type {
+    if let ::core::option::Option::Some(ref v) = self.r#type {
       writer.write_tag(3);
       v.encode(writer);
     }
-    if let Some(v) = self.required {
+    if let ::core::option::Option::Some(v) = self.required {
       writer.write_tag(4);
       writer.write_bool(v);
     }
-    if let Some(ref v) = self.default_value {
+    if let ::core::option::Option::Some(ref v) = self.default_value {
       writer.write_tag(5);
       v.encode(writer);
     }
-    if let Some(ref v) = self.allowed_values {
+    if let ::core::option::Option::Some(ref v) = self.allowed_values {
       writer.write_tag(6);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
@@ -2193,22 +2280,22 @@ impl<'buf> BebopEncode for DecoratorParamDef<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.name {
+    if let ::core::option::Option::Some(ref v) = self.name {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.description {
+    if let ::core::option::Option::Some(ref v) = self.description {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.r#type {
+    if let ::core::option::Option::Some(ref v) = self.r#type {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(v) = self.required {
+    if let ::core::option::Option::Some(v) = self.required {
       size += wire::tagged_size(::core::mem::size_of::<bool>());
     }
-    if let Some(ref v) = self.default_value {
+    if let ::core::option::Option::Some(ref v) = self.default_value {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(ref v) = self.allowed_values {
+    if let ::core::option::Option::Some(ref v) = self.allowed_values {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
@@ -2216,11 +2303,11 @@ impl<'buf> BebopEncode for DecoratorParamDef<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for DecoratorParamDef<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:DecoratorParamDef)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -2228,19 +2315,27 @@ impl<'buf> BebopDecode<'buf> for DecoratorParamDef<'buf> {
         break;
       }
       match tag {
-        1 => msg.name = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        2 => msg.description = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        3 => msg.r#type = Some(TypeKind::decode(reader)?),
-        4 => msg.required = Some(reader.read_bool()?),
-        5 => msg.default_value = Some(LiteralValue::decode(reader)?),
-        6 => msg.allowed_values = Some(reader.read_array(|_r| LiteralValue::decode(_r))?),
+        1 => {
+          msg.name = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        2 => {
+          msg.description =
+            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        3 => msg.r#type = ::core::option::Option::Some(TypeKind::decode(reader)?),
+        4 => msg.required = ::core::option::Option::Some(reader.read_bool()?),
+        5 => msg.default_value = ::core::option::Option::Some(LiteralValue::decode(reader)?),
+        6 => {
+          msg.allowed_values =
+            ::core::option::Option::Some(reader.read_array(|_r| LiteralValue::decode(_r))?)
+        }
         _ => {
           reader.skip(end - reader.position())?;
         }
       }
     }
     // @@bebop_insertion_point(decode_end:DecoratorParamDef)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -2296,23 +2391,23 @@ impl<'buf> BebopEncode for DecoratorDef<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.targets {
+    if let ::core::option::Option::Some(ref v) = self.targets {
       writer.write_tag(1);
       v.encode(writer);
     }
-    if let Some(v) = self.allow_multiple {
+    if let ::core::option::Option::Some(v) = self.allow_multiple {
       writer.write_tag(2);
       writer.write_bool(v);
     }
-    if let Some(ref v) = self.params {
+    if let ::core::option::Option::Some(ref v) = self.params {
       writer.write_tag(3);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
-    if let Some(ref v) = self.validate_source {
+    if let ::core::option::Option::Some(ref v) = self.validate_source {
       writer.write_tag(4);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.export_source {
+    if let ::core::option::Option::Some(ref v) = self.export_source {
       writer.write_tag(5);
       writer.write_string(&v);
     }
@@ -2323,19 +2418,19 @@ impl<'buf> BebopEncode for DecoratorDef<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.targets {
+    if let ::core::option::Option::Some(ref v) = self.targets {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(v) = self.allow_multiple {
+    if let ::core::option::Option::Some(v) = self.allow_multiple {
       size += wire::tagged_size(::core::mem::size_of::<bool>());
     }
-    if let Some(ref v) = self.params {
+    if let ::core::option::Option::Some(ref v) = self.params {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
-    if let Some(ref v) = self.validate_source {
+    if let ::core::option::Option::Some(ref v) = self.validate_source {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.export_source {
+    if let ::core::option::Option::Some(ref v) = self.export_source {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
     size
@@ -2343,11 +2438,11 @@ impl<'buf> BebopEncode for DecoratorDef<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for DecoratorDef<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:DecoratorDef)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -2355,18 +2450,27 @@ impl<'buf> BebopDecode<'buf> for DecoratorDef<'buf> {
         break;
       }
       match tag {
-        1 => msg.targets = Some(DecoratorTarget::decode(reader)?),
-        2 => msg.allow_multiple = Some(reader.read_bool()?),
-        3 => msg.params = Some(reader.read_array(|_r| DecoratorParamDef::decode(_r))?),
-        4 => msg.validate_source = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        5 => msg.export_source = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        1 => msg.targets = ::core::option::Option::Some(DecoratorTarget::decode(reader)?),
+        2 => msg.allow_multiple = ::core::option::Option::Some(reader.read_bool()?),
+        3 => {
+          msg.params =
+            ::core::option::Option::Some(reader.read_array(|_r| DecoratorParamDef::decode(_r))?)
+        }
+        4 => {
+          msg.validate_source =
+            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        5 => {
+          msg.export_source =
+            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
         _ => {
           reader.skip(end - reader.position())?;
         }
       }
     }
     // @@bebop_insertion_point(decode_end:DecoratorDef)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -2443,59 +2547,59 @@ impl<'buf> BebopEncode for DefinitionDescriptor<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.kind {
+    if let ::core::option::Option::Some(ref v) = self.kind {
       writer.write_tag(1);
       v.encode(writer);
     }
-    if let Some(ref v) = self.name {
+    if let ::core::option::Option::Some(ref v) = self.name {
       writer.write_tag(2);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.fqn {
+    if let ::core::option::Option::Some(ref v) = self.fqn {
       writer.write_tag(3);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.documentation {
+    if let ::core::option::Option::Some(ref v) = self.documentation {
       writer.write_tag(4);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.visibility {
+    if let ::core::option::Option::Some(ref v) = self.visibility {
       writer.write_tag(5);
       v.encode(writer);
     }
-    if let Some(ref v) = self.decorators {
+    if let ::core::option::Option::Some(ref v) = self.decorators {
       writer.write_tag(6);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
-    if let Some(ref v) = self.nested {
+    if let ::core::option::Option::Some(ref v) = self.nested {
       writer.write_tag(7);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
-    if let Some(ref v) = self.enum_def {
+    if let ::core::option::Option::Some(ref v) = self.enum_def {
       writer.write_tag(8);
       v.encode(writer);
     }
-    if let Some(ref v) = self.struct_def {
+    if let ::core::option::Option::Some(ref v) = self.struct_def {
       writer.write_tag(9);
       v.encode(writer);
     }
-    if let Some(ref v) = self.message_def {
+    if let ::core::option::Option::Some(ref v) = self.message_def {
       writer.write_tag(10);
       v.encode(writer);
     }
-    if let Some(ref v) = self.union_def {
+    if let ::core::option::Option::Some(ref v) = self.union_def {
       writer.write_tag(11);
       v.encode(writer);
     }
-    if let Some(ref v) = self.service_def {
+    if let ::core::option::Option::Some(ref v) = self.service_def {
       writer.write_tag(12);
       v.encode(writer);
     }
-    if let Some(ref v) = self.const_def {
+    if let ::core::option::Option::Some(ref v) = self.const_def {
       writer.write_tag(13);
       v.encode(writer);
     }
-    if let Some(ref v) = self.decorator_def {
+    if let ::core::option::Option::Some(ref v) = self.decorator_def {
       writer.write_tag(14);
       v.encode(writer);
     }
@@ -2506,46 +2610,46 @@ impl<'buf> BebopEncode for DefinitionDescriptor<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.kind {
+    if let ::core::option::Option::Some(ref v) = self.kind {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(ref v) = self.name {
+    if let ::core::option::Option::Some(ref v) = self.name {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.fqn {
+    if let ::core::option::Option::Some(ref v) = self.fqn {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.documentation {
+    if let ::core::option::Option::Some(ref v) = self.documentation {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.visibility {
+    if let ::core::option::Option::Some(ref v) = self.visibility {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(ref v) = self.decorators {
+    if let ::core::option::Option::Some(ref v) = self.decorators {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
-    if let Some(ref v) = self.nested {
+    if let ::core::option::Option::Some(ref v) = self.nested {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
-    if let Some(ref v) = self.enum_def {
+    if let ::core::option::Option::Some(ref v) = self.enum_def {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(ref v) = self.struct_def {
+    if let ::core::option::Option::Some(ref v) = self.struct_def {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(ref v) = self.message_def {
+    if let ::core::option::Option::Some(ref v) = self.message_def {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(ref v) = self.union_def {
+    if let ::core::option::Option::Some(ref v) = self.union_def {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(ref v) = self.service_def {
+    if let ::core::option::Option::Some(ref v) = self.service_def {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(ref v) = self.const_def {
+    if let ::core::option::Option::Some(ref v) = self.const_def {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(ref v) = self.decorator_def {
+    if let ::core::option::Option::Some(ref v) = self.decorator_def {
       size += wire::tagged_size(v.encoded_size());
     }
     size
@@ -2553,11 +2657,11 @@ impl<'buf> BebopEncode for DefinitionDescriptor<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for DefinitionDescriptor<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:DefinitionDescriptor)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -2565,27 +2669,40 @@ impl<'buf> BebopDecode<'buf> for DefinitionDescriptor<'buf> {
         break;
       }
       match tag {
-        1 => msg.kind = Some(DefinitionKind::decode(reader)?),
-        2 => msg.name = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        3 => msg.fqn = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        4 => msg.documentation = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        5 => msg.visibility = Some(Visibility::decode(reader)?),
-        6 => msg.decorators = Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?),
-        7 => msg.nested = Some(reader.read_array(|_r| DefinitionDescriptor::decode(_r))?),
-        8 => msg.enum_def = Some(EnumDef::decode(reader)?),
-        9 => msg.struct_def = Some(StructDef::decode(reader)?),
-        10 => msg.message_def = Some(MessageDef::decode(reader)?),
-        11 => msg.union_def = Some(UnionDef::decode(reader)?),
-        12 => msg.service_def = Some(ServiceDef::decode(reader)?),
-        13 => msg.const_def = Some(ConstDef::decode(reader)?),
-        14 => msg.decorator_def = Some(DecoratorDef::decode(reader)?),
+        1 => msg.kind = ::core::option::Option::Some(DefinitionKind::decode(reader)?),
+        2 => {
+          msg.name = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        3 => {
+          msg.fqn = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        4 => {
+          msg.documentation =
+            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        5 => msg.visibility = ::core::option::Option::Some(Visibility::decode(reader)?),
+        6 => {
+          msg.decorators =
+            ::core::option::Option::Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?)
+        }
+        7 => {
+          msg.nested =
+            ::core::option::Option::Some(reader.read_array(|_r| DefinitionDescriptor::decode(_r))?)
+        }
+        8 => msg.enum_def = ::core::option::Option::Some(EnumDef::decode(reader)?),
+        9 => msg.struct_def = ::core::option::Option::Some(StructDef::decode(reader)?),
+        10 => msg.message_def = ::core::option::Option::Some(MessageDef::decode(reader)?),
+        11 => msg.union_def = ::core::option::Option::Some(UnionDef::decode(reader)?),
+        12 => msg.service_def = ::core::option::Option::Some(ServiceDef::decode(reader)?),
+        13 => msg.const_def = ::core::option::Option::Some(ConstDef::decode(reader)?),
+        14 => msg.decorator_def = ::core::option::Option::Some(DecoratorDef::decode(reader)?),
         _ => {
           reader.skip(end - reader.position())?;
         }
       }
     }
     // @@bebop_insertion_point(decode_end:DefinitionDescriptor)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -2651,23 +2768,23 @@ impl<'buf> BebopEncode for Location<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.path {
+    if let ::core::option::Option::Some(ref v) = self.path {
       writer.write_tag(1);
       writer.write_array(&v, |_w, _el| _w.write_i32(*_el));
     }
-    if let Some(ref v) = self.span {
+    if let ::core::option::Option::Some(ref v) = self.span {
       writer.write_tag(2);
       writer.write_fixed_array::<i32, 4>(&v);
     }
-    if let Some(ref v) = self.leading_comments {
+    if let ::core::option::Option::Some(ref v) = self.leading_comments {
       writer.write_tag(3);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.trailing_comments {
+    if let ::core::option::Option::Some(ref v) = self.trailing_comments {
       writer.write_tag(4);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.detached_comments {
+    if let ::core::option::Option::Some(ref v) = self.detached_comments {
       writer.write_tag(5);
       writer.write_array(&v, |_w, _el| _w.write_string(_el));
     }
@@ -2678,19 +2795,19 @@ impl<'buf> BebopEncode for Location<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.path {
+    if let ::core::option::Option::Some(ref v) = self.path {
       size += wire::tagged_size(wire::array_size(v, |_el| (::core::mem::size_of::<i32>())));
     }
-    if let Some(ref v) = self.span {
+    if let ::core::option::Option::Some(ref v) = self.span {
       size += wire::tagged_size(4usize * (::core::mem::size_of::<i32>()));
     }
-    if let Some(ref v) = self.leading_comments {
+    if let ::core::option::Option::Some(ref v) = self.leading_comments {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.trailing_comments {
+    if let ::core::option::Option::Some(ref v) = self.trailing_comments {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.detached_comments {
+    if let ::core::option::Option::Some(ref v) = self.detached_comments {
       size += wire::tagged_size(wire::array_size(v, |_el| wire::string_size(_el.len())));
     }
     size
@@ -2698,11 +2815,11 @@ impl<'buf> BebopEncode for Location<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for Location<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:Location)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -2710,13 +2827,20 @@ impl<'buf> BebopDecode<'buf> for Location<'buf> {
         break;
       }
       match tag {
-        1 => msg.path = Some(reader.read_array(|_r| _r.read_i32())?),
-        2 => msg.span = Some(reader.read_fixed_array::<i32, 4>()?),
-        3 => msg.leading_comments = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        4 => msg.trailing_comments = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        1 => msg.path = ::core::option::Option::Some(reader.read_array(|_r| _r.read_i32())?),
+        2 => msg.span = ::core::option::Option::Some(reader.read_fixed_array::<i32, 4>()?),
+        3 => {
+          msg.leading_comments =
+            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        4 => {
+          msg.trailing_comments =
+            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
         5 => {
-          msg.detached_comments =
-            Some(reader.read_array(|_r| Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?)))?)
+          msg.detached_comments = ::core::option::Option::Some(reader.read_array(|_r| {
+            ::core::result::Result::Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))
+          })?)
         }
         _ => {
           reader.skip(end - reader.position())?;
@@ -2724,7 +2848,7 @@ impl<'buf> BebopDecode<'buf> for Location<'buf> {
       }
     }
     // @@bebop_insertion_point(decode_end:Location)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -2763,7 +2887,7 @@ impl<'buf> BebopEncode for SourceCodeInfo<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.locations {
+    if let ::core::option::Option::Some(ref v) = self.locations {
       writer.write_tag(1);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
@@ -2774,7 +2898,7 @@ impl<'buf> BebopEncode for SourceCodeInfo<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.locations {
+    if let ::core::option::Option::Some(ref v) = self.locations {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
@@ -2782,11 +2906,11 @@ impl<'buf> BebopEncode for SourceCodeInfo<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for SourceCodeInfo<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:SourceCodeInfo)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -2794,14 +2918,17 @@ impl<'buf> BebopDecode<'buf> for SourceCodeInfo<'buf> {
         break;
       }
       match tag {
-        1 => msg.locations = Some(reader.read_array(|_r| Location::decode(_r))?),
+        1 => {
+          msg.locations =
+            ::core::option::Option::Some(reader.read_array(|_r| Location::decode(_r))?)
+        }
         _ => {
           reader.skip(end - reader.position())?;
         }
       }
     }
     // @@bebop_insertion_point(decode_end:SourceCodeInfo)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -2861,27 +2988,27 @@ impl<'buf> BebopEncode for SchemaDescriptor<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.path {
+    if let ::core::option::Option::Some(ref v) = self.path {
       writer.write_tag(1);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.package {
+    if let ::core::option::Option::Some(ref v) = self.package {
       writer.write_tag(2);
       writer.write_string(&v);
     }
-    if let Some(ref v) = self.edition {
+    if let ::core::option::Option::Some(ref v) = self.edition {
       writer.write_tag(3);
       v.encode(writer);
     }
-    if let Some(ref v) = self.imports {
+    if let ::core::option::Option::Some(ref v) = self.imports {
       writer.write_tag(4);
       writer.write_array(&v, |_w, _el| _w.write_string(_el));
     }
-    if let Some(ref v) = self.definitions {
+    if let ::core::option::Option::Some(ref v) = self.definitions {
       writer.write_tag(5);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
-    if let Some(ref v) = self.source_code_info {
+    if let ::core::option::Option::Some(ref v) = self.source_code_info {
       writer.write_tag(6);
       v.encode(writer);
     }
@@ -2892,22 +3019,22 @@ impl<'buf> BebopEncode for SchemaDescriptor<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.path {
+    if let ::core::option::Option::Some(ref v) = self.path {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.package {
+    if let ::core::option::Option::Some(ref v) = self.package {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
-    if let Some(ref v) = self.edition {
+    if let ::core::option::Option::Some(ref v) = self.edition {
       size += wire::tagged_size(v.encoded_size());
     }
-    if let Some(ref v) = self.imports {
+    if let ::core::option::Option::Some(ref v) = self.imports {
       size += wire::tagged_size(wire::array_size(v, |_el| wire::string_size(_el.len())));
     }
-    if let Some(ref v) = self.definitions {
+    if let ::core::option::Option::Some(ref v) = self.definitions {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
-    if let Some(ref v) = self.source_code_info {
+    if let ::core::option::Option::Some(ref v) = self.source_code_info {
       size += wire::tagged_size(v.encoded_size());
     }
     size
@@ -2915,11 +3042,11 @@ impl<'buf> BebopEncode for SchemaDescriptor<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for SchemaDescriptor<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:SchemaDescriptor)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -2927,22 +3054,31 @@ impl<'buf> BebopDecode<'buf> for SchemaDescriptor<'buf> {
         break;
       }
       match tag {
-        1 => msg.path = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        2 => msg.package = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
-        3 => msg.edition = Some(Edition::decode(reader)?),
-        4 => {
-          msg.imports =
-            Some(reader.read_array(|_r| Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?)))?)
+        1 => {
+          msg.path = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
         }
-        5 => msg.definitions = Some(reader.read_array(|_r| DefinitionDescriptor::decode(_r))?),
-        6 => msg.source_code_info = Some(SourceCodeInfo::decode(reader)?),
+        2 => {
+          msg.package =
+            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        3 => msg.edition = ::core::option::Option::Some(Edition::decode(reader)?),
+        4 => {
+          msg.imports = ::core::option::Option::Some(reader.read_array(|_r| {
+            ::core::result::Result::Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))
+          })?)
+        }
+        5 => {
+          msg.definitions =
+            ::core::option::Option::Some(reader.read_array(|_r| DefinitionDescriptor::decode(_r))?)
+        }
+        6 => msg.source_code_info = ::core::option::Option::Some(SourceCodeInfo::decode(reader)?),
         _ => {
           reader.skip(end - reader.position())?;
         }
       }
     }
     // @@bebop_insertion_point(decode_end:SchemaDescriptor)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 
@@ -2982,7 +3118,7 @@ impl<'buf> BebopEncode for DescriptorSet<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let Some(ref v) = self.schemas {
+    if let ::core::option::Option::Some(ref v) = self.schemas {
       writer.write_tag(1);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
@@ -2993,7 +3129,7 @@ impl<'buf> BebopEncode for DescriptorSet<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
-    if let Some(ref v) = self.schemas {
+    if let ::core::option::Option::Some(ref v) = self.schemas {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     size
@@ -3001,11 +3137,11 @@ impl<'buf> BebopEncode for DescriptorSet<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for DescriptorSet<'buf> {
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:DescriptorSet)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = Self::default();
+    let mut msg = <Self as ::core::default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -3013,14 +3149,17 @@ impl<'buf> BebopDecode<'buf> for DescriptorSet<'buf> {
         break;
       }
       match tag {
-        1 => msg.schemas = Some(reader.read_array(|_r| SchemaDescriptor::decode(_r))?),
+        1 => {
+          msg.schemas =
+            ::core::option::Option::Some(reader.read_array(|_r| SchemaDescriptor::decode(_r))?)
+        }
         _ => {
           reader.skip(end - reader.position())?;
         }
       }
     }
     // @@bebop_insertion_point(decode_end:DescriptorSet)
-    Ok(msg)
+    ::core::result::Result::Ok(msg)
   }
 }
 

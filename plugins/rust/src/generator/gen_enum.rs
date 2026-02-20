@@ -113,7 +113,7 @@ fn generate_enum(
   ));
   output.push_str("  type Error = DecodeError;\n");
   output.push_str(&format!(
-    "  fn try_from(value: {}) -> Result<Self, DecodeError> {{\n",
+    "  fn try_from(value: {}) -> ::core::result::Result<Self, DecodeError> {{\n",
     base_type
   ));
   output.push_str("    match value {\n");
@@ -126,12 +126,12 @@ fn generate_enum(
       format!("{}", mvalue)
     };
     output.push_str(&format!(
-      "      {} => Ok(Self::{}),\n",
+      "      {} => ::core::result::Result::Ok(Self::{}),\n",
       formatted_value, mname
     ));
   }
   output.push_str(&format!(
-    "      _ => Err(DecodeError::InvalidEnum {{ type_name: \"{}\", value: value as u64 }}),\n",
+    "      _ => ::core::result::Result::Err(DecodeError::InvalidEnum {{ type_name: \"{}\", value: value as u64 }}),\n",
     name
   ));
   output.push_str("    }\n");
@@ -139,7 +139,10 @@ fn generate_enum(
   output.push_str("}\n\n");
 
   // From<Name> for base_type
-  output.push_str(&format!("impl From<{}> for {} {{\n", name, base_type));
+  output.push_str(&format!(
+    "impl ::core::convert::From<{}> for {} {{\n",
+    name, base_type
+  ));
   output.push_str(&format!(
     "  fn from(value: {}) -> {} {{ value as {} }}\n",
     name, base_type, base_type
@@ -179,7 +182,9 @@ fn generate_enum(
 
   // ── impl BebopDecode ──────────────────────────────────────────
   output.push_str(&format!("impl<'buf> BebopDecode<'buf> for {} {{\n", name));
-  output.push_str("  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n");
+  output.push_str(
+    "  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {\n",
+  );
   output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_start:{})\n",
     name
@@ -189,7 +194,7 @@ fn generate_enum(
     "    // @@bebop_insertion_point(decode_end:{})\n",
     name
   ));
-  output.push_str("    Self::try_from(value)\n");
+  output.push_str("    ::core::convert::TryFrom::try_from(value)\n");
   output.push_str("  }\n");
   output.push_str("}\n\n");
 
