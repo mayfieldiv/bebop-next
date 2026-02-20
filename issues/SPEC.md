@@ -251,7 +251,7 @@ Legend: `[x]` = implemented & tested, `[/]` = partially done, `[-]` = N/A or out
 - [x] Compiler version available via request
 - [x] Plugin-specific options via `parameter` field
 - [/] `files_to_generate` filtering — need to verify exact behavior
-- [ ] Insertion point markers (`// @@bebop_insertion_point(...)`) → [[insertion-points]]
+- [x] Insertion point markers (`// @@bebop_insertion_point(...)`) → [[insertion-points]]
 - [-] Windows binary mode for stdin/stdout — platform-specific, N/A on macOS/Linux
 
 ## Descriptor (DESCRIPTOR.md)
