@@ -74,7 +74,7 @@ pub fn generate(
         .r#type
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedDefinition("message field missing type".into()))?;
-      let cow_type = type_mapper::rust_type_cow(td, analysis)?;
+      let cow_type = type_mapper::rust_type(td, analysis)?;
       let tag = f
         .index
         .ok_or_else(|| GeneratorError::MalformedDefinition("message field missing index".into()))?;
@@ -173,7 +173,7 @@ pub fn generate(
           meta.fname
         ));
         output.push_str(&format!("      writer.write_tag({});\n", meta.tag));
-        let write_stmt = type_mapper::write_expression_cow(meta.td, "v", "writer", analysis)?;
+        let write_stmt = type_mapper::write_expression(meta.td, "v", "writer", analysis)?;
         output.push_str(&format!("      {};\n", write_stmt));
         output.push_str("    }\n");
       }
@@ -184,7 +184,7 @@ pub fn generate(
         if is_scalar_copy {
           output.push_str(&format!("    if let Some(v) = self.{} {{\n", meta.fname));
           output.push_str(&format!("      writer.write_tag({});\n", meta.tag));
-          let write_stmt = type_mapper::write_expression_cow(meta.td, "v", "writer", analysis)?;
+          let write_stmt = type_mapper::write_expression(meta.td, "v", "writer", analysis)?;
           output.push_str(&format!("      {};\n", write_stmt));
           output.push_str("    }\n");
         } else {
@@ -193,7 +193,7 @@ pub fn generate(
             meta.fname
           ));
           output.push_str(&format!("      writer.write_tag({});\n", meta.tag));
-          let write_stmt = type_mapper::write_expression_cow(meta.td, "v", "writer", analysis)?;
+          let write_stmt = type_mapper::write_expression(meta.td, "v", "writer", analysis)?;
           output.push_str(&format!("      {};\n", write_stmt));
           output.push_str("    }\n");
         }
@@ -271,7 +271,7 @@ pub fn generate(
   for meta in &field_metas {
     match meta.wrap {
       FieldWrap::Boxed => {
-        let read_expr = type_mapper::read_expression_cow(meta.td, "reader", analysis)?;
+        let read_expr = type_mapper::read_expression(meta.td, "reader", analysis)?;
         output.push_str(&format!(
           "        {} => msg.{} = Some(Box::new({}?)),\n",
           meta.tag, meta.fname, read_expr
@@ -284,7 +284,7 @@ pub fn generate(
             meta.tag, meta.fname, read_expr
           ));
         } else {
-          let read_expr = type_mapper::read_expression_cow(meta.td, "reader", analysis)?;
+          let read_expr = type_mapper::read_expression(meta.td, "reader", analysis)?;
           output.push_str(&format!(
             "        {} => msg.{} = Some({}?),\n",
             meta.tag, meta.fname, read_expr

@@ -349,7 +349,7 @@ pub fn rust_type_owned(
 }
 
 /// Map a full TypeDescriptor to its Rust type string using Cow for borrowed types.
-pub fn rust_type_cow(
+pub fn rust_type(
   td: &TypeDescriptor,
   analysis: &LifetimeAnalysis,
 ) -> Result<String, GeneratorError> {
@@ -371,7 +371,7 @@ pub fn rust_type_cow(
       if elem.kind == Some(TypeKind::Byte) {
         return Ok("Cow<'buf, [u8]>".to_string());
       }
-      let inner = rust_type_cow(elem, analysis)?;
+      let inner = rust_type(elem, analysis)?;
       Ok(format!("Vec<{}>", inner))
     }
     TypeKind::FixedArray => {
@@ -382,7 +382,7 @@ pub fn rust_type_cow(
       let size = td
         .fixed_array_size
         .ok_or_else(|| GeneratorError::MalformedType("fixed array missing size".into()))?;
-      let inner = rust_type_cow(elem, analysis)?;
+      let inner = rust_type(elem, analysis)?;
       Ok(format!("[{}; {}]", inner, size))
     }
     TypeKind::Map => {
@@ -394,8 +394,8 @@ pub fn rust_type_cow(
         .map_value
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
-      let k = rust_type_cow(key, analysis)?;
-      let v = rust_type_cow(val, analysis)?;
+      let k = rust_type(key, analysis)?;
+      let v = rust_type(val, analysis)?;
       Ok(format!("HashMap<{}, {}>", k, v))
     }
     TypeKind::Defined => {
@@ -422,7 +422,7 @@ pub fn rust_type_cow(
 /// Returns an expression that produces `Result<T>` — callers append `?` as needed.
 /// Strings are read as `Cow::Borrowed(reader.read_str()?)`, byte arrays as
 /// `Cow::Borrowed(reader.read_byte_slice()?)`.
-pub fn read_expression_cow(
+pub fn read_expression(
   td: &TypeDescriptor,
   reader: &str,
   _analysis: &LifetimeAnalysis,
@@ -463,7 +463,7 @@ pub fn read_expression_cow(
           reader, type_name
         ))
       } else {
-        let inner = read_expression_cow(elem, "_r", _analysis)?;
+        let inner = read_expression(elem, "_r", _analysis)?;
         Ok(format!("{}.read_array(|_r| {})", reader, inner))
       }
     }
@@ -480,7 +480,7 @@ pub fn read_expression_cow(
         let ty = scalar_type(elem_kind).unwrap();
         Ok(format!("{}.read_fixed_array::<{}, {}>()", reader, ty, size))
       } else {
-        let inner = read_expression_cow(elem, reader, _analysis)?;
+        let inner = read_expression(elem, reader, _analysis)?;
         Ok(format!(
           "{{ let mut _arr = [Default::default(); {}]; for _i in 0..{} {{ _arr[_i] = {}?; }} Ok(_arr) }}",
           size, size, inner
@@ -496,8 +496,8 @@ pub fn read_expression_cow(
         .map_value
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
-      let k_expr = read_expression_cow(key, "_r", _analysis)?;
-      let v_expr = read_expression_cow(val, "_r", _analysis)?;
+      let k_expr = read_expression(key, "_r", _analysis)?;
+      let v_expr = read_expression(val, "_r", _analysis)?;
       Ok(format!(
         "{}.read_map(|_r| Ok(({}?, {}?)))",
         reader, k_expr, v_expr
@@ -543,7 +543,7 @@ pub fn borrowed_cow_read_expression(td: &TypeDescriptor, reader: &str) -> Option
 /// For Cow<str> we call `writer.write_string(&v)` (Cow derefs to &str).
 /// For Cow<[u8]> we call `writer.write_byte_array(&v)`.
 /// For defined types we call `BebopEncode::encode(v, writer)`.
-pub fn write_expression_cow(
+pub fn write_expression(
   td: &TypeDescriptor,
   value: &str,
   writer: &str,
@@ -591,7 +591,7 @@ pub fn write_expression_cow(
           ))
         }
       } else {
-        let inner = write_expression_cow(elem, "_el", "_w", _analysis)?;
+        let inner = write_expression(elem, "_el", "_w", _analysis)?;
         Ok(format!(
           "{}.write_array(&{}, |_w, _el| {{ {} }})",
           writer, value, inner
@@ -620,7 +620,7 @@ pub fn write_expression_cow(
         } else {
           "_el"
         };
-        let inner = write_expression_cow(elem, elem_val, writer, _analysis)?;
+        let inner = write_expression(elem, elem_val, writer, _analysis)?;
         Ok(format!("for _el in {}.iter() {{ {} }}", value, inner))
       }
     }
@@ -646,8 +646,8 @@ pub fn write_expression_cow(
       } else {
         "_v"
       };
-      let k_write = write_expression_cow(key, k_val, "_w", _analysis)?;
-      let v_write = write_expression_cow(val, v_val, "_w", _analysis)?;
+      let k_write = write_expression(key, k_val, "_w", _analysis)?;
+      let v_write = write_expression(val, v_val, "_w", _analysis)?;
       Ok(format!(
         "{}.write_map(&{}, |_w, _k, _v| {{ {}; {}; }})",
         writer, value, k_write, v_write
