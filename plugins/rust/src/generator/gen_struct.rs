@@ -154,6 +154,12 @@ pub fn generate(
         meta.fname, meta.fname
       ));
       init_fields.push(meta.fname.clone());
+    } else if has_lifetime && analysis.type_needs_lifetime(meta.td) {
+      let expr = type_mapper::into_borrowed_expression(meta.td, &meta.fname, analysis)?;
+      if expr != meta.fname {
+        output.push_str(&format!("    let {} = {};\n", meta.fname, expr));
+      }
+      init_fields.push(meta.fname.clone());
     } else if type_mapper::is_cow_field(meta.td) {
       // Defensive fallback for non-lifetime cases.
       output.push_str(&format!(

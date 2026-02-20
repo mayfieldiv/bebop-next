@@ -199,9 +199,8 @@ pub fn generate(
   output.push_str(
     "    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips\n",
   );
-  output.push_str(
-    "    // them on encode/size but still decodes them. The Swift plugin encodes them\n",
-  );
+  output
+    .push_str("    // them on encode/size but still decodes them. The Swift plugin encodes them\n");
   output.push_str(
     "    // normally. This behavior should be revisited once the spec intent is clarified.\n",
   );

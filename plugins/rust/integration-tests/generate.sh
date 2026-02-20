@@ -30,5 +30,6 @@ echo "Generating test_types.rs..."
   -q 2>/dev/null
 
 cp "$TMPDIR/out/test_types.rs" "$INT_DIR/src/test_types.rs"
+rustfmt "$INT_DIR/src/test_types.rs"
 
 echo "Done."

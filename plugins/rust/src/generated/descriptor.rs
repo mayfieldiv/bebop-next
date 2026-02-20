@@ -14,13 +14,20 @@
 extern crate alloc;
 use alloc::borrow::Cow;
 use alloc::boxed::Box;
-use alloc::string::String;
+use alloc::string::String as StdString;
 use alloc::vec;
 use alloc::vec::Vec;
-use core::mem::size_of;
-use bebop_runtime::HashMap;
-use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, Uuid, f16, bf16, BebopTimestamp, BebopDuration};
+#[cfg(feature = "serde")]
+use bebop_runtime::serde;
 use bebop_runtime::wire_size as wire;
+use bebop_runtime::HashMap;
+use bebop_runtime::{
+  bf16, f16, BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopReader, BebopTimestamp,
+  BebopWriter, DecodeError, Uuid,
+};
+use core::mem::size_of;
+
+// @@bebop_insertion_point(imports)
 
 /// Scalar and compound type kinds.
 /// Scalars (1-18) encode as fixed-size little-endian bytes. `BOOL` is 1 byte
@@ -32,7 +39,8 @@ use bebop_runtime::wire_size as wire;
 /// - `DEFINED`: referenced type FQN in `defined_fqn`
 /// Value 0 is a sentinel. A valid TypeDescriptor never has `kind == UNKNOWN`.
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TypeKind {
   Unknown = 0,
   Bool = 1,
@@ -88,30 +96,43 @@ impl core::convert::TryFrom<u8> for TypeKind {
       21 => Ok(Self::FixedArray),
       22 => Ok(Self::Map),
       23 => Ok(Self::Defined),
-      _ => Err(DecodeError::InvalidEnum { type_name: "TypeKind", value: value as u64 }),
+      _ => Err(DecodeError::InvalidEnum {
+        type_name: "TypeKind",
+        value: value as u64,
+      }),
     }
   }
 }
 
 impl From<TypeKind> for u8 {
-  fn from(value: TypeKind) -> u8 { value as u8 }
+  fn from(value: TypeKind) -> u8 {
+    value as u8
+  }
 }
 
 impl TypeKind {
   pub const FIXED_ENCODED_SIZE: usize = 1;
+  // @@bebop_insertion_point(enum_scope:TypeKind)
 }
 
 impl BebopEncode for TypeKind {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:TypeKind)
     writer.write_byte(*self as u8);
+    // @@bebop_insertion_point(encode_end:TypeKind)
   }
 
-  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
+  fn encoded_size(&self) -> usize {
+    Self::FIXED_ENCODED_SIZE
+  }
 }
 
 impl<'buf> BebopDecode<'buf> for TypeKind {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
-    Self::try_from(reader.read_byte()?)
+    // @@bebop_insertion_point(decode_start:TypeKind)
+    let value = reader.read_byte()?;
+    // @@bebop_insertion_point(decode_end:TypeKind)
+    Self::try_from(value)
   }
 }
 
@@ -120,7 +141,8 @@ impl<'buf> BebopDecode<'buf> for TypeKind {
 /// is populated. A definition with `kind == STRUCT` has `struct_def` set;
 /// other body fields are absent.
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DefinitionKind {
   Unknown = 0,
   Enum = 1,
@@ -144,30 +166,43 @@ impl core::convert::TryFrom<u8> for DefinitionKind {
       5 => Ok(Self::Service),
       6 => Ok(Self::Const),
       7 => Ok(Self::Decorator),
-      _ => Err(DecodeError::InvalidEnum { type_name: "DefinitionKind", value: value as u64 }),
+      _ => Err(DecodeError::InvalidEnum {
+        type_name: "DefinitionKind",
+        value: value as u64,
+      }),
     }
   }
 }
 
 impl From<DefinitionKind> for u8 {
-  fn from(value: DefinitionKind) -> u8 { value as u8 }
+  fn from(value: DefinitionKind) -> u8 {
+    value as u8
+  }
 }
 
 impl DefinitionKind {
   pub const FIXED_ENCODED_SIZE: usize = 1;
+  // @@bebop_insertion_point(enum_scope:DefinitionKind)
 }
 
 impl BebopEncode for DefinitionKind {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:DefinitionKind)
     writer.write_byte(*self as u8);
+    // @@bebop_insertion_point(encode_end:DefinitionKind)
   }
 
-  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
+  fn encoded_size(&self) -> usize {
+    Self::FIXED_ENCODED_SIZE
+  }
 }
 
 impl<'buf> BebopDecode<'buf> for DefinitionKind {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
-    Self::try_from(reader.read_byte()?)
+    // @@bebop_insertion_point(decode_start:DefinitionKind)
+    let value = reader.read_byte()?;
+    // @@bebop_insertion_point(decode_end:DefinitionKind)
+    Self::try_from(value)
   }
 }
 
@@ -180,7 +215,8 @@ impl<'buf> BebopDecode<'buf> for DefinitionKind {
 /// Chat(stream Msg): stream Msg; // DUPLEX_STREAM
 /// ```
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MethodType {
   Unknown = 0,
   Unary = 1,
@@ -198,30 +234,43 @@ impl core::convert::TryFrom<u8> for MethodType {
       2 => Ok(Self::ServerStream),
       3 => Ok(Self::ClientStream),
       4 => Ok(Self::DuplexStream),
-      _ => Err(DecodeError::InvalidEnum { type_name: "MethodType", value: value as u64 }),
+      _ => Err(DecodeError::InvalidEnum {
+        type_name: "MethodType",
+        value: value as u64,
+      }),
     }
   }
 }
 
 impl From<MethodType> for u8 {
-  fn from(value: MethodType) -> u8 { value as u8 }
+  fn from(value: MethodType) -> u8 {
+    value as u8
+  }
 }
 
 impl MethodType {
   pub const FIXED_ENCODED_SIZE: usize = 1;
+  // @@bebop_insertion_point(enum_scope:MethodType)
 }
 
 impl BebopEncode for MethodType {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:MethodType)
     writer.write_byte(*self as u8);
+    // @@bebop_insertion_point(encode_end:MethodType)
   }
 
-  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
+  fn encoded_size(&self) -> usize {
+    Self::FIXED_ENCODED_SIZE
+  }
 }
 
 impl<'buf> BebopDecode<'buf> for MethodType {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
-    Self::try_from(reader.read_byte()?)
+    // @@bebop_insertion_point(decode_start:MethodType)
+    let value = reader.read_byte()?;
+    // @@bebop_insertion_point(decode_end:MethodType)
+    Self::try_from(value)
   }
 }
 
@@ -233,7 +282,8 @@ impl<'buf> BebopDecode<'buf> for MethodType {
 /// `Parent.Child` from other schemas. Local definitions still appear in
 /// descriptors because exported types may reference them.
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Visibility {
   Default = 0,
   Export = 1,
@@ -247,37 +297,51 @@ impl core::convert::TryFrom<u8> for Visibility {
       0 => Ok(Self::Default),
       1 => Ok(Self::Export),
       2 => Ok(Self::Local),
-      _ => Err(DecodeError::InvalidEnum { type_name: "Visibility", value: value as u64 }),
+      _ => Err(DecodeError::InvalidEnum {
+        type_name: "Visibility",
+        value: value as u64,
+      }),
     }
   }
 }
 
 impl From<Visibility> for u8 {
-  fn from(value: Visibility) -> u8 { value as u8 }
+  fn from(value: Visibility) -> u8 {
+    value as u8
+  }
 }
 
 impl Visibility {
   pub const FIXED_ENCODED_SIZE: usize = 1;
+  // @@bebop_insertion_point(enum_scope:Visibility)
 }
 
 impl BebopEncode for Visibility {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:Visibility)
     writer.write_byte(*self as u8);
+    // @@bebop_insertion_point(encode_end:Visibility)
   }
 
-  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
+  fn encoded_size(&self) -> usize {
+    Self::FIXED_ENCODED_SIZE
+  }
 }
 
 impl<'buf> BebopDecode<'buf> for Visibility {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
-    Self::try_from(reader.read_byte()?)
+    // @@bebop_insertion_point(decode_start:Visibility)
+    let value = reader.read_byte()?;
+    // @@bebop_insertion_point(decode_end:Visibility)
+    Self::try_from(value)
   }
 }
 
 /// Literal value kinds.
 /// Discriminates which value field of LiteralValue is set.
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LiteralKind {
   Unknown = 0,
   Bool = 1,
@@ -303,34 +367,48 @@ impl core::convert::TryFrom<u8> for LiteralKind {
       6 => Ok(Self::Bytes),
       7 => Ok(Self::Timestamp),
       8 => Ok(Self::Duration),
-      _ => Err(DecodeError::InvalidEnum { type_name: "LiteralKind", value: value as u64 }),
+      _ => Err(DecodeError::InvalidEnum {
+        type_name: "LiteralKind",
+        value: value as u64,
+      }),
     }
   }
 }
 
 impl From<LiteralKind> for u8 {
-  fn from(value: LiteralKind) -> u8 { value as u8 }
+  fn from(value: LiteralKind) -> u8 {
+    value as u8
+  }
 }
 
 impl LiteralKind {
   pub const FIXED_ENCODED_SIZE: usize = 1;
+  // @@bebop_insertion_point(enum_scope:LiteralKind)
 }
 
 impl BebopEncode for LiteralKind {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:LiteralKind)
     writer.write_byte(*self as u8);
+    // @@bebop_insertion_point(encode_end:LiteralKind)
   }
 
-  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
+  fn encoded_size(&self) -> usize {
+    Self::FIXED_ENCODED_SIZE
+  }
 }
 
 impl<'buf> BebopDecode<'buf> for LiteralKind {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
-    Self::try_from(reader.read_byte()?)
+    // @@bebop_insertion_point(decode_start:LiteralKind)
+    let value = reader.read_byte()?;
+    // @@bebop_insertion_point(decode_end:LiteralKind)
+    Self::try_from(value)
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DecoratorTarget(pub u8);
 
 #[allow(non_upper_case_globals)]
@@ -346,29 +424,72 @@ impl DecoratorTarget {
   pub const METHOD: Self = Self(64);
   pub const BRANCH: Self = Self(128);
   pub const ALL: Self = Self(255);
+  // @@bebop_insertion_point(enum_scope:DecoratorTarget)
 }
 
 impl BebopFlags for DecoratorTarget {
   type Bits = u8;
   const ALL_BITS: Self::Bits = 255;
-  fn bits(self) -> Self::Bits { self.0 }
-  fn from_bits_retain(bits: Self::Bits) -> Self { Self(bits) }
+  fn bits(self) -> Self::Bits {
+    self.0
+  }
+  fn from_bits_retain(bits: Self::Bits) -> Self {
+    Self(bits)
+  }
 }
 
-impl core::ops::BitOr for DecoratorTarget { type Output = Self; fn bitor(self, rhs: Self) -> Self { Self(self.0 | rhs.0) } }
-impl core::ops::BitOrAssign for DecoratorTarget { fn bitor_assign(&mut self, rhs: Self) { self.0 |= rhs.0; } }
-impl core::ops::BitAnd for DecoratorTarget { type Output = Self; fn bitand(self, rhs: Self) -> Self { Self(self.0 & rhs.0) } }
-impl core::ops::BitAndAssign for DecoratorTarget { fn bitand_assign(&mut self, rhs: Self) { self.0 &= rhs.0; } }
-impl core::ops::BitXor for DecoratorTarget { type Output = Self; fn bitxor(self, rhs: Self) -> Self { Self(self.0 ^ rhs.0) } }
-impl core::ops::BitXorAssign for DecoratorTarget { fn bitxor_assign(&mut self, rhs: Self) { self.0 ^= rhs.0; } }
-impl core::ops::Not for DecoratorTarget { type Output = Self; fn not(self) -> Self { Self(!self.0) } }
-impl core::ops::Sub for DecoratorTarget { type Output = Self; fn sub(self, rhs: Self) -> Self { Self(self.0 & !rhs.0) } }
+impl core::ops::BitOr for DecoratorTarget {
+  type Output = Self;
+  fn bitor(self, rhs: Self) -> Self {
+    Self(self.0 | rhs.0)
+  }
+}
+impl core::ops::BitOrAssign for DecoratorTarget {
+  fn bitor_assign(&mut self, rhs: Self) {
+    self.0 |= rhs.0;
+  }
+}
+impl core::ops::BitAnd for DecoratorTarget {
+  type Output = Self;
+  fn bitand(self, rhs: Self) -> Self {
+    Self(self.0 & rhs.0)
+  }
+}
+impl core::ops::BitAndAssign for DecoratorTarget {
+  fn bitand_assign(&mut self, rhs: Self) {
+    self.0 &= rhs.0;
+  }
+}
+impl core::ops::BitXor for DecoratorTarget {
+  type Output = Self;
+  fn bitxor(self, rhs: Self) -> Self {
+    Self(self.0 ^ rhs.0)
+  }
+}
+impl core::ops::BitXorAssign for DecoratorTarget {
+  fn bitxor_assign(&mut self, rhs: Self) {
+    self.0 ^= rhs.0;
+  }
+}
+impl core::ops::Not for DecoratorTarget {
+  type Output = Self;
+  fn not(self) -> Self {
+    Self(!self.0)
+  }
+}
+impl core::ops::Sub for DecoratorTarget {
+  type Output = Self;
+  fn sub(self, rhs: Self) -> Self {
+    Self(self.0 & !rhs.0)
+  }
+}
 
 /// Schema edition markers.
 /// Edition values are ordered for comparison. Higher values are later editions.
 /// A compiler rejects source files declaring an edition it does not support.
 #[repr(i32)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Edition {
   Unknown = 0,
   Edition2026 = 1000,
@@ -382,30 +503,43 @@ impl core::convert::TryFrom<i32> for Edition {
       0 => Ok(Self::Unknown),
       1000 => Ok(Self::Edition2026),
       2147483647 => Ok(Self::Max),
-      _ => Err(DecodeError::InvalidEnum { type_name: "Edition", value: value as u64 }),
+      _ => Err(DecodeError::InvalidEnum {
+        type_name: "Edition",
+        value: value as u64,
+      }),
     }
   }
 }
 
 impl From<Edition> for i32 {
-  fn from(value: Edition) -> i32 { value as i32 }
+  fn from(value: Edition) -> i32 {
+    value as i32
+  }
 }
 
 impl Edition {
   pub const FIXED_ENCODED_SIZE: usize = 4;
+  // @@bebop_insertion_point(enum_scope:Edition)
 }
 
 impl BebopEncode for Edition {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:Edition)
     writer.write_i32(*self as i32);
+    // @@bebop_insertion_point(encode_end:Edition)
   }
 
-  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
+  fn encoded_size(&self) -> usize {
+    Self::FIXED_ENCODED_SIZE
+  }
 }
 
 impl<'buf> BebopDecode<'buf> for Edition {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
-    Self::try_from(reader.read_i32()?)
+    // @@bebop_insertion_point(decode_start:Edition)
+    let value = reader.read_i32()?;
+    // @@bebop_insertion_point(decode_end:Edition)
+    Self::try_from(value)
   }
 }
 
@@ -426,21 +560,22 @@ impl<'buf> BebopDecode<'buf> for Edition {
 /// array_element.map_value.kind=DEFINED
 /// array_element.map_value.defined_fqn="mypackage.Item"
 /// ```
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct TypeDescriptor<'buf> {
-/// Discriminates which fields below are populated.
+  /// Discriminates which fields below are populated.
   pub kind: Option<TypeKind>,
-/// Element type when `kind == ARRAY`.
+  /// Element type when `kind == ARRAY`.
   pub array_element: Option<Box<TypeDescriptor<'buf>>>,
-/// Element type when `kind == FIXED_ARRAY`.
+  /// Element type when `kind == FIXED_ARRAY`.
   pub fixed_array_element: Option<Box<TypeDescriptor<'buf>>>,
-/// Element count when `kind == FIXED_ARRAY`. Range 1-65535.
+  /// Element count when `kind == FIXED_ARRAY`. Range 1-65535.
   pub fixed_array_size: Option<u32>,
-/// Key type when `kind == MAP`. Must be hashable (bool, integers, string, uuid).
+  /// Key type when `kind == MAP`. Must be hashable (bool, integers, string, uuid).
   pub map_key: Option<Box<TypeDescriptor<'buf>>>,
-/// Value type when `kind == MAP`.
+  /// Value type when `kind == MAP`.
   pub map_value: Option<Box<TypeDescriptor<'buf>>>,
-/// FQN when `kind == DEFINED`. Always fully qualified after linking.
+  /// FQN when `kind == DEFINED`. Always fully qualified after linking.
   pub defined_fqn: Option<Cow<'buf, str>>,
 }
 
@@ -462,7 +597,13 @@ impl<'buf> TypeDescriptor<'buf> {
 
 impl<'buf> BebopEncode for TypeDescriptor<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:TypeDescriptor)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.kind {
       writer.write_tag(1);
       v.encode(writer);
@@ -493,6 +634,7 @@ impl<'buf> BebopEncode for TypeDescriptor<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:TypeDescriptor)
   }
 
   fn encoded_size(&self) -> usize {
@@ -524,13 +666,16 @@ impl<'buf> BebopEncode for TypeDescriptor<'buf> {
 
 impl<'buf> BebopDecode<'buf> for TypeDescriptor<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:TypeDescriptor)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.kind = Some(TypeKind::decode(reader)?),
         2 => msg.array_element = Some(Box::new(TypeDescriptor::decode(reader)?)),
@@ -539,11 +684,18 @@ impl<'buf> BebopDecode<'buf> for TypeDescriptor<'buf> {
         5 => msg.map_key = Some(Box::new(TypeDescriptor::decode(reader)?)),
         6 => msg.map_value = Some(Box::new(TypeDescriptor::decode(reader)?)),
         7 => msg.defined_fqn = Some(Cow::Borrowed(reader.read_str()?)),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:TypeDescriptor)
     Ok(msg)
   }
+}
+
+impl<'buf> TypeDescriptor<'buf> {
+  // @@bebop_insertion_point(message_scope:TypeDescriptor)
 }
 
 /// Concrete value.
@@ -551,7 +703,8 @@ impl<'buf> BebopDecode<'buf> for TypeDescriptor<'buf> {
 /// defaults/constraints. One typed value field is set, determined by `kind`.
 /// The `raw_value` field preserves pre-expansion text for constants using
 /// environment variable substitution (`$(...)`).
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct LiteralValue<'buf> {
   pub kind: Option<LiteralKind>,
   pub bool_value: Option<bool>,
@@ -559,14 +712,16 @@ pub struct LiteralValue<'buf> {
   pub float_value: Option<f64>,
   pub string_value: Option<Cow<'buf, str>>,
   pub uuid_value: Option<Uuid>,
-/// Original source text before `$(...)` expansion. Only set for string
-/// literals that contained environment variable references.
+  /// Original source text before `$(...)` expansion. Only set for string
+  /// literals that contained environment variable references.
   pub raw_value: Option<Cow<'buf, str>>,
-/// When `kind == BYTES`.
+  /// When `kind == BYTES`.
+  #[cfg_attr(feature = "serde", serde(borrow))]
+  #[cfg_attr(feature = "serde", serde(with = "bebop_runtime::serde_cow_bytes"))]
   pub bytes_value: Option<Cow<'buf, [u8]>>,
-/// When `kind == TIMESTAMP`.
+  /// When `kind == TIMESTAMP`.
   pub timestamp_value: Option<BebopTimestamp>,
-/// When `kind == DURATION`.
+  /// When `kind == DURATION`.
   pub duration_value: Option<BebopDuration>,
 }
 
@@ -591,7 +746,13 @@ impl<'buf> LiteralValue<'buf> {
 
 impl<'buf> BebopEncode for LiteralValue<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:LiteralValue)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.kind {
       writer.write_tag(1);
       v.encode(writer);
@@ -634,6 +795,7 @@ impl<'buf> BebopEncode for LiteralValue<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:LiteralValue)
   }
 
   fn encoded_size(&self) -> usize {
@@ -674,13 +836,16 @@ impl<'buf> BebopEncode for LiteralValue<'buf> {
 
 impl<'buf> BebopDecode<'buf> for LiteralValue<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:LiteralValue)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.kind = Some(LiteralKind::decode(reader)?),
         2 => msg.bool_value = Some(reader.read_bool()?),
@@ -692,16 +857,24 @@ impl<'buf> BebopDecode<'buf> for LiteralValue<'buf> {
         8 => msg.bytes_value = Some(Cow::Borrowed(reader.read_byte_slice()?)),
         9 => msg.timestamp_value = Some(reader.read_timestamp()?),
         10 => msg.duration_value = Some(reader.read_duration()?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:LiteralValue)
     Ok(msg)
   }
 }
 
+impl<'buf> LiteralValue<'buf> {
+  // @@bebop_insertion_point(message_scope:LiteralValue)
+}
+
 /// Named or positional argument in a decorator usage.
 /// Positional arguments have an empty string for `name`.
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DecoratorArg<'buf> {
   pub name: Cow<'buf, str>,
   pub value: LiteralValue<'buf>,
@@ -727,8 +900,10 @@ impl<'buf> DecoratorArg<'buf> {
 
 impl<'buf> BebopEncode for DecoratorArg<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:DecoratorArg)
     writer.write_string(&self.name);
     self.value.encode(writer);
+    // @@bebop_insertion_point(encode_end:DecoratorArg)
   }
 
   fn encoded_size(&self) -> usize {
@@ -741,10 +916,16 @@ impl<'buf> BebopEncode for DecoratorArg<'buf> {
 
 impl<'buf> BebopDecode<'buf> for DecoratorArg<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:DecoratorArg)
     let name = Cow::Borrowed(reader.read_str()?);
     let value = LiteralValue::decode(reader)?;
+    // @@bebop_insertion_point(decode_end:DecoratorArg)
     Ok(DecoratorArg { name, value })
   }
+}
+
+impl<'buf> DecoratorArg<'buf> {
+  // @@bebop_insertion_point(struct_scope:DecoratorArg)
 }
 
 /// Decorator applied to a definition, field, enum member, branch, or method.
@@ -753,13 +934,14 @@ impl<'buf> BebopDecode<'buf> for DecoratorArg<'buf> {
 /// The `export_data` map holds key-value pairs from executing the decorator's
 /// Lua export block. Generators read these to access decorator-computed
 /// metadata without re-running Lua.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct DecoratorUsage<'buf> {
-/// FQN of the decorator definition (e.g., `validators.range`).
+  /// FQN of the decorator definition (e.g., `validators.range`).
   pub fqn: Option<Cow<'buf, str>>,
-/// Arguments passed at the usage site, in declaration order.
+  /// Arguments passed at the usage site, in declaration order.
   pub args: Option<Vec<DecoratorArg<'buf>>>,
-/// Results from the decorator's export block.
+  /// Results from the decorator's export block.
   pub export_data: Option<HashMap<Cow<'buf, str>, LiteralValue<'buf>>>,
 }
 
@@ -769,15 +951,27 @@ impl<'buf> DecoratorUsage<'buf> {
   pub fn into_owned(self) -> DecoratorUsageOwned {
     DecoratorUsage {
       fqn: self.fqn.map(|v| Cow::Owned(v.into_owned())),
-      args: self.args.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
-      export_data: self.export_data.map(|v| v.into_iter().map(|(_k, _v)| (Cow::Owned(_k.into_owned()), _v.into_owned())).collect()),
+      args: self
+        .args
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      export_data: self.export_data.map(|v| {
+        v.into_iter()
+          .map(|(_k, _v)| (Cow::Owned(_k.into_owned()), _v.into_owned()))
+          .collect()
+      }),
     }
   }
 }
 
 impl<'buf> BebopEncode for DecoratorUsage<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:DecoratorUsage)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.fqn {
       writer.write_tag(1);
       writer.write_string(&v);
@@ -788,10 +982,14 @@ impl<'buf> BebopEncode for DecoratorUsage<'buf> {
     }
     if let Some(ref v) = self.export_data {
       writer.write_tag(3);
-      writer.write_map(&v, |_w, _k, _v| { _w.write_string(&_k); _v.encode(_w); });
+      writer.write_map(&v, |_w, _k, _v| {
+        _w.write_string(&_k);
+        _v.encode(_w);
+      });
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:DecoratorUsage)
   }
 
   fn encoded_size(&self) -> usize {
@@ -803,7 +1001,9 @@ impl<'buf> BebopEncode for DecoratorUsage<'buf> {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     if let Some(ref v) = self.export_data {
-      size += wire::tagged_size(wire::map_size(v, |_k, _v| wire::string_size(_k.len()) + _v.encoded_size()));
+      size += wire::tagged_size(wire::map_size(v, |_k, _v| {
+        wire::string_size(_k.len()) + _v.encoded_size()
+      }));
     }
     size
   }
@@ -811,22 +1011,39 @@ impl<'buf> BebopEncode for DecoratorUsage<'buf> {
 
 impl<'buf> BebopDecode<'buf> for DecoratorUsage<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:DecoratorUsage)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.fqn = Some(Cow::Borrowed(reader.read_str()?)),
         2 => msg.args = Some(reader.read_array(|_r| DecoratorArg::decode(_r))?),
-        3 => msg.export_data = Some(reader.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, LiteralValue::decode(_r)?)))?),
-        _ => { reader.skip(end - reader.position())?; }
+        3 => {
+          msg.export_data = Some(reader.read_map(|_r| {
+            Ok((
+              Ok(Cow::Borrowed(_r.read_str()?))?,
+              LiteralValue::decode(_r)?,
+            ))
+          })?)
+        }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:DecoratorUsage)
     Ok(msg)
   }
+}
+
+impl<'buf> DecoratorUsage<'buf> {
+  // @@bebop_insertion_point(message_scope:DecoratorUsage)
 }
 
 /// Field in a struct or message.
@@ -835,13 +1052,14 @@ impl<'buf> BebopDecode<'buf> for DecoratorUsage<'buf> {
 /// - Message fields: `index` 1-255 (wire tag from source)
 /// Struct fields encode in declaration order with no separators. Message
 /// fields encode as (tag, value) pairs in any order, terminated by 0.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct FieldDescriptor<'buf> {
   pub name: Option<Cow<'buf, str>>,
-/// Text from preceding `///` comments in source.
+  /// Text from preceding `///` comments in source.
   pub documentation: Option<Cow<'buf, str>>,
   pub r#type: Option<TypeDescriptor<'buf>>,
-/// Wire tag: 0 for struct fields, 1-255 for message fields.
+  /// Wire tag: 0 for struct fields, 1-255 for message fields.
   pub index: Option<u32>,
   pub decorators: Option<Vec<DecoratorUsage<'buf>>>,
 }
@@ -855,14 +1073,22 @@ impl<'buf> FieldDescriptor<'buf> {
       documentation: self.documentation.map(|v| Cow::Owned(v.into_owned())),
       r#type: self.r#type.map(|v| v.into_owned()),
       index: self.index,
-      decorators: self.decorators.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      decorators: self
+        .decorators
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
 
 impl<'buf> BebopEncode for FieldDescriptor<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:FieldDescriptor)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.name {
       writer.write_tag(1);
       writer.write_string(&v);
@@ -885,6 +1111,7 @@ impl<'buf> BebopEncode for FieldDescriptor<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:FieldDescriptor)
   }
 
   fn encoded_size(&self) -> usize {
@@ -910,38 +1137,49 @@ impl<'buf> BebopEncode for FieldDescriptor<'buf> {
 
 impl<'buf> BebopDecode<'buf> for FieldDescriptor<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:FieldDescriptor)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
         2 => msg.documentation = Some(Cow::Borrowed(reader.read_str()?)),
         3 => msg.r#type = Some(TypeDescriptor::decode(reader)?),
         4 => msg.index = Some(reader.read_u32()?),
         5 => msg.decorators = Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:FieldDescriptor)
     Ok(msg)
   }
+}
+
+impl<'buf> FieldDescriptor<'buf> {
+  // @@bebop_insertion_point(message_scope:FieldDescriptor)
 }
 
 /// Enum member (name + integer value).
 /// The `value` is stored as uint64 regardless of the enum's base type.
 /// For signed base types, sign-extend from the base type's bit width.
 /// A member with value 0xFFFFFFFFFFFFFFFF in an int8-based enum is -1.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct EnumMemberDescriptor<'buf> {
   pub name: Option<Cow<'buf, str>>,
   pub documentation: Option<Cow<'buf, str>>,
-/// Stored unsigned. Reinterpret per the parent enum's `base_type`.
+  /// Stored unsigned. Reinterpret per the parent enum's `base_type`.
   pub value: Option<u64>,
   pub decorators: Option<Vec<DecoratorUsage<'buf>>>,
-/// Original expression text (e.g., `1 << 3`). Absent for simple literals.
+  /// Original expression text (e.g., `1 << 3`). Absent for simple literals.
   pub value_expr: Option<Cow<'buf, str>>,
 }
 
@@ -953,7 +1191,9 @@ impl<'buf> EnumMemberDescriptor<'buf> {
       name: self.name.map(|v| Cow::Owned(v.into_owned())),
       documentation: self.documentation.map(|v| Cow::Owned(v.into_owned())),
       value: self.value,
-      decorators: self.decorators.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      decorators: self
+        .decorators
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
       value_expr: self.value_expr.map(|v| Cow::Owned(v.into_owned())),
     }
   }
@@ -961,7 +1201,13 @@ impl<'buf> EnumMemberDescriptor<'buf> {
 
 impl<'buf> BebopEncode for EnumMemberDescriptor<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:EnumMemberDescriptor)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.name {
       writer.write_tag(1);
       writer.write_string(&v);
@@ -984,6 +1230,7 @@ impl<'buf> BebopEncode for EnumMemberDescriptor<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:EnumMemberDescriptor)
   }
 
   fn encoded_size(&self) -> usize {
@@ -1009,24 +1256,34 @@ impl<'buf> BebopEncode for EnumMemberDescriptor<'buf> {
 
 impl<'buf> BebopDecode<'buf> for EnumMemberDescriptor<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:EnumMemberDescriptor)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
         2 => msg.documentation = Some(Cow::Borrowed(reader.read_str()?)),
         3 => msg.value = Some(reader.read_u64()?),
         4 => msg.decorators = Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?),
         5 => msg.value_expr = Some(Cow::Borrowed(reader.read_str()?)),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:EnumMemberDescriptor)
     Ok(msg)
   }
+}
+
+impl<'buf> EnumMemberDescriptor<'buf> {
+  // @@bebop_insertion_point(message_scope:EnumMemberDescriptor)
 }
 
 /// Union branch.
@@ -1043,16 +1300,17 @@ impl<'buf> BebopDecode<'buf> for EnumMemberDescriptor<'buf> {
 /// union Shape { rect(2): Rect }
 /// ```
 /// Sets `type_ref_fqn = "mypackage.Rect"` and `name = "rect"`.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct UnionBranchDescriptor<'buf> {
-/// Wire discriminator byte. Range 1-255.
+  /// Wire discriminator byte. Range 1-255.
   pub discriminator: Option<u8>,
   pub documentation: Option<Cow<'buf, str>>,
-/// FQN of inline definition. Mutually exclusive with `type_ref_fqn`.
+  /// FQN of inline definition. Mutually exclusive with `type_ref_fqn`.
   pub inline_fqn: Option<Cow<'buf, str>>,
-/// FQN of referenced type. Mutually exclusive with `inline_fqn`.
+  /// FQN of referenced type. Mutually exclusive with `inline_fqn`.
   pub type_ref_fqn: Option<Cow<'buf, str>>,
-/// Branch name for type-reference branches.
+  /// Branch name for type-reference branches.
   pub name: Option<Cow<'buf, str>>,
   pub decorators: Option<Vec<DecoratorUsage<'buf>>>,
 }
@@ -1067,14 +1325,22 @@ impl<'buf> UnionBranchDescriptor<'buf> {
       inline_fqn: self.inline_fqn.map(|v| Cow::Owned(v.into_owned())),
       type_ref_fqn: self.type_ref_fqn.map(|v| Cow::Owned(v.into_owned())),
       name: self.name.map(|v| Cow::Owned(v.into_owned())),
-      decorators: self.decorators.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      decorators: self
+        .decorators
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
 
 impl<'buf> BebopEncode for UnionBranchDescriptor<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:UnionBranchDescriptor)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(v) = self.discriminator {
       writer.write_tag(1);
       writer.write_byte(v);
@@ -1101,6 +1367,7 @@ impl<'buf> BebopEncode for UnionBranchDescriptor<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:UnionBranchDescriptor)
   }
 
   fn encoded_size(&self) -> usize {
@@ -1129,13 +1396,16 @@ impl<'buf> BebopEncode for UnionBranchDescriptor<'buf> {
 
 impl<'buf> BebopDecode<'buf> for UnionBranchDescriptor<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:UnionBranchDescriptor)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.discriminator = Some(reader.read_byte()?),
         2 => msg.documentation = Some(Cow::Borrowed(reader.read_str()?)),
@@ -1143,24 +1413,32 @@ impl<'buf> BebopDecode<'buf> for UnionBranchDescriptor<'buf> {
         4 => msg.type_ref_fqn = Some(Cow::Borrowed(reader.read_str()?)),
         5 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
         6 => msg.decorators = Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:UnionBranchDescriptor)
     Ok(msg)
   }
+}
+
+impl<'buf> UnionBranchDescriptor<'buf> {
+  // @@bebop_insertion_point(message_scope:UnionBranchDescriptor)
 }
 
 /// Service method.
 /// The `id` is MurmurHash3 of `/ServiceName/MethodName`, computed at compile
 /// time. Gives a stable 32-bit routing key without transmitting the full name.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct MethodDescriptor<'buf> {
   pub name: Option<Cow<'buf, str>>,
   pub documentation: Option<Cow<'buf, str>>,
   pub request_type: Option<TypeDescriptor<'buf>>,
   pub response_type: Option<TypeDescriptor<'buf>>,
   pub method_type: Option<MethodType>,
-/// MurmurHash3 of `/ServiceName/MethodName`.
+  /// MurmurHash3 of `/ServiceName/MethodName`.
   pub id: Option<u32>,
   pub decorators: Option<Vec<DecoratorUsage<'buf>>>,
 }
@@ -1176,14 +1454,22 @@ impl<'buf> MethodDescriptor<'buf> {
       response_type: self.response_type.map(|v| v.into_owned()),
       method_type: self.method_type,
       id: self.id,
-      decorators: self.decorators.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      decorators: self
+        .decorators
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
 
 impl<'buf> BebopEncode for MethodDescriptor<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:MethodDescriptor)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.name {
       writer.write_tag(1);
       writer.write_string(&v);
@@ -1214,6 +1500,7 @@ impl<'buf> BebopEncode for MethodDescriptor<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:MethodDescriptor)
   }
 
   fn encoded_size(&self) -> usize {
@@ -1245,13 +1532,16 @@ impl<'buf> BebopEncode for MethodDescriptor<'buf> {
 
 impl<'buf> BebopDecode<'buf> for MethodDescriptor<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:MethodDescriptor)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
         2 => msg.documentation = Some(Cow::Borrowed(reader.read_str()?)),
@@ -1260,11 +1550,18 @@ impl<'buf> BebopDecode<'buf> for MethodDescriptor<'buf> {
         5 => msg.method_type = Some(MethodType::decode(reader)?),
         6 => msg.id = Some(reader.read_u32()?),
         7 => msg.decorators = Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:MethodDescriptor)
     Ok(msg)
   }
+}
+
+impl<'buf> MethodDescriptor<'buf> {
+  // @@bebop_insertion_point(message_scope:MethodDescriptor)
 }
 
 /// Enum definition body.
@@ -1272,11 +1569,12 @@ impl<'buf> BebopDecode<'buf> for MethodDescriptor<'buf> {
 /// Defaults to `UINT32` when no suffix is specified. Valid base types:
 /// `BYTE`, `INT8`, `INT16`, `UINT16`, `INT32`, `UINT32`, `INT64`, `UINT64`.
 /// Member values are stored as uint64 and reinterpreted per `base_type`.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct EnumDef<'buf> {
   pub base_type: Option<TypeKind>,
   pub members: Option<Vec<EnumMemberDescriptor<'buf>>>,
-/// True when `@flags` is applied. Members are bit positions for OR.
+  /// True when `@flags` is applied. Members are bit positions for OR.
   pub is_flags: Option<bool>,
 }
 
@@ -1286,7 +1584,9 @@ impl<'buf> EnumDef<'buf> {
   pub fn into_owned(self) -> EnumDefOwned {
     EnumDef {
       base_type: self.base_type,
-      members: self.members.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      members: self
+        .members
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
       is_flags: self.is_flags,
     }
   }
@@ -1294,7 +1594,13 @@ impl<'buf> EnumDef<'buf> {
 
 impl<'buf> BebopEncode for EnumDef<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:EnumDef)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.base_type {
       writer.write_tag(1);
       v.encode(writer);
@@ -1309,6 +1615,7 @@ impl<'buf> BebopEncode for EnumDef<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:EnumDef)
   }
 
   fn encoded_size(&self) -> usize {
@@ -1328,35 +1635,46 @@ impl<'buf> BebopEncode for EnumDef<'buf> {
 
 impl<'buf> BebopDecode<'buf> for EnumDef<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:EnumDef)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.base_type = Some(TypeKind::decode(reader)?),
         2 => msg.members = Some(reader.read_array(|_r| EnumMemberDescriptor::decode(_r))?),
         3 => msg.is_flags = Some(reader.read_bool()?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:EnumDef)
     Ok(msg)
   }
+}
+
+impl<'buf> EnumDef<'buf> {
+  // @@bebop_insertion_point(message_scope:EnumDef)
 }
 
 /// Struct definition body.
 /// Fields encode positionally: bytes concatenated in declaration order,
 /// no tags, no length prefix (for fixed-size structs). Variable-size structs
 /// get a u32 byte-length prefix.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct StructDef<'buf> {
   pub fields: Option<Vec<FieldDescriptor<'buf>>>,
-/// True when declared with `mut`. Mutable structs allow field reassignment.
+  /// True when declared with `mut`. Mutable structs allow field reassignment.
   pub is_mutable: Option<bool>,
-/// Total wire bytes when all fields are fixed-size. Zero when any field
-/// is variable-size. Generators use this to pre-allocate buffers.
+  /// Total wire bytes when all fields are fixed-size. Zero when any field
+  /// is variable-size. Generators use this to pre-allocate buffers.
   pub fixed_size: Option<u32>,
 }
 
@@ -1365,7 +1683,9 @@ pub type StructDefOwned = StructDef<'static>;
 impl<'buf> StructDef<'buf> {
   pub fn into_owned(self) -> StructDefOwned {
     StructDef {
-      fields: self.fields.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      fields: self
+        .fields
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
       is_mutable: self.is_mutable,
       fixed_size: self.fixed_size,
     }
@@ -1374,7 +1694,13 @@ impl<'buf> StructDef<'buf> {
 
 impl<'buf> BebopEncode for StructDef<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:StructDef)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.fields {
       writer.write_tag(1);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
@@ -1389,6 +1715,7 @@ impl<'buf> BebopEncode for StructDef<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:StructDef)
   }
 
   fn encoded_size(&self) -> usize {
@@ -1408,28 +1735,39 @@ impl<'buf> BebopEncode for StructDef<'buf> {
 
 impl<'buf> BebopDecode<'buf> for StructDef<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:StructDef)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.fields = Some(reader.read_array(|_r| FieldDescriptor::decode(_r))?),
         2 => msg.is_mutable = Some(reader.read_bool()?),
         3 => msg.fixed_size = Some(reader.read_u32()?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:StructDef)
     Ok(msg)
   }
+}
+
+impl<'buf> StructDef<'buf> {
+  // @@bebop_insertion_point(message_scope:StructDef)
 }
 
 /// Message definition body.
 /// Fields encode as tagged pairs (index, value), terminated by zero byte.
 /// Fields can be added or removed without breaking existing decoders.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct MessageDef<'buf> {
   pub fields: Option<Vec<FieldDescriptor<'buf>>>,
 }
@@ -1439,20 +1777,29 @@ pub type MessageDefOwned = MessageDef<'static>;
 impl<'buf> MessageDef<'buf> {
   pub fn into_owned(self) -> MessageDefOwned {
     MessageDef {
-      fields: self.fields.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      fields: self
+        .fields
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
 
 impl<'buf> BebopEncode for MessageDef<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:MessageDef)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.fields {
       writer.write_tag(1);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:MessageDef)
   }
 
   fn encoded_size(&self) -> usize {
@@ -1466,26 +1813,37 @@ impl<'buf> BebopEncode for MessageDef<'buf> {
 
 impl<'buf> BebopDecode<'buf> for MessageDef<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:MessageDef)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.fields = Some(reader.read_array(|_r| FieldDescriptor::decode(_r))?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:MessageDef)
     Ok(msg)
   }
+}
+
+impl<'buf> MessageDef<'buf> {
+  // @@bebop_insertion_point(message_scope:MessageDef)
 }
 
 /// Union definition body.
 /// Wire encoding: u32 byte_length, discriminator byte, branch payload.
 /// Decoders read the length to skip unknown discriminators.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct UnionDef<'buf> {
   pub branches: Option<Vec<UnionBranchDescriptor<'buf>>>,
 }
@@ -1495,20 +1853,29 @@ pub type UnionDefOwned = UnionDef<'static>;
 impl<'buf> UnionDef<'buf> {
   pub fn into_owned(self) -> UnionDefOwned {
     UnionDef {
-      branches: self.branches.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      branches: self
+        .branches
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
 
 impl<'buf> BebopEncode for UnionDef<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:UnionDef)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.branches {
       writer.write_tag(1);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:UnionDef)
   }
 
   fn encoded_size(&self) -> usize {
@@ -1522,24 +1889,35 @@ impl<'buf> BebopEncode for UnionDef<'buf> {
 
 impl<'buf> BebopDecode<'buf> for UnionDef<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:UnionDef)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.branches = Some(reader.read_array(|_r| UnionBranchDescriptor::decode(_r))?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:UnionDef)
     Ok(msg)
   }
 }
 
+impl<'buf> UnionDef<'buf> {
+  // @@bebop_insertion_point(message_scope:UnionDef)
+}
+
 /// Service definition body.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct ServiceDef<'buf> {
   pub methods: Option<Vec<MethodDescriptor<'buf>>>,
 }
@@ -1549,20 +1927,29 @@ pub type ServiceDefOwned = ServiceDef<'static>;
 impl<'buf> ServiceDef<'buf> {
   pub fn into_owned(self) -> ServiceDefOwned {
     ServiceDef {
-      methods: self.methods.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      methods: self
+        .methods
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
 
 impl<'buf> BebopEncode for ServiceDef<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:ServiceDef)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.methods {
       writer.write_tag(1);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:ServiceDef)
   }
 
   fn encoded_size(&self) -> usize {
@@ -1576,20 +1963,30 @@ impl<'buf> BebopEncode for ServiceDef<'buf> {
 
 impl<'buf> BebopDecode<'buf> for ServiceDef<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:ServiceDef)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.methods = Some(reader.read_array(|_r| MethodDescriptor::decode(_r))?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:ServiceDef)
     Ok(msg)
   }
+}
+
+impl<'buf> ServiceDef<'buf> {
+  // @@bebop_insertion_point(message_scope:ServiceDef)
 }
 
 /// Const definition body.
@@ -1600,7 +1997,8 @@ impl<'buf> BebopDecode<'buf> for ServiceDef<'buf> {
 /// ```
 /// The LiteralValue's `raw_value` preserves `$(API_KEY)` while `string_value`
 /// holds the expanded result.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct ConstDef<'buf> {
   pub r#type: Option<TypeDescriptor<'buf>>,
   pub value: Option<LiteralValue<'buf>>,
@@ -1619,7 +2017,13 @@ impl<'buf> ConstDef<'buf> {
 
 impl<'buf> BebopEncode for ConstDef<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:ConstDef)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.r#type {
       writer.write_tag(1);
       v.encode(writer);
@@ -1630,6 +2034,7 @@ impl<'buf> BebopEncode for ConstDef<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:ConstDef)
   }
 
   fn encoded_size(&self) -> usize {
@@ -1646,21 +2051,31 @@ impl<'buf> BebopEncode for ConstDef<'buf> {
 
 impl<'buf> BebopDecode<'buf> for ConstDef<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:ConstDef)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.r#type = Some(TypeDescriptor::decode(reader)?),
         2 => msg.value = Some(LiteralValue::decode(reader)?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:ConstDef)
     Ok(msg)
   }
+}
+
+impl<'buf> ConstDef<'buf> {
+  // @@bebop_insertion_point(message_scope:ConstDef)
 }
 
 /// Decorator parameter definition.
@@ -1672,19 +2087,20 @@ impl<'buf> BebopDecode<'buf> for ConstDef<'buf> {
 ///   param mode?: string in ["strict", "lenient"]
 /// }
 /// ```
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct DecoratorParamDef<'buf> {
   pub name: Option<Cow<'buf, str>>,
-/// Description from the `///` comment preceding this param.
+  /// Description from the `///` comment preceding this param.
   pub description: Option<Cow<'buf, str>>,
-/// Must be a scalar TypeKind.
+  /// Must be a scalar TypeKind.
   pub r#type: Option<TypeKind>,
-/// True for required (`!`) params, false for optional (`?`).
+  /// True for required (`!`) params, false for optional (`?`).
   pub required: Option<bool>,
-/// Default value for optional params. Absent for required params.
+  /// Default value for optional params. Absent for required params.
   pub default_value: Option<LiteralValue<'buf>>,
-/// Allowed-value constraint from `in [...]`. When non-empty, arguments
-/// must match one of these values.
+  /// Allowed-value constraint from `in [...]`. When non-empty, arguments
+  /// must match one of these values.
   pub allowed_values: Option<Vec<LiteralValue<'buf>>>,
 }
 
@@ -1698,14 +2114,22 @@ impl<'buf> DecoratorParamDef<'buf> {
       r#type: self.r#type,
       required: self.required,
       default_value: self.default_value.map(|v| v.into_owned()),
-      allowed_values: self.allowed_values.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      allowed_values: self
+        .allowed_values
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
 
 impl<'buf> BebopEncode for DecoratorParamDef<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:DecoratorParamDef)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.name {
       writer.write_tag(1);
       writer.write_string(&v);
@@ -1732,6 +2156,7 @@ impl<'buf> BebopEncode for DecoratorParamDef<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:DecoratorParamDef)
   }
 
   fn encoded_size(&self) -> usize {
@@ -1760,13 +2185,16 @@ impl<'buf> BebopEncode for DecoratorParamDef<'buf> {
 
 impl<'buf> BebopDecode<'buf> for DecoratorParamDef<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:DecoratorParamDef)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
         2 => msg.description = Some(Cow::Borrowed(reader.read_str()?)),
@@ -1774,28 +2202,36 @@ impl<'buf> BebopDecode<'buf> for DecoratorParamDef<'buf> {
         4 => msg.required = Some(reader.read_bool()?),
         5 => msg.default_value = Some(LiteralValue::decode(reader)?),
         6 => msg.allowed_values = Some(reader.read_array(|_r| LiteralValue::decode(_r))?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:DecoratorParamDef)
     Ok(msg)
   }
+}
+
+impl<'buf> DecoratorParamDef<'buf> {
+  // @@bebop_insertion_point(message_scope:DecoratorParamDef)
 }
 
 /// Decorator definition body.
 /// Describes the decorator contract: which elements it can target, what
 /// parameters it accepts, and optional Lua source for validate/export.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct DecoratorDef<'buf> {
-/// Bitmask of DecoratorTarget values this decorator may apply to.
+  /// Bitmask of DecoratorTarget values this decorator may apply to.
   pub targets: Option<DecoratorTarget>,
-/// When true, the decorator can appear multiple times on the same target.
+  /// When true, the decorator can appear multiple times on the same target.
   pub allow_multiple: Option<bool>,
   pub params: Option<Vec<DecoratorParamDef<'buf>>>,
-/// Lua source for validate block. Runs at compile time to reject invalid
-/// usages. Absent when the decorator has no validate block.
+  /// Lua source for validate block. Runs at compile time to reject invalid
+  /// usages. Absent when the decorator has no validate block.
   pub validate_source: Option<Cow<'buf, str>>,
-/// Lua source for export block. Produces key-value metadata stored in
-/// DecoratorUsage.export_data. Absent when no export block.
+  /// Lua source for export block. Produces key-value metadata stored in
+  /// DecoratorUsage.export_data. Absent when no export block.
   pub export_source: Option<Cow<'buf, str>>,
 }
 
@@ -1806,7 +2242,9 @@ impl<'buf> DecoratorDef<'buf> {
     DecoratorDef {
       targets: self.targets,
       allow_multiple: self.allow_multiple,
-      params: self.params.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      params: self
+        .params
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
       validate_source: self.validate_source.map(|v| Cow::Owned(v.into_owned())),
       export_source: self.export_source.map(|v| Cow::Owned(v.into_owned())),
     }
@@ -1815,7 +2253,13 @@ impl<'buf> DecoratorDef<'buf> {
 
 impl<'buf> BebopEncode for DecoratorDef<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:DecoratorDef)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.targets {
       writer.write_tag(1);
       v.encode(writer);
@@ -1838,6 +2282,7 @@ impl<'buf> BebopEncode for DecoratorDef<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:DecoratorDef)
   }
 
   fn encoded_size(&self) -> usize {
@@ -1863,24 +2308,34 @@ impl<'buf> BebopEncode for DecoratorDef<'buf> {
 
 impl<'buf> BebopDecode<'buf> for DecoratorDef<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:DecoratorDef)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.targets = Some(DecoratorTarget::decode(reader)?),
         2 => msg.allow_multiple = Some(reader.read_bool()?),
         3 => msg.params = Some(reader.read_array(|_r| DecoratorParamDef::decode(_r))?),
         4 => msg.validate_source = Some(Cow::Borrowed(reader.read_str()?)),
         5 => msg.export_source = Some(Cow::Borrowed(reader.read_str()?)),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:DecoratorDef)
     Ok(msg)
   }
+}
+
+impl<'buf> DecoratorDef<'buf> {
+  // @@bebop_insertion_point(message_scope:DecoratorDef)
 }
 
 /// Named definition.
@@ -1891,18 +2346,19 @@ impl<'buf> BebopDecode<'buf> for DecoratorDef<'buf> {
 /// Nested definitions (types declared inside struct/message/union bodies)
 /// live in the `nested` array. Inline union branch definitions also appear
 /// there. Each nested definition has its own FQN encoding the full path.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct DefinitionDescriptor<'buf> {
   pub kind: Option<DefinitionKind>,
-/// Simple name as declared in source.
+  /// Simple name as declared in source.
   pub name: Option<Cow<'buf, str>>,
-/// Fully-qualified name including package and parent scopes.
+  /// Fully-qualified name including package and parent scopes.
   pub fqn: Option<Cow<'buf, str>>,
-/// Text from preceding `///` comments in source.
+  /// Text from preceding `///` comments in source.
   pub documentation: Option<Cow<'buf, str>>,
   pub visibility: Option<Visibility>,
   pub decorators: Option<Vec<DecoratorUsage<'buf>>>,
-/// Types declared inside this definition's body.
+  /// Types declared inside this definition's body.
   pub nested: Option<Vec<DefinitionDescriptor<'buf>>>,
   pub enum_def: Option<EnumDef<'buf>>,
   pub struct_def: Option<StructDef<'buf>>,
@@ -1923,8 +2379,12 @@ impl<'buf> DefinitionDescriptor<'buf> {
       fqn: self.fqn.map(|v| Cow::Owned(v.into_owned())),
       documentation: self.documentation.map(|v| Cow::Owned(v.into_owned())),
       visibility: self.visibility,
-      decorators: self.decorators.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
-      nested: self.nested.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      decorators: self
+        .decorators
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      nested: self
+        .nested
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
       enum_def: self.enum_def.map(|v| v.into_owned()),
       struct_def: self.struct_def.map(|v| v.into_owned()),
       message_def: self.message_def.map(|v| v.into_owned()),
@@ -1938,7 +2398,13 @@ impl<'buf> DefinitionDescriptor<'buf> {
 
 impl<'buf> BebopEncode for DefinitionDescriptor<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:DefinitionDescriptor)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.kind {
       writer.write_tag(1);
       v.encode(writer);
@@ -1997,6 +2463,7 @@ impl<'buf> BebopEncode for DefinitionDescriptor<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:DefinitionDescriptor)
   }
 
   fn encoded_size(&self) -> usize {
@@ -2049,13 +2516,16 @@ impl<'buf> BebopEncode for DefinitionDescriptor<'buf> {
 
 impl<'buf> BebopDecode<'buf> for DefinitionDescriptor<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:DefinitionDescriptor)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.kind = Some(DefinitionKind::decode(reader)?),
         2 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
@@ -2071,36 +2541,44 @@ impl<'buf> BebopDecode<'buf> for DefinitionDescriptor<'buf> {
         12 => msg.service_def = Some(ServiceDef::decode(reader)?),
         13 => msg.const_def = Some(ConstDef::decode(reader)?),
         14 => msg.decorator_def = Some(DecoratorDef::decode(reader)?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:DefinitionDescriptor)
     Ok(msg)
   }
+}
+
+impl<'buf> DefinitionDescriptor<'buf> {
+  // @@bebop_insertion_point(message_scope:DefinitionDescriptor)
 }
 
 /// Source location for a descriptor element.
 /// Maps descriptor elements to source positions and comments. Used for
 /// error reporting, documentation extraction, and IDE features.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct Location<'buf> {
-/// Path into the descriptor tree. Encoded as pairs of (field_tag, index):
-/// ```
-/// [5, 0]       -> schema.definitions[0]
-/// [5, 0, 1, 2] -> schema.definitions[0].fields[2]
-/// [5, 1, 2, 0] -> schema.definitions[1].members[0]
-/// ```
-/// Field tags correspond to definition body field indices
-/// (StructDef.fields = 1, EnumDef.members = 2, etc.).
+  /// Path into the descriptor tree. Encoded as pairs of (field_tag, index):
+  /// ```
+  /// [5, 0]       -> schema.definitions[0]
+  /// [5, 0, 1, 2] -> schema.definitions[0].fields[2]
+  /// [5, 1, 2, 0] -> schema.definitions[1].members[0]
+  /// ```
+  /// Field tags correspond to definition body field indices
+  /// (StructDef.fields = 1, EnumDef.members = 2, etc.).
   pub path: Option<Vec<i32>>,
-/// Source span as `[start_line, start_col, end_line, end_col]`.
-/// All values 1-based. Columns count characters, tabs advance to
-/// next multiple of 4.
+  /// Source span as `[start_line, start_col, end_line, end_col]`.
+  /// All values 1-based. Columns count characters, tabs advance to
+  /// next multiple of 4.
   pub span: Option<[i32; 4]>,
-/// Comments on adjacent preceding lines with no blank line separation.
+  /// Comments on adjacent preceding lines with no blank line separation.
   pub leading_comments: Option<Cow<'buf, str>>,
-/// Comment on the same line after the element or after an opening brace.
+  /// Comment on the same line after the element or after an opening brace.
   pub trailing_comments: Option<Cow<'buf, str>>,
-/// Comment groups separated from the element by blank lines.
+  /// Comment groups separated from the element by blank lines.
   pub detached_comments: Option<Vec<Cow<'buf, str>>>,
 }
 
@@ -2113,14 +2591,24 @@ impl<'buf> Location<'buf> {
       span: self.span,
       leading_comments: self.leading_comments.map(|v| Cow::Owned(v.into_owned())),
       trailing_comments: self.trailing_comments.map(|v| Cow::Owned(v.into_owned())),
-      detached_comments: self.detached_comments.map(|v| v.into_iter().map(|_e| Cow::Owned(_e.into_owned())).collect()),
+      detached_comments: self.detached_comments.map(|v| {
+        v.into_iter()
+          .map(|_e| Cow::Owned(_e.into_owned()))
+          .collect()
+      }),
     }
   }
 }
 
 impl<'buf> BebopEncode for Location<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:Location)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.path {
       writer.write_tag(1);
       writer.write_array(&v, |_w, _el| _w.write_i32(*_el));
@@ -2143,6 +2631,7 @@ impl<'buf> BebopEncode for Location<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:Location)
   }
 
   fn encoded_size(&self) -> usize {
@@ -2168,31 +2657,44 @@ impl<'buf> BebopEncode for Location<'buf> {
 
 impl<'buf> BebopDecode<'buf> for Location<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:Location)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.path = Some(reader.read_array(|_r| _r.read_i32())?),
         2 => msg.span = Some(reader.read_fixed_array::<i32, 4>()?),
         3 => msg.leading_comments = Some(Cow::Borrowed(reader.read_str()?)),
         4 => msg.trailing_comments = Some(Cow::Borrowed(reader.read_str()?)),
-        5 => msg.detached_comments = Some(reader.read_array(|_r| Ok(Cow::Borrowed(_r.read_str()?)))?),
-        _ => { reader.skip(end - reader.position())?; }
+        5 => {
+          msg.detached_comments = Some(reader.read_array(|_r| Ok(Cow::Borrowed(_r.read_str()?)))?)
+        }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:Location)
     Ok(msg)
   }
+}
+
+impl<'buf> Location<'buf> {
+  // @@bebop_insertion_point(message_scope:Location)
 }
 
 /// Source code info for a schema.
 /// One Location entry per locatable element. Includes definitions, fields,
 /// enum members, union branches, and service methods. Not every element
 /// has a location.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct SourceCodeInfo<'buf> {
   pub locations: Option<Vec<Location<'buf>>>,
 }
@@ -2202,20 +2704,29 @@ pub type SourceCodeInfoOwned = SourceCodeInfo<'static>;
 impl<'buf> SourceCodeInfo<'buf> {
   pub fn into_owned(self) -> SourceCodeInfoOwned {
     SourceCodeInfo {
-      locations: self.locations.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      locations: self
+        .locations
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
 
 impl<'buf> BebopEncode for SourceCodeInfo<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:SourceCodeInfo)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.locations {
       writer.write_tag(1);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:SourceCodeInfo)
   }
 
   fn encoded_size(&self) -> usize {
@@ -2229,38 +2740,49 @@ impl<'buf> BebopEncode for SourceCodeInfo<'buf> {
 
 impl<'buf> BebopDecode<'buf> for SourceCodeInfo<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:SourceCodeInfo)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.locations = Some(reader.read_array(|_r| Location::decode(_r))?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:SourceCodeInfo)
     Ok(msg)
   }
+}
+
+impl<'buf> SourceCodeInfo<'buf> {
+  // @@bebop_insertion_point(message_scope:SourceCodeInfo)
 }
 
 /// Descriptor for a single .bop source file.
 /// Each source file produces one SchemaDescriptor. Definitions are
 /// topologically sorted: every type appears after the types it depends on.
 /// Generators can emit types in array order without forward declarations.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct SchemaDescriptor<'buf> {
-/// File path as provided to the compiler.
+  /// File path as provided to the compiler.
   pub path: Option<Cow<'buf, str>>,
-/// Package declaration from source. Absent when no package is declared.
+  /// Package declaration from source. Absent when no package is declared.
   pub package: Option<Cow<'buf, str>>,
   pub edition: Option<Edition>,
-/// Import paths in source declaration order.
+  /// Import paths in source declaration order.
   pub imports: Option<Vec<Cow<'buf, str>>>,
-/// All definitions in topological dependency order.
+  /// All definitions in topological dependency order.
   pub definitions: Option<Vec<DefinitionDescriptor<'buf>>>,
-/// Source code info. Only present when requested during compilation.
+  /// Source code info. Only present when requested during compilation.
   pub source_code_info: Option<SourceCodeInfo<'buf>>,
 }
 
@@ -2272,8 +2794,14 @@ impl<'buf> SchemaDescriptor<'buf> {
       path: self.path.map(|v| Cow::Owned(v.into_owned())),
       package: self.package.map(|v| Cow::Owned(v.into_owned())),
       edition: self.edition,
-      imports: self.imports.map(|v| v.into_iter().map(|_e| Cow::Owned(_e.into_owned())).collect()),
-      definitions: self.definitions.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      imports: self.imports.map(|v| {
+        v.into_iter()
+          .map(|_e| Cow::Owned(_e.into_owned()))
+          .collect()
+      }),
+      definitions: self
+        .definitions
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
       source_code_info: self.source_code_info.map(|v| v.into_owned()),
     }
   }
@@ -2281,7 +2809,13 @@ impl<'buf> SchemaDescriptor<'buf> {
 
 impl<'buf> BebopEncode for SchemaDescriptor<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:SchemaDescriptor)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.path {
       writer.write_tag(1);
       writer.write_string(&v);
@@ -2308,6 +2842,7 @@ impl<'buf> BebopEncode for SchemaDescriptor<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:SchemaDescriptor)
   }
 
   fn encoded_size(&self) -> usize {
@@ -2336,13 +2871,16 @@ impl<'buf> BebopEncode for SchemaDescriptor<'buf> {
 
 impl<'buf> BebopDecode<'buf> for SchemaDescriptor<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:SchemaDescriptor)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.path = Some(Cow::Borrowed(reader.read_str()?)),
         2 => msg.package = Some(Cow::Borrowed(reader.read_str()?)),
@@ -2350,11 +2888,18 @@ impl<'buf> BebopDecode<'buf> for SchemaDescriptor<'buf> {
         4 => msg.imports = Some(reader.read_array(|_r| Ok(Cow::Borrowed(_r.read_str()?)))?),
         5 => msg.definitions = Some(reader.read_array(|_r| DefinitionDescriptor::decode(_r))?),
         6 => msg.source_code_info = Some(SourceCodeInfo::decode(reader)?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:SchemaDescriptor)
     Ok(msg)
   }
+}
+
+impl<'buf> SchemaDescriptor<'buf> {
+  // @@bebop_insertion_point(message_scope:SchemaDescriptor)
 }
 
 /// Root container for compiled schemas.
@@ -2362,7 +2907,8 @@ impl<'buf> BebopDecode<'buf> for SchemaDescriptor<'buf> {
 /// ordered so imported schemas appear before schemas that import them.
 /// Processing schemas[0..N] in order encounters dependencies before
 /// they are referenced.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct DescriptorSet<'buf> {
   pub schemas: Option<Vec<SchemaDescriptor<'buf>>>,
 }
@@ -2372,20 +2918,29 @@ pub type DescriptorSetOwned = DescriptorSet<'static>;
 impl<'buf> DescriptorSet<'buf> {
   pub fn into_owned(self) -> DescriptorSetOwned {
     DescriptorSet {
-      schemas: self.schemas.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      schemas: self
+        .schemas
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
 
 impl<'buf> BebopEncode for DescriptorSet<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:DescriptorSet)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.schemas {
       writer.write_tag(1);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:DescriptorSet)
   }
 
   fn encoded_size(&self) -> usize {
@@ -2399,19 +2954,30 @@ impl<'buf> BebopEncode for DescriptorSet<'buf> {
 
 impl<'buf> BebopDecode<'buf> for DescriptorSet<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:DescriptorSet)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.schemas = Some(reader.read_array(|_r| SchemaDescriptor::decode(_r))?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:DescriptorSet)
     Ok(msg)
   }
 }
 
+impl<'buf> DescriptorSet<'buf> {
+  // @@bebop_insertion_point(message_scope:DescriptorSet)
+}
+
+// @@bebop_insertion_point(eof)

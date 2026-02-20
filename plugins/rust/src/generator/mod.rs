@@ -223,7 +223,7 @@ impl LifetimeAnalysis {
   }
 
   fn analyze_trait_derives(&mut self, schemas: &[SchemaDescriptor]) {
-    #[derive(Clone, Copy, Default)]
+    #[derive(Clone, Copy, Default, PartialEq, Eq)]
     struct TypeTraits {
       has_float: bool,
       has_map: bool,
@@ -238,6 +238,27 @@ impl LifetimeAnalysis {
       }
     }
 
+    #[derive(Clone, Default)]
+    struct TraitDeps {
+      direct: TypeTraits,
+      deps: Vec<String>,
+    }
+
+    impl TraitDeps {
+      fn combine(&mut self, other: Self) {
+        self.direct = self.direct.combine(other.direct);
+        for dep in other.deps {
+          self.add_dep(dep);
+        }
+      }
+
+      fn add_dep(&mut self, dep: String) {
+        if !self.deps.iter().any(|d| d == &dep) {
+          self.deps.push(dep);
+        }
+      }
+    }
+
     fn kind_supports_derives(kind: DefinitionKind) -> bool {
       matches!(
         kind,
@@ -248,149 +269,114 @@ impl LifetimeAnalysis {
       )
     }
 
-    fn merge_option(acc: TypeTraits, next: Option<TypeTraits>) -> TypeTraits {
-      if let Some(next) = next {
-        acc.combine(next)
-      } else {
-        acc
-      }
-    }
-
-    fn type_traits<'a>(
-      td: &TypeDescriptor<'a>,
-      def_by_fqn: &HashMap<String, &'a DefinitionDescriptor<'a>>,
-      memo: &mut HashMap<String, TypeTraits>,
-      visiting: &mut HashSet<String>,
-    ) -> TypeTraits {
+    fn type_deps(td: &TypeDescriptor) -> TraitDeps {
       let kind = match td.kind {
-        Some(k) => k,
-        None => return TypeTraits::default(),
+        Some(kind) => kind,
+        None => return TraitDeps::default(),
       };
 
       match kind {
         TypeKind::Float16 | TypeKind::Float32 | TypeKind::Float64 | TypeKind::Bfloat16 => {
-          TypeTraits {
-            has_float: true,
-            has_map: false,
+          TraitDeps {
+            direct: TypeTraits {
+              has_float: true,
+              has_map: false,
+            },
+            deps: Vec::new(),
           }
         }
         TypeKind::Array => td
           .array_element
           .as_deref()
-          .map(|e| type_traits(e, def_by_fqn, memo, visiting))
+          .map(type_deps)
           .unwrap_or_default(),
         TypeKind::FixedArray => td
           .fixed_array_element
           .as_deref()
-          .map(|e| type_traits(e, def_by_fqn, memo, visiting))
+          .map(type_deps)
           .unwrap_or_default(),
         TypeKind::Map => {
-          let mut traits = TypeTraits {
-            has_float: false,
-            has_map: true,
+          let mut deps = TraitDeps {
+            direct: TypeTraits {
+              has_float: false,
+              has_map: true,
+            },
+            deps: Vec::new(),
           };
-          traits = merge_option(
-            traits,
-            td.map_key
-              .as_deref()
-              .map(|k| type_traits(k, def_by_fqn, memo, visiting)),
-          );
-          merge_option(
-            traits,
-            td.map_value
-              .as_deref()
-              .map(|v| type_traits(v, def_by_fqn, memo, visiting)),
-          )
+          if let Some(key) = td.map_key.as_deref() {
+            deps.combine(type_deps(key));
+          }
+          if let Some(value) = td.map_value.as_deref() {
+            deps.combine(type_deps(value));
+          }
+          deps
         }
-        TypeKind::Defined => td
-          .defined_fqn
-          .as_deref()
-          .map(|fqn| def_traits(fqn, def_by_fqn, memo, visiting))
-          .unwrap_or(TypeTraits {
-            has_float: true,
-            has_map: true,
-          }),
-        _ => TypeTraits::default(),
+        TypeKind::Defined => {
+          let mut deps = TraitDeps::default();
+          if let Some(fqn) = td.defined_fqn.as_deref() {
+            deps.add_dep(fqn.to_string());
+          } else {
+            deps.direct = TypeTraits {
+              has_float: true,
+              has_map: true,
+            };
+          }
+          deps
+        }
+        _ => TraitDeps::default(),
       }
     }
 
-    fn def_traits<'a>(
-      fqn: &str,
-      def_by_fqn: &HashMap<String, &'a DefinitionDescriptor<'a>>,
-      memo: &mut HashMap<String, TypeTraits>,
-      visiting: &mut HashSet<String>,
-    ) -> TypeTraits {
-      if let Some(t) = memo.get(fqn) {
-        return *t;
-      }
+    fn field_list_deps(fields: Option<&[FieldDescriptor]>) -> TraitDeps {
+      fields
+        .unwrap_or(&[])
+        .iter()
+        .fold(TraitDeps::default(), |mut acc, field| {
+          if let Some(td) = field.r#type.as_ref() {
+            acc.combine(type_deps(td));
+          }
+          acc
+        })
+    }
 
-      if !visiting.insert(fqn.to_string()) {
-        // Recursive reference cycle: treat edge as neutral to avoid infinite recursion.
-        return TypeTraits::default();
-      }
-
-      let traits = if let Some(def) = def_by_fqn.get(fqn) {
-        match def.kind {
-          Some(DefinitionKind::Enum) => TypeTraits::default(),
-          Some(DefinitionKind::Struct) => def
-            .struct_def
-            .as_ref()
-            .and_then(|sd| sd.fields.as_deref())
-            .map(|fields| {
-              fields.iter().fold(TypeTraits::default(), |acc, field| {
-                let field_traits = field
-                  .r#type
-                  .as_ref()
-                  .map(|td| type_traits(td, def_by_fqn, memo, visiting))
-                  .unwrap_or_default();
-                acc.combine(field_traits)
-              })
-            })
-            .unwrap_or_default(),
-          Some(DefinitionKind::Message) => def
-            .message_def
-            .as_ref()
-            .and_then(|md| md.fields.as_deref())
-            .map(|fields| {
-              fields.iter().fold(TypeTraits::default(), |acc, field| {
-                let field_traits = field
-                  .r#type
-                  .as_ref()
-                  .map(|td| type_traits(td, def_by_fqn, memo, visiting))
-                  .unwrap_or_default();
-                acc.combine(field_traits)
-              })
-            })
-            .unwrap_or_default(),
-          Some(DefinitionKind::Union) => def
+    fn definition_deps(def: &DefinitionDescriptor) -> TraitDeps {
+      match def.kind {
+        Some(DefinitionKind::Enum) => TraitDeps::default(),
+        Some(DefinitionKind::Struct) => {
+          field_list_deps(def.struct_def.as_ref().and_then(|sd| sd.fields.as_deref()))
+        }
+        Some(DefinitionKind::Message) => {
+          field_list_deps(def.message_def.as_ref().and_then(|md| md.fields.as_deref()))
+        }
+        Some(DefinitionKind::Union) => {
+          let mut deps = TraitDeps::default();
+          for branch in def
             .union_def
             .as_ref()
             .and_then(|ud| ud.branches.as_deref())
-            .map(|branches| {
-              branches.iter().fold(TypeTraits::default(), |acc, branch| {
-                let branch_traits = branch
-                  .type_ref_fqn
-                  .as_deref()
-                  .or(branch.inline_fqn.as_deref())
-                  .map(|branch_fqn| def_traits(branch_fqn, def_by_fqn, memo, visiting))
-                  .unwrap_or_default();
-                acc.combine(branch_traits)
-              })
-            })
-            .unwrap_or_default(),
-          _ => TypeTraits::default(),
+            .unwrap_or(&[])
+          {
+            if let Some(branch_fqn) = branch
+              .type_ref_fqn
+              .as_deref()
+              .or(branch.inline_fqn.as_deref())
+            {
+              deps.add_dep(branch_fqn.to_string());
+            } else if let (Some(union_fqn), Some(branch_name)) =
+              (def.fqn.as_deref(), branch.name.as_deref())
+            {
+              deps.add_dep(format!("{}.{}", union_fqn, naming::type_name(branch_name)));
+            } else {
+              deps.direct = deps.direct.combine(TypeTraits {
+                has_float: true,
+                has_map: true,
+              });
+            }
+          }
+          deps
         }
-      } else {
-        // Unknown definition reference: be conservative and avoid Eq/Hash derives.
-        TypeTraits {
-          has_float: true,
-          has_map: true,
-        }
-      };
-
-      visiting.remove(fqn);
-      memo.insert(fqn.to_string(), traits);
-      traits
+        _ => TraitDeps::default(),
+      }
     }
 
     let mut def_by_fqn: HashMap<String, &DefinitionDescriptor> = HashMap::new();
@@ -399,25 +385,54 @@ impl LifetimeAnalysis {
       collect_definitions(defs, &mut def_by_fqn);
     }
 
-    let mut memo: HashMap<String, TypeTraits> = HashMap::new();
-    let mut visiting: HashSet<String> = HashSet::new();
-
+    let mut deps_by_fqn: HashMap<String, (DefinitionKind, TraitDeps)> = HashMap::new();
     for (fqn, def) in &def_by_fqn {
-      let kind = match def.kind {
-        Some(k) if kind_supports_derives(k) => k,
-        _ => continue,
-      };
-      let traits = def_traits(fqn, &def_by_fqn, &mut memo, &mut visiting);
+      if let Some(kind) = def.kind {
+        if kind_supports_derives(kind) {
+          deps_by_fqn.insert(fqn.clone(), (kind, definition_deps(def)));
+        }
+      }
+    }
 
+    let mut resolved: HashMap<String, TypeTraits> = deps_by_fqn
+      .iter()
+      .map(|(fqn, (_, deps))| (fqn.clone(), deps.direct))
+      .collect();
+
+    let mut changed = true;
+    while changed {
+      changed = false;
+      for (fqn, (_, deps)) in &deps_by_fqn {
+        let mut traits = deps.direct;
+        for dep in &deps.deps {
+          if let Some(dep_traits) = resolved.get(dep) {
+            traits = traits.combine(*dep_traits);
+          } else {
+            traits = traits.combine(TypeTraits {
+              has_float: true,
+              has_map: true,
+            });
+          }
+        }
+        if resolved.get(fqn).copied() != Some(traits) {
+          resolved.insert(fqn.clone(), traits);
+          changed = true;
+        }
+      }
+    }
+
+    for (fqn, (kind, _)) in &deps_by_fqn {
+      if *kind == DefinitionKind::Enum {
+        self.eq_fqns.insert(fqn.clone());
+        self.hash_fqns.insert(fqn.clone());
+        continue;
+      }
+
+      let traits = resolved.get(fqn).copied().unwrap_or_default();
       if !traits.has_float {
         self.eq_fqns.insert(fqn.clone());
       }
       if !traits.has_float && !traits.has_map {
-        self.hash_fqns.insert(fqn.clone());
-      }
-
-      if kind == DefinitionKind::Enum {
-        self.eq_fqns.insert(fqn.clone());
         self.hash_fqns.insert(fqn.clone());
       }
     }
@@ -504,6 +519,7 @@ pub struct RustGenerator {
 }
 
 impl RustGenerator {
+  #[allow(dead_code)]
   pub fn new(compiler_version: Option<VersionOwned>) -> Self {
     Self::with_options(compiler_version, GeneratorOptions::default())
   }
@@ -555,7 +571,7 @@ impl RustGenerator {
     output.push_str("extern crate alloc;\n");
     output.push_str("use alloc::borrow::Cow;\n");
     output.push_str("use alloc::boxed::Box;\n");
-    output.push_str("use alloc::string::String;\n");
+    output.push_str("use alloc::string::String as StdString;\n");
     output.push_str("use alloc::vec;\n");
     output.push_str("use alloc::vec::Vec;\n");
     output.push_str("use core::mem::size_of;\n");
@@ -697,6 +713,22 @@ mod tests {
       kind: Some(TypeKind::Map),
       map_key: Some(Box::new(key)),
       map_value: Some(Box::new(value)),
+      ..Default::default()
+    }
+  }
+
+  fn array_type(element: TypeDescriptor<'static>) -> TypeDescriptor<'static> {
+    TypeDescriptor {
+      kind: Some(TypeKind::Array),
+      array_element: Some(Box::new(element)),
+      ..Default::default()
+    }
+  }
+
+  fn defined_type(fqn: &'static str) -> TypeDescriptor<'static> {
+    TypeDescriptor {
+      kind: Some(TypeKind::Defined),
+      defined_fqn: Some(Cow::Borrowed(fqn)),
       ..Default::default()
     }
   }
@@ -889,6 +921,163 @@ mod tests {
     }
   }
 
+  fn build_recursive_union_schema() -> SchemaDescriptor<'static> {
+    let json_null = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Struct),
+      name: Some(Cow::Borrowed("JsonNull")),
+      fqn: Some(Cow::Borrowed("JsonNull")),
+      struct_def: Some(StructDef {
+        fields: Some(vec![]),
+        fixed_size: Some(0),
+        ..Default::default()
+      }),
+      ..Default::default()
+    };
+
+    let bool_msg = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Message),
+      name: Some(Cow::Borrowed("Bool")),
+      fqn: Some(Cow::Borrowed("JsonValue.Bool")),
+      message_def: Some(MessageDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("value")),
+          r#type: Some(scalar_type(TypeKind::Bool)),
+          index: Some(1),
+          ..Default::default()
+        }]),
+      }),
+      ..Default::default()
+    };
+
+    let number_msg = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Message),
+      name: Some(Cow::Borrowed("Number")),
+      fqn: Some(Cow::Borrowed("JsonValue.Number")),
+      message_def: Some(MessageDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("value")),
+          r#type: Some(scalar_type(TypeKind::Float64)),
+          index: Some(1),
+          ..Default::default()
+        }]),
+      }),
+      ..Default::default()
+    };
+
+    let list_msg = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Message),
+      name: Some(Cow::Borrowed("List")),
+      fqn: Some(Cow::Borrowed("JsonValue.List")),
+      message_def: Some(MessageDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("values")),
+          r#type: Some(array_type(defined_type("JsonValue"))),
+          index: Some(1),
+          ..Default::default()
+        }]),
+      }),
+      ..Default::default()
+    };
+
+    let object_msg = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Message),
+      name: Some(Cow::Borrowed("Object")),
+      fqn: Some(Cow::Borrowed("JsonValue.Object")),
+      message_def: Some(MessageDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("fields")),
+          r#type: Some(map_type(
+            scalar_type(TypeKind::String),
+            defined_type("JsonValue"),
+          )),
+          index: Some(1),
+          ..Default::default()
+        }]),
+      }),
+      ..Default::default()
+    };
+
+    let json_value = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Union),
+      name: Some(Cow::Borrowed("JsonValue")),
+      fqn: Some(Cow::Borrowed("JsonValue")),
+      union_def: Some(UnionDef {
+        branches: Some(vec![
+          UnionBranchDescriptor {
+            discriminator: Some(1),
+            name: Some(Cow::Borrowed("null")),
+            type_ref_fqn: Some(Cow::Borrowed("JsonNull")),
+            ..Default::default()
+          },
+          UnionBranchDescriptor {
+            discriminator: Some(2),
+            name: Some(Cow::Borrowed("bool")),
+            type_ref_fqn: Some(Cow::Borrowed("JsonValue.Bool")),
+            ..Default::default()
+          },
+          UnionBranchDescriptor {
+            discriminator: Some(3),
+            name: Some(Cow::Borrowed("number")),
+            type_ref_fqn: Some(Cow::Borrowed("JsonValue.Number")),
+            ..Default::default()
+          },
+          UnionBranchDescriptor {
+            discriminator: Some(4),
+            name: Some(Cow::Borrowed("list")),
+            type_ref_fqn: Some(Cow::Borrowed("JsonValue.List")),
+            ..Default::default()
+          },
+          UnionBranchDescriptor {
+            discriminator: Some(5),
+            name: Some(Cow::Borrowed("object")),
+            type_ref_fqn: Some(Cow::Borrowed("JsonValue.Object")),
+            ..Default::default()
+          },
+        ]),
+      }),
+      nested: Some(vec![bool_msg, number_msg, list_msg, object_msg]),
+      ..Default::default()
+    };
+
+    SchemaDescriptor {
+      path: Some(Cow::Borrowed("recursive-union.bop")),
+      definitions: Some(vec![json_null, json_value]),
+      ..Default::default()
+    }
+  }
+
+  fn build_string_array_constructor_schema() -> SchemaDescriptor<'static> {
+    let token_batch = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Struct),
+      name: Some(Cow::Borrowed("TokenBatch")),
+      fqn: Some(Cow::Borrowed("TokenBatch")),
+      struct_def: Some(StructDef {
+        fields: Some(vec![
+          FieldDescriptor {
+            name: Some(Cow::Borrowed("id")),
+            r#type: Some(scalar_type(TypeKind::Uint32)),
+            index: Some(0),
+            ..Default::default()
+          },
+          FieldDescriptor {
+            name: Some(Cow::Borrowed("tokens")),
+            r#type: Some(array_type(scalar_type(TypeKind::String))),
+            index: Some(1),
+            ..Default::default()
+          },
+        ]),
+        ..Default::default()
+      }),
+      ..Default::default()
+    };
+
+    SchemaDescriptor {
+      path: Some(Cow::Borrowed("constructor.bop")),
+      definitions: Some(vec![token_batch]),
+      ..Default::default()
+    }
+  }
+
   #[test]
   fn emits_file_level_insertion_points() {
     let schema = build_schema();
@@ -984,6 +1173,34 @@ mod tests {
 
     // Enums are always hashable since they're integer-backed.
     assert!(output.contains("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\npub enum Status"));
+  }
+
+  #[test]
+  fn recursive_union_float_propagates_into_object_eq_derives() {
+    let schema = build_recursive_union_schema();
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::new(None)
+      .generate(&schema, &[], &analysis)
+      .expect("generator should succeed");
+
+    assert!(output.contains("#[derive(Debug, Clone, PartialEq)]\npub enum JsonValue<'buf>"));
+    assert!(output.contains("#[derive(Debug, Clone, Default, PartialEq)]\npub struct Object<'buf>"));
+  }
+
+  #[test]
+  fn struct_constructor_converts_owned_string_arrays() {
+    let schema = build_string_array_constructor_schema();
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::new(None)
+      .generate(&schema, &[], &analysis)
+      .expect("generator should succeed");
+
+    assert!(output.contains("tokens: Vec<StdString>"));
+    assert!(
+      output.contains("let tokens = tokens.into_iter().map(|_e| Cow::Owned(_e)).collect();"),
+      "expected constructor conversion for Vec<String> -> Vec<Cow<str>>; output:\n{}",
+      output
+    );
   }
 
   #[test]

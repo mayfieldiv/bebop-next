@@ -31,5 +31,6 @@ echo "Generating descriptor.rs + plugin.rs..."
 mkdir -p "$RUST_DIR/src/generated"
 cp "$TMPDIR/out/descriptor.rs" "$RUST_DIR/src/generated/descriptor.rs"
 cp "$TMPDIR/out/plugin.rs" "$RUST_DIR/src/generated/plugin.rs"
+rustfmt "$RUST_DIR/src/generated/descriptor.rs" "$RUST_DIR/src/generated/plugin.rs"
 
 echo "Done."
