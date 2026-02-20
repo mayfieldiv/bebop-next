@@ -58,7 +58,14 @@ pub fn generate(
   emit_deprecated(output, &def.decorators);
 
   // ── Derive + struct definition ────────────────────────────────
-  output.push_str("#[derive(Debug, Clone)]\n");
+  let mut derives = vec!["Debug", "Clone", "PartialEq"];
+  if analysis.can_derive_eq(fqn) {
+    derives.push("Eq");
+  }
+  if analysis.can_derive_hash(fqn) {
+    derives.push("Hash");
+  }
+  output.push_str(&format!("#[derive({})]\n", derives.join(", ")));
   output.push_str(&format!("pub struct {}{} {{\n", name, lt));
   for (f, meta) in fields.iter().zip(&field_metas) {
     emit_doc_comment(output, &f.documentation);
