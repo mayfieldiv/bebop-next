@@ -210,10 +210,10 @@ Legend: `[x]` = implemented & tested, `[/]` = partially done, `[-]` = N/A or out
 
 ## Schema Language — Visibility (GRAMMAR.md, whitepaper)
 
-- [ ] Top-level definitions default to exported → `pub` ✓ (but always pub)
-- [ ] `local` definitions → should be `pub(crate)` → [[visibility-support]]
-- [ ] Nested definitions default to local → not distinguished
-- [ ] `export` on nested → not distinguished
+- [x] Top-level definitions default to exported → `pub` ✅ 2026-02-20
+- [x] `local` definitions → `pub(crate)` ✅ 2026-02-20
+- [x] Nested definitions default to local → uses `visibility` field from descriptor ✅ 2026-02-20
+- [x] `export` on nested → uses `visibility` field from descriptor ✅ 2026-02-20
 
 ## Schema Language — Type Aliases (GRAMMAR.md)
 
