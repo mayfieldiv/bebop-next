@@ -11,6 +11,7 @@ pub fn generate(
   analysis: &LifetimeAnalysis,
 ) -> Result<(), GeneratorError> {
   let name = type_name(def.name.as_deref().unwrap_or("<unnamed>"));
+  let fqn = def.fqn.as_deref().unwrap_or("");
 
   let union_def = def
     .union_def
@@ -62,7 +63,14 @@ pub fn generate(
   emit_deprecated(output, &def.decorators);
 
   // ── Enum definition ───────────────────────────────────────────
-  output.push_str("#[derive(Debug, Clone)]\n");
+  let mut derives = vec!["Debug", "Clone", "PartialEq"];
+  if analysis.can_derive_eq(fqn) {
+    derives.push("Eq");
+  }
+  if analysis.can_derive_hash(fqn) {
+    derives.push("Hash");
+  }
+  output.push_str(&format!("#[derive({})]\n", derives.join(", ")));
   output.push_str(&format!("pub enum {}{} {{\n", name, lt));
   for b in &branch_infos {
     let inner_lt = if let Some(ref fqn) = b.inner_fqn {

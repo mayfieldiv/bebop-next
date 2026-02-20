@@ -77,7 +77,7 @@ fn generate_enum(
 
   // Enum definition with repr
   output.push_str(&format!("#[repr({})]\n", base_type));
-  output.push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq)]\n");
+  output.push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\n");
   output.push_str(&format!("pub enum {} {{\n", name));
 
   for m in members {
@@ -206,7 +206,7 @@ fn generate_flags(
   emit_deprecated(output, &def.decorators);
 
   // Derive + struct
-  output.push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq)]\n");
+  output.push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\n");
   output.push_str(&format!("pub struct {}(pub {});\n\n", name, base_type));
 
   // Associated constants
