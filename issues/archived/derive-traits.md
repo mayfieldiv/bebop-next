@@ -1,6 +1,6 @@
 # Add PartialEq / Hash Derives Where Possible
 
-- [x] Derive PartialEq, Eq, Hash on types that qualify #rust-plugin ✅
+- [x] Derive PartialEq, Eq, Hash on types that qualify #rust-plugin ✅ ✅ 2026-02-19
 
 ## Implemented
 
