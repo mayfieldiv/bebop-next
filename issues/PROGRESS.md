@@ -49,7 +49,7 @@ Full spec compliance checklist: [[spec-compliance]]
 | ~~PartialEq/Hash derives~~ | ~~Done~~ | [[derive-traits]] |
 | Bulk scalar arrays | Low | [[bulk-array-optimization]] |
 | Timestamp/Duration newtypes | Low | [[temporal-newtypes]] |
-| UUID crate integration | Low | [[uuid-integration]] |
+| ~~UUID crate integration~~ | ~~Done~~ | [[uuid-integration]] |
 | Serde integration | Low | [[serde-integration]] |
 | ~~Fixed array generics~~ | ~~Done~~ | [[fixed-array-generics]] |
 | Deprecated encode behavior | Low (investigation) | [[deprecated-field-encoding]] |

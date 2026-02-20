@@ -190,7 +190,7 @@ pub fn generate(
       }
       _ => {
         let is_scalar_copy =
-          meta.kind.is_scalar() && meta.kind != TypeKind::String && meta.kind != TypeKind::Uuid;
+          meta.kind.is_scalar() && meta.kind != TypeKind::String;
 
         if is_scalar_copy {
           output.push_str(&format!("    if let Some(v) = self.{} {{\n", meta.fname));
@@ -239,7 +239,7 @@ pub fn generate(
       }
       _ => {
         let is_scalar_copy =
-          meta.kind.is_scalar() && meta.kind != TypeKind::String && meta.kind != TypeKind::Uuid;
+          meta.kind.is_scalar() && meta.kind != TypeKind::String;
 
         if is_scalar_copy {
           output.push_str(&format!("    if let Some(v) = self.{} {{\n", meta.fname));

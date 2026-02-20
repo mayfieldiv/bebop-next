@@ -23,7 +23,7 @@ pub fn scalar_type(kind: TypeKind) -> Option<&'static str> {
     TypeKind::String => Some("String"),
     TypeKind::Float16 => Some("f16"),
     TypeKind::Bfloat16 => Some("bf16"),
-    TypeKind::Uuid => Some("[u8; 16]"),
+    TypeKind::Uuid => Some("Uuid"),
     TypeKind::Timestamp => Some("(i64, i32)"),
     TypeKind::Duration => Some("(i64, i32)"),
     _ => None,
@@ -160,7 +160,7 @@ pub fn enum_write_method(kind: TypeKind) -> Result<&'static str, GeneratorError>
 
 /// Returns true if a scalar TypeKind needs `&` when passed to its write method.
 fn scalar_needs_ref(kind: TypeKind) -> bool {
-  matches!(kind, TypeKind::String | TypeKind::Uuid)
+  matches!(kind, TypeKind::String)
 }
 
 /// Return the fixed byte size of a scalar type, or None for variable-size types.
@@ -196,7 +196,7 @@ pub fn fixed_size_expr(kind: TypeKind) -> Option<&'static str> {
     TypeKind::Bfloat16 => Some("size_of::<bf16>()"),
     TypeKind::Float32 => Some("size_of::<f32>()"),
     TypeKind::Float64 => Some("size_of::<f64>()"),
-    TypeKind::Uuid => Some("size_of::<[u8; 16]>()"),
+    TypeKind::Uuid => Some("size_of::<Uuid>()"),
     TypeKind::Timestamp | TypeKind::Duration => Some("size_of::<i64>() + size_of::<i32>()"),
     _ => None,
   }
