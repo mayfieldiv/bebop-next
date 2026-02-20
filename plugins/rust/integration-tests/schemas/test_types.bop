@@ -159,3 +159,16 @@ message Inventory {
 message EmptyMessage {
     unused_field(1): string;
 }
+
+/// Struct with a timestamp field.
+struct TimestampedEvent {
+    when: timestamp;
+    what: string;
+}
+
+/// Message with temporal fields.
+message ScheduleEntry {
+    start(1): timestamp;
+    duration(2): duration;
+    label(3): string;
+}

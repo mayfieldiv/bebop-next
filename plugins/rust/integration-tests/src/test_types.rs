@@ -19,12 +19,14 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::mem::size_of;
 use bebop_runtime::HashMap;
-use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, Uuid, f16, bf16};
+use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, Uuid, f16, bf16, BebopTimestamp, BebopDuration};
 use bebop_runtime::wire_size as wire;
+
+// @@bebop_insertion_point(imports)
 
 /// Simple enum with uint8 base type.
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Color {
   Unknown = 0,
   Red = 1,
@@ -51,11 +53,14 @@ impl From<Color> for u8 {
 
 impl Color {
   pub const FIXED_ENCODED_SIZE: usize = 1;
+  // @@bebop_insertion_point(enum_scope:Color)
 }
 
 impl BebopEncode for Color {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:Color)
     writer.write_byte(*self as u8);
+    // @@bebop_insertion_point(encode_end:Color)
   }
 
   fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
@@ -63,11 +68,14 @@ impl BebopEncode for Color {
 
 impl<'buf> BebopDecode<'buf> for Color {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
-    Self::try_from(reader.read_byte()?)
+    // @@bebop_insertion_point(decode_start:Color)
+    let value = reader.read_byte()?;
+    // @@bebop_insertion_point(decode_end:Color)
+    Self::try_from(value)
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Permissions(pub u8);
 
 #[allow(non_upper_case_globals)]
@@ -78,6 +86,7 @@ impl Permissions {
   pub const WRITE: Self = Self(2);
   pub const EXECUTE: Self = Self(4);
   pub const ALL: Self = Self(7);
+  // @@bebop_insertion_point(enum_scope:Permissions)
 }
 
 impl BebopFlags for Permissions {
@@ -140,7 +149,7 @@ pub const EXAMPLE_CONST_F16_FROM_INT: f16 = f16::from_f64_const(1f64);
 pub const EXAMPLE_CONST_BF16_FROM_INT: bf16 = bf16::from_f64_const(2f64);
 
 /// Fixed-size struct (all scalar fields).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Point {
   pub x: f32,
   pub y: f32,
@@ -156,8 +165,10 @@ impl Point {
 
 impl BebopEncode for Point {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:Point)
     writer.write_f32(self.x);
     writer.write_f32(self.y);
+    // @@bebop_insertion_point(encode_end:Point)
   }
 
   fn encoded_size(&self) -> usize {
@@ -167,14 +178,20 @@ impl BebopEncode for Point {
 
 impl<'buf> BebopDecode<'buf> for Point {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:Point)
     let x = reader.read_f32()?;
     let y = reader.read_f32()?;
+    // @@bebop_insertion_point(decode_end:Point)
     Ok(Point { x, y })
   }
 }
 
+impl Point {
+  // @@bebop_insertion_point(struct_scope:Point)
+}
+
 /// Fixed-size struct referencing another struct and an enum.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Pixel {
   pub position: Point,
   pub color: Color,
@@ -194,9 +211,11 @@ impl Pixel {
 
 impl BebopEncode for Pixel {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:Pixel)
     self.position.encode(writer);
     self.color.encode(writer);
     writer.write_byte(self.alpha);
+    // @@bebop_insertion_point(encode_end:Pixel)
   }
 
   fn encoded_size(&self) -> usize {
@@ -206,15 +225,21 @@ impl BebopEncode for Pixel {
 
 impl<'buf> BebopDecode<'buf> for Pixel {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:Pixel)
     let position = Point::decode(reader)?;
     let color = Color::decode(reader)?;
     let alpha = reader.read_byte()?;
+    // @@bebop_insertion_point(decode_end:Pixel)
     Ok(Pixel { position, color, alpha })
   }
 }
 
+impl Pixel {
+  // @@bebop_insertion_point(struct_scope:Pixel)
+}
+
 /// Variable-size struct with a string field (needs lifetime / Cow).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Person<'buf> {
   pub name: Cow<'buf, str>,
   pub age: u32,
@@ -240,8 +265,10 @@ impl<'buf> Person<'buf> {
 
 impl<'buf> BebopEncode for Person<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:Person)
     writer.write_string(&self.name);
     writer.write_u32(self.age);
+    // @@bebop_insertion_point(encode_end:Person)
   }
 
   fn encoded_size(&self) -> usize {
@@ -254,14 +281,20 @@ impl<'buf> BebopEncode for Person<'buf> {
 
 impl<'buf> BebopDecode<'buf> for Person<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:Person)
     let name = Cow::Borrowed(reader.read_str()?);
     let age = reader.read_u32()?;
+    // @@bebop_insertion_point(decode_end:Person)
     Ok(Person { name, age })
   }
 }
 
+impl<'buf> Person<'buf> {
+  // @@bebop_insertion_point(struct_scope:Person)
+}
+
 /// Variable-size struct with a byte array field (needs lifetime / Cow).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BinaryPayload<'buf> {
   pub tag: u32,
   pub data: Cow<'buf, [u8]>,
@@ -287,8 +320,10 @@ impl<'buf> BinaryPayload<'buf> {
 
 impl<'buf> BebopEncode for BinaryPayload<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:BinaryPayload)
     writer.write_u32(self.tag);
     writer.write_byte_array(&self.data);
+    // @@bebop_insertion_point(encode_end:BinaryPayload)
   }
 
   fn encoded_size(&self) -> usize {
@@ -301,14 +336,20 @@ impl<'buf> BebopEncode for BinaryPayload<'buf> {
 
 impl<'buf> BebopDecode<'buf> for BinaryPayload<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:BinaryPayload)
     let tag = reader.read_u32()?;
     let data = Cow::Borrowed(reader.read_byte_slice()?);
+    // @@bebop_insertion_point(decode_end:BinaryPayload)
     Ok(BinaryPayload { tag, data })
   }
 }
 
+impl<'buf> BinaryPayload<'buf> {
+  // @@bebop_insertion_point(struct_scope:BinaryPayload)
+}
+
 /// Message with various field types: scalars, strings, arrays, maps.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct UserProfile<'buf> {
   pub display_name: Option<Cow<'buf, str>>,
   pub email: Option<Cow<'buf, str>>,
@@ -337,6 +378,7 @@ impl<'buf> UserProfile<'buf> {
 
 impl<'buf> BebopEncode for UserProfile<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:UserProfile)
     let pos = writer.reserve_message_length();
     if let Some(ref v) = self.display_name {
       writer.write_tag(1);
@@ -368,6 +410,7 @@ impl<'buf> BebopEncode for UserProfile<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:UserProfile)
   }
 
   fn encoded_size(&self) -> usize {
@@ -399,6 +442,7 @@ impl<'buf> BebopEncode for UserProfile<'buf> {
 
 impl<'buf> BebopDecode<'buf> for UserProfile<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:UserProfile)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
@@ -417,12 +461,17 @@ impl<'buf> BebopDecode<'buf> for UserProfile<'buf> {
         _ => { reader.skip(end - reader.position())?; }
       }
     }
+    // @@bebop_insertion_point(decode_end:UserProfile)
     Ok(msg)
   }
 }
 
+impl<'buf> UserProfile<'buf> {
+  // @@bebop_insertion_point(message_scope:UserProfile)
+}
+
 /// Message referencing fixed-size and enum defined types.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct DrawCommand<'buf> {
   pub target: Option<Point>,
   pub color: Option<Color>,
@@ -445,6 +494,7 @@ impl<'buf> DrawCommand<'buf> {
 
 impl<'buf> BebopEncode for DrawCommand<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:DrawCommand)
     let pos = writer.reserve_message_length();
     if let Some(ref v) = self.target {
       writer.write_tag(1);
@@ -464,6 +514,7 @@ impl<'buf> BebopEncode for DrawCommand<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:DrawCommand)
   }
 
   fn encoded_size(&self) -> usize {
@@ -486,6 +537,7 @@ impl<'buf> BebopEncode for DrawCommand<'buf> {
 
 impl<'buf> BebopDecode<'buf> for DrawCommand<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:DrawCommand)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
@@ -501,12 +553,17 @@ impl<'buf> BebopDecode<'buf> for DrawCommand<'buf> {
         _ => { reader.skip(end - reader.position())?; }
       }
     }
+    // @@bebop_insertion_point(decode_end:DrawCommand)
     Ok(msg)
   }
 }
 
+impl<'buf> DrawCommand<'buf> {
+  // @@bebop_insertion_point(message_scope:DrawCommand)
+}
+
 /// Struct used as a union branch (variable-size due to string field).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TextLabel<'buf> {
   pub position: Point,
   pub text: Cow<'buf, str>,
@@ -532,8 +589,10 @@ impl<'buf> TextLabel<'buf> {
 
 impl<'buf> BebopEncode for TextLabel<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:TextLabel)
     self.position.encode(writer);
     writer.write_string(&self.text);
+    // @@bebop_insertion_point(encode_end:TextLabel)
   }
 
   fn encoded_size(&self) -> usize {
@@ -546,14 +605,20 @@ impl<'buf> BebopEncode for TextLabel<'buf> {
 
 impl<'buf> BebopDecode<'buf> for TextLabel<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:TextLabel)
     let position = Point::decode(reader)?;
     let text = Cow::Borrowed(reader.read_str()?);
+    // @@bebop_insertion_point(decode_end:TextLabel)
     Ok(TextLabel { position, text })
   }
 }
 
+impl<'buf> TextLabel<'buf> {
+  // @@bebop_insertion_point(struct_scope:TextLabel)
+}
+
 /// Union with type-ref branches covering fixed and variable inner types.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Shape<'buf> {
   Point(Point),
   Pixel(Pixel),
@@ -576,14 +641,17 @@ impl<'buf> Shape<'buf> {
 
 impl<'buf> BebopEncode for Shape<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:Shape)
     let pos = writer.reserve_message_length();
     match self {
       Self::Point(inner) => { writer.write_byte(1); inner.encode(writer); }
       Self::Pixel(inner) => { writer.write_byte(2); inner.encode(writer); }
       Self::Label(inner) => { writer.write_byte(3); inner.encode(writer); }
+      // @@bebop_insertion_point(encode_switch:Shape)
       Self::Unknown(disc, data) => { writer.write_byte(*disc); writer.write_raw(data); }
     }
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:Shape)
   }
 
   fn encoded_size(&self) -> usize {
@@ -598,24 +666,32 @@ impl<'buf> BebopEncode for Shape<'buf> {
 
 impl<'buf> BebopDecode<'buf> for Shape<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:Shape)
     let length = reader.read_message_length()? as usize;
     let start = reader.position();
     let discriminator = reader.read_byte()?;
-    match discriminator {
+    let value = match discriminator {
       1 => Ok(Self::Point(Point::decode(reader)?)),
       2 => Ok(Self::Pixel(Pixel::decode(reader)?)),
       3 => Ok(Self::Label(TextLabel::decode(reader)?)),
+      // @@bebop_insertion_point(decode_switch:Shape)
       _ => {
         let remaining = length - (reader.position() - start);
         let data = reader.read_raw_bytes(remaining)?;
         Ok(Self::Unknown(discriminator, Cow::Borrowed(data)))
       }
-    }
+    };
+    // @@bebop_insertion_point(decode_end:Shape)
+    value
   }
 }
 
+impl<'buf> Shape<'buf> {
+  // @@bebop_insertion_point(union_scope:Shape)
+}
+
 /// Fixed-array struct (compile-time known element count).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Matrix2x2 {
   pub values: [f32; 4],
 }
@@ -630,7 +706,9 @@ impl Matrix2x2 {
 
 impl BebopEncode for Matrix2x2 {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:Matrix2x2)
     writer.write_fixed_array::<f32, 4>(&self.values);
+    // @@bebop_insertion_point(encode_end:Matrix2x2)
   }
 
   fn encoded_size(&self) -> usize {
@@ -640,13 +718,19 @@ impl BebopEncode for Matrix2x2 {
 
 impl<'buf> BebopDecode<'buf> for Matrix2x2 {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:Matrix2x2)
     let values = reader.read_fixed_array::<f32, 4>()?;
+    // @@bebop_insertion_point(decode_end:Matrix2x2)
     Ok(Matrix2x2 { values })
   }
 }
 
+impl Matrix2x2 {
+  // @@bebop_insertion_point(struct_scope:Matrix2x2)
+}
+
 /// Fixed-size and variable-size half-precision scalar coverage.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct HalfPrecisionScalars {
   pub f16_val: f16,
   pub bf16_val: bf16,
@@ -662,8 +746,10 @@ impl HalfPrecisionScalars {
 
 impl BebopEncode for HalfPrecisionScalars {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:HalfPrecisionScalars)
     writer.write_f16(self.f16_val);
     writer.write_bf16(self.bf16_val);
+    // @@bebop_insertion_point(encode_end:HalfPrecisionScalars)
   }
 
   fn encoded_size(&self) -> usize {
@@ -673,13 +759,19 @@ impl BebopEncode for HalfPrecisionScalars {
 
 impl<'buf> BebopDecode<'buf> for HalfPrecisionScalars {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:HalfPrecisionScalars)
     let f16_val = reader.read_f16()?;
     let bf16_val = reader.read_bf16()?;
+    // @@bebop_insertion_point(decode_end:HalfPrecisionScalars)
     Ok(HalfPrecisionScalars { f16_val, bf16_val })
   }
 }
 
-#[derive(Debug, Clone)]
+impl HalfPrecisionScalars {
+  // @@bebop_insertion_point(struct_scope:HalfPrecisionScalars)
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct HalfPrecisionArrays {
   pub f16_dynamic: Vec<f16>,
   pub bf16_dynamic: Vec<bf16>,
@@ -695,10 +787,12 @@ impl HalfPrecisionArrays {
 
 impl BebopEncode for HalfPrecisionArrays {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:HalfPrecisionArrays)
     writer.write_array(&self.f16_dynamic, |_w, _el| _w.write_f16(*_el));
     writer.write_array(&self.bf16_dynamic, |_w, _el| _w.write_bf16(*_el));
     writer.write_fixed_array::<f16, 4>(&self.f16_fixed);
     writer.write_fixed_array::<bf16, 4>(&self.bf16_fixed);
+    // @@bebop_insertion_point(encode_end:HalfPrecisionArrays)
   }
 
   fn encoded_size(&self) -> usize {
@@ -713,15 +807,21 @@ impl BebopEncode for HalfPrecisionArrays {
 
 impl<'buf> BebopDecode<'buf> for HalfPrecisionArrays {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:HalfPrecisionArrays)
     let f16_dynamic = reader.read_array(|_r| _r.read_f16())?;
     let bf16_dynamic = reader.read_array(|_r| _r.read_bf16())?;
     let f16_fixed = reader.read_fixed_array::<f16, 4>()?;
     let bf16_fixed = reader.read_fixed_array::<bf16, 4>()?;
+    // @@bebop_insertion_point(decode_end:HalfPrecisionArrays)
     Ok(HalfPrecisionArrays { f16_dynamic, bf16_dynamic, f16_fixed, bf16_fixed })
   }
 }
 
-#[derive(Debug, Clone, Default)]
+impl HalfPrecisionArrays {
+  // @@bebop_insertion_point(struct_scope:HalfPrecisionArrays)
+}
+
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct HalfPrecisionMessage {
   pub f16_val: Option<f16>,
   pub bf16_val: Option<bf16>,
@@ -731,6 +831,7 @@ pub struct HalfPrecisionMessage {
 
 impl BebopEncode for HalfPrecisionMessage {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:HalfPrecisionMessage)
     let pos = writer.reserve_message_length();
     if let Some(v) = self.f16_val {
       writer.write_tag(1);
@@ -750,6 +851,7 @@ impl BebopEncode for HalfPrecisionMessage {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:HalfPrecisionMessage)
   }
 
   fn encoded_size(&self) -> usize {
@@ -772,6 +874,7 @@ impl BebopEncode for HalfPrecisionMessage {
 
 impl<'buf> BebopDecode<'buf> for HalfPrecisionMessage {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:HalfPrecisionMessage)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
@@ -787,12 +890,17 @@ impl<'buf> BebopDecode<'buf> for HalfPrecisionMessage {
         _ => { reader.skip(end - reader.position())?; }
       }
     }
+    // @@bebop_insertion_point(decode_end:HalfPrecisionMessage)
     Ok(msg)
   }
 }
 
+impl HalfPrecisionMessage {
+  // @@bebop_insertion_point(message_scope:HalfPrecisionMessage)
+}
+
 /// Struct with multiple string fields (all need Cow).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Address<'buf> {
   pub street: Cow<'buf, str>,
   pub city: Cow<'buf, str>,
@@ -825,10 +933,12 @@ impl<'buf> Address<'buf> {
 
 impl<'buf> BebopEncode for Address<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:Address)
     writer.write_string(&self.street);
     writer.write_string(&self.city);
     writer.write_string(&self.country);
     writer.write_string(&self.zip_code);
+    // @@bebop_insertion_point(encode_end:Address)
   }
 
   fn encoded_size(&self) -> usize {
@@ -843,16 +953,22 @@ impl<'buf> BebopEncode for Address<'buf> {
 
 impl<'buf> BebopDecode<'buf> for Address<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:Address)
     let street = Cow::Borrowed(reader.read_str()?);
     let city = Cow::Borrowed(reader.read_str()?);
     let country = Cow::Borrowed(reader.read_str()?);
     let zip_code = Cow::Borrowed(reader.read_str()?);
+    // @@bebop_insertion_point(decode_end:Address)
     Ok(Address { street, city, country, zip_code })
   }
 }
 
+impl<'buf> Address<'buf> {
+  // @@bebop_insertion_point(struct_scope:Address)
+}
+
 /// Message with array-of-defined-type and nested references.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct Scene<'buf> {
   pub shapes: Option<Vec<Shape<'buf>>>,
   pub background: Option<Color>,
@@ -873,6 +989,7 @@ impl<'buf> Scene<'buf> {
 
 impl<'buf> BebopEncode for Scene<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:Scene)
     let pos = writer.reserve_message_length();
     if let Some(ref v) = self.shapes {
       writer.write_tag(1);
@@ -888,6 +1005,7 @@ impl<'buf> BebopEncode for Scene<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:Scene)
   }
 
   fn encoded_size(&self) -> usize {
@@ -907,6 +1025,7 @@ impl<'buf> BebopEncode for Scene<'buf> {
 
 impl<'buf> BebopDecode<'buf> for Scene<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:Scene)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
@@ -921,12 +1040,17 @@ impl<'buf> BebopDecode<'buf> for Scene<'buf> {
         _ => { reader.skip(end - reader.position())?; }
       }
     }
+    // @@bebop_insertion_point(decode_end:Scene)
     Ok(msg)
   }
 }
 
+impl<'buf> Scene<'buf> {
+  // @@bebop_insertion_point(message_scope:Scene)
+}
+
 /// Message with map[string, defined-type] value.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Inventory<'buf> {
   pub items: Option<HashMap<Cow<'buf, str>, u32>>,
   pub label: Option<Cow<'buf, str>>,
@@ -945,6 +1069,7 @@ impl<'buf> Inventory<'buf> {
 
 impl<'buf> BebopEncode for Inventory<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:Inventory)
     let pos = writer.reserve_message_length();
     if let Some(ref v) = self.items {
       writer.write_tag(1);
@@ -956,6 +1081,7 @@ impl<'buf> BebopEncode for Inventory<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:Inventory)
   }
 
   fn encoded_size(&self) -> usize {
@@ -972,6 +1098,7 @@ impl<'buf> BebopEncode for Inventory<'buf> {
 
 impl<'buf> BebopDecode<'buf> for Inventory<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:Inventory)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
@@ -985,12 +1112,17 @@ impl<'buf> BebopDecode<'buf> for Inventory<'buf> {
         _ => { reader.skip(end - reader.position())?; }
       }
     }
+    // @@bebop_insertion_point(decode_end:Inventory)
     Ok(msg)
   }
 }
 
+impl<'buf> Inventory<'buf> {
+  // @@bebop_insertion_point(message_scope:Inventory)
+}
+
 /// Empty message (all fields optional, none set).
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct EmptyMessage<'buf> {
   pub unused_field: Option<Cow<'buf, str>>,
 }
@@ -1007,6 +1139,7 @@ impl<'buf> EmptyMessage<'buf> {
 
 impl<'buf> BebopEncode for EmptyMessage<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:EmptyMessage)
     let pos = writer.reserve_message_length();
     if let Some(ref v) = self.unused_field {
       writer.write_tag(1);
@@ -1014,6 +1147,7 @@ impl<'buf> BebopEncode for EmptyMessage<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:EmptyMessage)
   }
 
   fn encoded_size(&self) -> usize {
@@ -1027,6 +1161,7 @@ impl<'buf> BebopEncode for EmptyMessage<'buf> {
 
 impl<'buf> BebopDecode<'buf> for EmptyMessage<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:EmptyMessage)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
@@ -1039,7 +1174,150 @@ impl<'buf> BebopDecode<'buf> for EmptyMessage<'buf> {
         _ => { reader.skip(end - reader.position())?; }
       }
     }
+    // @@bebop_insertion_point(decode_end:EmptyMessage)
     Ok(msg)
   }
 }
 
+impl<'buf> EmptyMessage<'buf> {
+  // @@bebop_insertion_point(message_scope:EmptyMessage)
+}
+
+/// Struct with a timestamp field.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TimestampedEvent<'buf> {
+  pub when: BebopTimestamp,
+  pub what: Cow<'buf, str>,
+}
+
+pub type TimestampedEventOwned = TimestampedEvent<'static>;
+
+impl<'buf> TimestampedEvent<'buf> {
+  pub fn new(when: BebopTimestamp, what: impl Into<Cow<'buf, str>>) -> Self {
+    let what = what.into();
+    Self { when, what }
+  }
+}
+
+impl<'buf> TimestampedEvent<'buf> {
+  pub fn into_owned(self) -> TimestampedEventOwned {
+    TimestampedEvent {
+      when: self.when,
+      what: Cow::Owned(self.what.into_owned()),
+    }
+  }
+}
+
+impl<'buf> BebopEncode for TimestampedEvent<'buf> {
+  fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:TimestampedEvent)
+    writer.write_timestamp(self.when);
+    writer.write_string(&self.what);
+    // @@bebop_insertion_point(encode_end:TimestampedEvent)
+  }
+
+  fn encoded_size(&self) -> usize {
+    let mut size = 0;
+    size += size_of::<i64>() + size_of::<i32>();
+    size += wire::string_size(self.what.len());
+    size
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for TimestampedEvent<'buf> {
+  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:TimestampedEvent)
+    let when = reader.read_timestamp()?;
+    let what = Cow::Borrowed(reader.read_str()?);
+    // @@bebop_insertion_point(decode_end:TimestampedEvent)
+    Ok(TimestampedEvent { when, what })
+  }
+}
+
+impl<'buf> TimestampedEvent<'buf> {
+  // @@bebop_insertion_point(struct_scope:TimestampedEvent)
+}
+
+/// Message with temporal fields.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
+pub struct ScheduleEntry<'buf> {
+  pub start: Option<BebopTimestamp>,
+  pub duration: Option<BebopDuration>,
+  pub label: Option<Cow<'buf, str>>,
+}
+
+pub type ScheduleEntryOwned = ScheduleEntry<'static>;
+
+impl<'buf> ScheduleEntry<'buf> {
+  pub fn into_owned(self) -> ScheduleEntryOwned {
+    ScheduleEntry {
+      start: self.start,
+      duration: self.duration,
+      label: self.label.map(|v| Cow::Owned(v.into_owned())),
+    }
+  }
+}
+
+impl<'buf> BebopEncode for ScheduleEntry<'buf> {
+  fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:ScheduleEntry)
+    let pos = writer.reserve_message_length();
+    if let Some(v) = self.start {
+      writer.write_tag(1);
+      writer.write_timestamp(v);
+    }
+    if let Some(v) = self.duration {
+      writer.write_tag(2);
+      writer.write_duration(v);
+    }
+    if let Some(ref v) = self.label {
+      writer.write_tag(3);
+      writer.write_string(&v);
+    }
+    writer.write_end_marker();
+    writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:ScheduleEntry)
+  }
+
+  fn encoded_size(&self) -> usize {
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    if let Some(v) = self.start {
+      size += wire::tagged_size(size_of::<i64>() + size_of::<i32>());
+    }
+    if let Some(v) = self.duration {
+      size += wire::tagged_size(size_of::<i64>() + size_of::<i32>());
+    }
+    if let Some(ref v) = self.label {
+      size += wire::tagged_size(wire::string_size(v.len()));
+    }
+    size
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for ScheduleEntry<'buf> {
+  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:ScheduleEntry)
+    let length = reader.read_message_length()? as usize;
+    let end = reader.position() + length;
+    let mut msg = Self::default();
+
+    while reader.position() < end {
+      let tag = reader.read_tag()?;
+      if tag == 0 { break; }
+      match tag {
+        1 => msg.start = Some(reader.read_timestamp()?),
+        2 => msg.duration = Some(reader.read_duration()?),
+        3 => msg.label = Some(Cow::Borrowed(reader.read_str()?)),
+        _ => { reader.skip(end - reader.position())?; }
+      }
+    }
+    // @@bebop_insertion_point(decode_end:ScheduleEntry)
+    Ok(msg)
+  }
+}
+
+impl<'buf> ScheduleEntry<'buf> {
+  // @@bebop_insertion_point(message_scope:ScheduleEntry)
+}
+
+// @@bebop_insertion_point(eof)
