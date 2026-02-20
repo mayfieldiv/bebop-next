@@ -2,6 +2,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use core::hash::Hash;
 
+use crate::temporal::{BebopDuration, BebopTimestamp};
 use crate::traits::FixedScalar;
 use crate::HashMap;
 use crate::{bf16, f16, DecodeError};
@@ -160,17 +161,17 @@ impl<'a> BebopReader<'a> {
   // ── Timestamp / Duration ────────────────────────────────────
 
   /// Read a timestamp: i64 seconds + i32 nanos (12 bytes total).
-  pub fn read_timestamp(&mut self) -> Result<(i64, i32)> {
+  pub fn read_timestamp(&mut self) -> Result<BebopTimestamp> {
     let seconds = self.read_i64()?;
     let nanos = self.read_i32()?;
-    Ok((seconds, nanos))
+    Ok(BebopTimestamp { seconds, nanos })
   }
 
   /// Read a duration: i64 seconds + i32 nanos (12 bytes total).
-  pub fn read_duration(&mut self) -> Result<(i64, i32)> {
+  pub fn read_duration(&mut self) -> Result<BebopDuration> {
     let seconds = self.read_i64()?;
     let nanos = self.read_i32()?;
-    Ok((seconds, nanos))
+    Ok(BebopDuration { seconds, nanos })
   }
 
   // ── Message helpers ─────────────────────────────────────────

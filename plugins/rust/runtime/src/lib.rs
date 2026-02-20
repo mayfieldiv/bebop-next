@@ -6,6 +6,7 @@ extern crate std;
 
 mod error;
 mod reader;
+mod temporal;
 mod traits;
 pub mod wire_size;
 mod writer;
@@ -16,6 +17,7 @@ pub use half::f16;
 #[cfg(not(feature = "std"))]
 pub use hashbrown::HashMap;
 pub use reader::BebopReader;
+pub use temporal::{BebopDuration, BebopTimestamp};
 #[cfg(feature = "std")]
 pub use std::collections::HashMap;
 pub use traits::{BebopDecode, BebopDecodeOwned};
