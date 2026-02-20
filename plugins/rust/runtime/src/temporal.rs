@@ -1,4 +1,5 @@
 /// A point in time represented as seconds and nanoseconds since the Unix epoch.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct BebopTimestamp {
   pub seconds: i64,
@@ -6,6 +7,7 @@ pub struct BebopTimestamp {
 }
 
 /// A span of time represented as seconds and nanoseconds.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct BebopDuration {
   pub seconds: i64,
@@ -38,11 +40,9 @@ mod std_conversions {
   impl From<BebopTimestamp> for SystemTime {
     fn from(ts: BebopTimestamp) -> Self {
       if ts.seconds >= 0 {
-        UNIX_EPOCH
-          + Duration::new(ts.seconds as u64, ts.nanos as u32)
+        UNIX_EPOCH + Duration::new(ts.seconds as u64, ts.nanos as u32)
       } else {
-        UNIX_EPOCH
-          - Duration::new((-ts.seconds) as u64, (-ts.nanos) as u32)
+        UNIX_EPOCH - Duration::new((-ts.seconds) as u64, (-ts.nanos) as u32)
       }
     }
   }
@@ -111,9 +111,18 @@ mod tests {
     fn timestamp_eq_and_hash() {
       use core::hash::{Hash, Hasher};
 
-      let a = BebopTimestamp { seconds: 1, nanos: 2 };
-      let b = BebopTimestamp { seconds: 1, nanos: 2 };
-      let c = BebopTimestamp { seconds: 1, nanos: 3 };
+      let a = BebopTimestamp {
+        seconds: 1,
+        nanos: 2,
+      };
+      let b = BebopTimestamp {
+        seconds: 1,
+        nanos: 2,
+      };
+      let c = BebopTimestamp {
+        seconds: 1,
+        nanos: 3,
+      };
       assert_eq!(a, b);
       assert_ne!(a, c);
 
@@ -157,7 +166,10 @@ mod tests {
     #[test]
     #[should_panic(expected = "cannot convert negative BebopDuration")]
     fn negative_duration_panics() {
-      let bd = BebopDuration { seconds: -1, nanos: 0 };
+      let bd = BebopDuration {
+        seconds: -1,
+        nanos: 0,
+      };
       let _: Duration = bd.into();
     }
   }

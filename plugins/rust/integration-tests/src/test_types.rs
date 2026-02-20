@@ -21,11 +21,14 @@ use core::mem::size_of;
 use bebop_runtime::HashMap;
 use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, Uuid, f16, bf16, BebopTimestamp, BebopDuration};
 use bebop_runtime::wire_size as wire;
+#[cfg(feature = "serde")]
+use bebop_runtime::serde;
 
 // @@bebop_insertion_point(imports)
 
 /// Simple enum with uint8 base type.
 #[repr(u8)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Color {
   Unknown = 0,
@@ -75,6 +78,7 @@ impl<'buf> BebopDecode<'buf> for Color {
   }
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Permissions(pub u8);
 
@@ -149,6 +153,7 @@ pub const EXAMPLE_CONST_F16_FROM_INT: f16 = f16::from_f64_const(1f64);
 pub const EXAMPLE_CONST_BF16_FROM_INT: bf16 = bf16::from_f64_const(2f64);
 
 /// Fixed-size struct (all scalar fields).
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Point {
   pub x: f32,
@@ -191,6 +196,7 @@ impl Point {
 }
 
 /// Fixed-size struct referencing another struct and an enum.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Pixel {
   pub position: Point,
@@ -239,6 +245,7 @@ impl Pixel {
 }
 
 /// Variable-size struct with a string field (needs lifetime / Cow).
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Person<'buf> {
   pub name: Cow<'buf, str>,
@@ -294,9 +301,12 @@ impl<'buf> Person<'buf> {
 }
 
 /// Variable-size struct with a byte array field (needs lifetime / Cow).
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BinaryPayload<'buf> {
   pub tag: u32,
+  #[cfg_attr(feature = "serde", serde(borrow))]
+  #[cfg_attr(feature = "serde", serde(with = "bebop_runtime::serde_cow_bytes"))]
   pub data: Cow<'buf, [u8]>,
 }
 
@@ -349,6 +359,7 @@ impl<'buf> BinaryPayload<'buf> {
 }
 
 /// Message with various field types: scalars, strings, arrays, maps.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct UserProfile<'buf> {
   pub display_name: Option<Cow<'buf, str>>,
@@ -471,6 +482,7 @@ impl<'buf> UserProfile<'buf> {
 }
 
 /// Message referencing fixed-size and enum defined types.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct DrawCommand<'buf> {
   pub target: Option<Point>,
@@ -563,6 +575,7 @@ impl<'buf> DrawCommand<'buf> {
 }
 
 /// Struct used as a union branch (variable-size due to string field).
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct TextLabel<'buf> {
   pub position: Point,
@@ -618,11 +631,14 @@ impl<'buf> TextLabel<'buf> {
 }
 
 /// Union with type-ref branches covering fixed and variable inner types.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))]
 #[derive(Debug, Clone, PartialEq)]
 pub enum Shape<'buf> {
   Point(Point),
   Pixel(Pixel),
   Label(TextLabel<'buf>),
+  #[cfg_attr(feature = "serde", serde(skip))]
   Unknown(u8, Cow<'buf, [u8]>),
 }
 
@@ -691,6 +707,7 @@ impl<'buf> Shape<'buf> {
 }
 
 /// Fixed-array struct (compile-time known element count).
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Matrix2x2 {
   pub values: [f32; 4],
@@ -730,6 +747,7 @@ impl Matrix2x2 {
 }
 
 /// Fixed-size and variable-size half-precision scalar coverage.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct HalfPrecisionScalars {
   pub f16_val: f16,
@@ -771,6 +789,7 @@ impl HalfPrecisionScalars {
   // @@bebop_insertion_point(struct_scope:HalfPrecisionScalars)
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct HalfPrecisionArrays {
   pub f16_dynamic: Vec<f16>,
@@ -821,6 +840,7 @@ impl HalfPrecisionArrays {
   // @@bebop_insertion_point(struct_scope:HalfPrecisionArrays)
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct HalfPrecisionMessage {
   pub f16_val: Option<f16>,
@@ -900,6 +920,7 @@ impl HalfPrecisionMessage {
 }
 
 /// Struct with multiple string fields (all need Cow).
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Address<'buf> {
   pub street: Cow<'buf, str>,
@@ -968,6 +989,7 @@ impl<'buf> Address<'buf> {
 }
 
 /// Message with array-of-defined-type and nested references.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Scene<'buf> {
   pub shapes: Option<Vec<Shape<'buf>>>,
@@ -1050,6 +1072,7 @@ impl<'buf> Scene<'buf> {
 }
 
 /// Message with map[string, defined-type] value.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Inventory<'buf> {
   pub items: Option<HashMap<Cow<'buf, str>, u32>>,
@@ -1122,6 +1145,7 @@ impl<'buf> Inventory<'buf> {
 }
 
 /// Empty message (all fields optional, none set).
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct EmptyMessage<'buf> {
   pub unused_field: Option<Cow<'buf, str>>,
@@ -1184,6 +1208,7 @@ impl<'buf> EmptyMessage<'buf> {
 }
 
 /// Struct with a timestamp field.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TimestampedEvent<'buf> {
   pub when: BebopTimestamp,
@@ -1239,6 +1264,7 @@ impl<'buf> TimestampedEvent<'buf> {
 }
 
 /// Message with temporal fields.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct ScheduleEntry<'buf> {
   pub start: Option<BebopTimestamp>,
