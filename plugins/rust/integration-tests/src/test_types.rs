@@ -14,15 +14,18 @@
 extern crate alloc;
 use alloc::borrow::Cow;
 use alloc::boxed::Box;
-use alloc::string::String;
+use alloc::string::String as StdString;
 use alloc::vec;
 use alloc::vec::Vec;
-use core::mem::size_of;
-use bebop_runtime::HashMap;
-use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, Uuid, f16, bf16, BebopTimestamp, BebopDuration};
-use bebop_runtime::wire_size as wire;
 #[cfg(feature = "serde")]
 use bebop_runtime::serde;
+use bebop_runtime::wire_size as wire;
+use bebop_runtime::HashMap;
+use bebop_runtime::{
+  bf16, f16, BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopReader, BebopTimestamp,
+  BebopWriter, DecodeError, Uuid,
+};
+use core::mem::size_of;
 
 // @@bebop_insertion_point(imports)
 
@@ -45,13 +48,18 @@ impl core::convert::TryFrom<u8> for Color {
       1 => Ok(Self::Red),
       2 => Ok(Self::Green),
       3 => Ok(Self::Blue),
-      _ => Err(DecodeError::InvalidEnum { type_name: "Color", value: value as u64 }),
+      _ => Err(DecodeError::InvalidEnum {
+        type_name: "Color",
+        value: value as u64,
+      }),
     }
   }
 }
 
 impl From<Color> for u8 {
-  fn from(value: Color) -> u8 { value as u8 }
+  fn from(value: Color) -> u8 {
+    value as u8
+  }
 }
 
 impl Color {
@@ -66,7 +74,9 @@ impl BebopEncode for Color {
     // @@bebop_insertion_point(encode_end:Color)
   }
 
-  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
+  fn encoded_size(&self) -> usize {
+    Self::FIXED_ENCODED_SIZE
+  }
 }
 
 impl<'buf> BebopDecode<'buf> for Color {
@@ -96,18 +106,59 @@ impl Permissions {
 impl BebopFlags for Permissions {
   type Bits = u8;
   const ALL_BITS: Self::Bits = 7;
-  fn bits(self) -> Self::Bits { self.0 }
-  fn from_bits_retain(bits: Self::Bits) -> Self { Self(bits) }
+  fn bits(self) -> Self::Bits {
+    self.0
+  }
+  fn from_bits_retain(bits: Self::Bits) -> Self {
+    Self(bits)
+  }
 }
 
-impl core::ops::BitOr for Permissions { type Output = Self; fn bitor(self, rhs: Self) -> Self { Self(self.0 | rhs.0) } }
-impl core::ops::BitOrAssign for Permissions { fn bitor_assign(&mut self, rhs: Self) { self.0 |= rhs.0; } }
-impl core::ops::BitAnd for Permissions { type Output = Self; fn bitand(self, rhs: Self) -> Self { Self(self.0 & rhs.0) } }
-impl core::ops::BitAndAssign for Permissions { fn bitand_assign(&mut self, rhs: Self) { self.0 &= rhs.0; } }
-impl core::ops::BitXor for Permissions { type Output = Self; fn bitxor(self, rhs: Self) -> Self { Self(self.0 ^ rhs.0) } }
-impl core::ops::BitXorAssign for Permissions { fn bitxor_assign(&mut self, rhs: Self) { self.0 ^= rhs.0; } }
-impl core::ops::Not for Permissions { type Output = Self; fn not(self) -> Self { Self(!self.0) } }
-impl core::ops::Sub for Permissions { type Output = Self; fn sub(self, rhs: Self) -> Self { Self(self.0 & !rhs.0) } }
+impl core::ops::BitOr for Permissions {
+  type Output = Self;
+  fn bitor(self, rhs: Self) -> Self {
+    Self(self.0 | rhs.0)
+  }
+}
+impl core::ops::BitOrAssign for Permissions {
+  fn bitor_assign(&mut self, rhs: Self) {
+    self.0 |= rhs.0;
+  }
+}
+impl core::ops::BitAnd for Permissions {
+  type Output = Self;
+  fn bitand(self, rhs: Self) -> Self {
+    Self(self.0 & rhs.0)
+  }
+}
+impl core::ops::BitAndAssign for Permissions {
+  fn bitand_assign(&mut self, rhs: Self) {
+    self.0 &= rhs.0;
+  }
+}
+impl core::ops::BitXor for Permissions {
+  type Output = Self;
+  fn bitxor(self, rhs: Self) -> Self {
+    Self(self.0 ^ rhs.0)
+  }
+}
+impl core::ops::BitXorAssign for Permissions {
+  fn bitxor_assign(&mut self, rhs: Self) {
+    self.0 ^= rhs.0;
+  }
+}
+impl core::ops::Not for Permissions {
+  type Output = Self;
+  fn not(self) -> Self {
+    Self(!self.0)
+  }
+}
+impl core::ops::Sub for Permissions {
+  type Output = Self;
+  fn sub(self, rhs: Self) -> Self {
+    Self(self.0 & !rhs.0)
+  }
+}
 
 /// Constants used to validate Rust const generation.
 pub const P_CASE: u8 = 18u8;
@@ -134,7 +185,9 @@ pub const FEATURE_FLAG_ENABLED: bool = true;
 
 pub const EXAMPLE_CONST_STRING: &str = "hello \"world\"\nwith newlines";
 
-pub const EXAMPLE_CONST_GUID: Uuid = Uuid::from_bytes([0xE2, 0x15, 0xA9, 0x46, 0xB2, 0x6F, 0x45, 0x67, 0xA2, 0x76, 0x13, 0x13, 0x6F, 0x0A, 0x17, 0x08]);
+pub const EXAMPLE_CONST_GUID: Uuid = Uuid::from_bytes([
+  0xE2, 0x15, 0xA9, 0x46, 0xB2, 0x6F, 0x45, 0x67, 0xA2, 0x76, 0x13, 0x13, 0x6F, 0x0A, 0x17, 0x08,
+]);
 
 pub const EXAMPLE_CONST_F16: f16 = f16::from_f64_const(1.5f64);
 
@@ -206,12 +259,14 @@ pub struct Pixel {
 
 impl Pixel {
   pub const FIXED_ENCODED_SIZE: usize =
-    Point::FIXED_ENCODED_SIZE
-    + Color::FIXED_ENCODED_SIZE
-    + size_of::<u8>();
+    Point::FIXED_ENCODED_SIZE + Color::FIXED_ENCODED_SIZE + size_of::<u8>();
 
   pub fn new(position: Point, color: Color, alpha: u8) -> Self {
-    Self { position, color, alpha }
+    Self {
+      position,
+      color,
+      alpha,
+    }
   }
 }
 
@@ -236,7 +291,11 @@ impl<'buf> BebopDecode<'buf> for Pixel {
     let color = Color::decode(reader)?;
     let alpha = reader.read_byte()?;
     // @@bebop_insertion_point(decode_end:Pixel)
-    Ok(Pixel { position, color, alpha })
+    Ok(Pixel {
+      position,
+      color,
+      alpha,
+    })
   }
 }
 
@@ -380,8 +439,16 @@ impl<'buf> UserProfile<'buf> {
       email: self.email.map(|v| Cow::Owned(v.into_owned())),
       age: self.age,
       active: self.active,
-      tags: self.tags.map(|v| v.into_iter().map(|_e| Cow::Owned(_e.into_owned())).collect()),
-      metadata: self.metadata.map(|v| v.into_iter().map(|(_k, _v)| (Cow::Owned(_k.into_owned()), Cow::Owned(_v.into_owned()))).collect()),
+      tags: self.tags.map(|v| {
+        v.into_iter()
+          .map(|_e| Cow::Owned(_e.into_owned()))
+          .collect()
+      }),
+      metadata: self.metadata.map(|v| {
+        v.into_iter()
+          .map(|(_k, _v)| (Cow::Owned(_k.into_owned()), Cow::Owned(_v.into_owned())))
+          .collect()
+      }),
       permissions: self.permissions,
     }
   }
@@ -418,7 +485,10 @@ impl<'buf> BebopEncode for UserProfile<'buf> {
     }
     if let Some(ref v) = self.metadata {
       writer.write_tag(6);
-      writer.write_map(&v, |_w, _k, _v| { _w.write_string(&_k); _w.write_string(&_v); });
+      writer.write_map(&v, |_w, _k, _v| {
+        _w.write_string(&_k);
+        _w.write_string(&_v);
+      });
     }
     if let Some(ref v) = self.permissions {
       writer.write_tag(7);
@@ -447,7 +517,9 @@ impl<'buf> BebopEncode for UserProfile<'buf> {
       size += wire::tagged_size(wire::array_size(v, |_el| wire::string_size(_el.len())));
     }
     if let Some(ref v) = self.metadata {
-      size += wire::tagged_size(wire::map_size(v, |_k, _v| wire::string_size(_k.len()) + wire::string_size(_v.len())));
+      size += wire::tagged_size(wire::map_size(v, |_k, _v| {
+        wire::string_size(_k.len()) + wire::string_size(_v.len())
+      }));
     }
     if let Some(ref v) = self.permissions {
       size += wire::tagged_size(v.encoded_size());
@@ -465,16 +537,27 @@ impl<'buf> BebopDecode<'buf> for UserProfile<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.display_name = Some(Cow::Borrowed(reader.read_str()?)),
         2 => msg.email = Some(Cow::Borrowed(reader.read_str()?)),
         3 => msg.age = Some(reader.read_u32()?),
         4 => msg.active = Some(reader.read_bool()?),
         5 => msg.tags = Some(reader.read_array(|_r| Ok(Cow::Borrowed(_r.read_str()?)))?),
-        6 => msg.metadata = Some(reader.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, Ok(Cow::Borrowed(_r.read_str()?))?)))?),
+        6 => {
+          msg.metadata = Some(reader.read_map(|_r| {
+            Ok((
+              Ok(Cow::Borrowed(_r.read_str()?))?,
+              Ok(Cow::Borrowed(_r.read_str()?))?,
+            ))
+          })?)
+        }
         7 => msg.permissions = Some(Permissions::decode(reader)?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
     // @@bebop_insertion_point(decode_end:UserProfile)
@@ -566,13 +649,17 @@ impl<'buf> BebopDecode<'buf> for DrawCommand<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.target = Some(Point::decode(reader)?),
         2 => msg.color = Some(Color::decode(reader)?),
         3 => msg.label = Some(Cow::Borrowed(reader.read_str()?)),
         4 => msg.thickness = Some(reader.read_f32()?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
     // @@bebop_insertion_point(decode_end:DrawCommand)
@@ -670,23 +757,36 @@ impl<'buf> BebopEncode for Shape<'buf> {
     // @@bebop_insertion_point(encode_start:Shape)
     let pos = writer.reserve_message_length();
     match self {
-      Self::Point(inner) => { writer.write_byte(1); inner.encode(writer); }
-      Self::Pixel(inner) => { writer.write_byte(2); inner.encode(writer); }
-      Self::Label(inner) => { writer.write_byte(3); inner.encode(writer); }
+      Self::Point(inner) => {
+        writer.write_byte(1);
+        inner.encode(writer);
+      }
+      Self::Pixel(inner) => {
+        writer.write_byte(2);
+        inner.encode(writer);
+      }
+      Self::Label(inner) => {
+        writer.write_byte(3);
+        inner.encode(writer);
+      }
       // @@bebop_insertion_point(encode_switch:Shape)
-      Self::Unknown(disc, data) => { writer.write_byte(*disc); writer.write_raw(data); }
+      Self::Unknown(disc, data) => {
+        writer.write_byte(*disc);
+        writer.write_raw(data);
+      }
     }
     writer.fill_message_length(pos);
     // @@bebop_insertion_point(encode_end:Shape)
   }
 
   fn encoded_size(&self) -> usize {
-    wire::WIRE_LEN_PREFIX_SIZE + match self {
-      Self::Point(inner) => wire::tagged_size(inner.encoded_size()),
-      Self::Pixel(inner) => wire::tagged_size(inner.encoded_size()),
-      Self::Label(inner) => wire::tagged_size(inner.encoded_size()),
-      Self::Unknown(_, data) => wire::tagged_size(data.len()),
-    }
+    wire::WIRE_LEN_PREFIX_SIZE
+      + match self {
+        Self::Point(inner) => wire::tagged_size(inner.encoded_size()),
+        Self::Pixel(inner) => wire::tagged_size(inner.encoded_size()),
+        Self::Label(inner) => wire::tagged_size(inner.encoded_size()),
+        Self::Unknown(_, data) => wire::tagged_size(data.len()),
+      }
   }
 }
 
@@ -809,8 +909,18 @@ pub struct HalfPrecisionArrays {
 }
 
 impl HalfPrecisionArrays {
-  pub fn new(f16_dynamic: Vec<f16>, bf16_dynamic: Vec<bf16>, f16_fixed: [f16; 4], bf16_fixed: [bf16; 4]) -> Self {
-    Self { f16_dynamic, bf16_dynamic, f16_fixed, bf16_fixed }
+  pub fn new(
+    f16_dynamic: Vec<f16>,
+    bf16_dynamic: Vec<bf16>,
+    f16_fixed: [f16; 4],
+    bf16_fixed: [bf16; 4],
+  ) -> Self {
+    Self {
+      f16_dynamic,
+      bf16_dynamic,
+      f16_fixed,
+      bf16_fixed,
+    }
   }
 }
 
@@ -842,7 +952,12 @@ impl<'buf> BebopDecode<'buf> for HalfPrecisionArrays {
     let f16_fixed = reader.read_fixed_array::<f16, 4>()?;
     let bf16_fixed = reader.read_fixed_array::<bf16, 4>()?;
     // @@bebop_insertion_point(decode_end:HalfPrecisionArrays)
-    Ok(HalfPrecisionArrays { f16_dynamic, bf16_dynamic, f16_fixed, bf16_fixed })
+    Ok(HalfPrecisionArrays {
+      f16_dynamic,
+      bf16_dynamic,
+      f16_fixed,
+      bf16_fixed,
+    })
   }
 }
 
@@ -916,13 +1031,17 @@ impl<'buf> BebopDecode<'buf> for HalfPrecisionMessage {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.f16_val = Some(reader.read_f16()?),
         2 => msg.bf16_val = Some(reader.read_bf16()?),
         3 => msg.f16_arr = Some(reader.read_array(|_r| _r.read_f16())?),
         4 => msg.bf16_arr = Some(reader.read_array(|_r| _r.read_bf16())?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
     // @@bebop_insertion_point(decode_end:HalfPrecisionMessage)
@@ -947,12 +1066,22 @@ pub struct Address<'buf> {
 pub type AddressOwned = Address<'static>;
 
 impl<'buf> Address<'buf> {
-  pub fn new(street: impl Into<Cow<'buf, str>>, city: impl Into<Cow<'buf, str>>, country: impl Into<Cow<'buf, str>>, zip_code: impl Into<Cow<'buf, str>>) -> Self {
+  pub fn new(
+    street: impl Into<Cow<'buf, str>>,
+    city: impl Into<Cow<'buf, str>>,
+    country: impl Into<Cow<'buf, str>>,
+    zip_code: impl Into<Cow<'buf, str>>,
+  ) -> Self {
     let street = street.into();
     let city = city.into();
     let country = country.into();
     let zip_code = zip_code.into();
-    Self { street, city, country, zip_code }
+    Self {
+      street,
+      city,
+      country,
+      zip_code,
+    }
   }
 }
 
@@ -995,7 +1124,12 @@ impl<'buf> BebopDecode<'buf> for Address<'buf> {
     let country = Cow::Borrowed(reader.read_str()?);
     let zip_code = Cow::Borrowed(reader.read_str()?);
     // @@bebop_insertion_point(decode_end:Address)
-    Ok(Address { street, city, country, zip_code })
+    Ok(Address {
+      street,
+      city,
+      country,
+      zip_code,
+    })
   }
 }
 
@@ -1017,7 +1151,9 @@ pub type SceneOwned = Scene<'static>;
 impl<'buf> Scene<'buf> {
   pub fn into_owned(self) -> SceneOwned {
     Scene {
-      shapes: self.shapes.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      shapes: self
+        .shapes
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
       background: self.background,
       title: self.title.map(|v| Cow::Owned(v.into_owned())),
     }
@@ -1074,12 +1210,16 @@ impl<'buf> BebopDecode<'buf> for Scene<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.shapes = Some(reader.read_array(|_r| Shape::decode(_r))?),
         2 => msg.background = Some(Color::decode(reader)?),
         3 => msg.title = Some(Cow::Borrowed(reader.read_str()?)),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
     // @@bebop_insertion_point(decode_end:Scene)
@@ -1104,7 +1244,11 @@ pub type InventoryOwned = Inventory<'static>;
 impl<'buf> Inventory<'buf> {
   pub fn into_owned(self) -> InventoryOwned {
     Inventory {
-      items: self.items.map(|v| v.into_iter().map(|(_k, _v)| (Cow::Owned(_k.into_owned()), _v)).collect()),
+      items: self.items.map(|v| {
+        v.into_iter()
+          .map(|(_k, _v)| (Cow::Owned(_k.into_owned()), _v))
+          .collect()
+      }),
       label: self.label.map(|v| Cow::Owned(v.into_owned())),
     }
   }
@@ -1121,7 +1265,10 @@ impl<'buf> BebopEncode for Inventory<'buf> {
     // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.items {
       writer.write_tag(1);
-      writer.write_map(&v, |_w, _k, _v| { _w.write_string(&_k); _w.write_u32(*_v); });
+      writer.write_map(&v, |_w, _k, _v| {
+        _w.write_string(&_k);
+        _w.write_u32(*_v);
+      });
     }
     if let Some(ref v) = self.label {
       writer.write_tag(2);
@@ -1135,7 +1282,9 @@ impl<'buf> BebopEncode for Inventory<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.items {
-      size += wire::tagged_size(wire::map_size(v, |_k, _v| wire::string_size(_k.len()) + size_of::<u32>()));
+      size += wire::tagged_size(wire::map_size(v, |_k, _v| {
+        wire::string_size(_k.len()) + size_of::<u32>()
+      }));
     }
     if let Some(ref v) = self.label {
       size += wire::tagged_size(wire::string_size(v.len()));
@@ -1153,11 +1302,18 @@ impl<'buf> BebopDecode<'buf> for Inventory<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
-        1 => msg.items = Some(reader.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, _r.read_u32()?)))?),
+        1 => {
+          msg.items =
+            Some(reader.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, _r.read_u32()?)))?)
+        }
         2 => msg.label = Some(Cow::Borrowed(reader.read_str()?)),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
     // @@bebop_insertion_point(decode_end:Inventory)
@@ -1222,10 +1378,14 @@ impl<'buf> BebopDecode<'buf> for EmptyMessage<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.unused_field = Some(Cow::Borrowed(reader.read_str()?)),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
     // @@bebop_insertion_point(decode_end:EmptyMessage)
@@ -1364,12 +1524,16 @@ impl<'buf> BebopDecode<'buf> for ScheduleEntry<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.start = Some(reader.read_timestamp()?),
         2 => msg.duration = Some(reader.read_duration()?),
         3 => msg.label = Some(Cow::Borrowed(reader.read_str()?)),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
     // @@bebop_insertion_point(decode_end:ScheduleEntry)
@@ -1552,12 +1716,16 @@ impl<'buf> BebopDecode<'buf> for DeprecatedFieldsMessage<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.current_name = Some(Cow::Borrowed(reader.read_str()?)),
         2 => msg.legacy_name = Some(Cow::Borrowed(reader.read_str()?)),
         3 => msg.legacy_enabled = Some(reader.read_bool()?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
     // @@bebop_insertion_point(decode_end:DeprecatedFieldsMessage)
@@ -1582,7 +1750,11 @@ pub type IntegerKeyMapsOwned = IntegerKeyMaps<'static>;
 impl<'buf> IntegerKeyMaps<'buf> {
   pub fn into_owned(self) -> IntegerKeyMapsOwned {
     IntegerKeyMaps {
-      labels_by_id: self.labels_by_id.map(|v| v.into_iter().map(|(_k, _v)| (_k, Cow::Owned(_v.into_owned()))).collect()),
+      labels_by_id: self.labels_by_id.map(|v| {
+        v.into_iter()
+          .map(|(_k, _v)| (_k, Cow::Owned(_v.into_owned())))
+          .collect()
+      }),
       flags_by_id: self.flags_by_id,
     }
   }
@@ -1599,11 +1771,17 @@ impl<'buf> BebopEncode for IntegerKeyMaps<'buf> {
     // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.labels_by_id {
       writer.write_tag(1);
-      writer.write_map(&v, |_w, _k, _v| { _w.write_u32(*_k); _w.write_string(&_v); });
+      writer.write_map(&v, |_w, _k, _v| {
+        _w.write_u32(*_k);
+        _w.write_string(&_v);
+      });
     }
     if let Some(ref v) = self.flags_by_id {
       writer.write_tag(2);
-      writer.write_map(&v, |_w, _k, _v| { _w.write_i64(*_k); _w.write_bool(*_v); });
+      writer.write_map(&v, |_w, _k, _v| {
+        _w.write_i64(*_k);
+        _w.write_bool(*_v);
+      });
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
@@ -1613,10 +1791,14 @@ impl<'buf> BebopEncode for IntegerKeyMaps<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.labels_by_id {
-      size += wire::tagged_size(wire::map_size(v, |_k, _v| size_of::<u32>() + wire::string_size(_v.len())));
+      size += wire::tagged_size(wire::map_size(v, |_k, _v| {
+        size_of::<u32>() + wire::string_size(_v.len())
+      }));
     }
     if let Some(ref v) = self.flags_by_id {
-      size += wire::tagged_size(wire::map_size(v, |_k, _v| size_of::<i64>() + size_of::<bool>()));
+      size += wire::tagged_size(wire::map_size(v, |_k, _v| {
+        size_of::<i64>() + size_of::<bool>()
+      }));
     }
     size
   }
@@ -1631,11 +1813,18 @@ impl<'buf> BebopDecode<'buf> for IntegerKeyMaps<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
-        1 => msg.labels_by_id = Some(reader.read_map(|_r| Ok((_r.read_u32()?, Ok(Cow::Borrowed(_r.read_str()?))?)))?),
+        1 => {
+          msg.labels_by_id =
+            Some(reader.read_map(|_r| Ok((_r.read_u32()?, Ok(Cow::Borrowed(_r.read_str()?))?)))?)
+        }
         2 => msg.flags_by_id = Some(reader.read_map(|_r| Ok((_r.read_i64()?, _r.read_bool()?)))?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
     // @@bebop_insertion_point(decode_end:IntegerKeyMaps)
@@ -1710,7 +1899,22 @@ pub type DeepNestedCollectionsOwned = DeepNestedCollections<'static>;
 impl<'buf> DeepNestedCollections<'buf> {
   pub fn into_owned(self) -> DeepNestedCollectionsOwned {
     DeepNestedCollections {
-      nested: self.nested.map(|v| v.into_iter().map(|(_k, _v)| (Cow::Owned(_k.into_owned()), _v.into_iter().map(|_e| _e.into_iter().map(|(_k, _v)| (Cow::Owned(_k.into_owned()), _v.into_owned())).collect()).collect())).collect()),
+      nested: self.nested.map(|v| {
+        v.into_iter()
+          .map(|(_k, _v)| {
+            (
+              Cow::Owned(_k.into_owned()),
+              _v.into_iter()
+                .map(|_e| {
+                  _e.into_iter()
+                    .map(|(_k, _v)| (Cow::Owned(_k.into_owned()), _v.into_owned()))
+                    .collect()
+                })
+                .collect(),
+            )
+          })
+          .collect()
+      }),
     }
   }
 }
@@ -1726,7 +1930,15 @@ impl<'buf> BebopEncode for DeepNestedCollections<'buf> {
     // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.nested {
       writer.write_tag(1);
-      writer.write_map(&v, |_w, _k, _v| { _w.write_string(&_k); _w.write_array(&_v, |_w, _el| { _w.write_map(&_el, |_w, _k, _v| { _w.write_string(&_k); _v.encode(_w); }) }); });
+      writer.write_map(&v, |_w, _k, _v| {
+        _w.write_string(&_k);
+        _w.write_array(&_v, |_w, _el| {
+          _w.write_map(&_el, |_w, _k, _v| {
+            _w.write_string(&_k);
+            _v.encode(_w);
+          })
+        });
+      });
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
@@ -1736,7 +1948,14 @@ impl<'buf> BebopEncode for DeepNestedCollections<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.nested {
-      size += wire::tagged_size(wire::map_size(v, |_k, _v| wire::string_size(_k.len()) + wire::array_size(_v, |_el| wire::map_size(_el, |_k, _v| wire::string_size(_k.len()) + _v.encoded_size()))));
+      size += wire::tagged_size(wire::map_size(v, |_k, _v| {
+        wire::string_size(_k.len())
+          + wire::array_size(_v, |_el| {
+            wire::map_size(_el, |_k, _v| {
+              wire::string_size(_k.len()) + _v.encoded_size()
+            })
+          })
+      }));
     }
     size
   }
@@ -1751,10 +1970,23 @@ impl<'buf> BebopDecode<'buf> for DeepNestedCollections<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
-        1 => msg.nested = Some(reader.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, _r.read_array(|_r| _r.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, NestedLeaf::decode(_r)?))))?)))?),
-        _ => { reader.skip(end - reader.position())?; }
+        1 => {
+          msg.nested = Some(reader.read_map(|_r| {
+            Ok((
+              Ok(Cow::Borrowed(_r.read_str()?))?,
+              _r.read_array(|_r| {
+                _r.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, NestedLeaf::decode(_r)?)))
+              })?,
+            ))
+          })?)
+        }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
     // @@bebop_insertion_point(decode_end:DeepNestedCollections)

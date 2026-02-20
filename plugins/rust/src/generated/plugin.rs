@@ -12,26 +12,34 @@
 #![allow(warnings)]
 
 extern crate alloc;
+use super::descriptor::*;
 use alloc::borrow::Cow;
 use alloc::boxed::Box;
-use alloc::string::String;
+use alloc::string::String as StdString;
 use alloc::vec;
 use alloc::vec::Vec;
-use core::mem::size_of;
-use bebop_runtime::HashMap;
-use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, f16, bf16};
+#[cfg(feature = "serde")]
+use bebop_runtime::serde;
 use bebop_runtime::wire_size as wire;
-use super::descriptor::*;
+use bebop_runtime::HashMap;
+use bebop_runtime::{
+  bf16, f16, BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopReader, BebopTimestamp,
+  BebopWriter, DecodeError, Uuid,
+};
+use core::mem::size_of;
+
+// @@bebop_insertion_point(imports)
 
 /// Compiler version.
 /// Follows semantic versioning. The `suffix` field distinguishes pre-release
 /// versions (`alpha.1`, `beta.2`, `rc.1`). Empty suffix is a stable release.
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Version<'buf> {
   pub major: i32,
   pub minor: i32,
   pub patch: i32,
-/// Pre-release suffix (`alpha.1`, `rc.2`). Empty for stable releases.
+  /// Pre-release suffix (`alpha.1`, `rc.2`). Empty for stable releases.
   pub suffix: Cow<'buf, str>,
 }
 
@@ -40,7 +48,12 @@ pub type VersionOwned = Version<'static>;
 impl<'buf> Version<'buf> {
   pub fn new(major: i32, minor: i32, patch: i32, suffix: impl Into<Cow<'buf, str>>) -> Self {
     let suffix = suffix.into();
-    Self { major, minor, patch, suffix }
+    Self {
+      major,
+      minor,
+      patch,
+      suffix,
+    }
   }
 }
 
@@ -57,10 +70,12 @@ impl<'buf> Version<'buf> {
 
 impl<'buf> BebopEncode for Version<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:Version)
     writer.write_i32(self.major);
     writer.write_i32(self.minor);
     writer.write_i32(self.patch);
     writer.write_string(&self.suffix);
+    // @@bebop_insertion_point(encode_end:Version)
   }
 
   fn encoded_size(&self) -> usize {
@@ -75,37 +90,49 @@ impl<'buf> BebopEncode for Version<'buf> {
 
 impl<'buf> BebopDecode<'buf> for Version<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:Version)
     let major = reader.read_i32()?;
     let minor = reader.read_i32()?;
     let patch = reader.read_i32()?;
     let suffix = Cow::Borrowed(reader.read_str()?);
-    Ok(Version { major, minor, patch, suffix })
+    // @@bebop_insertion_point(decode_end:Version)
+    Ok(Version {
+      major,
+      minor,
+      patch,
+      suffix,
+    })
   }
+}
+
+impl<'buf> Version<'buf> {
+  // @@bebop_insertion_point(struct_scope:Version)
 }
 
 /// Input to a code generator plugin.
 /// The compiler writes an encoded CodeGeneratorRequest to the plugin's stdin.
 /// Generate code only for files in `files_to_generate`, using the full
 /// `schemas` array for type resolution.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct CodeGeneratorRequest<'buf> {
-/// The .bop files to generate code for (explicitly listed on command line).
-/// Each file's descriptor is included in `schemas`.
+  /// The .bop files to generate code for (explicitly listed on command line).
+  /// Each file's descriptor is included in `schemas`.
   pub files_to_generate: Option<Vec<Cow<'buf, str>>>,
-/// Generator-specific parameter from `--${NAME}_opt=PARAM` or embedded
-/// in the output path. Format is plugin-defined (commonly key=value pairs).
+  /// Generator-specific parameter from `--${NAME}_opt=PARAM` or embedded
+  /// in the output path. Format is plugin-defined (commonly key=value pairs).
   pub parameter: Option<Cow<'buf, str>>,
-/// Version of the compiler invoking the plugin. Use to detect
-/// incompatibilities or enable version-specific behavior.
+  /// Version of the compiler invoking the plugin. Use to detect
+  /// incompatibilities or enable version-specific behavior.
   pub compiler_version: Option<Version<'buf>>,
-/// SchemaDescriptors for all files in `files_to_generate` plus their
-/// imports. Schemas appear in topological order: dependencies before
-/// dependents. Type FQNs are fully resolved.
-/// Iterate schemas, check if `schema.path` is in `files_to_generate`,
-/// and generate code only for those files. The rest are for type resolution.
+  /// SchemaDescriptors for all files in `files_to_generate` plus their
+  /// imports. Schemas appear in topological order: dependencies before
+  /// dependents. Type FQNs are fully resolved.
+  /// Iterate schemas, check if `schema.path` is in `files_to_generate`,
+  /// and generate code only for those files. The rest are for type resolution.
   pub schemas: Option<Vec<SchemaDescriptor<'buf>>>,
-/// Host compiler options passed to bebopc. Use to adjust output based
-/// on global settings.
+  /// Host compiler options passed to bebopc. Use to adjust output based
+  /// on global settings.
   pub host_options: Option<HashMap<Cow<'buf, str>, Cow<'buf, str>>>,
 }
 
@@ -114,18 +141,34 @@ pub type CodeGeneratorRequestOwned = CodeGeneratorRequest<'static>;
 impl<'buf> CodeGeneratorRequest<'buf> {
   pub fn into_owned(self) -> CodeGeneratorRequestOwned {
     CodeGeneratorRequest {
-      files_to_generate: self.files_to_generate.map(|v| v.into_iter().map(|_e| Cow::Owned(_e.into_owned())).collect()),
+      files_to_generate: self.files_to_generate.map(|v| {
+        v.into_iter()
+          .map(|_e| Cow::Owned(_e.into_owned()))
+          .collect()
+      }),
       parameter: self.parameter.map(|v| Cow::Owned(v.into_owned())),
       compiler_version: self.compiler_version.map(|v| v.into_owned()),
-      schemas: self.schemas.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
-      host_options: self.host_options.map(|v| v.into_iter().map(|(_k, _v)| (Cow::Owned(_k.into_owned()), Cow::Owned(_v.into_owned()))).collect()),
+      schemas: self
+        .schemas
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      host_options: self.host_options.map(|v| {
+        v.into_iter()
+          .map(|(_k, _v)| (Cow::Owned(_k.into_owned()), Cow::Owned(_v.into_owned())))
+          .collect()
+      }),
     }
   }
 }
 
 impl<'buf> BebopEncode for CodeGeneratorRequest<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:CodeGeneratorRequest)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.files_to_generate {
       writer.write_tag(1);
       writer.write_array(&v, |_w, _el| _w.write_string(_el));
@@ -144,10 +187,14 @@ impl<'buf> BebopEncode for CodeGeneratorRequest<'buf> {
     }
     if let Some(ref v) = self.host_options {
       writer.write_tag(5);
-      writer.write_map(&v, |_w, _k, _v| { _w.write_string(&_k); _w.write_string(&_v); });
+      writer.write_map(&v, |_w, _k, _v| {
+        _w.write_string(&_k);
+        _w.write_string(&_v);
+      });
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:CodeGeneratorRequest)
   }
 
   fn encoded_size(&self) -> usize {
@@ -165,7 +212,9 @@ impl<'buf> BebopEncode for CodeGeneratorRequest<'buf> {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     if let Some(ref v) = self.host_options {
-      size += wire::tagged_size(wire::map_size(v, |_k, _v| wire::string_size(_k.len()) + wire::string_size(_v.len())));
+      size += wire::tagged_size(wire::map_size(v, |_k, _v| {
+        wire::string_size(_k.len()) + wire::string_size(_v.len())
+      }));
     }
     size
   }
@@ -173,29 +222,49 @@ impl<'buf> BebopEncode for CodeGeneratorRequest<'buf> {
 
 impl<'buf> BebopDecode<'buf> for CodeGeneratorRequest<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:CodeGeneratorRequest)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
-        1 => msg.files_to_generate = Some(reader.read_array(|_r| Ok(Cow::Borrowed(_r.read_str()?)))?),
+        1 => {
+          msg.files_to_generate = Some(reader.read_array(|_r| Ok(Cow::Borrowed(_r.read_str()?)))?)
+        }
         2 => msg.parameter = Some(Cow::Borrowed(reader.read_str()?)),
         3 => msg.compiler_version = Some(Version::decode(reader)?),
         4 => msg.schemas = Some(reader.read_array(|_r| SchemaDescriptor::decode(_r))?),
-        5 => msg.host_options = Some(reader.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, Ok(Cow::Borrowed(_r.read_str()?))?)))?),
-        _ => { reader.skip(end - reader.position())?; }
+        5 => {
+          msg.host_options = Some(reader.read_map(|_r| {
+            Ok((
+              Ok(Cow::Borrowed(_r.read_str()?))?,
+              Ok(Cow::Borrowed(_r.read_str()?))?,
+            ))
+          })?)
+        }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:CodeGeneratorRequest)
     Ok(msg)
   }
 }
 
+impl<'buf> CodeGeneratorRequest<'buf> {
+  // @@bebop_insertion_point(message_scope:CodeGeneratorRequest)
+}
+
 /// Severity level for plugin diagnostics.
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DiagnosticSeverity {
   Error = 0,
   Warning = 1,
@@ -211,47 +280,61 @@ impl core::convert::TryFrom<u8> for DiagnosticSeverity {
       1 => Ok(Self::Warning),
       2 => Ok(Self::Info),
       3 => Ok(Self::Hint),
-      _ => Err(DecodeError::InvalidEnum { type_name: "DiagnosticSeverity", value: value as u64 }),
+      _ => Err(DecodeError::InvalidEnum {
+        type_name: "DiagnosticSeverity",
+        value: value as u64,
+      }),
     }
   }
 }
 
 impl From<DiagnosticSeverity> for u8 {
-  fn from(value: DiagnosticSeverity) -> u8 { value as u8 }
+  fn from(value: DiagnosticSeverity) -> u8 {
+    value as u8
+  }
 }
 
 impl DiagnosticSeverity {
   pub const FIXED_ENCODED_SIZE: usize = 1;
+  // @@bebop_insertion_point(enum_scope:DiagnosticSeverity)
 }
 
 impl BebopEncode for DiagnosticSeverity {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:DiagnosticSeverity)
     writer.write_byte(*self as u8);
+    // @@bebop_insertion_point(encode_end:DiagnosticSeverity)
   }
 
-  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
+  fn encoded_size(&self) -> usize {
+    Self::FIXED_ENCODED_SIZE
+  }
 }
 
 impl<'buf> BebopDecode<'buf> for DiagnosticSeverity {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
-    Self::try_from(reader.read_byte()?)
+    // @@bebop_insertion_point(decode_start:DiagnosticSeverity)
+    let value = reader.read_byte()?;
+    // @@bebop_insertion_point(decode_end:DiagnosticSeverity)
+    Self::try_from(value)
   }
 }
 
 /// Diagnostic message from a plugin.
 /// Report errors, warnings, and info about schemas being processed.
 /// Displayed to the user alongside the plugin's name.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct Diagnostic<'buf> {
   pub severity: Option<DiagnosticSeverity>,
-/// Human-readable diagnostic text.
+  /// Human-readable diagnostic text.
   pub text: Option<Cow<'buf, str>>,
-/// Optional hint for fixing the issue.
+  /// Optional hint for fixing the issue.
   pub hint: Option<Cow<'buf, str>>,
-/// Source file path this diagnostic relates to.
+  /// Source file path this diagnostic relates to.
   pub file: Option<Cow<'buf, str>>,
-/// Source location as `[start_line, start_col, end_line, end_col]`.
-/// 1-based. Absent if not applicable.
+  /// Source location as `[start_line, start_col, end_line, end_col]`.
+  /// 1-based. Absent if not applicable.
   pub span: Option<[i32; 4]>,
 }
 
@@ -271,7 +354,13 @@ impl<'buf> Diagnostic<'buf> {
 
 impl<'buf> BebopEncode for Diagnostic<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:Diagnostic)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.severity {
       writer.write_tag(1);
       v.encode(writer);
@@ -294,6 +383,7 @@ impl<'buf> BebopEncode for Diagnostic<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:Diagnostic)
   }
 
   fn encoded_size(&self) -> usize {
@@ -319,52 +409,63 @@ impl<'buf> BebopEncode for Diagnostic<'buf> {
 
 impl<'buf> BebopDecode<'buf> for Diagnostic<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:Diagnostic)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.severity = Some(DiagnosticSeverity::decode(reader)?),
         2 => msg.text = Some(Cow::Borrowed(reader.read_str()?)),
         3 => msg.hint = Some(Cow::Borrowed(reader.read_str()?)),
         4 => msg.file = Some(Cow::Borrowed(reader.read_str()?)),
         5 => msg.span = Some(reader.read_fixed_array::<i32, 4>()?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:Diagnostic)
     Ok(msg)
   }
+}
+
+impl<'buf> Diagnostic<'buf> {
+  // @@bebop_insertion_point(message_scope:Diagnostic)
 }
 
 /// A generated file.
 /// Either a complete new file or an insertion into an existing file at a
 /// marked insertion point.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct GeneratedFile<'buf> {
-/// Output path relative to output directory. No `..` components or
-/// leading `/`. Use `/` as separator on all platforms.
-/// When `insertion_point` is set, names the file to insert into (must
-/// be generated by a prior plugin in the same invocation).
-/// When omitted, content appends to the previous file. Allows generators
-/// to stream large files in chunks.
+  /// Output path relative to output directory. No `..` components or
+  /// leading `/`. Use `/` as separator on all platforms.
+  /// When `insertion_point` is set, names the file to insert into (must
+  /// be generated by a prior plugin in the same invocation).
+  /// When omitted, content appends to the previous file. Allows generators
+  /// to stream large files in chunks.
   pub name: Option<Cow<'buf, str>>,
-/// Insertion point name for extending another plugin's output.
-/// Target file must contain:
-/// ```
-/// // @@bebopc_insertion_point(NAME)
-/// ```
-/// Content inserts above this marker. Multiple insertions to the same
-/// point appear in plugin execution order.
-/// When set, `name` must also be set to identify the target file.
+  /// Insertion point name for extending another plugin's output.
+  /// Target file must contain:
+  /// ```
+  /// // @@bebopc_insertion_point(NAME)
+  /// ```
+  /// Content inserts above this marker. Multiple insertions to the same
+  /// point appear in plugin execution order.
+  /// When set, `name` must also be set to identify the target file.
   pub insertion_point: Option<Cow<'buf, str>>,
-/// File contents (complete file or insertion fragment).
-/// For insertions, typically includes a trailing newline.
+  /// File contents (complete file or insertion fragment).
+  /// For insertions, typically includes a trailing newline.
   pub content: Option<Cow<'buf, str>>,
-/// Source mapping connecting generated code to source schemas.
-/// Optional; enables IDE features like go-to-definition.
+  /// Source mapping connecting generated code to source schemas.
+  /// Optional; enables IDE features like go-to-definition.
   pub generated_code_info: Option<SourceCodeInfo<'buf>>,
 }
 
@@ -383,7 +484,13 @@ impl<'buf> GeneratedFile<'buf> {
 
 impl<'buf> BebopEncode for GeneratedFile<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:GeneratedFile)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.name {
       writer.write_tag(1);
       writer.write_string(&v);
@@ -402,6 +509,7 @@ impl<'buf> BebopEncode for GeneratedFile<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:GeneratedFile)
   }
 
   fn encoded_size(&self) -> usize {
@@ -424,23 +532,33 @@ impl<'buf> BebopEncode for GeneratedFile<'buf> {
 
 impl<'buf> BebopDecode<'buf> for GeneratedFile<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:GeneratedFile)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
         2 => msg.insertion_point = Some(Cow::Borrowed(reader.read_str()?)),
         3 => msg.content = Some(Cow::Borrowed(reader.read_str()?)),
         4 => msg.generated_code_info = Some(SourceCodeInfo::decode(reader)?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:GeneratedFile)
     Ok(msg)
   }
+}
+
+impl<'buf> GeneratedFile<'buf> {
+  // @@bebop_insertion_point(message_scope:GeneratedFile)
 }
 
 /// Output from a code generator plugin.
@@ -453,19 +571,20 @@ impl<'buf> BebopDecode<'buf> for GeneratedFile<'buf> {
 /// The distinction matters: stderr + non-zero indicates a plugin bug or
 /// environment problem. The `error` field indicates problems in .bop files
 /// that prevent correct code generation.
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct CodeGeneratorResponse<'buf> {
-/// Error message. If non-empty, code generation failed.
-/// Set for schema problems that prevent generating correct code. Exit
-/// with status zero.
-/// For plugin bugs or environment problems (can't read input, out of
-/// memory), write to stderr and exit non-zero instead.
+  /// Error message. If non-empty, code generation failed.
+  /// Set for schema problems that prevent generating correct code. Exit
+  /// with status zero.
+  /// For plugin bugs or environment problems (can't read input, out of
+  /// memory), write to stderr and exit non-zero instead.
   pub error: Option<Cow<'buf, str>>,
-/// Generated files to write to the output directory.
-/// Written in array order. Later files with `insertion_point` can
-/// extend earlier files in the same response.
+  /// Generated files to write to the output directory.
+  /// Written in array order. Later files with `insertion_point` can
+  /// extend earlier files in the same response.
   pub files: Option<Vec<GeneratedFile<'buf>>>,
-/// Diagnostics to report. Displayed even on success (for warnings/info).
+  /// Diagnostics to report. Displayed even on success (for warnings/info).
   pub diagnostics: Option<Vec<Diagnostic<'buf>>>,
 }
 
@@ -475,15 +594,25 @@ impl<'buf> CodeGeneratorResponse<'buf> {
   pub fn into_owned(self) -> CodeGeneratorResponseOwned {
     CodeGeneratorResponse {
       error: self.error.map(|v| Cow::Owned(v.into_owned())),
-      files: self.files.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
-      diagnostics: self.diagnostics.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      files: self
+        .files
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      diagnostics: self
+        .diagnostics
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
 
 impl<'buf> BebopEncode for CodeGeneratorResponse<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:CodeGeneratorResponse)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.error {
       writer.write_tag(1);
       writer.write_string(&v);
@@ -498,6 +627,7 @@ impl<'buf> BebopEncode for CodeGeneratorResponse<'buf> {
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:CodeGeneratorResponse)
   }
 
   fn encoded_size(&self) -> usize {
@@ -517,21 +647,32 @@ impl<'buf> BebopEncode for CodeGeneratorResponse<'buf> {
 
 impl<'buf> BebopDecode<'buf> for CodeGeneratorResponse<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:CodeGeneratorResponse)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
     let mut msg = Self::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 { break; }
+      if tag == 0 {
+        break;
+      }
       match tag {
         1 => msg.error = Some(Cow::Borrowed(reader.read_str()?)),
         2 => msg.files = Some(reader.read_array(|_r| GeneratedFile::decode(_r))?),
         3 => msg.diagnostics = Some(reader.read_array(|_r| Diagnostic::decode(_r))?),
-        _ => { reader.skip(end - reader.position())?; }
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
       }
     }
+    // @@bebop_insertion_point(decode_end:CodeGeneratorResponse)
     Ok(msg)
   }
 }
 
+impl<'buf> CodeGeneratorResponse<'buf> {
+  // @@bebop_insertion_point(message_scope:CodeGeneratorResponse)
+}
+
+// @@bebop_insertion_point(eof)

@@ -20,7 +20,7 @@ pub fn scalar_type(kind: TypeKind) -> Option<&'static str> {
     TypeKind::Uint128 => Some("u128"),
     TypeKind::Float32 => Some("f32"),
     TypeKind::Float64 => Some("f64"),
-    TypeKind::String => Some("String"),
+    TypeKind::String => Some("StdString"),
     TypeKind::Float16 => Some("f16"),
     TypeKind::Bfloat16 => Some("bf16"),
     TypeKind::Uuid => Some("Uuid"),
@@ -840,6 +840,101 @@ pub fn into_owned_expression(
       Ok(value.to_string())
     }
     // All other scalars are Copy — pass through
+    _ => Ok(value.to_string()),
+  }
+}
+
+/// Generate an expression that converts owned constructor input into borrowed field form.
+///
+/// Examples:
+/// - `String` -> `Cow::Owned(String)`
+/// - `Vec<String>` -> `Vec<Cow<'buf, str>>`
+/// - `HashMap<String, String>` -> `HashMap<Cow<'buf, str>, Cow<'buf, str>>`
+pub fn into_borrowed_expression(
+  td: &TypeDescriptor,
+  value: &str,
+  analysis: &LifetimeAnalysis,
+) -> Result<String, GeneratorError> {
+  let kind = td
+    .kind
+    .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
+
+  match kind {
+    TypeKind::String => Ok(format!("Cow::Owned({})", value)),
+    TypeKind::Array => {
+      let elem = td
+        .array_element
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
+      if elem.kind == Some(TypeKind::Byte) {
+        return Ok(format!("Cow::Owned({})", value));
+      }
+      if analysis.type_needs_lifetime(elem) {
+        let inner = into_borrowed_expression(elem, "_e", analysis)?;
+        if inner == "_e" {
+          Ok(value.to_string())
+        } else {
+          Ok(format!(
+            "{}.into_iter().map(|_e| {}).collect()",
+            value, inner
+          ))
+        }
+      } else {
+        Ok(value.to_string())
+      }
+    }
+    TypeKind::FixedArray => {
+      let elem = td
+        .fixed_array_element
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("fixed array missing element type".into()))?;
+      if analysis.type_needs_lifetime(elem) {
+        let inner = into_borrowed_expression(elem, "_e", analysis)?;
+        if inner == "_e" {
+          Ok(value.to_string())
+        } else {
+          Ok(format!("{}.map(|_e| {})", value, inner))
+        }
+      } else {
+        Ok(value.to_string())
+      }
+    }
+    TypeKind::Map => {
+      let key = td
+        .map_key
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("map missing key type".into()))?;
+      let val = td
+        .map_value
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
+      let k_needs = analysis.type_needs_lifetime(key);
+      let v_needs = analysis.type_needs_lifetime(val);
+      if k_needs || v_needs {
+        let k_expr = if k_needs {
+          into_borrowed_expression(key, "_k", analysis)?
+        } else {
+          "_k".to_string()
+        };
+        let v_expr = if v_needs {
+          into_borrowed_expression(val, "_v", analysis)?
+        } else {
+          "_v".to_string()
+        };
+        if k_expr == "_k" && v_expr == "_v" {
+          Ok(value.to_string())
+        } else {
+          Ok(format!(
+            "{}.into_iter().map(|(_k, _v)| ({}, {})).collect()",
+            value, k_expr, v_expr
+          ))
+        }
+      } else {
+        Ok(value.to_string())
+      }
+    }
+    // `T<'static>` can be used where `T<'buf>` is expected when `T` is covariant.
+    TypeKind::Defined => Ok(value.to_string()),
     _ => Ok(value.to_string()),
   }
 }
