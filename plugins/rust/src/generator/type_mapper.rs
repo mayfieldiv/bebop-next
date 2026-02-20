@@ -269,12 +269,18 @@ pub fn is_cow_field(td: &TypeDescriptor) -> bool {
   };
   match kind {
     TypeKind::String => true,
-    TypeKind::Array => td
-      .array_element
-      .as_ref()
-      .is_some_and(|e| e.kind == Some(TypeKind::Byte)),
+    TypeKind::Array => is_byte_array_cow_field(td),
     _ => false,
   }
+}
+
+/// Returns true when a field is represented as `Cow<'buf, [u8]>`.
+pub fn is_byte_array_cow_field(td: &TypeDescriptor) -> bool {
+  td.kind == Some(TypeKind::Array)
+    && td
+      .array_element
+      .as_ref()
+      .is_some_and(|e| e.kind == Some(TypeKind::Byte))
 }
 
 /// Map a full TypeDescriptor to its owned parameter type for `new()` constructors.

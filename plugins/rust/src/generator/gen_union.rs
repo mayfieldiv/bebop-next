@@ -75,6 +75,9 @@ pub fn generate(
   if analysis.can_derive_hash(fqn) {
     derives.push("Hash");
   }
+  output
+    .push_str("#[cfg_attr(feature = \"serde\", derive(serde::Serialize, serde::Deserialize))]\n");
+  output.push_str("#[cfg_attr(feature = \"serde\", serde(tag = \"type\", content = \"value\"))]\n");
   output.push_str(&format!("#[derive({})]\n", derives.join(", ")));
   output.push_str(&format!("{} enum {}{} {{\n", vis, name, lt));
   for b in &branch_infos {
@@ -90,6 +93,7 @@ pub fn generate(
     output.push_str(&format!("  {}({}{}),\n", b.variant, b.inner_type, inner_lt));
   }
   // Unknown variant for forward compatibility
+  output.push_str("  #[cfg_attr(feature = \"serde\", serde(skip))]\n");
   output.push_str("  Unknown(u8, Cow<'buf, [u8]>),\n");
   output.push_str("}\n\n");
 

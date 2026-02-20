@@ -508,10 +508,7 @@ impl RustGenerator {
     Self::with_options(compiler_version, GeneratorOptions::default())
   }
 
-  pub fn with_options(
-    compiler_version: Option<VersionOwned>,
-    options: GeneratorOptions,
-  ) -> Self {
+  pub fn with_options(compiler_version: Option<VersionOwned>, options: GeneratorOptions) -> Self {
     Self {
       compiler_version,
       options,
@@ -567,6 +564,7 @@ impl RustGenerator {
     }
     output.push_str("use bebop_runtime::{BebopReader, BebopWriter, BebopEncode, BebopDecode, BebopFlags, DecodeError, Uuid, f16, bf16, BebopTimestamp, BebopDuration};\n");
     output.push_str("use bebop_runtime::wire_size as wire;\n");
+    output.push_str("#[cfg(feature = \"serde\")]\nuse bebop_runtime::serde;\n");
 
     // Cross-module imports for sibling schemas
     for stem in sibling_imports {

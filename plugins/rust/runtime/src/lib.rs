@@ -6,6 +6,8 @@ extern crate std;
 
 mod error;
 mod reader;
+#[cfg(feature = "serde")]
+pub mod serde_cow_bytes;
 mod temporal;
 mod traits;
 pub mod wire_size;
@@ -17,9 +19,13 @@ pub use half::f16;
 #[cfg(not(feature = "std"))]
 pub use hashbrown::HashMap;
 pub use reader::BebopReader;
-pub use temporal::{BebopDuration, BebopTimestamp};
+#[cfg(feature = "serde")]
+pub use serde;
+#[cfg(feature = "serde")]
+pub use serde_bytes;
 #[cfg(feature = "std")]
 pub use std::collections::HashMap;
+pub use temporal::{BebopDuration, BebopTimestamp};
 pub use traits::{BebopDecode, BebopDecodeOwned};
 pub use traits::{BebopEncode, BebopFlagBits, BebopFlags, FixedScalar};
 pub use uuid::Uuid;

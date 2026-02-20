@@ -7,6 +7,9 @@ publish = false
 [features]
 default = ["std"]
 std = ["bebop-runtime/std"]
+serde = ["bebop-runtime/serde", "dep:serde", "dep:serde_json"]
 
 [dependencies]
 bebop-runtime = { path = "../runtime", default-features = false }
+serde = { version = "1", features = ["derive"], optional = true }
+serde_json = { version = "1", optional = true }

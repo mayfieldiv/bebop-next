@@ -69,11 +69,19 @@ pub fn generate(
   if analysis.can_derive_hash(fqn) {
     derives.push("Hash");
   }
+  output
+    .push_str("#[cfg_attr(feature = \"serde\", derive(serde::Serialize, serde::Deserialize))]\n");
   output.push_str(&format!("#[derive({})]\n", derives.join(", ")));
   output.push_str(&format!("{} struct {}{} {{\n", vis, name, lt));
   for (f, meta) in fields.iter().zip(&field_metas) {
     emit_doc_comment(output, &f.documentation);
     emit_deprecated(output, &f.decorators);
+    if type_mapper::is_byte_array_cow_field(meta.td) {
+      output.push_str("  #[cfg_attr(feature = \"serde\", serde(borrow))]\n");
+      output.push_str(
+        "  #[cfg_attr(feature = \"serde\", serde(with = \"bebop_runtime::serde_cow_bytes\"))]\n",
+      );
+    }
     output.push_str(&format!("  {} {}: {},\n", vis, meta.fname, meta.cow_type));
   }
   output.push_str("}\n\n");
