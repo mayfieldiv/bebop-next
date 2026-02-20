@@ -121,11 +121,11 @@ fn literal_value(value: &LiteralValue, ty: &TypeDescriptor) -> Result<String, Ge
       .ok_or_else(|| GeneratorError::MalformedDefinition("bytes literal missing value".into())),
     LiteralKind::Timestamp => value
       .timestamp_value
-      .map(|(seconds, nanos)| format!("({}i64, {}i32)", seconds, nanos))
+      .map(|v| format!("BebopTimestamp {{ seconds: {}i64, nanos: {}i32 }}", v.seconds, v.nanos))
       .ok_or_else(|| GeneratorError::MalformedDefinition("timestamp literal missing value".into())),
     LiteralKind::Duration => value
       .duration_value
-      .map(|(seconds, nanos)| format!("({}i64, {}i32)", seconds, nanos))
+      .map(|v| format!("BebopDuration {{ seconds: {}i64, nanos: {}i32 }}", v.seconds, v.nanos))
       .ok_or_else(|| GeneratorError::MalformedDefinition("duration literal missing value".into())),
     LiteralKind::Unknown => Err(GeneratorError::MalformedDefinition(
       "const literal has unknown kind".into(),
