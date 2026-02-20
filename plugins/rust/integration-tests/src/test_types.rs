@@ -391,6 +391,11 @@ impl<'buf> BebopEncode for UserProfile<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
     // @@bebop_insertion_point(encode_start:UserProfile)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.display_name {
       writer.write_tag(1);
       writer.write_string(&v);
@@ -508,6 +513,11 @@ impl<'buf> BebopEncode for DrawCommand<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
     // @@bebop_insertion_point(encode_start:DrawCommand)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.target {
       writer.write_tag(1);
       v.encode(writer);
@@ -853,6 +863,11 @@ impl BebopEncode for HalfPrecisionMessage {
   fn encode(&self, writer: &mut BebopWriter) {
     // @@bebop_insertion_point(encode_start:HalfPrecisionMessage)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(v) = self.f16_val {
       writer.write_tag(1);
       writer.write_f16(v);
@@ -1013,6 +1028,11 @@ impl<'buf> BebopEncode for Scene<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
     // @@bebop_insertion_point(encode_start:Scene)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.shapes {
       writer.write_tag(1);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
@@ -1094,6 +1114,11 @@ impl<'buf> BebopEncode for Inventory<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
     // @@bebop_insertion_point(encode_start:Inventory)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.items {
       writer.write_tag(1);
       writer.write_map(&v, |_w, _k, _v| { _w.write_string(&_k); _w.write_u32(*_v); });
@@ -1165,6 +1190,11 @@ impl<'buf> BebopEncode for EmptyMessage<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
     // @@bebop_insertion_point(encode_start:EmptyMessage)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(ref v) = self.unused_field {
       writer.write_tag(1);
       writer.write_string(&v);
@@ -1288,6 +1318,11 @@ impl<'buf> BebopEncode for ScheduleEntry<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
     // @@bebop_insertion_point(encode_start:ScheduleEntry)
     let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
     if let Some(v) = self.start {
       writer.write_tag(1);
       writer.write_timestamp(v);
@@ -1344,6 +1379,391 @@ impl<'buf> BebopDecode<'buf> for ScheduleEntry<'buf> {
 
 impl<'buf> ScheduleEntry<'buf> {
   // @@bebop_insertion_point(message_scope:ScheduleEntry)
+}
+
+/// Forward reference coverage: A references B before B is declared.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ForwardRefA<'buf> {
+  pub b: ForwardRefB<'buf>,
+}
+
+pub type ForwardRefAOwned = ForwardRefA<'static>;
+
+impl<'buf> ForwardRefA<'buf> {
+  pub fn new(b: ForwardRefB<'static>) -> Self {
+    Self { b }
+  }
+}
+
+impl<'buf> ForwardRefA<'buf> {
+  pub fn into_owned(self) -> ForwardRefAOwned {
+    ForwardRefA {
+      b: self.b.into_owned(),
+    }
+  }
+}
+
+impl<'buf> BebopEncode for ForwardRefA<'buf> {
+  fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:ForwardRefA)
+    self.b.encode(writer);
+    // @@bebop_insertion_point(encode_end:ForwardRefA)
+  }
+
+  fn encoded_size(&self) -> usize {
+    let mut size = 0;
+    size += self.b.encoded_size();
+    size
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for ForwardRefA<'buf> {
+  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:ForwardRefA)
+    let b = ForwardRefB::decode(reader)?;
+    // @@bebop_insertion_point(decode_end:ForwardRefA)
+    Ok(ForwardRefA { b })
+  }
+}
+
+impl<'buf> ForwardRefA<'buf> {
+  // @@bebop_insertion_point(struct_scope:ForwardRefA)
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ForwardRefB<'buf> {
+  pub value: Cow<'buf, str>,
+}
+
+pub type ForwardRefBOwned = ForwardRefB<'static>;
+
+impl<'buf> ForwardRefB<'buf> {
+  pub fn new(value: impl Into<Cow<'buf, str>>) -> Self {
+    let value = value.into();
+    Self { value }
+  }
+}
+
+impl<'buf> ForwardRefB<'buf> {
+  pub fn into_owned(self) -> ForwardRefBOwned {
+    ForwardRefB {
+      value: Cow::Owned(self.value.into_owned()),
+    }
+  }
+}
+
+impl<'buf> BebopEncode for ForwardRefB<'buf> {
+  fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:ForwardRefB)
+    writer.write_string(&self.value);
+    // @@bebop_insertion_point(encode_end:ForwardRefB)
+  }
+
+  fn encoded_size(&self) -> usize {
+    let mut size = 0;
+    size += wire::string_size(self.value.len());
+    size
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for ForwardRefB<'buf> {
+  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:ForwardRefB)
+    let value = Cow::Borrowed(reader.read_str()?);
+    // @@bebop_insertion_point(decode_end:ForwardRefB)
+    Ok(ForwardRefB { value })
+  }
+}
+
+impl<'buf> ForwardRefB<'buf> {
+  // @@bebop_insertion_point(struct_scope:ForwardRefB)
+}
+
+/// Message with deprecated fields that should still round-trip on the wire.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
+pub struct DeprecatedFieldsMessage<'buf> {
+  pub current_name: Option<Cow<'buf, str>>,
+  pub legacy_name: Option<Cow<'buf, str>>,
+  pub legacy_enabled: Option<bool>,
+}
+
+pub type DeprecatedFieldsMessageOwned = DeprecatedFieldsMessage<'static>;
+
+impl<'buf> DeprecatedFieldsMessage<'buf> {
+  pub fn into_owned(self) -> DeprecatedFieldsMessageOwned {
+    DeprecatedFieldsMessage {
+      current_name: self.current_name.map(|v| Cow::Owned(v.into_owned())),
+      legacy_name: self.legacy_name.map(|v| Cow::Owned(v.into_owned())),
+      legacy_enabled: self.legacy_enabled,
+    }
+  }
+}
+
+impl<'buf> BebopEncode for DeprecatedFieldsMessage<'buf> {
+  fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:DeprecatedFieldsMessage)
+    let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
+    if let Some(ref v) = self.current_name {
+      writer.write_tag(1);
+      writer.write_string(&v);
+    }
+    if let Some(ref v) = self.legacy_name {
+      writer.write_tag(2);
+      writer.write_string(&v);
+    }
+    if let Some(v) = self.legacy_enabled {
+      writer.write_tag(3);
+      writer.write_bool(v);
+    }
+    writer.write_end_marker();
+    writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:DeprecatedFieldsMessage)
+  }
+
+  fn encoded_size(&self) -> usize {
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    if let Some(ref v) = self.current_name {
+      size += wire::tagged_size(wire::string_size(v.len()));
+    }
+    if let Some(ref v) = self.legacy_name {
+      size += wire::tagged_size(wire::string_size(v.len()));
+    }
+    if let Some(v) = self.legacy_enabled {
+      size += wire::tagged_size(size_of::<bool>());
+    }
+    size
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for DeprecatedFieldsMessage<'buf> {
+  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:DeprecatedFieldsMessage)
+    let length = reader.read_message_length()? as usize;
+    let end = reader.position() + length;
+    let mut msg = Self::default();
+
+    while reader.position() < end {
+      let tag = reader.read_tag()?;
+      if tag == 0 { break; }
+      match tag {
+        1 => msg.current_name = Some(Cow::Borrowed(reader.read_str()?)),
+        2 => msg.legacy_name = Some(Cow::Borrowed(reader.read_str()?)),
+        3 => msg.legacy_enabled = Some(reader.read_bool()?),
+        _ => { reader.skip(end - reader.position())?; }
+      }
+    }
+    // @@bebop_insertion_point(decode_end:DeprecatedFieldsMessage)
+    Ok(msg)
+  }
+}
+
+impl<'buf> DeprecatedFieldsMessage<'buf> {
+  // @@bebop_insertion_point(message_scope:DeprecatedFieldsMessage)
+}
+
+/// Integer-key map coverage.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct IntegerKeyMaps<'buf> {
+  pub labels_by_id: Option<HashMap<u32, Cow<'buf, str>>>,
+  pub flags_by_id: Option<HashMap<i64, bool>>,
+}
+
+pub type IntegerKeyMapsOwned = IntegerKeyMaps<'static>;
+
+impl<'buf> IntegerKeyMaps<'buf> {
+  pub fn into_owned(self) -> IntegerKeyMapsOwned {
+    IntegerKeyMaps {
+      labels_by_id: self.labels_by_id.map(|v| v.into_iter().map(|(_k, _v)| (_k, Cow::Owned(_v.into_owned()))).collect()),
+      flags_by_id: self.flags_by_id,
+    }
+  }
+}
+
+impl<'buf> BebopEncode for IntegerKeyMaps<'buf> {
+  fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:IntegerKeyMaps)
+    let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
+    if let Some(ref v) = self.labels_by_id {
+      writer.write_tag(1);
+      writer.write_map(&v, |_w, _k, _v| { _w.write_u32(*_k); _w.write_string(&_v); });
+    }
+    if let Some(ref v) = self.flags_by_id {
+      writer.write_tag(2);
+      writer.write_map(&v, |_w, _k, _v| { _w.write_i64(*_k); _w.write_bool(*_v); });
+    }
+    writer.write_end_marker();
+    writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:IntegerKeyMaps)
+  }
+
+  fn encoded_size(&self) -> usize {
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    if let Some(ref v) = self.labels_by_id {
+      size += wire::tagged_size(wire::map_size(v, |_k, _v| size_of::<u32>() + wire::string_size(_v.len())));
+    }
+    if let Some(ref v) = self.flags_by_id {
+      size += wire::tagged_size(wire::map_size(v, |_k, _v| size_of::<i64>() + size_of::<bool>()));
+    }
+    size
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for IntegerKeyMaps<'buf> {
+  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:IntegerKeyMaps)
+    let length = reader.read_message_length()? as usize;
+    let end = reader.position() + length;
+    let mut msg = Self::default();
+
+    while reader.position() < end {
+      let tag = reader.read_tag()?;
+      if tag == 0 { break; }
+      match tag {
+        1 => msg.labels_by_id = Some(reader.read_map(|_r| Ok((_r.read_u32()?, Ok(Cow::Borrowed(_r.read_str()?))?)))?),
+        2 => msg.flags_by_id = Some(reader.read_map(|_r| Ok((_r.read_i64()?, _r.read_bool()?)))?),
+        _ => { reader.skip(end - reader.position())?; }
+      }
+    }
+    // @@bebop_insertion_point(decode_end:IntegerKeyMaps)
+    Ok(msg)
+  }
+}
+
+impl<'buf> IntegerKeyMaps<'buf> {
+  // @@bebop_insertion_point(message_scope:IntegerKeyMaps)
+}
+
+/// Nested type used by deep compound collections.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct NestedLeaf<'buf> {
+  pub label: Cow<'buf, str>,
+}
+
+pub type NestedLeafOwned = NestedLeaf<'static>;
+
+impl<'buf> NestedLeaf<'buf> {
+  pub fn new(label: impl Into<Cow<'buf, str>>) -> Self {
+    let label = label.into();
+    Self { label }
+  }
+}
+
+impl<'buf> NestedLeaf<'buf> {
+  pub fn into_owned(self) -> NestedLeafOwned {
+    NestedLeaf {
+      label: Cow::Owned(self.label.into_owned()),
+    }
+  }
+}
+
+impl<'buf> BebopEncode for NestedLeaf<'buf> {
+  fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:NestedLeaf)
+    writer.write_string(&self.label);
+    // @@bebop_insertion_point(encode_end:NestedLeaf)
+  }
+
+  fn encoded_size(&self) -> usize {
+    let mut size = 0;
+    size += wire::string_size(self.label.len());
+    size
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for NestedLeaf<'buf> {
+  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:NestedLeaf)
+    let label = Cow::Borrowed(reader.read_str()?);
+    // @@bebop_insertion_point(decode_end:NestedLeaf)
+    Ok(NestedLeaf { label })
+  }
+}
+
+impl<'buf> NestedLeaf<'buf> {
+  // @@bebop_insertion_point(struct_scope:NestedLeaf)
+}
+
+/// Deeply nested map/array/defined-type composition.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct DeepNestedCollections<'buf> {
+  pub nested: Option<HashMap<Cow<'buf, str>, Vec<HashMap<Cow<'buf, str>, NestedLeaf<'buf>>>>>,
+}
+
+pub type DeepNestedCollectionsOwned = DeepNestedCollections<'static>;
+
+impl<'buf> DeepNestedCollections<'buf> {
+  pub fn into_owned(self) -> DeepNestedCollectionsOwned {
+    DeepNestedCollections {
+      nested: self.nested.map(|v| v.into_iter().map(|(_k, _v)| (Cow::Owned(_k.into_owned()), _v.into_iter().map(|_e| _e.into_iter().map(|(_k, _v)| (Cow::Owned(_k.into_owned()), _v.into_owned())).collect()).collect())).collect()),
+    }
+  }
+}
+
+impl<'buf> BebopEncode for DeepNestedCollections<'buf> {
+  fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:DeepNestedCollections)
+    let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
+    if let Some(ref v) = self.nested {
+      writer.write_tag(1);
+      writer.write_map(&v, |_w, _k, _v| { _w.write_string(&_k); _w.write_array(&_v, |_w, _el| { _w.write_map(&_el, |_w, _k, _v| { _w.write_string(&_k); _v.encode(_w); }) }); });
+    }
+    writer.write_end_marker();
+    writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:DeepNestedCollections)
+  }
+
+  fn encoded_size(&self) -> usize {
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    if let Some(ref v) = self.nested {
+      size += wire::tagged_size(wire::map_size(v, |_k, _v| wire::string_size(_k.len()) + wire::array_size(_v, |_el| wire::map_size(_el, |_k, _v| wire::string_size(_k.len()) + _v.encoded_size()))));
+    }
+    size
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for DeepNestedCollections<'buf> {
+  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:DeepNestedCollections)
+    let length = reader.read_message_length()? as usize;
+    let end = reader.position() + length;
+    let mut msg = Self::default();
+
+    while reader.position() < end {
+      let tag = reader.read_tag()?;
+      if tag == 0 { break; }
+      match tag {
+        1 => msg.nested = Some(reader.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, _r.read_array(|_r| _r.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, NestedLeaf::decode(_r)?))))?)))?),
+        _ => { reader.skip(end - reader.position())?; }
+      }
+    }
+    // @@bebop_insertion_point(decode_end:DeepNestedCollections)
+    Ok(msg)
+  }
+}
+
+impl<'buf> DeepNestedCollections<'buf> {
+  // @@bebop_insertion_point(message_scope:DeepNestedCollections)
 }
 
 // @@bebop_insertion_point(eof)
