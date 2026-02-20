@@ -190,6 +190,21 @@ pub fn generate(
     name
   ));
   output.push_str("    let pos = writer.reserve_message_length();\n");
+  output.push_str(
+    "    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.\n",
+  );
+  output.push_str(
+    "    // The GRAMMAR.md spec says deprecated message fields should be skipped during\n",
+  );
+  output.push_str(
+    "    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips\n",
+  );
+  output.push_str(
+    "    // them on encode/size but still decodes them. The Swift plugin encodes them\n",
+  );
+  output.push_str(
+    "    // normally. This behavior should be revisited once the spec intent is clarified.\n",
+  );
 
   for meta in &field_metas {
     match meta.wrap {
