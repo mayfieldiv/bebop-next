@@ -163,7 +163,7 @@ pub fn generate(
     } else if type_mapper::is_cow_field(meta.td) {
       // Defensive fallback for non-lifetime cases.
       output.push_str(&format!(
-        "    let {} = Cow::Owned({});\n",
+        "    let {} = alloc::borrow::Cow::Owned({});\n",
         meta.fname, meta.fname
       ));
       init_fields.push(meta.fname.clone());

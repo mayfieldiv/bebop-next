@@ -12,20 +12,14 @@
 #![allow(warnings)]
 
 extern crate alloc;
-use alloc::borrow::Cow;
-use alloc::boxed::Box;
-use alloc::string::String as StdString;
 use alloc::vec;
-use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use bebop_runtime::serde;
 use bebop_runtime::wire_size as wire;
-use bebop_runtime::HashMap;
 use bebop_runtime::{
   bf16, f16, BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopReader, BebopTimestamp,
-  BebopWriter, DecodeError, Uuid,
+  BebopWriter, DecodeError,
 };
-use core::mem::size_of;
 
 // @@bebop_insertion_point(imports)
 
@@ -68,7 +62,7 @@ pub enum TypeKind {
   Defined = 23,
 }
 
-impl core::convert::TryFrom<u8> for TypeKind {
+impl ::core::convert::TryFrom<u8> for TypeKind {
   type Error = DecodeError;
   fn try_from(value: u8) -> Result<Self, DecodeError> {
     match value {
@@ -154,7 +148,7 @@ pub enum DefinitionKind {
   Decorator = 7,
 }
 
-impl core::convert::TryFrom<u8> for DefinitionKind {
+impl ::core::convert::TryFrom<u8> for DefinitionKind {
   type Error = DecodeError;
   fn try_from(value: u8) -> Result<Self, DecodeError> {
     match value {
@@ -225,7 +219,7 @@ pub enum MethodType {
   DuplexStream = 4,
 }
 
-impl core::convert::TryFrom<u8> for MethodType {
+impl ::core::convert::TryFrom<u8> for MethodType {
   type Error = DecodeError;
   fn try_from(value: u8) -> Result<Self, DecodeError> {
     match value {
@@ -290,7 +284,7 @@ pub enum Visibility {
   Local = 2,
 }
 
-impl core::convert::TryFrom<u8> for Visibility {
+impl ::core::convert::TryFrom<u8> for Visibility {
   type Error = DecodeError;
   fn try_from(value: u8) -> Result<Self, DecodeError> {
     match value {
@@ -354,7 +348,7 @@ pub enum LiteralKind {
   Duration = 8,
 }
 
-impl core::convert::TryFrom<u8> for LiteralKind {
+impl ::core::convert::TryFrom<u8> for LiteralKind {
   type Error = DecodeError;
   fn try_from(value: u8) -> Result<Self, DecodeError> {
     match value {
@@ -438,46 +432,46 @@ impl BebopFlags for DecoratorTarget {
   }
 }
 
-impl core::ops::BitOr for DecoratorTarget {
+impl ::core::ops::BitOr for DecoratorTarget {
   type Output = Self;
   fn bitor(self, rhs: Self) -> Self {
     Self(self.0 | rhs.0)
   }
 }
-impl core::ops::BitOrAssign for DecoratorTarget {
+impl ::core::ops::BitOrAssign for DecoratorTarget {
   fn bitor_assign(&mut self, rhs: Self) {
     self.0 |= rhs.0;
   }
 }
-impl core::ops::BitAnd for DecoratorTarget {
+impl ::core::ops::BitAnd for DecoratorTarget {
   type Output = Self;
   fn bitand(self, rhs: Self) -> Self {
     Self(self.0 & rhs.0)
   }
 }
-impl core::ops::BitAndAssign for DecoratorTarget {
+impl ::core::ops::BitAndAssign for DecoratorTarget {
   fn bitand_assign(&mut self, rhs: Self) {
     self.0 &= rhs.0;
   }
 }
-impl core::ops::BitXor for DecoratorTarget {
+impl ::core::ops::BitXor for DecoratorTarget {
   type Output = Self;
   fn bitxor(self, rhs: Self) -> Self {
     Self(self.0 ^ rhs.0)
   }
 }
-impl core::ops::BitXorAssign for DecoratorTarget {
+impl ::core::ops::BitXorAssign for DecoratorTarget {
   fn bitxor_assign(&mut self, rhs: Self) {
     self.0 ^= rhs.0;
   }
 }
-impl core::ops::Not for DecoratorTarget {
+impl ::core::ops::Not for DecoratorTarget {
   type Output = Self;
   fn not(self) -> Self {
     Self(!self.0)
   }
 }
-impl core::ops::Sub for DecoratorTarget {
+impl ::core::ops::Sub for DecoratorTarget {
   type Output = Self;
   fn sub(self, rhs: Self) -> Self {
     Self(self.0 & !rhs.0)
@@ -496,7 +490,7 @@ pub enum Edition {
   Max = 2147483647,
 }
 
-impl core::convert::TryFrom<i32> for Edition {
+impl ::core::convert::TryFrom<i32> for Edition {
   type Error = DecodeError;
   fn try_from(value: i32) -> Result<Self, DecodeError> {
     match value {
@@ -564,19 +558,19 @@ impl<'buf> BebopDecode<'buf> for Edition {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct TypeDescriptor<'buf> {
   /// Discriminates which fields below are populated.
-  pub kind: Option<TypeKind>,
+  pub kind: ::core::option::Option<TypeKind>,
   /// Element type when `kind == ARRAY`.
-  pub array_element: Option<Box<TypeDescriptor<'buf>>>,
+  pub array_element: ::core::option::Option<alloc::boxed::Box<TypeDescriptor<'buf>>>,
   /// Element type when `kind == FIXED_ARRAY`.
-  pub fixed_array_element: Option<Box<TypeDescriptor<'buf>>>,
+  pub fixed_array_element: ::core::option::Option<alloc::boxed::Box<TypeDescriptor<'buf>>>,
   /// Element count when `kind == FIXED_ARRAY`. Range 1-65535.
-  pub fixed_array_size: Option<u32>,
+  pub fixed_array_size: ::core::option::Option<u32>,
   /// Key type when `kind == MAP`. Must be hashable (bool, integers, string, uuid).
-  pub map_key: Option<Box<TypeDescriptor<'buf>>>,
+  pub map_key: ::core::option::Option<alloc::boxed::Box<TypeDescriptor<'buf>>>,
   /// Value type when `kind == MAP`.
-  pub map_value: Option<Box<TypeDescriptor<'buf>>>,
+  pub map_value: ::core::option::Option<alloc::boxed::Box<TypeDescriptor<'buf>>>,
   /// FQN when `kind == DEFINED`. Always fully qualified after linking.
-  pub defined_fqn: Option<Cow<'buf, str>>,
+  pub defined_fqn: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
 }
 
 pub type TypeDescriptorOwned = TypeDescriptor<'static>;
@@ -585,12 +579,20 @@ impl<'buf> TypeDescriptor<'buf> {
   pub fn into_owned(self) -> TypeDescriptorOwned {
     TypeDescriptor {
       kind: self.kind,
-      array_element: self.array_element.map(|v| Box::new(v.into_owned())),
-      fixed_array_element: self.fixed_array_element.map(|v| Box::new(v.into_owned())),
+      array_element: self
+        .array_element
+        .map(|v| alloc::boxed::Box::new(v.into_owned())),
+      fixed_array_element: self
+        .fixed_array_element
+        .map(|v| alloc::boxed::Box::new(v.into_owned())),
       fixed_array_size: self.fixed_array_size,
-      map_key: self.map_key.map(|v| Box::new(v.into_owned())),
-      map_value: self.map_value.map(|v| Box::new(v.into_owned())),
-      defined_fqn: self.defined_fqn.map(|v| Cow::Owned(v.into_owned())),
+      map_key: self.map_key.map(|v| alloc::boxed::Box::new(v.into_owned())),
+      map_value: self
+        .map_value
+        .map(|v| alloc::boxed::Box::new(v.into_owned())),
+      defined_fqn: self
+        .defined_fqn
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
     }
   }
 }
@@ -649,7 +651,7 @@ impl<'buf> BebopEncode for TypeDescriptor<'buf> {
       size += wire::tagged_size(v.encoded_size());
     }
     if let Some(v) = self.fixed_array_size {
-      size += wire::tagged_size(size_of::<u32>());
+      size += wire::tagged_size(::core::mem::size_of::<u32>());
     }
     if let Some(ref v) = self.map_key {
       size += wire::tagged_size(v.encoded_size());
@@ -678,12 +680,14 @@ impl<'buf> BebopDecode<'buf> for TypeDescriptor<'buf> {
       }
       match tag {
         1 => msg.kind = Some(TypeKind::decode(reader)?),
-        2 => msg.array_element = Some(Box::new(TypeDescriptor::decode(reader)?)),
-        3 => msg.fixed_array_element = Some(Box::new(TypeDescriptor::decode(reader)?)),
+        2 => msg.array_element = Some(alloc::boxed::Box::new(TypeDescriptor::decode(reader)?)),
+        3 => {
+          msg.fixed_array_element = Some(alloc::boxed::Box::new(TypeDescriptor::decode(reader)?))
+        }
         4 => msg.fixed_array_size = Some(reader.read_u32()?),
-        5 => msg.map_key = Some(Box::new(TypeDescriptor::decode(reader)?)),
-        6 => msg.map_value = Some(Box::new(TypeDescriptor::decode(reader)?)),
-        7 => msg.defined_fqn = Some(Cow::Borrowed(reader.read_str()?)),
+        5 => msg.map_key = Some(alloc::boxed::Box::new(TypeDescriptor::decode(reader)?)),
+        6 => msg.map_value = Some(alloc::boxed::Box::new(TypeDescriptor::decode(reader)?)),
+        7 => msg.defined_fqn = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         _ => {
           reader.skip(end - reader.position())?;
         }
@@ -706,23 +710,23 @@ impl<'buf> TypeDescriptor<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct LiteralValue<'buf> {
-  pub kind: Option<LiteralKind>,
-  pub bool_value: Option<bool>,
-  pub int_value: Option<i64>,
-  pub float_value: Option<f64>,
-  pub string_value: Option<Cow<'buf, str>>,
-  pub uuid_value: Option<Uuid>,
+  pub kind: ::core::option::Option<LiteralKind>,
+  pub bool_value: ::core::option::Option<bool>,
+  pub int_value: ::core::option::Option<i64>,
+  pub float_value: ::core::option::Option<f64>,
+  pub string_value: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  pub uuid_value: ::core::option::Option<::bebop_runtime::Uuid>,
   /// Original source text before `$(...)` expansion. Only set for string
   /// literals that contained environment variable references.
-  pub raw_value: Option<Cow<'buf, str>>,
+  pub raw_value: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// When `kind == BYTES`.
   #[cfg_attr(feature = "serde", serde(borrow))]
   #[cfg_attr(feature = "serde", serde(with = "bebop_runtime::serde_cow_bytes"))]
-  pub bytes_value: Option<Cow<'buf, [u8]>>,
+  pub bytes_value: ::core::option::Option<alloc::borrow::Cow<'buf, [u8]>>,
   /// When `kind == TIMESTAMP`.
-  pub timestamp_value: Option<BebopTimestamp>,
+  pub timestamp_value: ::core::option::Option<BebopTimestamp>,
   /// When `kind == DURATION`.
-  pub duration_value: Option<BebopDuration>,
+  pub duration_value: ::core::option::Option<BebopDuration>,
 }
 
 pub type LiteralValueOwned = LiteralValue<'static>;
@@ -734,10 +738,16 @@ impl<'buf> LiteralValue<'buf> {
       bool_value: self.bool_value,
       int_value: self.int_value,
       float_value: self.float_value,
-      string_value: self.string_value.map(|v| Cow::Owned(v.into_owned())),
+      string_value: self
+        .string_value
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
       uuid_value: self.uuid_value,
-      raw_value: self.raw_value.map(|v| Cow::Owned(v.into_owned())),
-      bytes_value: self.bytes_value.map(|v| Cow::Owned(v.into_owned())),
+      raw_value: self
+        .raw_value
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      bytes_value: self
+        .bytes_value
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
       timestamp_value: self.timestamp_value,
       duration_value: self.duration_value,
     }
@@ -804,19 +814,19 @@ impl<'buf> BebopEncode for LiteralValue<'buf> {
       size += wire::tagged_size(v.encoded_size());
     }
     if let Some(v) = self.bool_value {
-      size += wire::tagged_size(size_of::<bool>());
+      size += wire::tagged_size(::core::mem::size_of::<bool>());
     }
     if let Some(v) = self.int_value {
-      size += wire::tagged_size(size_of::<i64>());
+      size += wire::tagged_size(::core::mem::size_of::<i64>());
     }
     if let Some(v) = self.float_value {
-      size += wire::tagged_size(size_of::<f64>());
+      size += wire::tagged_size(::core::mem::size_of::<f64>());
     }
     if let Some(ref v) = self.string_value {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(v) = self.uuid_value {
-      size += wire::tagged_size(size_of::<Uuid>());
+      size += wire::tagged_size(::core::mem::size_of::<::bebop_runtime::Uuid>());
     }
     if let Some(ref v) = self.raw_value {
       size += wire::tagged_size(wire::string_size(v.len()));
@@ -825,10 +835,10 @@ impl<'buf> BebopEncode for LiteralValue<'buf> {
       size += wire::tagged_size(wire::byte_array_size(v.len()));
     }
     if let Some(v) = self.timestamp_value {
-      size += wire::tagged_size(size_of::<i64>() + size_of::<i32>());
+      size += wire::tagged_size(::core::mem::size_of::<i64>() + ::core::mem::size_of::<i32>());
     }
     if let Some(v) = self.duration_value {
-      size += wire::tagged_size(size_of::<i64>() + size_of::<i32>());
+      size += wire::tagged_size(::core::mem::size_of::<i64>() + ::core::mem::size_of::<i32>());
     }
     size
   }
@@ -851,10 +861,10 @@ impl<'buf> BebopDecode<'buf> for LiteralValue<'buf> {
         2 => msg.bool_value = Some(reader.read_bool()?),
         3 => msg.int_value = Some(reader.read_i64()?),
         4 => msg.float_value = Some(reader.read_f64()?),
-        5 => msg.string_value = Some(Cow::Borrowed(reader.read_str()?)),
+        5 => msg.string_value = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         6 => msg.uuid_value = Some(reader.read_uuid()?),
-        7 => msg.raw_value = Some(Cow::Borrowed(reader.read_str()?)),
-        8 => msg.bytes_value = Some(Cow::Borrowed(reader.read_byte_slice()?)),
+        7 => msg.raw_value = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        8 => msg.bytes_value = Some(alloc::borrow::Cow::Borrowed(reader.read_byte_slice()?)),
         9 => msg.timestamp_value = Some(reader.read_timestamp()?),
         10 => msg.duration_value = Some(reader.read_duration()?),
         _ => {
@@ -876,14 +886,14 @@ impl<'buf> LiteralValue<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct DecoratorArg<'buf> {
-  pub name: Cow<'buf, str>,
+  pub name: alloc::borrow::Cow<'buf, str>,
   pub value: LiteralValue<'buf>,
 }
 
 pub type DecoratorArgOwned = DecoratorArg<'static>;
 
 impl<'buf> DecoratorArg<'buf> {
-  pub fn new(name: impl Into<Cow<'buf, str>>, value: LiteralValue<'static>) -> Self {
+  pub fn new(name: impl Into<alloc::borrow::Cow<'buf, str>>, value: LiteralValue<'static>) -> Self {
     let name = name.into();
     Self { name, value }
   }
@@ -892,7 +902,7 @@ impl<'buf> DecoratorArg<'buf> {
 impl<'buf> DecoratorArg<'buf> {
   pub fn into_owned(self) -> DecoratorArgOwned {
     DecoratorArg {
-      name: Cow::Owned(self.name.into_owned()),
+      name: alloc::borrow::Cow::Owned(self.name.into_owned()),
       value: self.value.into_owned(),
     }
   }
@@ -917,7 +927,7 @@ impl<'buf> BebopEncode for DecoratorArg<'buf> {
 impl<'buf> BebopDecode<'buf> for DecoratorArg<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:DecoratorArg)
-    let name = Cow::Borrowed(reader.read_str()?);
+    let name = alloc::borrow::Cow::Borrowed(reader.read_str()?);
     let value = LiteralValue::decode(reader)?;
     // @@bebop_insertion_point(decode_end:DecoratorArg)
     Ok(DecoratorArg { name, value })
@@ -938,11 +948,13 @@ impl<'buf> DecoratorArg<'buf> {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct DecoratorUsage<'buf> {
   /// FQN of the decorator definition (e.g., `validators.range`).
-  pub fqn: Option<Cow<'buf, str>>,
+  pub fqn: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Arguments passed at the usage site, in declaration order.
-  pub args: Option<Vec<DecoratorArg<'buf>>>,
+  pub args: ::core::option::Option<alloc::vec::Vec<DecoratorArg<'buf>>>,
   /// Results from the decorator's export block.
-  pub export_data: Option<HashMap<Cow<'buf, str>, LiteralValue<'buf>>>,
+  pub export_data: ::core::option::Option<
+    ::bebop_runtime::HashMap<alloc::borrow::Cow<'buf, str>, LiteralValue<'buf>>,
+  >,
 }
 
 pub type DecoratorUsageOwned = DecoratorUsage<'static>;
@@ -950,13 +962,13 @@ pub type DecoratorUsageOwned = DecoratorUsage<'static>;
 impl<'buf> DecoratorUsage<'buf> {
   pub fn into_owned(self) -> DecoratorUsageOwned {
     DecoratorUsage {
-      fqn: self.fqn.map(|v| Cow::Owned(v.into_owned())),
+      fqn: self.fqn.map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
       args: self
         .args
         .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
       export_data: self.export_data.map(|v| {
         v.into_iter()
-          .map(|(_k, _v)| (Cow::Owned(_k.into_owned()), _v.into_owned()))
+          .map(|(_k, _v)| (alloc::borrow::Cow::Owned(_k.into_owned()), _v.into_owned()))
           .collect()
       }),
     }
@@ -1022,12 +1034,12 @@ impl<'buf> BebopDecode<'buf> for DecoratorUsage<'buf> {
         break;
       }
       match tag {
-        1 => msg.fqn = Some(Cow::Borrowed(reader.read_str()?)),
+        1 => msg.fqn = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         2 => msg.args = Some(reader.read_array(|_r| DecoratorArg::decode(_r))?),
         3 => {
           msg.export_data = Some(reader.read_map(|_r| {
             Ok((
-              Ok(Cow::Borrowed(_r.read_str()?))?,
+              Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))?,
               LiteralValue::decode(_r)?,
             ))
           })?)
@@ -1055,13 +1067,13 @@ impl<'buf> DecoratorUsage<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct FieldDescriptor<'buf> {
-  pub name: Option<Cow<'buf, str>>,
+  pub name: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Text from preceding `///` comments in source.
-  pub documentation: Option<Cow<'buf, str>>,
-  pub r#type: Option<TypeDescriptor<'buf>>,
+  pub documentation: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  pub r#type: ::core::option::Option<TypeDescriptor<'buf>>,
   /// Wire tag: 0 for struct fields, 1-255 for message fields.
-  pub index: Option<u32>,
-  pub decorators: Option<Vec<DecoratorUsage<'buf>>>,
+  pub index: ::core::option::Option<u32>,
+  pub decorators: ::core::option::Option<alloc::vec::Vec<DecoratorUsage<'buf>>>,
 }
 
 pub type FieldDescriptorOwned = FieldDescriptor<'static>;
@@ -1069,8 +1081,10 @@ pub type FieldDescriptorOwned = FieldDescriptor<'static>;
 impl<'buf> FieldDescriptor<'buf> {
   pub fn into_owned(self) -> FieldDescriptorOwned {
     FieldDescriptor {
-      name: self.name.map(|v| Cow::Owned(v.into_owned())),
-      documentation: self.documentation.map(|v| Cow::Owned(v.into_owned())),
+      name: self.name.map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      documentation: self
+        .documentation
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
       r#type: self.r#type.map(|v| v.into_owned()),
       index: self.index,
       decorators: self
@@ -1126,7 +1140,7 @@ impl<'buf> BebopEncode for FieldDescriptor<'buf> {
       size += wire::tagged_size(v.encoded_size());
     }
     if let Some(v) = self.index {
-      size += wire::tagged_size(size_of::<u32>());
+      size += wire::tagged_size(::core::mem::size_of::<u32>());
     }
     if let Some(ref v) = self.decorators {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
@@ -1148,8 +1162,8 @@ impl<'buf> BebopDecode<'buf> for FieldDescriptor<'buf> {
         break;
       }
       match tag {
-        1 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
-        2 => msg.documentation = Some(Cow::Borrowed(reader.read_str()?)),
+        1 => msg.name = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        2 => msg.documentation = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         3 => msg.r#type = Some(TypeDescriptor::decode(reader)?),
         4 => msg.index = Some(reader.read_u32()?),
         5 => msg.decorators = Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?),
@@ -1174,13 +1188,13 @@ impl<'buf> FieldDescriptor<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct EnumMemberDescriptor<'buf> {
-  pub name: Option<Cow<'buf, str>>,
-  pub documentation: Option<Cow<'buf, str>>,
+  pub name: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  pub documentation: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Stored unsigned. Reinterpret per the parent enum's `base_type`.
-  pub value: Option<u64>,
-  pub decorators: Option<Vec<DecoratorUsage<'buf>>>,
+  pub value: ::core::option::Option<u64>,
+  pub decorators: ::core::option::Option<alloc::vec::Vec<DecoratorUsage<'buf>>>,
   /// Original expression text (e.g., `1 << 3`). Absent for simple literals.
-  pub value_expr: Option<Cow<'buf, str>>,
+  pub value_expr: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
 }
 
 pub type EnumMemberDescriptorOwned = EnumMemberDescriptor<'static>;
@@ -1188,13 +1202,17 @@ pub type EnumMemberDescriptorOwned = EnumMemberDescriptor<'static>;
 impl<'buf> EnumMemberDescriptor<'buf> {
   pub fn into_owned(self) -> EnumMemberDescriptorOwned {
     EnumMemberDescriptor {
-      name: self.name.map(|v| Cow::Owned(v.into_owned())),
-      documentation: self.documentation.map(|v| Cow::Owned(v.into_owned())),
+      name: self.name.map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      documentation: self
+        .documentation
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
       value: self.value,
       decorators: self
         .decorators
         .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
-      value_expr: self.value_expr.map(|v| Cow::Owned(v.into_owned())),
+      value_expr: self
+        .value_expr
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
     }
   }
 }
@@ -1242,7 +1260,7 @@ impl<'buf> BebopEncode for EnumMemberDescriptor<'buf> {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(v) = self.value {
-      size += wire::tagged_size(size_of::<u64>());
+      size += wire::tagged_size(::core::mem::size_of::<u64>());
     }
     if let Some(ref v) = self.decorators {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
@@ -1267,11 +1285,11 @@ impl<'buf> BebopDecode<'buf> for EnumMemberDescriptor<'buf> {
         break;
       }
       match tag {
-        1 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
-        2 => msg.documentation = Some(Cow::Borrowed(reader.read_str()?)),
+        1 => msg.name = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        2 => msg.documentation = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         3 => msg.value = Some(reader.read_u64()?),
         4 => msg.decorators = Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?),
-        5 => msg.value_expr = Some(Cow::Borrowed(reader.read_str()?)),
+        5 => msg.value_expr = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         _ => {
           reader.skip(end - reader.position())?;
         }
@@ -1304,15 +1322,15 @@ impl<'buf> EnumMemberDescriptor<'buf> {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct UnionBranchDescriptor<'buf> {
   /// Wire discriminator byte. Range 1-255.
-  pub discriminator: Option<u8>,
-  pub documentation: Option<Cow<'buf, str>>,
+  pub discriminator: ::core::option::Option<u8>,
+  pub documentation: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// FQN of inline definition. Mutually exclusive with `type_ref_fqn`.
-  pub inline_fqn: Option<Cow<'buf, str>>,
+  pub inline_fqn: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// FQN of referenced type. Mutually exclusive with `inline_fqn`.
-  pub type_ref_fqn: Option<Cow<'buf, str>>,
+  pub type_ref_fqn: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Branch name for type-reference branches.
-  pub name: Option<Cow<'buf, str>>,
-  pub decorators: Option<Vec<DecoratorUsage<'buf>>>,
+  pub name: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  pub decorators: ::core::option::Option<alloc::vec::Vec<DecoratorUsage<'buf>>>,
 }
 
 pub type UnionBranchDescriptorOwned = UnionBranchDescriptor<'static>;
@@ -1321,10 +1339,16 @@ impl<'buf> UnionBranchDescriptor<'buf> {
   pub fn into_owned(self) -> UnionBranchDescriptorOwned {
     UnionBranchDescriptor {
       discriminator: self.discriminator,
-      documentation: self.documentation.map(|v| Cow::Owned(v.into_owned())),
-      inline_fqn: self.inline_fqn.map(|v| Cow::Owned(v.into_owned())),
-      type_ref_fqn: self.type_ref_fqn.map(|v| Cow::Owned(v.into_owned())),
-      name: self.name.map(|v| Cow::Owned(v.into_owned())),
+      documentation: self
+        .documentation
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      inline_fqn: self
+        .inline_fqn
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      type_ref_fqn: self
+        .type_ref_fqn
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      name: self.name.map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
       decorators: self
         .decorators
         .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
@@ -1373,7 +1397,7 @@ impl<'buf> BebopEncode for UnionBranchDescriptor<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(v) = self.discriminator {
-      size += wire::tagged_size(size_of::<u8>());
+      size += wire::tagged_size(::core::mem::size_of::<u8>());
     }
     if let Some(ref v) = self.documentation {
       size += wire::tagged_size(wire::string_size(v.len()));
@@ -1408,10 +1432,10 @@ impl<'buf> BebopDecode<'buf> for UnionBranchDescriptor<'buf> {
       }
       match tag {
         1 => msg.discriminator = Some(reader.read_byte()?),
-        2 => msg.documentation = Some(Cow::Borrowed(reader.read_str()?)),
-        3 => msg.inline_fqn = Some(Cow::Borrowed(reader.read_str()?)),
-        4 => msg.type_ref_fqn = Some(Cow::Borrowed(reader.read_str()?)),
-        5 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
+        2 => msg.documentation = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        3 => msg.inline_fqn = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        4 => msg.type_ref_fqn = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        5 => msg.name = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         6 => msg.decorators = Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?),
         _ => {
           reader.skip(end - reader.position())?;
@@ -1433,14 +1457,14 @@ impl<'buf> UnionBranchDescriptor<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct MethodDescriptor<'buf> {
-  pub name: Option<Cow<'buf, str>>,
-  pub documentation: Option<Cow<'buf, str>>,
-  pub request_type: Option<TypeDescriptor<'buf>>,
-  pub response_type: Option<TypeDescriptor<'buf>>,
-  pub method_type: Option<MethodType>,
+  pub name: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  pub documentation: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  pub request_type: ::core::option::Option<TypeDescriptor<'buf>>,
+  pub response_type: ::core::option::Option<TypeDescriptor<'buf>>,
+  pub method_type: ::core::option::Option<MethodType>,
   /// MurmurHash3 of `/ServiceName/MethodName`.
-  pub id: Option<u32>,
-  pub decorators: Option<Vec<DecoratorUsage<'buf>>>,
+  pub id: ::core::option::Option<u32>,
+  pub decorators: ::core::option::Option<alloc::vec::Vec<DecoratorUsage<'buf>>>,
 }
 
 pub type MethodDescriptorOwned = MethodDescriptor<'static>;
@@ -1448,8 +1472,10 @@ pub type MethodDescriptorOwned = MethodDescriptor<'static>;
 impl<'buf> MethodDescriptor<'buf> {
   pub fn into_owned(self) -> MethodDescriptorOwned {
     MethodDescriptor {
-      name: self.name.map(|v| Cow::Owned(v.into_owned())),
-      documentation: self.documentation.map(|v| Cow::Owned(v.into_owned())),
+      name: self.name.map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      documentation: self
+        .documentation
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
       request_type: self.request_type.map(|v| v.into_owned()),
       response_type: self.response_type.map(|v| v.into_owned()),
       method_type: self.method_type,
@@ -1521,7 +1547,7 @@ impl<'buf> BebopEncode for MethodDescriptor<'buf> {
       size += wire::tagged_size(v.encoded_size());
     }
     if let Some(v) = self.id {
-      size += wire::tagged_size(size_of::<u32>());
+      size += wire::tagged_size(::core::mem::size_of::<u32>());
     }
     if let Some(ref v) = self.decorators {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
@@ -1543,8 +1569,8 @@ impl<'buf> BebopDecode<'buf> for MethodDescriptor<'buf> {
         break;
       }
       match tag {
-        1 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
-        2 => msg.documentation = Some(Cow::Borrowed(reader.read_str()?)),
+        1 => msg.name = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        2 => msg.documentation = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         3 => msg.request_type = Some(TypeDescriptor::decode(reader)?),
         4 => msg.response_type = Some(TypeDescriptor::decode(reader)?),
         5 => msg.method_type = Some(MethodType::decode(reader)?),
@@ -1572,10 +1598,10 @@ impl<'buf> MethodDescriptor<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct EnumDef<'buf> {
-  pub base_type: Option<TypeKind>,
-  pub members: Option<Vec<EnumMemberDescriptor<'buf>>>,
+  pub base_type: ::core::option::Option<TypeKind>,
+  pub members: ::core::option::Option<alloc::vec::Vec<EnumMemberDescriptor<'buf>>>,
   /// True when `@flags` is applied. Members are bit positions for OR.
-  pub is_flags: Option<bool>,
+  pub is_flags: ::core::option::Option<bool>,
 }
 
 pub type EnumDefOwned = EnumDef<'static>;
@@ -1627,7 +1653,7 @@ impl<'buf> BebopEncode for EnumDef<'buf> {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     if let Some(v) = self.is_flags {
-      size += wire::tagged_size(size_of::<bool>());
+      size += wire::tagged_size(::core::mem::size_of::<bool>());
     }
     size
   }
@@ -1670,12 +1696,12 @@ impl<'buf> EnumDef<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct StructDef<'buf> {
-  pub fields: Option<Vec<FieldDescriptor<'buf>>>,
+  pub fields: ::core::option::Option<alloc::vec::Vec<FieldDescriptor<'buf>>>,
   /// True when declared with `mut`. Mutable structs allow field reassignment.
-  pub is_mutable: Option<bool>,
+  pub is_mutable: ::core::option::Option<bool>,
   /// Total wire bytes when all fields are fixed-size. Zero when any field
   /// is variable-size. Generators use this to pre-allocate buffers.
-  pub fixed_size: Option<u32>,
+  pub fixed_size: ::core::option::Option<u32>,
 }
 
 pub type StructDefOwned = StructDef<'static>;
@@ -1724,10 +1750,10 @@ impl<'buf> BebopEncode for StructDef<'buf> {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
     }
     if let Some(v) = self.is_mutable {
-      size += wire::tagged_size(size_of::<bool>());
+      size += wire::tagged_size(::core::mem::size_of::<bool>());
     }
     if let Some(v) = self.fixed_size {
-      size += wire::tagged_size(size_of::<u32>());
+      size += wire::tagged_size(::core::mem::size_of::<u32>());
     }
     size
   }
@@ -1769,7 +1795,7 @@ impl<'buf> StructDef<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct MessageDef<'buf> {
-  pub fields: Option<Vec<FieldDescriptor<'buf>>>,
+  pub fields: ::core::option::Option<alloc::vec::Vec<FieldDescriptor<'buf>>>,
 }
 
 pub type MessageDefOwned = MessageDef<'static>;
@@ -1845,7 +1871,7 @@ impl<'buf> MessageDef<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct UnionDef<'buf> {
-  pub branches: Option<Vec<UnionBranchDescriptor<'buf>>>,
+  pub branches: ::core::option::Option<alloc::vec::Vec<UnionBranchDescriptor<'buf>>>,
 }
 
 pub type UnionDefOwned = UnionDef<'static>;
@@ -1919,7 +1945,7 @@ impl<'buf> UnionDef<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct ServiceDef<'buf> {
-  pub methods: Option<Vec<MethodDescriptor<'buf>>>,
+  pub methods: ::core::option::Option<alloc::vec::Vec<MethodDescriptor<'buf>>>,
 }
 
 pub type ServiceDefOwned = ServiceDef<'static>;
@@ -2000,8 +2026,8 @@ impl<'buf> ServiceDef<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct ConstDef<'buf> {
-  pub r#type: Option<TypeDescriptor<'buf>>,
-  pub value: Option<LiteralValue<'buf>>,
+  pub r#type: ::core::option::Option<TypeDescriptor<'buf>>,
+  pub value: ::core::option::Option<LiteralValue<'buf>>,
 }
 
 pub type ConstDefOwned = ConstDef<'static>;
@@ -2090,18 +2116,18 @@ impl<'buf> ConstDef<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct DecoratorParamDef<'buf> {
-  pub name: Option<Cow<'buf, str>>,
+  pub name: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Description from the `///` comment preceding this param.
-  pub description: Option<Cow<'buf, str>>,
+  pub description: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Must be a scalar TypeKind.
-  pub r#type: Option<TypeKind>,
+  pub r#type: ::core::option::Option<TypeKind>,
   /// True for required (`!`) params, false for optional (`?`).
-  pub required: Option<bool>,
+  pub required: ::core::option::Option<bool>,
   /// Default value for optional params. Absent for required params.
-  pub default_value: Option<LiteralValue<'buf>>,
+  pub default_value: ::core::option::Option<LiteralValue<'buf>>,
   /// Allowed-value constraint from `in [...]`. When non-empty, arguments
   /// must match one of these values.
-  pub allowed_values: Option<Vec<LiteralValue<'buf>>>,
+  pub allowed_values: ::core::option::Option<alloc::vec::Vec<LiteralValue<'buf>>>,
 }
 
 pub type DecoratorParamDefOwned = DecoratorParamDef<'static>;
@@ -2109,8 +2135,10 @@ pub type DecoratorParamDefOwned = DecoratorParamDef<'static>;
 impl<'buf> DecoratorParamDef<'buf> {
   pub fn into_owned(self) -> DecoratorParamDefOwned {
     DecoratorParamDef {
-      name: self.name.map(|v| Cow::Owned(v.into_owned())),
-      description: self.description.map(|v| Cow::Owned(v.into_owned())),
+      name: self.name.map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      description: self
+        .description
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
       r#type: self.r#type,
       required: self.required,
       default_value: self.default_value.map(|v| v.into_owned()),
@@ -2171,7 +2199,7 @@ impl<'buf> BebopEncode for DecoratorParamDef<'buf> {
       size += wire::tagged_size(v.encoded_size());
     }
     if let Some(v) = self.required {
-      size += wire::tagged_size(size_of::<bool>());
+      size += wire::tagged_size(::core::mem::size_of::<bool>());
     }
     if let Some(ref v) = self.default_value {
       size += wire::tagged_size(v.encoded_size());
@@ -2196,8 +2224,8 @@ impl<'buf> BebopDecode<'buf> for DecoratorParamDef<'buf> {
         break;
       }
       match tag {
-        1 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
-        2 => msg.description = Some(Cow::Borrowed(reader.read_str()?)),
+        1 => msg.name = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        2 => msg.description = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         3 => msg.r#type = Some(TypeKind::decode(reader)?),
         4 => msg.required = Some(reader.read_bool()?),
         5 => msg.default_value = Some(LiteralValue::decode(reader)?),
@@ -2223,16 +2251,16 @@ impl<'buf> DecoratorParamDef<'buf> {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct DecoratorDef<'buf> {
   /// Bitmask of DecoratorTarget values this decorator may apply to.
-  pub targets: Option<DecoratorTarget>,
+  pub targets: ::core::option::Option<DecoratorTarget>,
   /// When true, the decorator can appear multiple times on the same target.
-  pub allow_multiple: Option<bool>,
-  pub params: Option<Vec<DecoratorParamDef<'buf>>>,
+  pub allow_multiple: ::core::option::Option<bool>,
+  pub params: ::core::option::Option<alloc::vec::Vec<DecoratorParamDef<'buf>>>,
   /// Lua source for validate block. Runs at compile time to reject invalid
   /// usages. Absent when the decorator has no validate block.
-  pub validate_source: Option<Cow<'buf, str>>,
+  pub validate_source: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Lua source for export block. Produces key-value metadata stored in
   /// DecoratorUsage.export_data. Absent when no export block.
-  pub export_source: Option<Cow<'buf, str>>,
+  pub export_source: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
 }
 
 pub type DecoratorDefOwned = DecoratorDef<'static>;
@@ -2245,8 +2273,12 @@ impl<'buf> DecoratorDef<'buf> {
       params: self
         .params
         .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
-      validate_source: self.validate_source.map(|v| Cow::Owned(v.into_owned())),
-      export_source: self.export_source.map(|v| Cow::Owned(v.into_owned())),
+      validate_source: self
+        .validate_source
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      export_source: self
+        .export_source
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
     }
   }
 }
@@ -2291,7 +2323,7 @@ impl<'buf> BebopEncode for DecoratorDef<'buf> {
       size += wire::tagged_size(v.encoded_size());
     }
     if let Some(v) = self.allow_multiple {
-      size += wire::tagged_size(size_of::<bool>());
+      size += wire::tagged_size(::core::mem::size_of::<bool>());
     }
     if let Some(ref v) = self.params {
       size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
@@ -2322,8 +2354,8 @@ impl<'buf> BebopDecode<'buf> for DecoratorDef<'buf> {
         1 => msg.targets = Some(DecoratorTarget::decode(reader)?),
         2 => msg.allow_multiple = Some(reader.read_bool()?),
         3 => msg.params = Some(reader.read_array(|_r| DecoratorParamDef::decode(_r))?),
-        4 => msg.validate_source = Some(Cow::Borrowed(reader.read_str()?)),
-        5 => msg.export_source = Some(Cow::Borrowed(reader.read_str()?)),
+        4 => msg.validate_source = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        5 => msg.export_source = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         _ => {
           reader.skip(end - reader.position())?;
         }
@@ -2349,24 +2381,24 @@ impl<'buf> DecoratorDef<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct DefinitionDescriptor<'buf> {
-  pub kind: Option<DefinitionKind>,
+  pub kind: ::core::option::Option<DefinitionKind>,
   /// Simple name as declared in source.
-  pub name: Option<Cow<'buf, str>>,
+  pub name: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Fully-qualified name including package and parent scopes.
-  pub fqn: Option<Cow<'buf, str>>,
+  pub fqn: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Text from preceding `///` comments in source.
-  pub documentation: Option<Cow<'buf, str>>,
-  pub visibility: Option<Visibility>,
-  pub decorators: Option<Vec<DecoratorUsage<'buf>>>,
+  pub documentation: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  pub visibility: ::core::option::Option<Visibility>,
+  pub decorators: ::core::option::Option<alloc::vec::Vec<DecoratorUsage<'buf>>>,
   /// Types declared inside this definition's body.
-  pub nested: Option<Vec<DefinitionDescriptor<'buf>>>,
-  pub enum_def: Option<EnumDef<'buf>>,
-  pub struct_def: Option<StructDef<'buf>>,
-  pub message_def: Option<MessageDef<'buf>>,
-  pub union_def: Option<UnionDef<'buf>>,
-  pub service_def: Option<ServiceDef<'buf>>,
-  pub const_def: Option<ConstDef<'buf>>,
-  pub decorator_def: Option<DecoratorDef<'buf>>,
+  pub nested: ::core::option::Option<alloc::vec::Vec<DefinitionDescriptor<'buf>>>,
+  pub enum_def: ::core::option::Option<EnumDef<'buf>>,
+  pub struct_def: ::core::option::Option<StructDef<'buf>>,
+  pub message_def: ::core::option::Option<MessageDef<'buf>>,
+  pub union_def: ::core::option::Option<UnionDef<'buf>>,
+  pub service_def: ::core::option::Option<ServiceDef<'buf>>,
+  pub const_def: ::core::option::Option<ConstDef<'buf>>,
+  pub decorator_def: ::core::option::Option<DecoratorDef<'buf>>,
 }
 
 pub type DefinitionDescriptorOwned = DefinitionDescriptor<'static>;
@@ -2375,9 +2407,11 @@ impl<'buf> DefinitionDescriptor<'buf> {
   pub fn into_owned(self) -> DefinitionDescriptorOwned {
     DefinitionDescriptor {
       kind: self.kind,
-      name: self.name.map(|v| Cow::Owned(v.into_owned())),
-      fqn: self.fqn.map(|v| Cow::Owned(v.into_owned())),
-      documentation: self.documentation.map(|v| Cow::Owned(v.into_owned())),
+      name: self.name.map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      fqn: self.fqn.map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      documentation: self
+        .documentation
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
       visibility: self.visibility,
       decorators: self
         .decorators
@@ -2528,9 +2562,9 @@ impl<'buf> BebopDecode<'buf> for DefinitionDescriptor<'buf> {
       }
       match tag {
         1 => msg.kind = Some(DefinitionKind::decode(reader)?),
-        2 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
-        3 => msg.fqn = Some(Cow::Borrowed(reader.read_str()?)),
-        4 => msg.documentation = Some(Cow::Borrowed(reader.read_str()?)),
+        2 => msg.name = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        3 => msg.fqn = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        4 => msg.documentation = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         5 => msg.visibility = Some(Visibility::decode(reader)?),
         6 => msg.decorators = Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?),
         7 => msg.nested = Some(reader.read_array(|_r| DefinitionDescriptor::decode(_r))?),
@@ -2569,17 +2603,17 @@ pub struct Location<'buf> {
   /// ```
   /// Field tags correspond to definition body field indices
   /// (StructDef.fields = 1, EnumDef.members = 2, etc.).
-  pub path: Option<Vec<i32>>,
+  pub path: ::core::option::Option<alloc::vec::Vec<i32>>,
   /// Source span as `[start_line, start_col, end_line, end_col]`.
   /// All values 1-based. Columns count characters, tabs advance to
   /// next multiple of 4.
-  pub span: Option<[i32; 4]>,
+  pub span: ::core::option::Option<[i32; 4]>,
   /// Comments on adjacent preceding lines with no blank line separation.
-  pub leading_comments: Option<Cow<'buf, str>>,
+  pub leading_comments: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Comment on the same line after the element or after an opening brace.
-  pub trailing_comments: Option<Cow<'buf, str>>,
+  pub trailing_comments: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Comment groups separated from the element by blank lines.
-  pub detached_comments: Option<Vec<Cow<'buf, str>>>,
+  pub detached_comments: ::core::option::Option<alloc::vec::Vec<alloc::borrow::Cow<'buf, str>>>,
 }
 
 pub type LocationOwned = Location<'static>;
@@ -2589,11 +2623,15 @@ impl<'buf> Location<'buf> {
     Location {
       path: self.path,
       span: self.span,
-      leading_comments: self.leading_comments.map(|v| Cow::Owned(v.into_owned())),
-      trailing_comments: self.trailing_comments.map(|v| Cow::Owned(v.into_owned())),
+      leading_comments: self
+        .leading_comments
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      trailing_comments: self
+        .trailing_comments
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
       detached_comments: self.detached_comments.map(|v| {
         v.into_iter()
-          .map(|_e| Cow::Owned(_e.into_owned()))
+          .map(|_e| alloc::borrow::Cow::Owned(_e.into_owned()))
           .collect()
       }),
     }
@@ -2637,10 +2675,10 @@ impl<'buf> BebopEncode for Location<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.path {
-      size += wire::tagged_size(wire::array_size(v, |_el| (size_of::<i32>())));
+      size += wire::tagged_size(wire::array_size(v, |_el| (::core::mem::size_of::<i32>())));
     }
     if let Some(ref v) = self.span {
-      size += wire::tagged_size(4usize * (size_of::<i32>()));
+      size += wire::tagged_size(4usize * (::core::mem::size_of::<i32>()));
     }
     if let Some(ref v) = self.leading_comments {
       size += wire::tagged_size(wire::string_size(v.len()));
@@ -2670,10 +2708,11 @@ impl<'buf> BebopDecode<'buf> for Location<'buf> {
       match tag {
         1 => msg.path = Some(reader.read_array(|_r| _r.read_i32())?),
         2 => msg.span = Some(reader.read_fixed_array::<i32, 4>()?),
-        3 => msg.leading_comments = Some(Cow::Borrowed(reader.read_str()?)),
-        4 => msg.trailing_comments = Some(Cow::Borrowed(reader.read_str()?)),
+        3 => msg.leading_comments = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        4 => msg.trailing_comments = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         5 => {
-          msg.detached_comments = Some(reader.read_array(|_r| Ok(Cow::Borrowed(_r.read_str()?)))?)
+          msg.detached_comments =
+            Some(reader.read_array(|_r| Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?)))?)
         }
         _ => {
           reader.skip(end - reader.position())?;
@@ -2696,7 +2735,7 @@ impl<'buf> Location<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct SourceCodeInfo<'buf> {
-  pub locations: Option<Vec<Location<'buf>>>,
+  pub locations: ::core::option::Option<alloc::vec::Vec<Location<'buf>>>,
 }
 
 pub type SourceCodeInfoOwned = SourceCodeInfo<'static>;
@@ -2774,16 +2813,16 @@ impl<'buf> SourceCodeInfo<'buf> {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct SchemaDescriptor<'buf> {
   /// File path as provided to the compiler.
-  pub path: Option<Cow<'buf, str>>,
+  pub path: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Package declaration from source. Absent when no package is declared.
-  pub package: Option<Cow<'buf, str>>,
-  pub edition: Option<Edition>,
+  pub package: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  pub edition: ::core::option::Option<Edition>,
   /// Import paths in source declaration order.
-  pub imports: Option<Vec<Cow<'buf, str>>>,
+  pub imports: ::core::option::Option<alloc::vec::Vec<alloc::borrow::Cow<'buf, str>>>,
   /// All definitions in topological dependency order.
-  pub definitions: Option<Vec<DefinitionDescriptor<'buf>>>,
+  pub definitions: ::core::option::Option<alloc::vec::Vec<DefinitionDescriptor<'buf>>>,
   /// Source code info. Only present when requested during compilation.
-  pub source_code_info: Option<SourceCodeInfo<'buf>>,
+  pub source_code_info: ::core::option::Option<SourceCodeInfo<'buf>>,
 }
 
 pub type SchemaDescriptorOwned = SchemaDescriptor<'static>;
@@ -2791,12 +2830,14 @@ pub type SchemaDescriptorOwned = SchemaDescriptor<'static>;
 impl<'buf> SchemaDescriptor<'buf> {
   pub fn into_owned(self) -> SchemaDescriptorOwned {
     SchemaDescriptor {
-      path: self.path.map(|v| Cow::Owned(v.into_owned())),
-      package: self.package.map(|v| Cow::Owned(v.into_owned())),
+      path: self.path.map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      package: self
+        .package
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
       edition: self.edition,
       imports: self.imports.map(|v| {
         v.into_iter()
-          .map(|_e| Cow::Owned(_e.into_owned()))
+          .map(|_e| alloc::borrow::Cow::Owned(_e.into_owned()))
           .collect()
       }),
       definitions: self
@@ -2882,10 +2923,13 @@ impl<'buf> BebopDecode<'buf> for SchemaDescriptor<'buf> {
         break;
       }
       match tag {
-        1 => msg.path = Some(Cow::Borrowed(reader.read_str()?)),
-        2 => msg.package = Some(Cow::Borrowed(reader.read_str()?)),
+        1 => msg.path = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        2 => msg.package = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         3 => msg.edition = Some(Edition::decode(reader)?),
-        4 => msg.imports = Some(reader.read_array(|_r| Ok(Cow::Borrowed(_r.read_str()?)))?),
+        4 => {
+          msg.imports =
+            Some(reader.read_array(|_r| Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?)))?)
+        }
         5 => msg.definitions = Some(reader.read_array(|_r| DefinitionDescriptor::decode(_r))?),
         6 => msg.source_code_info = Some(SourceCodeInfo::decode(reader)?),
         _ => {
@@ -2910,7 +2954,7 @@ impl<'buf> SchemaDescriptor<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct DescriptorSet<'buf> {
-  pub schemas: Option<Vec<SchemaDescriptor<'buf>>>,
+  pub schemas: ::core::option::Option<alloc::vec::Vec<SchemaDescriptor<'buf>>>,
 }
 
 pub type DescriptorSetOwned = DescriptorSet<'static>;

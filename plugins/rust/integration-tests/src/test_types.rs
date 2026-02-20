@@ -12,20 +12,14 @@
 #![allow(warnings)]
 
 extern crate alloc;
-use alloc::borrow::Cow;
-use alloc::boxed::Box;
-use alloc::string::String as StdString;
 use alloc::vec;
-use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use bebop_runtime::serde;
 use bebop_runtime::wire_size as wire;
-use bebop_runtime::HashMap;
 use bebop_runtime::{
   bf16, f16, BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopReader, BebopTimestamp,
-  BebopWriter, DecodeError, Uuid,
+  BebopWriter, DecodeError,
 };
-use core::mem::size_of;
 
 // @@bebop_insertion_point(imports)
 
@@ -40,7 +34,7 @@ pub enum Color {
   Blue = 3,
 }
 
-impl core::convert::TryFrom<u8> for Color {
+impl ::core::convert::TryFrom<u8> for Color {
   type Error = DecodeError;
   fn try_from(value: u8) -> Result<Self, DecodeError> {
     match value {
@@ -114,46 +108,46 @@ impl BebopFlags for Permissions {
   }
 }
 
-impl core::ops::BitOr for Permissions {
+impl ::core::ops::BitOr for Permissions {
   type Output = Self;
   fn bitor(self, rhs: Self) -> Self {
     Self(self.0 | rhs.0)
   }
 }
-impl core::ops::BitOrAssign for Permissions {
+impl ::core::ops::BitOrAssign for Permissions {
   fn bitor_assign(&mut self, rhs: Self) {
     self.0 |= rhs.0;
   }
 }
-impl core::ops::BitAnd for Permissions {
+impl ::core::ops::BitAnd for Permissions {
   type Output = Self;
   fn bitand(self, rhs: Self) -> Self {
     Self(self.0 & rhs.0)
   }
 }
-impl core::ops::BitAndAssign for Permissions {
+impl ::core::ops::BitAndAssign for Permissions {
   fn bitand_assign(&mut self, rhs: Self) {
     self.0 &= rhs.0;
   }
 }
-impl core::ops::BitXor for Permissions {
+impl ::core::ops::BitXor for Permissions {
   type Output = Self;
   fn bitxor(self, rhs: Self) -> Self {
     Self(self.0 ^ rhs.0)
   }
 }
-impl core::ops::BitXorAssign for Permissions {
+impl ::core::ops::BitXorAssign for Permissions {
   fn bitxor_assign(&mut self, rhs: Self) {
     self.0 ^= rhs.0;
   }
 }
-impl core::ops::Not for Permissions {
+impl ::core::ops::Not for Permissions {
   type Output = Self;
   fn not(self) -> Self {
     Self(!self.0)
   }
 }
-impl core::ops::Sub for Permissions {
+impl ::core::ops::Sub for Permissions {
   type Output = Self;
   fn sub(self, rhs: Self) -> Self {
     Self(self.0 & !rhs.0)
@@ -185,7 +179,7 @@ pub const FEATURE_FLAG_ENABLED: bool = true;
 
 pub const EXAMPLE_CONST_STRING: &str = "hello \"world\"\nwith newlines";
 
-pub const EXAMPLE_CONST_GUID: Uuid = Uuid::from_bytes([
+pub const EXAMPLE_CONST_GUID: ::bebop_runtime::Uuid = ::bebop_runtime::Uuid::from_bytes([
   0xE2, 0x15, 0xA9, 0x46, 0xB2, 0x6F, 0x45, 0x67, 0xA2, 0x76, 0x13, 0x13, 0x6F, 0x0A, 0x17, 0x08,
 ]);
 
@@ -214,7 +208,8 @@ pub struct Point {
 }
 
 impl Point {
-  pub const FIXED_ENCODED_SIZE: usize = size_of::<f32>() + size_of::<f32>();
+  pub const FIXED_ENCODED_SIZE: usize =
+    ::core::mem::size_of::<f32>() + ::core::mem::size_of::<f32>();
 
   pub fn new(x: f32, y: f32) -> Self {
     Self { x, y }
@@ -259,7 +254,7 @@ pub struct Pixel {
 
 impl Pixel {
   pub const FIXED_ENCODED_SIZE: usize =
-    Point::FIXED_ENCODED_SIZE + Color::FIXED_ENCODED_SIZE + size_of::<u8>();
+    Point::FIXED_ENCODED_SIZE + Color::FIXED_ENCODED_SIZE + ::core::mem::size_of::<u8>();
 
   pub fn new(position: Point, color: Color, alpha: u8) -> Self {
     Self {
@@ -307,14 +302,14 @@ impl Pixel {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Person<'buf> {
-  pub name: Cow<'buf, str>,
+  pub name: alloc::borrow::Cow<'buf, str>,
   pub age: u32,
 }
 
 pub type PersonOwned = Person<'static>;
 
 impl<'buf> Person<'buf> {
-  pub fn new(name: impl Into<Cow<'buf, str>>, age: u32) -> Self {
+  pub fn new(name: impl Into<alloc::borrow::Cow<'buf, str>>, age: u32) -> Self {
     let name = name.into();
     Self { name, age }
   }
@@ -323,7 +318,7 @@ impl<'buf> Person<'buf> {
 impl<'buf> Person<'buf> {
   pub fn into_owned(self) -> PersonOwned {
     Person {
-      name: Cow::Owned(self.name.into_owned()),
+      name: alloc::borrow::Cow::Owned(self.name.into_owned()),
       age: self.age,
     }
   }
@@ -340,7 +335,7 @@ impl<'buf> BebopEncode for Person<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = 0;
     size += wire::string_size(self.name.len());
-    size += size_of::<u32>();
+    size += ::core::mem::size_of::<u32>();
     size
   }
 }
@@ -348,7 +343,7 @@ impl<'buf> BebopEncode for Person<'buf> {
 impl<'buf> BebopDecode<'buf> for Person<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:Person)
-    let name = Cow::Borrowed(reader.read_str()?);
+    let name = alloc::borrow::Cow::Borrowed(reader.read_str()?);
     let age = reader.read_u32()?;
     // @@bebop_insertion_point(decode_end:Person)
     Ok(Person { name, age })
@@ -366,13 +361,13 @@ pub struct BinaryPayload<'buf> {
   pub tag: u32,
   #[cfg_attr(feature = "serde", serde(borrow))]
   #[cfg_attr(feature = "serde", serde(with = "bebop_runtime::serde_cow_bytes"))]
-  pub data: Cow<'buf, [u8]>,
+  pub data: alloc::borrow::Cow<'buf, [u8]>,
 }
 
 pub type BinaryPayloadOwned = BinaryPayload<'static>;
 
 impl<'buf> BinaryPayload<'buf> {
-  pub fn new(tag: u32, data: impl Into<Cow<'buf, [u8]>>) -> Self {
+  pub fn new(tag: u32, data: impl Into<alloc::borrow::Cow<'buf, [u8]>>) -> Self {
     let data = data.into();
     Self { tag, data }
   }
@@ -382,7 +377,7 @@ impl<'buf> BinaryPayload<'buf> {
   pub fn into_owned(self) -> BinaryPayloadOwned {
     BinaryPayload {
       tag: self.tag,
-      data: Cow::Owned(self.data.into_owned()),
+      data: alloc::borrow::Cow::Owned(self.data.into_owned()),
     }
   }
 }
@@ -397,7 +392,7 @@ impl<'buf> BebopEncode for BinaryPayload<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += size_of::<u32>();
+    size += ::core::mem::size_of::<u32>();
     size += wire::byte_array_size(self.data.len());
     size
   }
@@ -407,7 +402,7 @@ impl<'buf> BebopDecode<'buf> for BinaryPayload<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:BinaryPayload)
     let tag = reader.read_u32()?;
-    let data = Cow::Borrowed(reader.read_byte_slice()?);
+    let data = alloc::borrow::Cow::Borrowed(reader.read_byte_slice()?);
     // @@bebop_insertion_point(decode_end:BinaryPayload)
     Ok(BinaryPayload { tag, data })
   }
@@ -421,13 +416,15 @@ impl<'buf> BinaryPayload<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct UserProfile<'buf> {
-  pub display_name: Option<Cow<'buf, str>>,
-  pub email: Option<Cow<'buf, str>>,
-  pub age: Option<u32>,
-  pub active: Option<bool>,
-  pub tags: Option<Vec<Cow<'buf, str>>>,
-  pub metadata: Option<HashMap<Cow<'buf, str>, Cow<'buf, str>>>,
-  pub permissions: Option<Permissions>,
+  pub display_name: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  pub email: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  pub age: ::core::option::Option<u32>,
+  pub active: ::core::option::Option<bool>,
+  pub tags: ::core::option::Option<alloc::vec::Vec<alloc::borrow::Cow<'buf, str>>>,
+  pub metadata: ::core::option::Option<
+    ::bebop_runtime::HashMap<alloc::borrow::Cow<'buf, str>, alloc::borrow::Cow<'buf, str>>,
+  >,
+  pub permissions: ::core::option::Option<Permissions>,
 }
 
 pub type UserProfileOwned = UserProfile<'static>;
@@ -435,18 +432,27 @@ pub type UserProfileOwned = UserProfile<'static>;
 impl<'buf> UserProfile<'buf> {
   pub fn into_owned(self) -> UserProfileOwned {
     UserProfile {
-      display_name: self.display_name.map(|v| Cow::Owned(v.into_owned())),
-      email: self.email.map(|v| Cow::Owned(v.into_owned())),
+      display_name: self
+        .display_name
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      email: self
+        .email
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
       age: self.age,
       active: self.active,
       tags: self.tags.map(|v| {
         v.into_iter()
-          .map(|_e| Cow::Owned(_e.into_owned()))
+          .map(|_e| alloc::borrow::Cow::Owned(_e.into_owned()))
           .collect()
       }),
       metadata: self.metadata.map(|v| {
         v.into_iter()
-          .map(|(_k, _v)| (Cow::Owned(_k.into_owned()), Cow::Owned(_v.into_owned())))
+          .map(|(_k, _v)| {
+            (
+              alloc::borrow::Cow::Owned(_k.into_owned()),
+              alloc::borrow::Cow::Owned(_v.into_owned()),
+            )
+          })
           .collect()
       }),
       permissions: self.permissions,
@@ -508,10 +514,10 @@ impl<'buf> BebopEncode for UserProfile<'buf> {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(v) = self.age {
-      size += wire::tagged_size(size_of::<u32>());
+      size += wire::tagged_size(::core::mem::size_of::<u32>());
     }
     if let Some(v) = self.active {
-      size += wire::tagged_size(size_of::<bool>());
+      size += wire::tagged_size(::core::mem::size_of::<bool>());
     }
     if let Some(ref v) = self.tags {
       size += wire::tagged_size(wire::array_size(v, |_el| wire::string_size(_el.len())));
@@ -541,16 +547,18 @@ impl<'buf> BebopDecode<'buf> for UserProfile<'buf> {
         break;
       }
       match tag {
-        1 => msg.display_name = Some(Cow::Borrowed(reader.read_str()?)),
-        2 => msg.email = Some(Cow::Borrowed(reader.read_str()?)),
+        1 => msg.display_name = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        2 => msg.email = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         3 => msg.age = Some(reader.read_u32()?),
         4 => msg.active = Some(reader.read_bool()?),
-        5 => msg.tags = Some(reader.read_array(|_r| Ok(Cow::Borrowed(_r.read_str()?)))?),
+        5 => {
+          msg.tags = Some(reader.read_array(|_r| Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?)))?)
+        }
         6 => {
           msg.metadata = Some(reader.read_map(|_r| {
             Ok((
-              Ok(Cow::Borrowed(_r.read_str()?))?,
-              Ok(Cow::Borrowed(_r.read_str()?))?,
+              Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))?,
+              Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))?,
             ))
           })?)
         }
@@ -573,10 +581,10 @@ impl<'buf> UserProfile<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct DrawCommand<'buf> {
-  pub target: Option<Point>,
-  pub color: Option<Color>,
-  pub label: Option<Cow<'buf, str>>,
-  pub thickness: Option<f32>,
+  pub target: ::core::option::Option<Point>,
+  pub color: ::core::option::Option<Color>,
+  pub label: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  pub thickness: ::core::option::Option<f32>,
 }
 
 pub type DrawCommandOwned = DrawCommand<'static>;
@@ -586,7 +594,9 @@ impl<'buf> DrawCommand<'buf> {
     DrawCommand {
       target: self.target,
       color: self.color,
-      label: self.label.map(|v| Cow::Owned(v.into_owned())),
+      label: self
+        .label
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
       thickness: self.thickness,
     }
   }
@@ -634,7 +644,7 @@ impl<'buf> BebopEncode for DrawCommand<'buf> {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(v) = self.thickness {
-      size += wire::tagged_size(size_of::<f32>());
+      size += wire::tagged_size(::core::mem::size_of::<f32>());
     }
     size
   }
@@ -655,7 +665,7 @@ impl<'buf> BebopDecode<'buf> for DrawCommand<'buf> {
       match tag {
         1 => msg.target = Some(Point::decode(reader)?),
         2 => msg.color = Some(Color::decode(reader)?),
-        3 => msg.label = Some(Cow::Borrowed(reader.read_str()?)),
+        3 => msg.label = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         4 => msg.thickness = Some(reader.read_f32()?),
         _ => {
           reader.skip(end - reader.position())?;
@@ -676,13 +686,13 @@ impl<'buf> DrawCommand<'buf> {
 #[derive(Debug, Clone, PartialEq)]
 pub struct TextLabel<'buf> {
   pub position: Point,
-  pub text: Cow<'buf, str>,
+  pub text: alloc::borrow::Cow<'buf, str>,
 }
 
 pub type TextLabelOwned = TextLabel<'static>;
 
 impl<'buf> TextLabel<'buf> {
-  pub fn new(position: Point, text: impl Into<Cow<'buf, str>>) -> Self {
+  pub fn new(position: Point, text: impl Into<alloc::borrow::Cow<'buf, str>>) -> Self {
     let text = text.into();
     Self { position, text }
   }
@@ -692,7 +702,7 @@ impl<'buf> TextLabel<'buf> {
   pub fn into_owned(self) -> TextLabelOwned {
     TextLabel {
       position: self.position,
-      text: Cow::Owned(self.text.into_owned()),
+      text: alloc::borrow::Cow::Owned(self.text.into_owned()),
     }
   }
 }
@@ -717,7 +727,7 @@ impl<'buf> BebopDecode<'buf> for TextLabel<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:TextLabel)
     let position = Point::decode(reader)?;
-    let text = Cow::Borrowed(reader.read_str()?);
+    let text = alloc::borrow::Cow::Borrowed(reader.read_str()?);
     // @@bebop_insertion_point(decode_end:TextLabel)
     Ok(TextLabel { position, text })
   }
@@ -736,7 +746,7 @@ pub enum Shape<'buf> {
   Pixel(Pixel),
   Label(TextLabel<'buf>),
   #[cfg_attr(feature = "serde", serde(skip))]
-  Unknown(u8, Cow<'buf, [u8]>),
+  Unknown(u8, alloc::borrow::Cow<'buf, [u8]>),
 }
 
 pub type ShapeOwned = Shape<'static>;
@@ -747,7 +757,9 @@ impl<'buf> Shape<'buf> {
       Self::Point(inner) => Shape::Point(inner),
       Self::Pixel(inner) => Shape::Pixel(inner),
       Self::Label(inner) => Shape::Label(inner.into_owned()),
-      Self::Unknown(disc, data) => Shape::Unknown(disc, Cow::Owned(data.into_owned())),
+      Self::Unknown(disc, data) => {
+        Shape::Unknown(disc, alloc::borrow::Cow::Owned(data.into_owned()))
+      }
     }
   }
 }
@@ -804,7 +816,10 @@ impl<'buf> BebopDecode<'buf> for Shape<'buf> {
       _ => {
         let remaining = length - (reader.position() - start);
         let data = reader.read_raw_bytes(remaining)?;
-        Ok(Self::Unknown(discriminator, Cow::Borrowed(data)))
+        Ok(Self::Unknown(
+          discriminator,
+          alloc::borrow::Cow::Borrowed(data),
+        ))
       }
     };
     // @@bebop_insertion_point(decode_end:Shape)
@@ -824,7 +839,7 @@ pub struct Matrix2x2 {
 }
 
 impl Matrix2x2 {
-  pub const FIXED_ENCODED_SIZE: usize = size_of::<f32>() * 4;
+  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<f32>() * 4;
 
   pub fn new(values: [f32; 4]) -> Self {
     Self { values }
@@ -865,7 +880,8 @@ pub struct HalfPrecisionScalars {
 }
 
 impl HalfPrecisionScalars {
-  pub const FIXED_ENCODED_SIZE: usize = size_of::<f16>() + size_of::<bf16>();
+  pub const FIXED_ENCODED_SIZE: usize =
+    ::core::mem::size_of::<f16>() + ::core::mem::size_of::<bf16>();
 
   pub fn new(f16_val: f16, bf16_val: bf16) -> Self {
     Self { f16_val, bf16_val }
@@ -902,16 +918,16 @@ impl HalfPrecisionScalars {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct HalfPrecisionArrays {
-  pub f16_dynamic: Vec<f16>,
-  pub bf16_dynamic: Vec<bf16>,
+  pub f16_dynamic: alloc::vec::Vec<f16>,
+  pub bf16_dynamic: alloc::vec::Vec<bf16>,
   pub f16_fixed: [f16; 4],
   pub bf16_fixed: [bf16; 4],
 }
 
 impl HalfPrecisionArrays {
   pub fn new(
-    f16_dynamic: Vec<f16>,
-    bf16_dynamic: Vec<bf16>,
+    f16_dynamic: alloc::vec::Vec<f16>,
+    bf16_dynamic: alloc::vec::Vec<bf16>,
     f16_fixed: [f16; 4],
     bf16_fixed: [bf16; 4],
   ) -> Self {
@@ -936,10 +952,10 @@ impl BebopEncode for HalfPrecisionArrays {
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += wire::array_size(&self.f16_dynamic, |_el| (size_of::<f16>()));
-    size += wire::array_size(&self.bf16_dynamic, |_el| (size_of::<bf16>()));
-    size += 4usize * (size_of::<f16>());
-    size += 4usize * (size_of::<bf16>());
+    size += wire::array_size(&self.f16_dynamic, |_el| (::core::mem::size_of::<f16>()));
+    size += wire::array_size(&self.bf16_dynamic, |_el| (::core::mem::size_of::<bf16>()));
+    size += 4usize * (::core::mem::size_of::<f16>());
+    size += 4usize * (::core::mem::size_of::<bf16>());
     size
   }
 }
@@ -968,10 +984,10 @@ impl HalfPrecisionArrays {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct HalfPrecisionMessage {
-  pub f16_val: Option<f16>,
-  pub bf16_val: Option<bf16>,
-  pub f16_arr: Option<Vec<f16>>,
-  pub bf16_arr: Option<Vec<bf16>>,
+  pub f16_val: ::core::option::Option<f16>,
+  pub bf16_val: ::core::option::Option<bf16>,
+  pub f16_arr: ::core::option::Option<alloc::vec::Vec<f16>>,
+  pub bf16_arr: ::core::option::Option<alloc::vec::Vec<bf16>>,
 }
 
 impl BebopEncode for HalfPrecisionMessage {
@@ -1007,16 +1023,16 @@ impl BebopEncode for HalfPrecisionMessage {
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(v) = self.f16_val {
-      size += wire::tagged_size(size_of::<f16>());
+      size += wire::tagged_size(::core::mem::size_of::<f16>());
     }
     if let Some(v) = self.bf16_val {
-      size += wire::tagged_size(size_of::<bf16>());
+      size += wire::tagged_size(::core::mem::size_of::<bf16>());
     }
     if let Some(ref v) = self.f16_arr {
-      size += wire::tagged_size(wire::array_size(v, |_el| (size_of::<f16>())));
+      size += wire::tagged_size(wire::array_size(v, |_el| (::core::mem::size_of::<f16>())));
     }
     if let Some(ref v) = self.bf16_arr {
-      size += wire::tagged_size(wire::array_size(v, |_el| (size_of::<bf16>())));
+      size += wire::tagged_size(wire::array_size(v, |_el| (::core::mem::size_of::<bf16>())));
     }
     size
   }
@@ -1057,20 +1073,20 @@ impl HalfPrecisionMessage {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Address<'buf> {
-  pub street: Cow<'buf, str>,
-  pub city: Cow<'buf, str>,
-  pub country: Cow<'buf, str>,
-  pub zip_code: Cow<'buf, str>,
+  pub street: alloc::borrow::Cow<'buf, str>,
+  pub city: alloc::borrow::Cow<'buf, str>,
+  pub country: alloc::borrow::Cow<'buf, str>,
+  pub zip_code: alloc::borrow::Cow<'buf, str>,
 }
 
 pub type AddressOwned = Address<'static>;
 
 impl<'buf> Address<'buf> {
   pub fn new(
-    street: impl Into<Cow<'buf, str>>,
-    city: impl Into<Cow<'buf, str>>,
-    country: impl Into<Cow<'buf, str>>,
-    zip_code: impl Into<Cow<'buf, str>>,
+    street: impl Into<alloc::borrow::Cow<'buf, str>>,
+    city: impl Into<alloc::borrow::Cow<'buf, str>>,
+    country: impl Into<alloc::borrow::Cow<'buf, str>>,
+    zip_code: impl Into<alloc::borrow::Cow<'buf, str>>,
   ) -> Self {
     let street = street.into();
     let city = city.into();
@@ -1088,10 +1104,10 @@ impl<'buf> Address<'buf> {
 impl<'buf> Address<'buf> {
   pub fn into_owned(self) -> AddressOwned {
     Address {
-      street: Cow::Owned(self.street.into_owned()),
-      city: Cow::Owned(self.city.into_owned()),
-      country: Cow::Owned(self.country.into_owned()),
-      zip_code: Cow::Owned(self.zip_code.into_owned()),
+      street: alloc::borrow::Cow::Owned(self.street.into_owned()),
+      city: alloc::borrow::Cow::Owned(self.city.into_owned()),
+      country: alloc::borrow::Cow::Owned(self.country.into_owned()),
+      zip_code: alloc::borrow::Cow::Owned(self.zip_code.into_owned()),
     }
   }
 }
@@ -1119,10 +1135,10 @@ impl<'buf> BebopEncode for Address<'buf> {
 impl<'buf> BebopDecode<'buf> for Address<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:Address)
-    let street = Cow::Borrowed(reader.read_str()?);
-    let city = Cow::Borrowed(reader.read_str()?);
-    let country = Cow::Borrowed(reader.read_str()?);
-    let zip_code = Cow::Borrowed(reader.read_str()?);
+    let street = alloc::borrow::Cow::Borrowed(reader.read_str()?);
+    let city = alloc::borrow::Cow::Borrowed(reader.read_str()?);
+    let country = alloc::borrow::Cow::Borrowed(reader.read_str()?);
+    let zip_code = alloc::borrow::Cow::Borrowed(reader.read_str()?);
     // @@bebop_insertion_point(decode_end:Address)
     Ok(Address {
       street,
@@ -1141,9 +1157,9 @@ impl<'buf> Address<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Scene<'buf> {
-  pub shapes: Option<Vec<Shape<'buf>>>,
-  pub background: Option<Color>,
-  pub title: Option<Cow<'buf, str>>,
+  pub shapes: ::core::option::Option<alloc::vec::Vec<Shape<'buf>>>,
+  pub background: ::core::option::Option<Color>,
+  pub title: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
 }
 
 pub type SceneOwned = Scene<'static>;
@@ -1155,7 +1171,9 @@ impl<'buf> Scene<'buf> {
         .shapes
         .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
       background: self.background,
-      title: self.title.map(|v| Cow::Owned(v.into_owned())),
+      title: self
+        .title
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
     }
   }
 }
@@ -1216,7 +1234,7 @@ impl<'buf> BebopDecode<'buf> for Scene<'buf> {
       match tag {
         1 => msg.shapes = Some(reader.read_array(|_r| Shape::decode(_r))?),
         2 => msg.background = Some(Color::decode(reader)?),
-        3 => msg.title = Some(Cow::Borrowed(reader.read_str()?)),
+        3 => msg.title = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         _ => {
           reader.skip(end - reader.position())?;
         }
@@ -1235,8 +1253,8 @@ impl<'buf> Scene<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Inventory<'buf> {
-  pub items: Option<HashMap<Cow<'buf, str>, u32>>,
-  pub label: Option<Cow<'buf, str>>,
+  pub items: ::core::option::Option<::bebop_runtime::HashMap<alloc::borrow::Cow<'buf, str>, u32>>,
+  pub label: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
 }
 
 pub type InventoryOwned = Inventory<'static>;
@@ -1246,10 +1264,12 @@ impl<'buf> Inventory<'buf> {
     Inventory {
       items: self.items.map(|v| {
         v.into_iter()
-          .map(|(_k, _v)| (Cow::Owned(_k.into_owned()), _v))
+          .map(|(_k, _v)| (alloc::borrow::Cow::Owned(_k.into_owned()), _v))
           .collect()
       }),
-      label: self.label.map(|v| Cow::Owned(v.into_owned())),
+      label: self
+        .label
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
     }
   }
 }
@@ -1283,7 +1303,7 @@ impl<'buf> BebopEncode for Inventory<'buf> {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.items {
       size += wire::tagged_size(wire::map_size(v, |_k, _v| {
-        wire::string_size(_k.len()) + size_of::<u32>()
+        wire::string_size(_k.len()) + ::core::mem::size_of::<u32>()
       }));
     }
     if let Some(ref v) = self.label {
@@ -1307,10 +1327,14 @@ impl<'buf> BebopDecode<'buf> for Inventory<'buf> {
       }
       match tag {
         1 => {
-          msg.items =
-            Some(reader.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, _r.read_u32()?)))?)
+          msg.items = Some(reader.read_map(|_r| {
+            Ok((
+              Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))?,
+              _r.read_u32()?,
+            ))
+          })?)
         }
-        2 => msg.label = Some(Cow::Borrowed(reader.read_str()?)),
+        2 => msg.label = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         _ => {
           reader.skip(end - reader.position())?;
         }
@@ -1329,7 +1353,7 @@ impl<'buf> Inventory<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct EmptyMessage<'buf> {
-  pub unused_field: Option<Cow<'buf, str>>,
+  pub unused_field: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
 }
 
 pub type EmptyMessageOwned = EmptyMessage<'static>;
@@ -1337,7 +1361,9 @@ pub type EmptyMessageOwned = EmptyMessage<'static>;
 impl<'buf> EmptyMessage<'buf> {
   pub fn into_owned(self) -> EmptyMessageOwned {
     EmptyMessage {
-      unused_field: self.unused_field.map(|v| Cow::Owned(v.into_owned())),
+      unused_field: self
+        .unused_field
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
     }
   }
 }
@@ -1382,7 +1408,7 @@ impl<'buf> BebopDecode<'buf> for EmptyMessage<'buf> {
         break;
       }
       match tag {
-        1 => msg.unused_field = Some(Cow::Borrowed(reader.read_str()?)),
+        1 => msg.unused_field = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         _ => {
           reader.skip(end - reader.position())?;
         }
@@ -1402,13 +1428,13 @@ impl<'buf> EmptyMessage<'buf> {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TimestampedEvent<'buf> {
   pub when: BebopTimestamp,
-  pub what: Cow<'buf, str>,
+  pub what: alloc::borrow::Cow<'buf, str>,
 }
 
 pub type TimestampedEventOwned = TimestampedEvent<'static>;
 
 impl<'buf> TimestampedEvent<'buf> {
-  pub fn new(when: BebopTimestamp, what: impl Into<Cow<'buf, str>>) -> Self {
+  pub fn new(when: BebopTimestamp, what: impl Into<alloc::borrow::Cow<'buf, str>>) -> Self {
     let what = what.into();
     Self { when, what }
   }
@@ -1418,7 +1444,7 @@ impl<'buf> TimestampedEvent<'buf> {
   pub fn into_owned(self) -> TimestampedEventOwned {
     TimestampedEvent {
       when: self.when,
-      what: Cow::Owned(self.what.into_owned()),
+      what: alloc::borrow::Cow::Owned(self.what.into_owned()),
     }
   }
 }
@@ -1433,7 +1459,7 @@ impl<'buf> BebopEncode for TimestampedEvent<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += size_of::<i64>() + size_of::<i32>();
+    size += ::core::mem::size_of::<i64>() + ::core::mem::size_of::<i32>();
     size += wire::string_size(self.what.len());
     size
   }
@@ -1443,7 +1469,7 @@ impl<'buf> BebopDecode<'buf> for TimestampedEvent<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:TimestampedEvent)
     let when = reader.read_timestamp()?;
-    let what = Cow::Borrowed(reader.read_str()?);
+    let what = alloc::borrow::Cow::Borrowed(reader.read_str()?);
     // @@bebop_insertion_point(decode_end:TimestampedEvent)
     Ok(TimestampedEvent { when, what })
   }
@@ -1457,9 +1483,9 @@ impl<'buf> TimestampedEvent<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct ScheduleEntry<'buf> {
-  pub start: Option<BebopTimestamp>,
-  pub duration: Option<BebopDuration>,
-  pub label: Option<Cow<'buf, str>>,
+  pub start: ::core::option::Option<BebopTimestamp>,
+  pub duration: ::core::option::Option<BebopDuration>,
+  pub label: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
 }
 
 pub type ScheduleEntryOwned = ScheduleEntry<'static>;
@@ -1469,7 +1495,9 @@ impl<'buf> ScheduleEntry<'buf> {
     ScheduleEntry {
       start: self.start,
       duration: self.duration,
-      label: self.label.map(|v| Cow::Owned(v.into_owned())),
+      label: self
+        .label
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
     }
   }
 }
@@ -1503,10 +1531,10 @@ impl<'buf> BebopEncode for ScheduleEntry<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(v) = self.start {
-      size += wire::tagged_size(size_of::<i64>() + size_of::<i32>());
+      size += wire::tagged_size(::core::mem::size_of::<i64>() + ::core::mem::size_of::<i32>());
     }
     if let Some(v) = self.duration {
-      size += wire::tagged_size(size_of::<i64>() + size_of::<i32>());
+      size += wire::tagged_size(::core::mem::size_of::<i64>() + ::core::mem::size_of::<i32>());
     }
     if let Some(ref v) = self.label {
       size += wire::tagged_size(wire::string_size(v.len()));
@@ -1530,7 +1558,7 @@ impl<'buf> BebopDecode<'buf> for ScheduleEntry<'buf> {
       match tag {
         1 => msg.start = Some(reader.read_timestamp()?),
         2 => msg.duration = Some(reader.read_duration()?),
-        3 => msg.label = Some(Cow::Borrowed(reader.read_str()?)),
+        3 => msg.label = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         _ => {
           reader.skip(end - reader.position())?;
         }
@@ -1598,13 +1626,13 @@ impl<'buf> ForwardRefA<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ForwardRefB<'buf> {
-  pub value: Cow<'buf, str>,
+  pub value: alloc::borrow::Cow<'buf, str>,
 }
 
 pub type ForwardRefBOwned = ForwardRefB<'static>;
 
 impl<'buf> ForwardRefB<'buf> {
-  pub fn new(value: impl Into<Cow<'buf, str>>) -> Self {
+  pub fn new(value: impl Into<alloc::borrow::Cow<'buf, str>>) -> Self {
     let value = value.into();
     Self { value }
   }
@@ -1613,7 +1641,7 @@ impl<'buf> ForwardRefB<'buf> {
 impl<'buf> ForwardRefB<'buf> {
   pub fn into_owned(self) -> ForwardRefBOwned {
     ForwardRefB {
-      value: Cow::Owned(self.value.into_owned()),
+      value: alloc::borrow::Cow::Owned(self.value.into_owned()),
     }
   }
 }
@@ -1635,7 +1663,7 @@ impl<'buf> BebopEncode for ForwardRefB<'buf> {
 impl<'buf> BebopDecode<'buf> for ForwardRefB<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:ForwardRefB)
-    let value = Cow::Borrowed(reader.read_str()?);
+    let value = alloc::borrow::Cow::Borrowed(reader.read_str()?);
     // @@bebop_insertion_point(decode_end:ForwardRefB)
     Ok(ForwardRefB { value })
   }
@@ -1649,9 +1677,9 @@ impl<'buf> ForwardRefB<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct DeprecatedFieldsMessage<'buf> {
-  pub current_name: Option<Cow<'buf, str>>,
-  pub legacy_name: Option<Cow<'buf, str>>,
-  pub legacy_enabled: Option<bool>,
+  pub current_name: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  pub legacy_name: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  pub legacy_enabled: ::core::option::Option<bool>,
 }
 
 pub type DeprecatedFieldsMessageOwned = DeprecatedFieldsMessage<'static>;
@@ -1659,8 +1687,12 @@ pub type DeprecatedFieldsMessageOwned = DeprecatedFieldsMessage<'static>;
 impl<'buf> DeprecatedFieldsMessage<'buf> {
   pub fn into_owned(self) -> DeprecatedFieldsMessageOwned {
     DeprecatedFieldsMessage {
-      current_name: self.current_name.map(|v| Cow::Owned(v.into_owned())),
-      legacy_name: self.legacy_name.map(|v| Cow::Owned(v.into_owned())),
+      current_name: self
+        .current_name
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      legacy_name: self
+        .legacy_name
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
       legacy_enabled: self.legacy_enabled,
     }
   }
@@ -1701,7 +1733,7 @@ impl<'buf> BebopEncode for DeprecatedFieldsMessage<'buf> {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(v) = self.legacy_enabled {
-      size += wire::tagged_size(size_of::<bool>());
+      size += wire::tagged_size(::core::mem::size_of::<bool>());
     }
     size
   }
@@ -1720,8 +1752,8 @@ impl<'buf> BebopDecode<'buf> for DeprecatedFieldsMessage<'buf> {
         break;
       }
       match tag {
-        1 => msg.current_name = Some(Cow::Borrowed(reader.read_str()?)),
-        2 => msg.legacy_name = Some(Cow::Borrowed(reader.read_str()?)),
+        1 => msg.current_name = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        2 => msg.legacy_name = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         3 => msg.legacy_enabled = Some(reader.read_bool()?),
         _ => {
           reader.skip(end - reader.position())?;
@@ -1741,8 +1773,9 @@ impl<'buf> DeprecatedFieldsMessage<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct IntegerKeyMaps<'buf> {
-  pub labels_by_id: Option<HashMap<u32, Cow<'buf, str>>>,
-  pub flags_by_id: Option<HashMap<i64, bool>>,
+  pub labels_by_id:
+    ::core::option::Option<::bebop_runtime::HashMap<u32, alloc::borrow::Cow<'buf, str>>>,
+  pub flags_by_id: ::core::option::Option<::bebop_runtime::HashMap<i64, bool>>,
 }
 
 pub type IntegerKeyMapsOwned = IntegerKeyMaps<'static>;
@@ -1752,7 +1785,7 @@ impl<'buf> IntegerKeyMaps<'buf> {
     IntegerKeyMaps {
       labels_by_id: self.labels_by_id.map(|v| {
         v.into_iter()
-          .map(|(_k, _v)| (_k, Cow::Owned(_v.into_owned())))
+          .map(|(_k, _v)| (_k, alloc::borrow::Cow::Owned(_v.into_owned())))
           .collect()
       }),
       flags_by_id: self.flags_by_id,
@@ -1792,12 +1825,12 @@ impl<'buf> BebopEncode for IntegerKeyMaps<'buf> {
     let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
     if let Some(ref v) = self.labels_by_id {
       size += wire::tagged_size(wire::map_size(v, |_k, _v| {
-        size_of::<u32>() + wire::string_size(_v.len())
+        ::core::mem::size_of::<u32>() + wire::string_size(_v.len())
       }));
     }
     if let Some(ref v) = self.flags_by_id {
       size += wire::tagged_size(wire::map_size(v, |_k, _v| {
-        size_of::<i64>() + size_of::<bool>()
+        ::core::mem::size_of::<i64>() + ::core::mem::size_of::<bool>()
       }));
     }
     size
@@ -1818,8 +1851,12 @@ impl<'buf> BebopDecode<'buf> for IntegerKeyMaps<'buf> {
       }
       match tag {
         1 => {
-          msg.labels_by_id =
-            Some(reader.read_map(|_r| Ok((_r.read_u32()?, Ok(Cow::Borrowed(_r.read_str()?))?)))?)
+          msg.labels_by_id = Some(reader.read_map(|_r| {
+            Ok((
+              _r.read_u32()?,
+              Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))?,
+            ))
+          })?)
         }
         2 => msg.flags_by_id = Some(reader.read_map(|_r| Ok((_r.read_i64()?, _r.read_bool()?)))?),
         _ => {
@@ -1840,13 +1877,13 @@ impl<'buf> IntegerKeyMaps<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NestedLeaf<'buf> {
-  pub label: Cow<'buf, str>,
+  pub label: alloc::borrow::Cow<'buf, str>,
 }
 
 pub type NestedLeafOwned = NestedLeaf<'static>;
 
 impl<'buf> NestedLeaf<'buf> {
-  pub fn new(label: impl Into<Cow<'buf, str>>) -> Self {
+  pub fn new(label: impl Into<alloc::borrow::Cow<'buf, str>>) -> Self {
     let label = label.into();
     Self { label }
   }
@@ -1855,7 +1892,7 @@ impl<'buf> NestedLeaf<'buf> {
 impl<'buf> NestedLeaf<'buf> {
   pub fn into_owned(self) -> NestedLeafOwned {
     NestedLeaf {
-      label: Cow::Owned(self.label.into_owned()),
+      label: alloc::borrow::Cow::Owned(self.label.into_owned()),
     }
   }
 }
@@ -1877,7 +1914,7 @@ impl<'buf> BebopEncode for NestedLeaf<'buf> {
 impl<'buf> BebopDecode<'buf> for NestedLeaf<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:NestedLeaf)
-    let label = Cow::Borrowed(reader.read_str()?);
+    let label = alloc::borrow::Cow::Borrowed(reader.read_str()?);
     // @@bebop_insertion_point(decode_end:NestedLeaf)
     Ok(NestedLeaf { label })
   }
@@ -1891,7 +1928,12 @@ impl<'buf> NestedLeaf<'buf> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DeepNestedCollections<'buf> {
-  pub nested: Option<HashMap<Cow<'buf, str>, Vec<HashMap<Cow<'buf, str>, NestedLeaf<'buf>>>>>,
+  pub nested: ::core::option::Option<
+    ::bebop_runtime::HashMap<
+      alloc::borrow::Cow<'buf, str>,
+      alloc::vec::Vec<::bebop_runtime::HashMap<alloc::borrow::Cow<'buf, str>, NestedLeaf<'buf>>>,
+    >,
+  >,
 }
 
 pub type DeepNestedCollectionsOwned = DeepNestedCollections<'static>;
@@ -1903,11 +1945,11 @@ impl<'buf> DeepNestedCollections<'buf> {
         v.into_iter()
           .map(|(_k, _v)| {
             (
-              Cow::Owned(_k.into_owned()),
+              alloc::borrow::Cow::Owned(_k.into_owned()),
               _v.into_iter()
                 .map(|_e| {
                   _e.into_iter()
-                    .map(|(_k, _v)| (Cow::Owned(_k.into_owned()), _v.into_owned()))
+                    .map(|(_k, _v)| (alloc::borrow::Cow::Owned(_k.into_owned()), _v.into_owned()))
                     .collect()
                 })
                 .collect(),
@@ -1977,9 +2019,14 @@ impl<'buf> BebopDecode<'buf> for DeepNestedCollections<'buf> {
         1 => {
           msg.nested = Some(reader.read_map(|_r| {
             Ok((
-              Ok(Cow::Borrowed(_r.read_str()?))?,
+              Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))?,
               _r.read_array(|_r| {
-                _r.read_map(|_r| Ok((Ok(Cow::Borrowed(_r.read_str()?))?, NestedLeaf::decode(_r)?)))
+                _r.read_map(|_r| {
+                  Ok((
+                    Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))?,
+                    NestedLeaf::decode(_r)?,
+                  ))
+                })
               })?,
             ))
           })?)
