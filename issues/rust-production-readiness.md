@@ -6,3 +6,4 @@
 - [x] Document deprecated message field encode/decode behavior divergence in generator output #rust-plugin 🔽
 - [x] Add Rust Criterion benchmark suite and cross-language benchmark harness/reporting #rust-plugin 🔽
 - [x] Expand integration coverage for forward refs, deprecated fields, integer map keys, deep nesting, empty collections, and serde round-trips #rust-plugin 🔺
+- [x] Eliminate benchmark post-generation patching by fixing generator constructor/derive output and formatting generation scripts #rust-plugin 🔺
