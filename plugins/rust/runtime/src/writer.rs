@@ -1,6 +1,7 @@
 use alloc::vec::Vec;
 use core::hash::Hash;
 
+use crate::temporal::{BebopDuration, BebopTimestamp};
 use crate::traits::FixedScalar;
 use crate::HashMap;
 use crate::{bf16, f16};
@@ -124,14 +125,14 @@ impl BebopWriter {
 
   // ── Timestamp / Duration ────────────────────────────────────
 
-  pub fn write_timestamp(&mut self, v: (i64, i32)) {
-    self.write_i64(v.0);
-    self.write_i32(v.1);
+  pub fn write_timestamp(&mut self, v: BebopTimestamp) {
+    self.write_i64(v.seconds);
+    self.write_i32(v.nanos);
   }
 
-  pub fn write_duration(&mut self, v: (i64, i32)) {
-    self.write_i64(v.0);
-    self.write_i32(v.1);
+  pub fn write_duration(&mut self, v: BebopDuration) {
+    self.write_i64(v.seconds);
+    self.write_i32(v.nanos);
   }
 
   // ── Message helpers ─────────────────────────────────────────
