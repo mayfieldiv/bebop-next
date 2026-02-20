@@ -46,67 +46,70 @@ impl LifetimeAnalysis {
       eq_fqns: HashSet::new(),
       hash_fqns: HashSet::new(),
     };
+
+    let mut def_by_fqn: HashMap<String, &DefinitionDescriptor> = HashMap::new();
     for schema in schemas {
       let definitions = schema.definitions.as_deref().unwrap_or(&[]);
-      for def in definitions {
-        analysis.analyze_def(def);
+      collect_definitions(definitions, &mut def_by_fqn);
+    }
+
+    for (fqn, def) in &def_by_fqn {
+      if def.kind == Some(DefinitionKind::Enum) {
+        analysis.enum_fqns.insert(fqn.clone());
+      }
+      if def.kind == Some(DefinitionKind::Union) {
+        // Unions always need lifetime (Unknown variant uses Cow<'buf, [u8]>)
+        analysis.lifetime_fqns.insert(fqn.clone());
+      }
+    }
+
+    // Resolve lifetime requirements to a fixpoint so forward references work.
+    loop {
+      let mut changed = false;
+      for (fqn, def) in &def_by_fqn {
+        if analysis.lifetime_fqns.contains(fqn) {
+          continue;
+        }
+
+        let needs_lifetime = match def.kind {
+          Some(DefinitionKind::Struct) => def
+            .struct_def
+            .as_ref()
+            .and_then(|sd| sd.fields.as_deref())
+            .is_some_and(|fields| {
+              fields.iter().any(|f| {
+                f.r#type
+                  .as_ref()
+                  .is_some_and(|td| analysis.type_needs_lifetime(td))
+              })
+            }),
+          Some(DefinitionKind::Message) => def
+            .message_def
+            .as_ref()
+            .and_then(|md| md.fields.as_deref())
+            .is_some_and(|fields| {
+              fields.iter().any(|f| {
+                f.r#type
+                  .as_ref()
+                  .is_some_and(|td| analysis.type_needs_lifetime(td))
+              })
+            }),
+          Some(DefinitionKind::Union) => true,
+          _ => false,
+        };
+
+        if needs_lifetime {
+          analysis.lifetime_fqns.insert(fqn.clone());
+          changed = true;
+        }
+      }
+
+      if !changed {
+        break;
       }
     }
     analysis.analyze_trait_derives(schemas);
     analysis
-  }
-
-  fn analyze_def(&mut self, def: &DefinitionDescriptor) {
-    let kind = match def.kind {
-      Some(k) => k,
-      None => return,
-    };
-    let fqn = match def.fqn.as_deref() {
-      Some(f) => f.to_string(),
-      None => return,
-    };
-
-    match kind {
-      DefinitionKind::Enum => {
-        self.enum_fqns.insert(fqn);
-      }
-      DefinitionKind::Struct => {
-        if let Some(ref sd) = def.struct_def {
-          let fields = sd.fields.as_deref().unwrap_or(&[]);
-          if fields.iter().any(|f| {
-            f.r#type
-              .as_ref()
-              .is_some_and(|td| self.type_needs_lifetime(td))
-          }) {
-            self.lifetime_fqns.insert(fqn);
-          }
-        }
-      }
-      DefinitionKind::Message => {
-        if let Some(ref md) = def.message_def {
-          let fields = md.fields.as_deref().unwrap_or(&[]);
-          if fields.iter().any(|f| {
-            f.r#type
-              .as_ref()
-              .is_some_and(|td| self.type_needs_lifetime(td))
-          }) {
-            self.lifetime_fqns.insert(fqn);
-          }
-        }
-      }
-      DefinitionKind::Union => {
-        // Unions always need lifetime (Unknown variant uses Cow<'buf, [u8]>)
-        self.lifetime_fqns.insert(fqn);
-      }
-      _ => {}
-    }
-
-    // Process nested definitions
-    if let Some(ref nested) = def.nested {
-      for child in nested {
-        self.analyze_def(child);
-      }
-    }
   }
 
   /// Check if a TypeDescriptor transitively contains strings or byte arrays.
@@ -189,20 +192,6 @@ impl LifetimeAnalysis {
           | DefinitionKind::Message
           | DefinitionKind::Union
       )
-    }
-
-    fn collect_definitions<'a>(
-      defs: &'a [DefinitionDescriptor<'a>],
-      def_by_fqn: &mut HashMap<String, &'a DefinitionDescriptor<'a>>,
-    ) {
-      for def in defs {
-        if let Some(fqn) = def.fqn.as_deref() {
-          def_by_fqn.insert(fqn.to_string(), def);
-        }
-        if let Some(nested) = def.nested.as_deref() {
-          collect_definitions(nested, def_by_fqn);
-        }
-      }
     }
 
     fn merge_option(acc: TypeTraits, next: Option<TypeTraits>) -> TypeTraits {
@@ -377,6 +366,20 @@ impl LifetimeAnalysis {
         self.eq_fqns.insert(fqn.clone());
         self.hash_fqns.insert(fqn.clone());
       }
+    }
+  }
+}
+
+fn collect_definitions<'a>(
+  defs: &'a [DefinitionDescriptor<'a>],
+  def_by_fqn: &mut HashMap<String, &'a DefinitionDescriptor<'a>>,
+) {
+  for def in defs {
+    if let Some(fqn) = def.fqn.as_deref() {
+      def_by_fqn.insert(fqn.to_string(), def);
+    }
+    if let Some(nested) = def.nested.as_deref() {
+      collect_definitions(nested, def_by_fqn);
     }
   }
 }
@@ -917,6 +920,62 @@ mod tests {
 
     // Enums are always hashable since they're integer-backed.
     assert!(output.contains("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\npub enum Status"));
+  }
+
+  #[test]
+  fn lifetime_analysis_resolves_forward_references() {
+    let a = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Struct),
+      name: Some(Cow::Borrowed("A")),
+      fqn: Some(Cow::Borrowed("test.A")),
+      struct_def: Some(StructDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("b")),
+          r#type: Some(TypeDescriptor {
+            kind: Some(TypeKind::Defined),
+            defined_fqn: Some(Cow::Borrowed("test.B")),
+            ..Default::default()
+          }),
+          index: Some(0),
+          ..Default::default()
+        }]),
+        ..Default::default()
+      }),
+      ..Default::default()
+    };
+
+    // B appears after A and is the type that introduces borrowed data.
+    let b = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Struct),
+      name: Some(Cow::Borrowed("B")),
+      fqn: Some(Cow::Borrowed("test.B")),
+      struct_def: Some(StructDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("name")),
+          r#type: Some(scalar_type(TypeKind::String)),
+          index: Some(0),
+          ..Default::default()
+        }]),
+        ..Default::default()
+      }),
+      ..Default::default()
+    };
+
+    let schema = SchemaDescriptor {
+      path: Some(Cow::Borrowed("forward.bop")),
+      definitions: Some(vec![a, b]),
+      ..Default::default()
+    };
+
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    assert!(analysis.lifetime_fqns.contains("test.B"));
+    assert!(analysis.lifetime_fqns.contains("test.A"));
+
+    let output = RustGenerator::new(None)
+      .generate(&schema, &[], &analysis)
+      .expect("generator should succeed");
+    assert!(output.contains("pub struct A<'buf>"));
+    assert!(output.contains("pub struct B<'buf>"));
   }
 
   #[test]
