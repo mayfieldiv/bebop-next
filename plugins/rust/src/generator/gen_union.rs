@@ -117,6 +117,10 @@ pub fn generate(
 
   // encode()
   output.push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(encode_start:{})\n",
+    name
+  ));
   output.push_str("    let pos = writer.reserve_message_length();\n");
   output.push_str("    match self {\n");
   for b in &branch_infos {
@@ -125,11 +129,19 @@ pub fn generate(
       b.variant, b.disc
     ));
   }
+  output.push_str(&format!(
+    "      // @@bebop_insertion_point(encode_switch:{})\n",
+    name
+  ));
   output.push_str(
     "      Self::Unknown(disc, data) => { writer.write_byte(*disc); writer.write_raw(data); }\n",
   );
   output.push_str("    }\n");
   output.push_str("    writer.fill_message_length(pos);\n");
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(encode_end:{})\n",
+    name
+  ));
   output.push_str("  }\n\n");
 
   // encoded_size()
@@ -153,24 +165,44 @@ pub fn generate(
     name
   ));
   output.push_str("  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n");
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(decode_start:{})\n",
+    name
+  ));
   output.push_str("    let length = reader.read_message_length()? as usize;\n");
   output.push_str("    let start = reader.position();\n");
   output.push_str("    let discriminator = reader.read_byte()?;\n");
-  output.push_str("    match discriminator {\n");
+  output.push_str("    let value = match discriminator {\n");
   for b in &branch_infos {
     output.push_str(&format!(
       "      {} => Ok(Self::{}({}::decode(reader)?)),\n",
       b.disc, b.variant, b.inner_type
     ));
   }
+  output.push_str(&format!(
+    "      // @@bebop_insertion_point(decode_switch:{})\n",
+    name
+  ));
   output.push_str("      _ => {\n");
   output.push_str("        let remaining = length - (reader.position() - start);\n");
   output.push_str("        let data = reader.read_raw_bytes(remaining)?;\n");
   output.push_str("        Ok(Self::Unknown(discriminator, Cow::Borrowed(data)))\n");
   output.push_str("      }\n");
-  output.push_str("    }\n");
+  output.push_str("    };\n");
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(decode_end:{})\n",
+    name
+  ));
+  output.push_str("    value\n");
   output.push_str("  }\n");
 
+  output.push_str("}\n\n");
+
+  output.push_str(&format!("impl<'buf> {}<'buf> {{\n", name));
+  output.push_str(&format!(
+    "  // @@bebop_insertion_point(union_scope:{})\n",
+    name
+  ));
   output.push_str("}\n\n");
 
   Ok(())

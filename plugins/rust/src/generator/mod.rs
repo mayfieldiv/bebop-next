@@ -262,10 +262,13 @@ impl RustGenerator {
       output.push_str(&format!("use super::{}::*;\n", stem));
     }
     output.push('\n');
+    output.push_str("// @@bebop_insertion_point(imports)\n\n");
 
     for def in definitions {
       Self::generate_definition(def, &mut output, 0, analysis)?;
     }
+
+    output.push_str("// @@bebop_insertion_point(eof)\n");
 
     Ok(output)
   }
@@ -355,5 +358,195 @@ pub fn emit_deprecated(output: &mut String, decorators: &Option<Vec<DecoratorUsa
         return;
       }
     }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use std::borrow::Cow;
+
+  use crate::generated::{
+    DefinitionDescriptor, DefinitionKind, EnumDef, EnumMemberDescriptor, FieldDescriptor,
+    MessageDef, SchemaDescriptor, StructDef, TypeDescriptor, TypeKind, UnionBranchDescriptor,
+    UnionDef,
+  };
+
+  fn scalar_type(kind: TypeKind) -> TypeDescriptor<'static> {
+    TypeDescriptor {
+      kind: Some(kind),
+      ..Default::default()
+    }
+  }
+
+  fn build_schema() -> SchemaDescriptor<'static> {
+    let payload = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Struct),
+      name: Some(Cow::Borrowed("Payload")),
+      fqn: Some(Cow::Borrowed("test.Payload")),
+      struct_def: Some(StructDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("id")),
+          r#type: Some(scalar_type(TypeKind::Int32)),
+          index: Some(0),
+          ..Default::default()
+        }]),
+        fixed_size: Some(4),
+        ..Default::default()
+      }),
+      ..Default::default()
+    };
+
+    let msg = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Message),
+      name: Some(Cow::Borrowed("Msg")),
+      fqn: Some(Cow::Borrowed("test.Msg")),
+      message_def: Some(MessageDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("id")),
+          r#type: Some(scalar_type(TypeKind::Int32)),
+          index: Some(1),
+          ..Default::default()
+        }]),
+      }),
+      ..Default::default()
+    };
+
+    let status = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Enum),
+      name: Some(Cow::Borrowed("Status")),
+      fqn: Some(Cow::Borrowed("test.Status")),
+      enum_def: Some(EnumDef {
+        base_type: Some(TypeKind::Uint32),
+        members: Some(vec![
+          EnumMemberDescriptor {
+            name: Some(Cow::Borrowed("UNKNOWN")),
+            value: Some(0),
+            ..Default::default()
+          },
+          EnumMemberDescriptor {
+            name: Some(Cow::Borrowed("OK")),
+            value: Some(1),
+            ..Default::default()
+          },
+        ]),
+        is_flags: Some(false),
+      }),
+      ..Default::default()
+    };
+
+    let result_union = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Union),
+      name: Some(Cow::Borrowed("ResultUnion")),
+      fqn: Some(Cow::Borrowed("test.ResultUnion")),
+      union_def: Some(UnionDef {
+        branches: Some(vec![UnionBranchDescriptor {
+          discriminator: Some(1),
+          name: Some(Cow::Borrowed("payload")),
+          type_ref_fqn: Some(Cow::Borrowed("test.Payload")),
+          ..Default::default()
+        }]),
+      }),
+      ..Default::default()
+    };
+
+    SchemaDescriptor {
+      path: Some(Cow::Borrowed("test.bop")),
+      definitions: Some(vec![payload, msg, status, result_union]),
+      ..Default::default()
+    }
+  }
+
+  fn assert_order(output: &str, first: &str, second: &str) {
+    let first_idx = output
+      .find(first)
+      .unwrap_or_else(|| panic!("missing insertion point: {}", first));
+    let second_idx = output
+      .find(second)
+      .unwrap_or_else(|| panic!("missing insertion point: {}", second));
+    assert!(
+      first_idx < second_idx,
+      "expected {} to appear before {}",
+      first,
+      second
+    );
+  }
+
+  #[test]
+  fn emits_file_level_insertion_points() {
+    let schema = build_schema();
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::new(None)
+      .generate(&schema, &[], &analysis)
+      .expect("generator should succeed");
+
+    assert!(output.contains("// @@bebop_insertion_point(imports)"));
+    assert!(output.contains("// @@bebop_insertion_point(eof)"));
+    assert_order(
+      &output,
+      "// @@bebop_insertion_point(imports)",
+      "// @@bebop_insertion_point(eof)",
+    );
+  }
+
+  #[test]
+  fn emits_type_and_codec_insertion_points() {
+    let schema = build_schema();
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::new(None)
+      .generate(&schema, &[], &analysis)
+      .expect("generator should succeed");
+
+    for marker in [
+      "// @@bebop_insertion_point(struct_scope:Payload)",
+      "// @@bebop_insertion_point(message_scope:Msg)",
+      "// @@bebop_insertion_point(enum_scope:Status)",
+      "// @@bebop_insertion_point(union_scope:ResultUnion)",
+      "// @@bebop_insertion_point(encode_start:Payload)",
+      "// @@bebop_insertion_point(encode_end:Payload)",
+      "// @@bebop_insertion_point(decode_start:Payload)",
+      "// @@bebop_insertion_point(decode_end:Payload)",
+      "// @@bebop_insertion_point(encode_start:Msg)",
+      "// @@bebop_insertion_point(encode_end:Msg)",
+      "// @@bebop_insertion_point(decode_start:Msg)",
+      "// @@bebop_insertion_point(decode_end:Msg)",
+      "// @@bebop_insertion_point(encode_start:Status)",
+      "// @@bebop_insertion_point(encode_end:Status)",
+      "// @@bebop_insertion_point(decode_start:Status)",
+      "// @@bebop_insertion_point(decode_end:Status)",
+      "// @@bebop_insertion_point(encode_start:ResultUnion)",
+      "// @@bebop_insertion_point(encode_switch:ResultUnion)",
+      "// @@bebop_insertion_point(encode_end:ResultUnion)",
+      "// @@bebop_insertion_point(decode_start:ResultUnion)",
+      "// @@bebop_insertion_point(decode_switch:ResultUnion)",
+      "// @@bebop_insertion_point(decode_end:ResultUnion)",
+    ] {
+      assert!(
+        output.contains(marker),
+        "missing insertion point: {}",
+        marker
+      );
+    }
+
+    assert_order(
+      &output,
+      "// @@bebop_insertion_point(encode_start:ResultUnion)",
+      "// @@bebop_insertion_point(encode_switch:ResultUnion)",
+    );
+    assert_order(
+      &output,
+      "// @@bebop_insertion_point(encode_switch:ResultUnion)",
+      "// @@bebop_insertion_point(encode_end:ResultUnion)",
+    );
+    assert_order(
+      &output,
+      "// @@bebop_insertion_point(decode_start:ResultUnion)",
+      "// @@bebop_insertion_point(decode_switch:ResultUnion)",
+    );
+    assert_order(
+      &output,
+      "// @@bebop_insertion_point(decode_switch:ResultUnion)",
+      "// @@bebop_insertion_point(decode_end:ResultUnion)",
+    );
   }
 }

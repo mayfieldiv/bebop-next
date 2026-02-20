@@ -143,14 +143,26 @@ fn generate_enum(
     "  pub const FIXED_ENCODED_SIZE: usize = {};\n",
     byte_size
   ));
+  output.push_str(&format!(
+    "  // @@bebop_insertion_point(enum_scope:{})\n",
+    name
+  ));
   output.push_str("}\n\n");
 
   // ── impl BebopEncode ──────────────────────────────────────────
   output.push_str(&format!("impl BebopEncode for {} {{\n", name));
   output.push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
   output.push_str(&format!(
+    "    // @@bebop_insertion_point(encode_start:{})\n",
+    name
+  ));
+  output.push_str(&format!(
     "    writer.{}(*self as {});\n",
     write_method, base_type
+  ));
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(encode_end:{})\n",
+    name
   ));
   output.push_str("  }\n\n");
   output.push_str("  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }\n");
@@ -159,7 +171,16 @@ fn generate_enum(
   // ── impl BebopDecode ──────────────────────────────────────────
   output.push_str(&format!("impl<'buf> BebopDecode<'buf> for {} {{\n", name));
   output.push_str("  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n");
-  output.push_str(&format!("    Self::try_from(reader.{}()?)\n", read_method));
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(decode_start:{})\n",
+    name
+  ));
+  output.push_str(&format!("    let value = reader.{}()?;\n", read_method));
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(decode_end:{})\n",
+    name
+  ));
+  output.push_str("    Self::try_from(value)\n");
   output.push_str("  }\n");
   output.push_str("}\n\n");
 
@@ -219,6 +240,10 @@ fn generate_flags(
 
     all_value |= mvalue;
   }
+  output.push_str(&format!(
+    "  // @@bebop_insertion_point(enum_scope:{})\n",
+    name
+  ));
   output.push_str("}\n\n");
 
   // Flags trait impl

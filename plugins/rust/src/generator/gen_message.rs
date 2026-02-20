@@ -163,6 +163,10 @@ pub fn generate(
 
   // encode()
   output.push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(encode_start:{})\n",
+    name
+  ));
   output.push_str("    let pos = writer.reserve_message_length();\n");
 
   for meta in &field_metas {
@@ -203,6 +207,10 @@ pub fn generate(
 
   output.push_str("    writer.write_end_marker();\n");
   output.push_str("    writer.fill_message_length(pos);\n");
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(encode_end:{})\n",
+    name
+  ));
   output.push_str("  }\n\n");
 
   // encoded_size()
@@ -260,6 +268,10 @@ pub fn generate(
     name, lt
   ));
   output.push_str("  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {\n");
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(decode_start:{})\n",
+    name
+  ));
   output.push_str("    let length = reader.read_message_length()? as usize;\n");
   output.push_str("    let end = reader.position() + length;\n");
   output.push_str("    let mut msg = Self::default();\n\n");
@@ -297,9 +309,20 @@ pub fn generate(
   output.push_str("        _ => { reader.skip(end - reader.position())?; }\n");
   output.push_str("      }\n");
   output.push_str("    }\n");
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(decode_end:{})\n",
+    name
+  ));
   output.push_str("    Ok(msg)\n");
   output.push_str("  }\n");
 
+  output.push_str("}\n\n");
+
+  output.push_str(&format!("impl{} {}{} {{\n", lt, name, lt));
+  output.push_str(&format!(
+    "  // @@bebop_insertion_point(message_scope:{})\n",
+    name
+  ));
   output.push_str("}\n\n");
 
   Ok(())
