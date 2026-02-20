@@ -3,7 +3,7 @@ use crate::generated::{DefinitionDescriptor, EnumDef, TypeKind};
 
 use super::naming::{type_name, variant_name};
 use super::type_mapper::{enum_base_rust_type, enum_read_method, enum_write_method, fixed_size};
-use super::{emit_deprecated, emit_doc_comment, LifetimeAnalysis};
+use super::{emit_deprecated, emit_doc_comment, visibility_keyword, LifetimeAnalysis};
 
 /// Generate Rust code for an enum definition.
 pub fn generate(
@@ -33,9 +33,11 @@ pub fn generate(
     TypeKind::Int8 | TypeKind::Int16 | TypeKind::Int32 | TypeKind::Int64
   );
 
+  let vis = visibility_keyword(def);
+
   if is_flags {
     generate_flags(
-      def, enum_def, output, &name, base_type, byte_size, is_signed, base_kind,
+      def, enum_def, output, &name, vis, base_type, byte_size, is_signed, base_kind,
     )?;
   } else {
     generate_enum(
@@ -43,6 +45,7 @@ pub fn generate(
       enum_def,
       output,
       &name,
+      vis,
       base_type,
       read_method,
       write_method,
@@ -62,6 +65,7 @@ fn generate_enum(
   enum_def: &EnumDef,
   output: &mut String,
   name: &str,
+  vis: &str,
   base_type: &str,
   read_method: &str,
   write_method: &str,
@@ -78,7 +82,7 @@ fn generate_enum(
   // Enum definition with repr
   output.push_str(&format!("#[repr({})]\n", base_type));
   output.push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\n");
-  output.push_str(&format!("pub enum {} {{\n", name));
+  output.push_str(&format!("{} enum {} {{\n", vis, name));
 
   for m in members {
     let mname = variant_name(m.name.as_deref().unwrap_or("Unknown"));
@@ -194,6 +198,7 @@ fn generate_flags(
   enum_def: &EnumDef,
   output: &mut String,
   name: &str,
+  vis: &str,
   base_type: &str,
   byte_size: usize,
   is_signed: bool,
@@ -207,7 +212,7 @@ fn generate_flags(
 
   // Derive + struct
   output.push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\n");
-  output.push_str(&format!("pub struct {}(pub {});\n\n", name, base_type));
+  output.push_str(&format!("{} struct {}({} {});\n\n", vis, name, vis, base_type));
 
   // Associated constants
   output.push_str(&format!(

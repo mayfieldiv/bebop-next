@@ -3,7 +3,7 @@ use crate::generated::{DefinitionDescriptor, TypeDescriptor, TypeKind};
 
 use super::naming::{field_name, type_name};
 use super::type_mapper;
-use super::{emit_deprecated, emit_doc_comment, LifetimeAnalysis};
+use super::{emit_deprecated, emit_doc_comment, visibility_keyword, LifetimeAnalysis};
 
 /// Wrapping strategy for a message field.
 enum FieldWrap {
@@ -51,6 +51,7 @@ pub fn generate(
     .ok_or_else(|| GeneratorError::MalformedDefinition("message missing message_def".into()))?;
 
   let fields = message_def.fields.as_deref().unwrap_or(&[]);
+  let vis = visibility_keyword(def);
   let has_lifetime = analysis.lifetime_fqns.contains(own_fqn);
 
   let lt = if has_lifetime { "<'buf>" } else { "" };
@@ -104,21 +105,21 @@ pub fn generate(
     derives.push("Hash");
   }
   output.push_str(&format!("#[derive({})]\n", derives.join(", ")));
-  output.push_str(&format!("pub struct {}{} {{\n", name, lt));
+  output.push_str(&format!("{} struct {}{} {{\n", vis, name, lt));
   for (f, meta) in fields.iter().zip(&field_metas) {
     emit_doc_comment(output, &f.documentation);
     emit_deprecated(output, &f.decorators);
     match meta.wrap {
       FieldWrap::Boxed => {
         output.push_str(&format!(
-          "  pub {}: Option<Box<{}>>,\n",
-          meta.fname, meta.cow_type
+          "  {} {}: Option<Box<{}>>,\n",
+          vis, meta.fname, meta.cow_type
         ));
       }
       _ => {
         output.push_str(&format!(
-          "  pub {}: Option<{}>,\n",
-          meta.fname, meta.cow_type
+          "  {} {}: Option<{}>,\n",
+          vis, meta.fname, meta.cow_type
         ));
       }
     }
@@ -127,7 +128,7 @@ pub fn generate(
 
   // ── Type alias ────────────────────────────────────────────────
   if has_lifetime {
-    output.push_str(&format!("pub type {}Owned = {}<'static>;\n\n", name, name));
+    output.push_str(&format!("{} type {}Owned = {}<'static>;\n\n", vis, name, name));
   }
 
   // ── into_owned() (only when has_lifetime) ─────────────────────
