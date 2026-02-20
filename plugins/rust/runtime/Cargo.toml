@@ -12,3 +12,4 @@ std = ["half/std"]
 [dependencies]
 half = { version = "2.7", default-features = false, features = ["alloc"] }
 hashbrown = { version = "0.15" }
+uuid = { version = "1", default-features = false }
