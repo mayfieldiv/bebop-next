@@ -3,7 +3,7 @@ use crate::generated::{DefinitionDescriptor, TypeDescriptor};
 
 use super::naming::{field_name, type_name};
 use super::type_mapper;
-use super::{emit_deprecated, emit_doc_comment, LifetimeAnalysis};
+use super::{emit_deprecated, emit_doc_comment, visibility_keyword, LifetimeAnalysis};
 
 struct StructFieldMeta<'a> {
   fname: String,
@@ -27,6 +27,7 @@ pub fn generate(
     .ok_or_else(|| GeneratorError::MalformedDefinition("struct missing struct_def".into()))?;
 
   let fields = struct_def.fields.as_deref().unwrap_or(&[]);
+  let vis = visibility_keyword(def);
   let has_lifetime = analysis.lifetime_fqns.contains(fqn);
 
   let lt = if has_lifetime { "<'buf>" } else { "" };
@@ -66,17 +67,17 @@ pub fn generate(
     derives.push("Hash");
   }
   output.push_str(&format!("#[derive({})]\n", derives.join(", ")));
-  output.push_str(&format!("pub struct {}{} {{\n", name, lt));
+  output.push_str(&format!("{} struct {}{} {{\n", vis, name, lt));
   for (f, meta) in fields.iter().zip(&field_metas) {
     emit_doc_comment(output, &f.documentation);
     emit_deprecated(output, &f.decorators);
-    output.push_str(&format!("  pub {}: {},\n", meta.fname, meta.cow_type));
+    output.push_str(&format!("  {} {}: {},\n", vis, meta.fname, meta.cow_type));
   }
   output.push_str("}\n\n");
 
   // ── Type alias ────────────────────────────────────────────────
   if has_lifetime {
-    output.push_str(&format!("pub type {}Owned = {}<'static>;\n\n", name, name));
+    output.push_str(&format!("{} type {}Owned = {}<'static>;\n\n", vis, name, name));
   }
 
   // ── new() constructor + FIXED_ENCODED_SIZE ──────────────────────
