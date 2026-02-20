@@ -123,13 +123,13 @@ pub fn generate(
     match meta.wrap {
       FieldWrap::Boxed => {
         output.push_str(&format!(
-          "  {} {}: Option<Box<{}>>,\n",
+          "  {} {}: ::core::option::Option<alloc::boxed::Box<{}>>,\n",
           vis, meta.fname, meta.cow_type
         ));
       }
       _ => {
         output.push_str(&format!(
-          "  {} {}: Option<{}>,\n",
+          "  {} {}: ::core::option::Option<{}>,\n",
           vis, meta.fname, meta.cow_type
         ));
       }
@@ -155,7 +155,7 @@ pub fn generate(
         FieldWrap::Boxed => {
           if meta.needs_owned {
             output.push_str(&format!(
-              "      {}: self.{}.map(|v| Box::new(v.into_owned())),\n",
+              "      {}: self.{}.map(|v| alloc::boxed::Box::new(v.into_owned())),\n",
               meta.fname, meta.fname
             ));
           } else {
@@ -319,7 +319,7 @@ pub fn generate(
       FieldWrap::Boxed => {
         let read_expr = type_mapper::read_expression(meta.td, "reader", analysis)?;
         output.push_str(&format!(
-          "        {} => msg.{} = Some(Box::new({}?)),\n",
+          "        {} => msg.{} = Some(alloc::boxed::Box::new({}?)),\n",
           meta.tag, meta.fname, read_expr
         ));
       }
