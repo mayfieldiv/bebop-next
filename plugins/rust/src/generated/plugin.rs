@@ -13,20 +13,14 @@
 
 extern crate alloc;
 use super::descriptor::*;
-use alloc::borrow::Cow;
-use alloc::boxed::Box;
-use alloc::string::String as StdString;
 use alloc::vec;
-use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use bebop_runtime::serde;
 use bebop_runtime::wire_size as wire;
-use bebop_runtime::HashMap;
 use bebop_runtime::{
   bf16, f16, BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopReader, BebopTimestamp,
-  BebopWriter, DecodeError, Uuid,
+  BebopWriter, DecodeError,
 };
-use core::mem::size_of;
 
 // @@bebop_insertion_point(imports)
 
@@ -40,13 +34,18 @@ pub struct Version<'buf> {
   pub minor: i32,
   pub patch: i32,
   /// Pre-release suffix (`alpha.1`, `rc.2`). Empty for stable releases.
-  pub suffix: Cow<'buf, str>,
+  pub suffix: alloc::borrow::Cow<'buf, str>,
 }
 
 pub type VersionOwned = Version<'static>;
 
 impl<'buf> Version<'buf> {
-  pub fn new(major: i32, minor: i32, patch: i32, suffix: impl Into<Cow<'buf, str>>) -> Self {
+  pub fn new(
+    major: i32,
+    minor: i32,
+    patch: i32,
+    suffix: impl Into<alloc::borrow::Cow<'buf, str>>,
+  ) -> Self {
     let suffix = suffix.into();
     Self {
       major,
@@ -63,7 +62,7 @@ impl<'buf> Version<'buf> {
       major: self.major,
       minor: self.minor,
       patch: self.patch,
-      suffix: Cow::Owned(self.suffix.into_owned()),
+      suffix: alloc::borrow::Cow::Owned(self.suffix.into_owned()),
     }
   }
 }
@@ -80,9 +79,9 @@ impl<'buf> BebopEncode for Version<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += size_of::<i32>();
-    size += size_of::<i32>();
-    size += size_of::<i32>();
+    size += ::core::mem::size_of::<i32>();
+    size += ::core::mem::size_of::<i32>();
+    size += ::core::mem::size_of::<i32>();
     size += wire::string_size(self.suffix.len());
     size
   }
@@ -94,7 +93,7 @@ impl<'buf> BebopDecode<'buf> for Version<'buf> {
     let major = reader.read_i32()?;
     let minor = reader.read_i32()?;
     let patch = reader.read_i32()?;
-    let suffix = Cow::Borrowed(reader.read_str()?);
+    let suffix = alloc::borrow::Cow::Borrowed(reader.read_str()?);
     // @@bebop_insertion_point(decode_end:Version)
     Ok(Version {
       major,
@@ -118,22 +117,24 @@ impl<'buf> Version<'buf> {
 pub struct CodeGeneratorRequest<'buf> {
   /// The .bop files to generate code for (explicitly listed on command line).
   /// Each file's descriptor is included in `schemas`.
-  pub files_to_generate: Option<Vec<Cow<'buf, str>>>,
+  pub files_to_generate: ::core::option::Option<alloc::vec::Vec<alloc::borrow::Cow<'buf, str>>>,
   /// Generator-specific parameter from `--${NAME}_opt=PARAM` or embedded
   /// in the output path. Format is plugin-defined (commonly key=value pairs).
-  pub parameter: Option<Cow<'buf, str>>,
+  pub parameter: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Version of the compiler invoking the plugin. Use to detect
   /// incompatibilities or enable version-specific behavior.
-  pub compiler_version: Option<Version<'buf>>,
+  pub compiler_version: ::core::option::Option<Version<'buf>>,
   /// SchemaDescriptors for all files in `files_to_generate` plus their
   /// imports. Schemas appear in topological order: dependencies before
   /// dependents. Type FQNs are fully resolved.
   /// Iterate schemas, check if `schema.path` is in `files_to_generate`,
   /// and generate code only for those files. The rest are for type resolution.
-  pub schemas: Option<Vec<SchemaDescriptor<'buf>>>,
+  pub schemas: ::core::option::Option<alloc::vec::Vec<SchemaDescriptor<'buf>>>,
   /// Host compiler options passed to bebopc. Use to adjust output based
   /// on global settings.
-  pub host_options: Option<HashMap<Cow<'buf, str>, Cow<'buf, str>>>,
+  pub host_options: ::core::option::Option<
+    ::bebop_runtime::HashMap<alloc::borrow::Cow<'buf, str>, alloc::borrow::Cow<'buf, str>>,
+  >,
 }
 
 pub type CodeGeneratorRequestOwned = CodeGeneratorRequest<'static>;
@@ -143,17 +144,24 @@ impl<'buf> CodeGeneratorRequest<'buf> {
     CodeGeneratorRequest {
       files_to_generate: self.files_to_generate.map(|v| {
         v.into_iter()
-          .map(|_e| Cow::Owned(_e.into_owned()))
+          .map(|_e| alloc::borrow::Cow::Owned(_e.into_owned()))
           .collect()
       }),
-      parameter: self.parameter.map(|v| Cow::Owned(v.into_owned())),
+      parameter: self
+        .parameter
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
       compiler_version: self.compiler_version.map(|v| v.into_owned()),
       schemas: self
         .schemas
         .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
       host_options: self.host_options.map(|v| {
         v.into_iter()
-          .map(|(_k, _v)| (Cow::Owned(_k.into_owned()), Cow::Owned(_v.into_owned())))
+          .map(|(_k, _v)| {
+            (
+              alloc::borrow::Cow::Owned(_k.into_owned()),
+              alloc::borrow::Cow::Owned(_v.into_owned()),
+            )
+          })
           .collect()
       }),
     }
@@ -234,16 +242,17 @@ impl<'buf> BebopDecode<'buf> for CodeGeneratorRequest<'buf> {
       }
       match tag {
         1 => {
-          msg.files_to_generate = Some(reader.read_array(|_r| Ok(Cow::Borrowed(_r.read_str()?)))?)
+          msg.files_to_generate =
+            Some(reader.read_array(|_r| Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?)))?)
         }
-        2 => msg.parameter = Some(Cow::Borrowed(reader.read_str()?)),
+        2 => msg.parameter = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         3 => msg.compiler_version = Some(Version::decode(reader)?),
         4 => msg.schemas = Some(reader.read_array(|_r| SchemaDescriptor::decode(_r))?),
         5 => {
           msg.host_options = Some(reader.read_map(|_r| {
             Ok((
-              Ok(Cow::Borrowed(_r.read_str()?))?,
-              Ok(Cow::Borrowed(_r.read_str()?))?,
+              Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))?,
+              Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))?,
             ))
           })?)
         }
@@ -272,7 +281,7 @@ pub enum DiagnosticSeverity {
   Hint = 3,
 }
 
-impl core::convert::TryFrom<u8> for DiagnosticSeverity {
+impl ::core::convert::TryFrom<u8> for DiagnosticSeverity {
   type Error = DecodeError;
   fn try_from(value: u8) -> Result<Self, DecodeError> {
     match value {
@@ -326,16 +335,16 @@ impl<'buf> BebopDecode<'buf> for DiagnosticSeverity {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct Diagnostic<'buf> {
-  pub severity: Option<DiagnosticSeverity>,
+  pub severity: ::core::option::Option<DiagnosticSeverity>,
   /// Human-readable diagnostic text.
-  pub text: Option<Cow<'buf, str>>,
+  pub text: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Optional hint for fixing the issue.
-  pub hint: Option<Cow<'buf, str>>,
+  pub hint: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Source file path this diagnostic relates to.
-  pub file: Option<Cow<'buf, str>>,
+  pub file: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Source location as `[start_line, start_col, end_line, end_col]`.
   /// 1-based. Absent if not applicable.
-  pub span: Option<[i32; 4]>,
+  pub span: ::core::option::Option<[i32; 4]>,
 }
 
 pub type DiagnosticOwned = Diagnostic<'static>;
@@ -344,9 +353,9 @@ impl<'buf> Diagnostic<'buf> {
   pub fn into_owned(self) -> DiagnosticOwned {
     Diagnostic {
       severity: self.severity,
-      text: self.text.map(|v| Cow::Owned(v.into_owned())),
-      hint: self.hint.map(|v| Cow::Owned(v.into_owned())),
-      file: self.file.map(|v| Cow::Owned(v.into_owned())),
+      text: self.text.map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      hint: self.hint.map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      file: self.file.map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
       span: self.span,
     }
   }
@@ -401,7 +410,7 @@ impl<'buf> BebopEncode for Diagnostic<'buf> {
       size += wire::tagged_size(wire::string_size(v.len()));
     }
     if let Some(ref v) = self.span {
-      size += wire::tagged_size(4usize * (size_of::<i32>()));
+      size += wire::tagged_size(4usize * (::core::mem::size_of::<i32>()));
     }
     size
   }
@@ -421,9 +430,9 @@ impl<'buf> BebopDecode<'buf> for Diagnostic<'buf> {
       }
       match tag {
         1 => msg.severity = Some(DiagnosticSeverity::decode(reader)?),
-        2 => msg.text = Some(Cow::Borrowed(reader.read_str()?)),
-        3 => msg.hint = Some(Cow::Borrowed(reader.read_str()?)),
-        4 => msg.file = Some(Cow::Borrowed(reader.read_str()?)),
+        2 => msg.text = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        3 => msg.hint = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        4 => msg.file = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         5 => msg.span = Some(reader.read_fixed_array::<i32, 4>()?),
         _ => {
           reader.skip(end - reader.position())?;
@@ -451,7 +460,7 @@ pub struct GeneratedFile<'buf> {
   /// be generated by a prior plugin in the same invocation).
   /// When omitted, content appends to the previous file. Allows generators
   /// to stream large files in chunks.
-  pub name: Option<Cow<'buf, str>>,
+  pub name: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Insertion point name for extending another plugin's output.
   /// Target file must contain:
   /// ```
@@ -460,13 +469,13 @@ pub struct GeneratedFile<'buf> {
   /// Content inserts above this marker. Multiple insertions to the same
   /// point appear in plugin execution order.
   /// When set, `name` must also be set to identify the target file.
-  pub insertion_point: Option<Cow<'buf, str>>,
+  pub insertion_point: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// File contents (complete file or insertion fragment).
   /// For insertions, typically includes a trailing newline.
-  pub content: Option<Cow<'buf, str>>,
+  pub content: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Source mapping connecting generated code to source schemas.
   /// Optional; enables IDE features like go-to-definition.
-  pub generated_code_info: Option<SourceCodeInfo<'buf>>,
+  pub generated_code_info: ::core::option::Option<SourceCodeInfo<'buf>>,
 }
 
 pub type GeneratedFileOwned = GeneratedFile<'static>;
@@ -474,9 +483,13 @@ pub type GeneratedFileOwned = GeneratedFile<'static>;
 impl<'buf> GeneratedFile<'buf> {
   pub fn into_owned(self) -> GeneratedFileOwned {
     GeneratedFile {
-      name: self.name.map(|v| Cow::Owned(v.into_owned())),
-      insertion_point: self.insertion_point.map(|v| Cow::Owned(v.into_owned())),
-      content: self.content.map(|v| Cow::Owned(v.into_owned())),
+      name: self.name.map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      insertion_point: self
+        .insertion_point
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      content: self
+        .content
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
       generated_code_info: self.generated_code_info.map(|v| v.into_owned()),
     }
   }
@@ -543,9 +556,9 @@ impl<'buf> BebopDecode<'buf> for GeneratedFile<'buf> {
         break;
       }
       match tag {
-        1 => msg.name = Some(Cow::Borrowed(reader.read_str()?)),
-        2 => msg.insertion_point = Some(Cow::Borrowed(reader.read_str()?)),
-        3 => msg.content = Some(Cow::Borrowed(reader.read_str()?)),
+        1 => msg.name = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        2 => msg.insertion_point = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
+        3 => msg.content = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         4 => msg.generated_code_info = Some(SourceCodeInfo::decode(reader)?),
         _ => {
           reader.skip(end - reader.position())?;
@@ -579,13 +592,13 @@ pub struct CodeGeneratorResponse<'buf> {
   /// with status zero.
   /// For plugin bugs or environment problems (can't read input, out of
   /// memory), write to stderr and exit non-zero instead.
-  pub error: Option<Cow<'buf, str>>,
+  pub error: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// Generated files to write to the output directory.
   /// Written in array order. Later files with `insertion_point` can
   /// extend earlier files in the same response.
-  pub files: Option<Vec<GeneratedFile<'buf>>>,
+  pub files: ::core::option::Option<alloc::vec::Vec<GeneratedFile<'buf>>>,
   /// Diagnostics to report. Displayed even on success (for warnings/info).
-  pub diagnostics: Option<Vec<Diagnostic<'buf>>>,
+  pub diagnostics: ::core::option::Option<alloc::vec::Vec<Diagnostic<'buf>>>,
 }
 
 pub type CodeGeneratorResponseOwned = CodeGeneratorResponse<'static>;
@@ -593,7 +606,9 @@ pub type CodeGeneratorResponseOwned = CodeGeneratorResponse<'static>;
 impl<'buf> CodeGeneratorResponse<'buf> {
   pub fn into_owned(self) -> CodeGeneratorResponseOwned {
     CodeGeneratorResponse {
-      error: self.error.map(|v| Cow::Owned(v.into_owned())),
+      error: self
+        .error
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
       files: self
         .files
         .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
@@ -658,7 +673,7 @@ impl<'buf> BebopDecode<'buf> for CodeGeneratorResponse<'buf> {
         break;
       }
       match tag {
-        1 => msg.error = Some(Cow::Borrowed(reader.read_str()?)),
+        1 => msg.error = Some(alloc::borrow::Cow::Borrowed(reader.read_str()?)),
         2 => msg.files = Some(reader.read_array(|_r| GeneratedFile::decode(_r))?),
         3 => msg.diagnostics = Some(reader.read_array(|_r| Diagnostic::decode(_r))?),
         _ => {

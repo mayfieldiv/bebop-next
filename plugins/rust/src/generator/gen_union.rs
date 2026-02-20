@@ -60,7 +60,7 @@ pub fn generate(
 
   let vis = visibility_keyword(def, options);
 
-  // Unions always have lifetime (Unknown variant uses Cow<'buf, [u8]>)
+  // Unions always have lifetime (Unknown variant uses alloc::borrow::Cow<'buf, [u8]>)
   let lt = "<'buf>";
 
   // ── Doc comment + deprecated ──────────────────────────────────
@@ -94,7 +94,7 @@ pub fn generate(
   }
   // Unknown variant for forward compatibility
   output.push_str("  #[cfg_attr(feature = \"serde\", serde(skip))]\n");
-  output.push_str("  Unknown(u8, Cow<'buf, [u8]>),\n");
+  output.push_str("  Unknown(u8, alloc::borrow::Cow<'buf, [u8]>),\n");
   output.push_str("}\n\n");
 
   // ── Type alias ────────────────────────────────────────────────
@@ -125,7 +125,7 @@ pub fn generate(
     }
   }
   output.push_str(&format!(
-    "      Self::Unknown(disc, data) => {}::Unknown(disc, Cow::Owned(data.into_owned())),\n",
+    "      Self::Unknown(disc, data) => {}::Unknown(disc, alloc::borrow::Cow::Owned(data.into_owned())),\n",
     name
   ));
   output.push_str("    }\n");
@@ -206,7 +206,7 @@ pub fn generate(
   output.push_str("      _ => {\n");
   output.push_str("        let remaining = length - (reader.position() - start);\n");
   output.push_str("        let data = reader.read_raw_bytes(remaining)?;\n");
-  output.push_str("        Ok(Self::Unknown(discriminator, Cow::Borrowed(data)))\n");
+  output.push_str("        Ok(Self::Unknown(discriminator, alloc::borrow::Cow::Borrowed(data)))\n");
   output.push_str("      }\n");
   output.push_str("    };\n");
   output.push_str(&format!(

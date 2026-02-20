@@ -108,7 +108,7 @@ fn generate_enum(
 
   // TryFrom<base_type> for Name
   output.push_str(&format!(
-    "impl core::convert::TryFrom<{}> for {} {{\n",
+    "impl ::core::convert::TryFrom<{}> for {} {{\n",
     base_type, name
   ));
   output.push_str("  type Error = DecodeError;\n");
@@ -280,35 +280,35 @@ fn generate_flags(
 
   // Bitwise operator impls in compact single-line style.
   output.push_str(&format!(
-    "impl core::ops::BitOr for {} {{ type Output = Self; fn bitor(self, rhs: Self) -> Self {{ Self(self.0 | rhs.0) }} }}\n",
+    "impl ::core::ops::BitOr for {} {{ type Output = Self; fn bitor(self, rhs: Self) -> Self {{ Self(self.0 | rhs.0) }} }}\n",
     name
   ));
   output.push_str(&format!(
-    "impl core::ops::BitOrAssign for {} {{ fn bitor_assign(&mut self, rhs: Self) {{ self.0 |= rhs.0; }} }}\n",
+    "impl ::core::ops::BitOrAssign for {} {{ fn bitor_assign(&mut self, rhs: Self) {{ self.0 |= rhs.0; }} }}\n",
     name
   ));
   output.push_str(&format!(
-    "impl core::ops::BitAnd for {} {{ type Output = Self; fn bitand(self, rhs: Self) -> Self {{ Self(self.0 & rhs.0) }} }}\n",
+    "impl ::core::ops::BitAnd for {} {{ type Output = Self; fn bitand(self, rhs: Self) -> Self {{ Self(self.0 & rhs.0) }} }}\n",
     name
   ));
   output.push_str(&format!(
-    "impl core::ops::BitAndAssign for {} {{ fn bitand_assign(&mut self, rhs: Self) {{ self.0 &= rhs.0; }} }}\n",
+    "impl ::core::ops::BitAndAssign for {} {{ fn bitand_assign(&mut self, rhs: Self) {{ self.0 &= rhs.0; }} }}\n",
     name
   ));
   output.push_str(&format!(
-    "impl core::ops::BitXor for {} {{ type Output = Self; fn bitxor(self, rhs: Self) -> Self {{ Self(self.0 ^ rhs.0) }} }}\n",
+    "impl ::core::ops::BitXor for {} {{ type Output = Self; fn bitxor(self, rhs: Self) -> Self {{ Self(self.0 ^ rhs.0) }} }}\n",
     name
   ));
   output.push_str(&format!(
-    "impl core::ops::BitXorAssign for {} {{ fn bitxor_assign(&mut self, rhs: Self) {{ self.0 ^= rhs.0; }} }}\n",
+    "impl ::core::ops::BitXorAssign for {} {{ fn bitxor_assign(&mut self, rhs: Self) {{ self.0 ^= rhs.0; }} }}\n",
     name
   ));
   output.push_str(&format!(
-    "impl core::ops::Not for {} {{ type Output = Self; fn not(self) -> Self {{ Self(!self.0) }} }}\n",
+    "impl ::core::ops::Not for {} {{ type Output = Self; fn not(self) -> Self {{ Self(!self.0) }} }}\n",
     name
   ));
   output.push_str(&format!(
-    "impl core::ops::Sub for {} {{ type Output = Self; fn sub(self, rhs: Self) -> Self {{ Self(self.0 & !rhs.0) }} }}\n\n",
+    "impl ::core::ops::Sub for {} {{ type Output = Self; fn sub(self, rhs: Self) -> Self {{ Self(self.0 & !rhs.0) }} }}\n\n",
     name
   ));
 
