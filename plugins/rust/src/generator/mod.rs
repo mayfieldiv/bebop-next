@@ -15,12 +15,66 @@ use crate::generated::*;
 
 /// Return the Rust visibility keyword for a definition.
 ///
-/// `Visibility::Local` → `"pub(crate)"`, everything else → `"pub"`.
-pub fn visibility_keyword(def: &DefinitionDescriptor) -> &'static str {
-  if def.visibility == Some(Visibility::Local) {
-    "pub(crate)"
-  } else {
-    "pub"
+/// `Visibility::Local`/`Export` always win; `Default` uses generator options.
+pub fn visibility_keyword(def: &DefinitionDescriptor, options: &GeneratorOptions) -> &'static str {
+  match def.visibility {
+    Some(Visibility::Local) => "pub(crate)",
+    Some(Visibility::Export) => "pub",
+    Some(Visibility::Default) | None => options.default_visibility.keyword(),
+  }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DefaultVisibility {
+  Public,
+  Crate,
+}
+
+impl DefaultVisibility {
+  pub fn keyword(self) -> &'static str {
+    match self {
+      Self::Public => "pub",
+      Self::Crate => "pub(crate)",
+    }
+  }
+
+  fn parse(value: &str) -> Result<Self, GeneratorError> {
+    if value.eq_ignore_ascii_case("public") {
+      Ok(Self::Public)
+    } else if value.eq_ignore_ascii_case("crate") {
+      Ok(Self::Crate)
+    } else {
+      Err(GeneratorError::InvalidOption(format!(
+        "invalid host option Visibility={value}; expected public|crate"
+      )))
+    }
+  }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GeneratorOptions {
+  pub default_visibility: DefaultVisibility,
+}
+
+impl Default for GeneratorOptions {
+  fn default() -> Self {
+    Self {
+      default_visibility: DefaultVisibility::Public,
+    }
+  }
+}
+
+impl GeneratorOptions {
+  pub fn from_host_options(
+    host_options: Option<&HashMap<Cow<'_, str>, Cow<'_, str>>>,
+  ) -> Result<Self, GeneratorError> {
+    let mut options = Self::default();
+    if let Some(host_options) = host_options {
+      if let Some(value) = host_options.get("Visibility") {
+        options.default_visibility = DefaultVisibility::parse(value.as_ref())?;
+      }
+    }
+    Ok(options)
   }
 }
 
@@ -446,11 +500,22 @@ fn type_uses_maps(ty: &TypeDescriptor) -> bool {
 
 pub struct RustGenerator {
   pub compiler_version: Option<VersionOwned>,
+  pub options: GeneratorOptions,
 }
 
 impl RustGenerator {
   pub fn new(compiler_version: Option<VersionOwned>) -> Self {
-    Self { compiler_version }
+    Self::with_options(compiler_version, GeneratorOptions::default())
+  }
+
+  pub fn with_options(
+    compiler_version: Option<VersionOwned>,
+    options: GeneratorOptions,
+  ) -> Self {
+    Self {
+      compiler_version,
+      options,
+    }
   }
 
   /// Generate Rust code for a single schema.
@@ -511,7 +576,7 @@ impl RustGenerator {
     output.push_str("// @@bebop_insertion_point(imports)\n\n");
 
     for def in definitions {
-      Self::generate_definition(def, &mut output, 0, analysis)?;
+      self.generate_definition(def, &mut output, 0, analysis)?;
     }
 
     output.push_str("// @@bebop_insertion_point(eof)\n");
@@ -520,6 +585,7 @@ impl RustGenerator {
   }
 
   fn generate_definition(
+    &self,
     def: &DefinitionDescriptor,
     output: &mut String,
     depth: usize,
@@ -542,11 +608,11 @@ impl RustGenerator {
     );
 
     match kind {
-      DefinitionKind::Enum => gen_enum::generate(def, output, analysis)?,
-      DefinitionKind::Struct => gen_struct::generate(def, output, analysis)?,
-      DefinitionKind::Message => gen_message::generate(def, output, analysis)?,
-      DefinitionKind::Union => gen_union::generate(def, output, analysis)?,
-      DefinitionKind::Const => gen_const::generate(def, output)?,
+      DefinitionKind::Enum => gen_enum::generate(def, output, &self.options, analysis)?,
+      DefinitionKind::Struct => gen_struct::generate(def, output, &self.options, analysis)?,
+      DefinitionKind::Message => gen_message::generate(def, output, &self.options, analysis)?,
+      DefinitionKind::Union => gen_union::generate(def, output, &self.options, analysis)?,
+      DefinitionKind::Const => gen_const::generate(def, output, &self.options)?,
       DefinitionKind::Service => gen_service::generate(def, output)?,
       DefinitionKind::Decorator => { /* Skip decorator definitions */ }
       DefinitionKind::Unknown => {
@@ -560,7 +626,7 @@ impl RustGenerator {
     // Process nested definitions
     if let Some(ref nested) = def.nested {
       for child in nested {
-        Self::generate_definition(child, output, depth + 1, analysis)?;
+        self.generate_definition(child, output, depth + 1, analysis)?;
       }
     }
 
@@ -610,7 +676,7 @@ pub fn emit_deprecated(output: &mut String, decorators: &Option<Vec<DecoratorUsa
 #[cfg(test)]
 mod tests {
   use super::*;
-  use std::borrow::Cow;
+  use std::{borrow::Cow, collections::HashMap};
 
   use crate::generated::{
     ConstDef, DefinitionDescriptor, DefinitionKind, EnumDef, EnumMemberDescriptor, FieldDescriptor,
@@ -976,6 +1042,62 @@ mod tests {
       .expect("generator should succeed");
     assert!(output.contains("pub struct A<'buf>"));
     assert!(output.contains("pub struct B<'buf>"));
+  }
+
+  #[test]
+  fn parses_visibility_host_option() {
+    let mut host_options = HashMap::new();
+    host_options.insert(Cow::Borrowed("Visibility"), Cow::Borrowed("crate"));
+    let options = GeneratorOptions::from_host_options(Some(&host_options)).unwrap();
+    assert_eq!(options.default_visibility, DefaultVisibility::Crate);
+  }
+
+  #[test]
+  fn rejects_invalid_visibility_host_option() {
+    let mut host_options = HashMap::new();
+    host_options.insert(Cow::Borrowed("Visibility"), Cow::Borrowed("private"));
+    let err = GeneratorOptions::from_host_options(Some(&host_options)).unwrap_err();
+    assert!(matches!(err, GeneratorError::InvalidOption(_)));
+  }
+
+  #[test]
+  fn applies_default_visibility_option_to_implicit_visibility() {
+    let payload = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Struct),
+      name: Some(Cow::Borrowed("Payload")),
+      fqn: Some(Cow::Borrowed("test.Payload")),
+      // `None` should behave like `Visibility::Default`.
+      visibility: None,
+      struct_def: Some(StructDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("id")),
+          r#type: Some(scalar_type(TypeKind::Int32)),
+          index: Some(0),
+          ..Default::default()
+        }]),
+        fixed_size: Some(4),
+        ..Default::default()
+      }),
+      ..Default::default()
+    };
+
+    let schema = SchemaDescriptor {
+      path: Some(Cow::Borrowed("default_visibility.bop")),
+      definitions: Some(vec![payload]),
+      ..Default::default()
+    };
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::with_options(
+      None,
+      GeneratorOptions {
+        default_visibility: DefaultVisibility::Crate,
+      },
+    )
+    .generate(&schema, &[], &analysis)
+    .expect("generator should succeed");
+
+    assert!(output.contains("pub(crate) struct Payload"));
+    assert!(output.contains("  pub(crate) id: i32,"));
   }
 
   #[test]

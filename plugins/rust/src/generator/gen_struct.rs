@@ -3,7 +3,9 @@ use crate::generated::{DefinitionDescriptor, TypeDescriptor};
 
 use super::naming::{field_name, type_name};
 use super::type_mapper;
-use super::{emit_deprecated, emit_doc_comment, visibility_keyword, LifetimeAnalysis};
+use super::{
+  emit_deprecated, emit_doc_comment, visibility_keyword, GeneratorOptions, LifetimeAnalysis,
+};
 
 struct StructFieldMeta<'a> {
   fname: String,
@@ -16,6 +18,7 @@ struct StructFieldMeta<'a> {
 pub fn generate(
   def: &DefinitionDescriptor,
   output: &mut String,
+  options: &GeneratorOptions,
   analysis: &LifetimeAnalysis,
 ) -> Result<(), GeneratorError> {
   let name = type_name(def.name.as_deref().unwrap_or("<unnamed>"));
@@ -27,7 +30,7 @@ pub fn generate(
     .ok_or_else(|| GeneratorError::MalformedDefinition("struct missing struct_def".into()))?;
 
   let fields = struct_def.fields.as_deref().unwrap_or(&[]);
-  let vis = visibility_keyword(def);
+  let vis = visibility_keyword(def, options);
   let has_lifetime = analysis.lifetime_fqns.contains(fqn);
 
   let lt = if has_lifetime { "<'buf>" } else { "" };
@@ -77,7 +80,10 @@ pub fn generate(
 
   // ── Type alias ────────────────────────────────────────────────
   if has_lifetime {
-    output.push_str(&format!("{} type {}Owned = {}<'static>;\n\n", vis, name, name));
+    output.push_str(&format!(
+      "{} type {}Owned = {}<'static>;\n\n",
+      vis, name, name
+    ));
   }
 
   // ── new() constructor + FIXED_ENCODED_SIZE ──────────────────────

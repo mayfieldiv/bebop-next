@@ -9,7 +9,7 @@ use std::io::{self, Read, Write};
 use bebop_runtime::{BebopDecode, BebopEncode};
 use error::GeneratorError;
 use generated::{CodeGeneratorRequest, CodeGeneratorResponse, GeneratedFile};
-use generator::{LifetimeAnalysis, RustGenerator};
+use generator::{GeneratorOptions, LifetimeAnalysis, RustGenerator};
 use wire::{BebopReader, BebopWriter};
 
 fn read_all_stdin() -> io::Result<Vec<u8>> {
@@ -77,7 +77,12 @@ fn run() -> Result<CodeGeneratorResponse<'static>, GeneratorError> {
     .filter_map(|p| std::path::Path::new(p).file_stem().and_then(|s| s.to_str()))
     .collect();
 
-  let generator = RustGenerator::new(request.compiler_version);
+  let generator_options = GeneratorOptions::from_host_options(request.host_options.as_ref())?;
+  eprintln!(
+    "[bebopc-gen-rust] default visibility: {}",
+    generator_options.default_visibility.keyword()
+  );
+  let generator = RustGenerator::with_options(request.compiler_version, generator_options);
 
   // Build lifetime analysis across all schemas so cross-schema type references resolve
   let analysis = LifetimeAnalysis::build_all(&schemas);

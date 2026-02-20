@@ -2,12 +2,15 @@ use crate::error::GeneratorError;
 use crate::generated::DefinitionDescriptor;
 
 use super::naming::{fqn_to_type_name, type_name};
-use super::{emit_deprecated, emit_doc_comment, visibility_keyword, LifetimeAnalysis};
+use super::{
+  emit_deprecated, emit_doc_comment, visibility_keyword, GeneratorOptions, LifetimeAnalysis,
+};
 
 /// Generate Rust code for a union definition.
 pub fn generate(
   def: &DefinitionDescriptor,
   output: &mut String,
+  options: &GeneratorOptions,
   analysis: &LifetimeAnalysis,
 ) -> Result<(), GeneratorError> {
   let name = type_name(def.name.as_deref().unwrap_or("<unnamed>"));
@@ -55,7 +58,7 @@ pub fn generate(
     })
     .collect();
 
-  let vis = visibility_keyword(def);
+  let vis = visibility_keyword(def, options);
 
   // Unions always have lifetime (Unknown variant uses Cow<'buf, [u8]>)
   let lt = "<'buf>";
@@ -91,7 +94,10 @@ pub fn generate(
   output.push_str("}\n\n");
 
   // ── Type alias ────────────────────────────────────────────────
-  output.push_str(&format!("{} type {}Owned = {}<'static>;\n\n", vis, name, name));
+  output.push_str(&format!(
+    "{} type {}Owned = {}<'static>;\n\n",
+    vis, name, name
+  ));
 
   // ── into_owned() ──────────────────────────────────────────────
   output.push_str(&format!("impl<'buf> {}<'buf> {{\n", name));

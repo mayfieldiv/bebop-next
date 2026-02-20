@@ -9,6 +9,7 @@ pub enum GeneratorError {
   EmptyInput,
   MalformedDefinition(String),
   MalformedType(String),
+  InvalidOption(String),
 }
 
 impl From<DecodeError> for GeneratorError {
@@ -31,6 +32,7 @@ impl fmt::Display for GeneratorError {
       Self::EmptyInput => write!(f, "empty input on stdin"),
       Self::MalformedDefinition(msg) => write!(f, "malformed definition: {}", msg),
       Self::MalformedType(msg) => write!(f, "malformed type: {}", msg),
+      Self::InvalidOption(msg) => write!(f, "invalid option: {}", msg),
     }
   }
 }
