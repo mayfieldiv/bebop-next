@@ -1,6 +1,6 @@
 # Implement Visibility (pub vs pub(crate)) Support
 
-- [ ] Respect definition visibility in generated code #rust-plugin 🔽
+- [x] Respect definition visibility in generated code #rust-plugin 🔽
 
 The descriptor has a `Visibility` enum (`Default`, `Export`, `Local`) on each `DefinitionDescriptor`. The whitepaper specifies:
 - Top-level definitions default to exported (`pub`)
