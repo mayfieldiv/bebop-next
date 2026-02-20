@@ -1,6 +1,6 @@
 # Rename _cow Functions After Dead Code Removal
 
-- [ ] Rename `_cow` suffixed functions to their canonical names #rust-plugin #cleanup 🔽 🆔 rename-cow ⛔ dead-code
+- [x] Rename `_cow` suffixed functions to their canonical names #rust-plugin #cleanup 🔽 🆔 rename-cow ⛔ dead-code
 
 After [[dead-code-cleanup]] removes the old non-Cow functions, the `_cow` suffix on the surviving functions becomes meaningless:
 
@@ -13,3 +13,9 @@ The `_cow` suffix was a disambiguation during the refactor. Once the old functio
 
 ## Scope
 `plugins/rust/src/generator/type_mapper.rs` — function renames + update all call sites across the generator modules.
+
+## Done
+- Renamed `rust_type_cow()` to `rust_type()`.
+- Renamed `read_expression_cow()` to `read_expression()`.
+- Renamed `write_expression_cow()` to `write_expression()`.
+- Updated all call sites in `gen_struct.rs` and `gen_message.rs`.
