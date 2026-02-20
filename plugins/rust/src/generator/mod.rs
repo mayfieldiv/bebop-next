@@ -8,7 +8,7 @@ pub mod naming;
 pub mod type_mapper;
 
 use std::borrow::Cow;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::error::GeneratorError;
 use crate::generated::*;
@@ -19,6 +19,10 @@ pub struct LifetimeAnalysis {
   pub enum_fqns: HashSet<String>,
   /// FQNs of types that need `'buf` (contain strings, byte arrays, or unions).
   pub lifetime_fqns: HashSet<String>,
+  /// FQNs of types that can derive `Eq` (no floating-point fields transitively).
+  pub eq_fqns: HashSet<String>,
+  /// FQNs of types that can derive `Hash` (no floating-point or map fields transitively).
+  pub hash_fqns: HashSet<String>,
 }
 
 impl LifetimeAnalysis {
@@ -28,6 +32,8 @@ impl LifetimeAnalysis {
     let mut analysis = LifetimeAnalysis {
       enum_fqns: HashSet::new(),
       lifetime_fqns: HashSet::new(),
+      eq_fqns: HashSet::new(),
+      hash_fqns: HashSet::new(),
     };
     for schema in schemas {
       let definitions = schema.definitions.as_deref().unwrap_or(&[]);
@@ -35,6 +41,7 @@ impl LifetimeAnalysis {
         analysis.analyze_def(def);
       }
     }
+    analysis.analyze_trait_derives(schemas);
     analysis
   }
 
@@ -134,6 +141,231 @@ impl LifetimeAnalysis {
         }
       }
       _ => false,
+    }
+  }
+
+  /// Returns true when this type can derive `Eq`.
+  pub fn can_derive_eq(&self, fqn: &str) -> bool {
+    self.eq_fqns.contains(fqn)
+  }
+
+  /// Returns true when this type can derive `Hash`.
+  pub fn can_derive_hash(&self, fqn: &str) -> bool {
+    self.hash_fqns.contains(fqn)
+  }
+
+  fn analyze_trait_derives(&mut self, schemas: &[SchemaDescriptor]) {
+    #[derive(Clone, Copy, Default)]
+    struct TypeTraits {
+      has_float: bool,
+      has_map: bool,
+    }
+
+    impl TypeTraits {
+      fn combine(self, other: Self) -> Self {
+        Self {
+          has_float: self.has_float || other.has_float,
+          has_map: self.has_map || other.has_map,
+        }
+      }
+    }
+
+    fn kind_supports_derives(kind: DefinitionKind) -> bool {
+      matches!(
+        kind,
+        DefinitionKind::Enum
+          | DefinitionKind::Struct
+          | DefinitionKind::Message
+          | DefinitionKind::Union
+      )
+    }
+
+    fn collect_definitions<'a>(
+      defs: &'a [DefinitionDescriptor<'a>],
+      def_by_fqn: &mut HashMap<String, &'a DefinitionDescriptor<'a>>,
+    ) {
+      for def in defs {
+        if let Some(fqn) = def.fqn.as_deref() {
+          def_by_fqn.insert(fqn.to_string(), def);
+        }
+        if let Some(nested) = def.nested.as_deref() {
+          collect_definitions(nested, def_by_fqn);
+        }
+      }
+    }
+
+    fn merge_option(acc: TypeTraits, next: Option<TypeTraits>) -> TypeTraits {
+      if let Some(next) = next {
+        acc.combine(next)
+      } else {
+        acc
+      }
+    }
+
+    fn type_traits<'a>(
+      td: &TypeDescriptor<'a>,
+      def_by_fqn: &HashMap<String, &'a DefinitionDescriptor<'a>>,
+      memo: &mut HashMap<String, TypeTraits>,
+      visiting: &mut HashSet<String>,
+    ) -> TypeTraits {
+      let kind = match td.kind {
+        Some(k) => k,
+        None => return TypeTraits::default(),
+      };
+
+      match kind {
+        TypeKind::Float16 | TypeKind::Float32 | TypeKind::Float64 | TypeKind::Bfloat16 => {
+          TypeTraits {
+            has_float: true,
+            has_map: false,
+          }
+        }
+        TypeKind::Array => td
+          .array_element
+          .as_deref()
+          .map(|e| type_traits(e, def_by_fqn, memo, visiting))
+          .unwrap_or_default(),
+        TypeKind::FixedArray => td
+          .fixed_array_element
+          .as_deref()
+          .map(|e| type_traits(e, def_by_fqn, memo, visiting))
+          .unwrap_or_default(),
+        TypeKind::Map => {
+          let mut traits = TypeTraits {
+            has_float: false,
+            has_map: true,
+          };
+          traits = merge_option(
+            traits,
+            td.map_key
+              .as_deref()
+              .map(|k| type_traits(k, def_by_fqn, memo, visiting)),
+          );
+          merge_option(
+            traits,
+            td.map_value
+              .as_deref()
+              .map(|v| type_traits(v, def_by_fqn, memo, visiting)),
+          )
+        }
+        TypeKind::Defined => td
+          .defined_fqn
+          .as_deref()
+          .map(|fqn| def_traits(fqn, def_by_fqn, memo, visiting))
+          .unwrap_or(TypeTraits {
+            has_float: true,
+            has_map: true,
+          }),
+        _ => TypeTraits::default(),
+      }
+    }
+
+    fn def_traits<'a>(
+      fqn: &str,
+      def_by_fqn: &HashMap<String, &'a DefinitionDescriptor<'a>>,
+      memo: &mut HashMap<String, TypeTraits>,
+      visiting: &mut HashSet<String>,
+    ) -> TypeTraits {
+      if let Some(t) = memo.get(fqn) {
+        return *t;
+      }
+
+      if !visiting.insert(fqn.to_string()) {
+        // Recursive reference cycle: treat edge as neutral to avoid infinite recursion.
+        return TypeTraits::default();
+      }
+
+      let traits = if let Some(def) = def_by_fqn.get(fqn) {
+        match def.kind {
+          Some(DefinitionKind::Enum) => TypeTraits::default(),
+          Some(DefinitionKind::Struct) => def
+            .struct_def
+            .as_ref()
+            .and_then(|sd| sd.fields.as_deref())
+            .map(|fields| {
+              fields.iter().fold(TypeTraits::default(), |acc, field| {
+                let field_traits = field
+                  .r#type
+                  .as_ref()
+                  .map(|td| type_traits(td, def_by_fqn, memo, visiting))
+                  .unwrap_or_default();
+                acc.combine(field_traits)
+              })
+            })
+            .unwrap_or_default(),
+          Some(DefinitionKind::Message) => def
+            .message_def
+            .as_ref()
+            .and_then(|md| md.fields.as_deref())
+            .map(|fields| {
+              fields.iter().fold(TypeTraits::default(), |acc, field| {
+                let field_traits = field
+                  .r#type
+                  .as_ref()
+                  .map(|td| type_traits(td, def_by_fqn, memo, visiting))
+                  .unwrap_or_default();
+                acc.combine(field_traits)
+              })
+            })
+            .unwrap_or_default(),
+          Some(DefinitionKind::Union) => def
+            .union_def
+            .as_ref()
+            .and_then(|ud| ud.branches.as_deref())
+            .map(|branches| {
+              branches.iter().fold(TypeTraits::default(), |acc, branch| {
+                let branch_traits = branch
+                  .type_ref_fqn
+                  .as_deref()
+                  .or(branch.inline_fqn.as_deref())
+                  .map(|branch_fqn| def_traits(branch_fqn, def_by_fqn, memo, visiting))
+                  .unwrap_or_default();
+                acc.combine(branch_traits)
+              })
+            })
+            .unwrap_or_default(),
+          _ => TypeTraits::default(),
+        }
+      } else {
+        // Unknown definition reference: be conservative and avoid Eq/Hash derives.
+        TypeTraits {
+          has_float: true,
+          has_map: true,
+        }
+      };
+
+      visiting.remove(fqn);
+      memo.insert(fqn.to_string(), traits);
+      traits
+    }
+
+    let mut def_by_fqn: HashMap<String, &DefinitionDescriptor> = HashMap::new();
+    for schema in schemas {
+      let defs = schema.definitions.as_deref().unwrap_or(&[]);
+      collect_definitions(defs, &mut def_by_fqn);
+    }
+
+    let mut memo: HashMap<String, TypeTraits> = HashMap::new();
+    let mut visiting: HashSet<String> = HashSet::new();
+
+    for (fqn, def) in &def_by_fqn {
+      let kind = match def.kind {
+        Some(k) if kind_supports_derives(k) => k,
+        _ => continue,
+      };
+      let traits = def_traits(fqn, &def_by_fqn, &mut memo, &mut visiting);
+
+      if !traits.has_float {
+        self.eq_fqns.insert(fqn.clone());
+      }
+      if !traits.has_float && !traits.has_map {
+        self.hash_fqns.insert(fqn.clone());
+      }
+
+      if kind == DefinitionKind::Enum {
+        self.eq_fqns.insert(fqn.clone());
+        self.hash_fqns.insert(fqn.clone());
+      }
     }
   }
 }
@@ -379,6 +611,18 @@ mod tests {
     }
   }
 
+  fn map_type(
+    key: TypeDescriptor<'static>,
+    value: TypeDescriptor<'static>,
+  ) -> TypeDescriptor<'static> {
+    TypeDescriptor {
+      kind: Some(TypeKind::Map),
+      map_key: Some(Box::new(key)),
+      map_value: Some(Box::new(value)),
+      ..Default::default()
+    }
+  }
+
   fn build_schema() -> SchemaDescriptor<'static> {
     let payload = DefinitionDescriptor {
       kind: Some(DefinitionKind::Struct),
@@ -472,6 +716,101 @@ mod tests {
     );
   }
 
+  fn build_trait_schema() -> SchemaDescriptor<'static> {
+    let float_struct = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Struct),
+      name: Some(Cow::Borrowed("FloatStruct")),
+      fqn: Some(Cow::Borrowed("test.FloatStruct")),
+      struct_def: Some(StructDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("value")),
+          r#type: Some(scalar_type(TypeKind::Float32)),
+          index: Some(0),
+          ..Default::default()
+        }]),
+        ..Default::default()
+      }),
+      ..Default::default()
+    };
+
+    let map_struct = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Struct),
+      name: Some(Cow::Borrowed("MapStruct")),
+      fqn: Some(Cow::Borrowed("test.MapStruct")),
+      struct_def: Some(StructDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("entries")),
+          r#type: Some(map_type(
+            scalar_type(TypeKind::String),
+            scalar_type(TypeKind::Uint32),
+          )),
+          index: Some(0),
+          ..Default::default()
+        }]),
+        ..Default::default()
+      }),
+      ..Default::default()
+    };
+
+    let float_message = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Message),
+      name: Some(Cow::Borrowed("FloatMessage")),
+      fqn: Some(Cow::Borrowed("test.FloatMessage")),
+      message_def: Some(MessageDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("value")),
+          r#type: Some(scalar_type(TypeKind::Float64)),
+          index: Some(1),
+          ..Default::default()
+        }]),
+      }),
+      ..Default::default()
+    };
+
+    let float_union = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Union),
+      name: Some(Cow::Borrowed("FloatUnion")),
+      fqn: Some(Cow::Borrowed("test.FloatUnion")),
+      union_def: Some(UnionDef {
+        branches: Some(vec![UnionBranchDescriptor {
+          discriminator: Some(1),
+          name: Some(Cow::Borrowed("float_struct")),
+          type_ref_fqn: Some(Cow::Borrowed("test.FloatStruct")),
+          ..Default::default()
+        }]),
+      }),
+      ..Default::default()
+    };
+
+    let status = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Enum),
+      name: Some(Cow::Borrowed("Status")),
+      fqn: Some(Cow::Borrowed("test.Status")),
+      enum_def: Some(EnumDef {
+        base_type: Some(TypeKind::Uint32),
+        members: Some(vec![EnumMemberDescriptor {
+          name: Some(Cow::Borrowed("OK")),
+          value: Some(1),
+          ..Default::default()
+        }]),
+        is_flags: Some(false),
+      }),
+      ..Default::default()
+    };
+
+    SchemaDescriptor {
+      path: Some(Cow::Borrowed("traits.bop")),
+      definitions: Some(vec![
+        float_struct,
+        map_struct,
+        float_message,
+        float_union,
+        status,
+      ]),
+      ..Default::default()
+    }
+  }
+
   #[test]
   fn emits_file_level_insertion_points() {
     let schema = build_schema();
@@ -548,5 +887,24 @@ mod tests {
       "// @@bebop_insertion_point(decode_switch:ResultUnion)",
       "// @@bebop_insertion_point(decode_end:ResultUnion)",
     );
+  }
+
+  #[test]
+  fn emits_trait_derives_based_on_float_and_map_content() {
+    let schema = build_trait_schema();
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::new(None)
+      .generate(&schema, &[], &analysis)
+      .expect("generator should succeed");
+
+    assert!(output.contains("#[derive(Debug, Clone, PartialEq)]\npub struct FloatStruct"));
+    assert!(output.contains("#[derive(Debug, Clone, Default, PartialEq)]\npub struct FloatMessage"));
+    assert!(output.contains("#[derive(Debug, Clone, PartialEq)]\npub enum FloatUnion<'buf>"));
+
+    // Maps can derive Eq, but not Hash.
+    assert!(output.contains("#[derive(Debug, Clone, PartialEq, Eq)]\npub struct MapStruct"));
+
+    // Enums are always hashable since they're integer-backed.
+    assert!(output.contains("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\npub enum Status"));
   }
 }
