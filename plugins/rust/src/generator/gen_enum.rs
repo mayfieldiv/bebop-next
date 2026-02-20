@@ -3,12 +3,15 @@ use crate::generated::{DefinitionDescriptor, EnumDef, TypeKind};
 
 use super::naming::{type_name, variant_name};
 use super::type_mapper::{enum_base_rust_type, enum_read_method, enum_write_method, fixed_size};
-use super::{emit_deprecated, emit_doc_comment, visibility_keyword, LifetimeAnalysis};
+use super::{
+  emit_deprecated, emit_doc_comment, visibility_keyword, GeneratorOptions, LifetimeAnalysis,
+};
 
 /// Generate Rust code for an enum definition.
 pub fn generate(
   def: &DefinitionDescriptor,
   output: &mut String,
+  options: &GeneratorOptions,
   _analysis: &LifetimeAnalysis,
 ) -> Result<(), GeneratorError> {
   let name = type_name(def.name.as_deref().unwrap_or("<unnamed>"));
@@ -33,7 +36,7 @@ pub fn generate(
     TypeKind::Int8 | TypeKind::Int16 | TypeKind::Int32 | TypeKind::Int64
   );
 
-  let vis = visibility_keyword(def);
+  let vis = visibility_keyword(def, options);
 
   if is_flags {
     generate_flags(
@@ -212,7 +215,10 @@ fn generate_flags(
 
   // Derive + struct
   output.push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\n");
-  output.push_str(&format!("{} struct {}({} {});\n\n", vis, name, vis, base_type));
+  output.push_str(&format!(
+    "{} struct {}({} {});\n\n",
+    vis, name, vis, base_type
+  ));
 
   // Associated constants
   output.push_str(&format!(
