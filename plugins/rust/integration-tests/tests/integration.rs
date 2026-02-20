@@ -6,7 +6,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use bebop_runtime::{bf16, f16, BebopDecode, BebopEncode, BebopFlags, Uuid};
+use bebop_runtime::{bf16, f16, BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopTimestamp, Uuid};
 
 use bebop_integration_tests::test_types::*;
 
@@ -1014,4 +1014,61 @@ fn multiple_decode_from_same_buffer() {
   assert_eq!(d1.name, d2.name);
   assert!(matches!(d1.name, Cow::Borrowed(_)));
   assert!(matches!(d2.name, Cow::Borrowed(_)));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Temporal types
+// ═══════════════════════════════════════════════════════════════
+
+#[test]
+fn timestamped_event_round_trip() {
+  let ts = BebopTimestamp { seconds: 1_700_000_000, nanos: 123_456_789 };
+  let evt = TimestampedEvent::new(ts, "deploy");
+  let bytes = evt.to_bytes();
+  let evt2 = TimestampedEvent::from_bytes(&bytes).unwrap();
+  assert_eq!(evt2.when, ts);
+  assert_eq!(evt2.what, "deploy");
+}
+
+#[test]
+fn timestamped_event_encoded_size_matches() {
+  let ts = BebopTimestamp { seconds: 0, nanos: 0 };
+  let evt = TimestampedEvent::new(ts, "test");
+  assert_eq!(evt.encoded_size(), evt.to_bytes().len());
+}
+
+#[test]
+fn schedule_entry_round_trip_full() {
+  let mut entry = ScheduleEntry::default();
+  entry.start = Some(BebopTimestamp { seconds: 1_700_000_000, nanos: 0 });
+  entry.duration = Some(BebopDuration { seconds: 3600, nanos: 0 });
+  entry.label = Some(Cow::Owned("meeting".to_string()));
+
+  let bytes = entry.to_bytes();
+  let entry2 = ScheduleEntry::from_bytes(&bytes).unwrap();
+  assert_eq!(entry2.start, Some(BebopTimestamp { seconds: 1_700_000_000, nanos: 0 }));
+  assert_eq!(entry2.duration, Some(BebopDuration { seconds: 3600, nanos: 0 }));
+  assert_eq!(entry2.label.as_deref(), Some("meeting"));
+}
+
+#[test]
+fn schedule_entry_round_trip_partial() {
+  let mut entry = ScheduleEntry::default();
+  entry.start = Some(BebopTimestamp { seconds: 100, nanos: 500 });
+  // duration and label left as None
+
+  let bytes = entry.to_bytes();
+  let entry2 = ScheduleEntry::from_bytes(&bytes).unwrap();
+  assert_eq!(entry2.start, Some(BebopTimestamp { seconds: 100, nanos: 500 }));
+  assert!(entry2.duration.is_none());
+  assert!(entry2.label.is_none());
+}
+
+#[test]
+fn schedule_entry_encoded_size_matches() {
+  let mut entry = ScheduleEntry::default();
+  entry.start = Some(BebopTimestamp { seconds: 42, nanos: 1 });
+  entry.duration = Some(BebopDuration { seconds: 10, nanos: 999 });
+  entry.label = Some(Cow::Owned("x".to_string()));
+  assert_eq!(entry.encoded_size(), entry.to_bytes().len());
 }
