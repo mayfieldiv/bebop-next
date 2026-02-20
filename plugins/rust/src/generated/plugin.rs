@@ -10,8 +10,11 @@
 // Copyright (c) 6OVER3 INSTITUTE
 
 #![allow(warnings)]
+#![no_implicit_prelude]
 
 extern crate alloc;
+extern crate bebop_runtime;
+extern crate core;
 use super::descriptor::*;
 use alloc::vec;
 #[cfg(feature = "serde")]
@@ -21,6 +24,7 @@ use bebop_runtime::{
   bf16, f16, BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopReader, BebopTimestamp,
   BebopWriter, DecodeError,
 };
+use core::prelude::rust_2021::*;
 
 // @@bebop_insertion_point(imports)
 
