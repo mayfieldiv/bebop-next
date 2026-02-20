@@ -8,7 +8,8 @@
 - incorrect derives for recursive JSON benchmark types
 
 ## Implemented
-- Moved string type collision handling into generator imports/types (`StdString` alias).
+- Initially moved string type collision handling into generator imports/types (`StdString` alias).
+- Follow-up (2026-02-20): replaced alias-based handling with qualified type paths (`alloc::...`, `::core::...`, `::bebop_runtime::...`) and removed colliding preamble imports so schemas can safely define names like `String`.
 - Fixed constructor codegen to convert owned inputs into borrowed field forms for lifetime-bearing containers (for example `Vec<String>` -> `Vec<Cow<'buf, str>>`).
 - Added regression tests in `plugins/rust/src/generator/mod.rs` for:
   - recursive union float propagation into nested message derive decisions
