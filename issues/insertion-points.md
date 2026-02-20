@@ -1,8 +1,8 @@
 # Add Insertion Point Markers
 
-- [ ] Add insertion point markers to generated code #rust-plugin 🔽
+- [x] Add insertion point markers to generated code #rust-plugin ✅
 
-Both C and Swift emit `// @@bebop_insertion_point(...)` comments throughout generated code. These markers allow downstream plugins or tooling to inject additional code at well-known locations. The Rust plugin emits none.
+Both C and Swift emit `// @@bebop_insertion_point(...)` comments throughout generated code. These markers allow downstream plugins or tooling to inject additional code at well-known locations. Rust now emits the same marker family.
 
 ## Required Markers (from Swift/C reference)
 
@@ -25,8 +25,41 @@ Both C and Swift emit `// @@bebop_insertion_point(...)` comments throughout gene
 - `// @@bebop_insertion_point(encode_switch:TypeName)` — inside encode match
 - `// @@bebop_insertion_point(decode_switch:TypeName)` — inside decode match
 
+## Implemented (Rust)
+
+### File-level
+- [x] `imports`
+- [x] `eof`
+
+### Type scope
+- [x] `struct_scope:TypeName`
+- [x] `message_scope:TypeName`
+- [x] `enum_scope:TypeName`
+- [x] `union_scope:TypeName` (added for parity with Swift and Rust union extensibility)
+
+### Encode/Decode hooks
+- [x] `encode_start:TypeName`
+- [x] `encode_end:TypeName`
+- [x] `decode_start:TypeName`
+- [x] `decode_end:TypeName`
+
+### Union-specific hooks
+- [x] `encode_switch:TypeName`
+- [x] `decode_switch:TypeName`
+
 ## Implementation
-Small, mechanical change across `gen_struct.rs`, `gen_message.rs`, `gen_enum.rs`, `gen_union.rs`, and the top-level file emitter. Low risk.
+Implemented in:
+- `plugins/rust/src/generator/mod.rs`
+- `plugins/rust/src/generator/gen_struct.rs`
+- `plugins/rust/src/generator/gen_message.rs`
+- `plugins/rust/src/generator/gen_enum.rs`
+- `plugins/rust/src/generator/gen_union.rs`
+
+Validation:
+- Added unit tests in `plugins/rust/src/generator/mod.rs` to assert marker presence and ordering.
+
+## Follow-up (out of scope)
+- Service generation is still a TODO in Rust, so there is currently no generated service body to attach `service_scope:*` markers to.
 
 ## References
 - Swift: `GenerateStruct.swift`, `GenerateMessage.swift`, `GenerateEnum.swift`, `GenerateUnion.swift`
