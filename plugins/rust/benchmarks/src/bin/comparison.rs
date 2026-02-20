@@ -69,8 +69,8 @@ fn push_case(
   mut encode: impl FnMut(),
   mut decode: impl FnMut(),
 ) {
-  let encode_ns = measure_mean_ns(repetitions, iterations, || encode());
-  let decode_ns = measure_mean_ns(repetitions, iterations, || decode());
+  let encode_ns = measure_mean_ns(repetitions, iterations, &mut encode);
+  let decode_ns = measure_mean_ns(repetitions, iterations, &mut decode);
 
   rows.push(BenchmarkRow {
     name: format!("BM_Bebop_Encode_{}_mean", scenario),
