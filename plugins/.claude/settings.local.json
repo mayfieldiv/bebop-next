@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(grep:*)",
+      "WebFetch(domain:rust-lang.github.io)",
+      "WebFetch(domain:github.com)"
+    ]
+  }
+}
