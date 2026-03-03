@@ -112,8 +112,11 @@ impl LifetimeAnalysis {
         analysis.enum_fqns.insert(fqn.clone());
       }
       if def.kind == Some(DefinitionKind::Union) {
-        // Unions always need lifetime (Unknown variant uses Cow<'buf, [u8]>)
-        analysis.lifetime_fqns.insert(fqn.clone());
+        // Forward-compatible unions always need lifetime (Unknown variant uses Cow<'buf, [u8]>).
+        // Strict unions only need lifetime if their branches do (resolved in the fixpoint loop).
+        if has_decorator(def, "bebop.forward_compatible") {
+          analysis.lifetime_fqns.insert(fqn.clone());
+        }
       }
     }
 
@@ -148,7 +151,24 @@ impl LifetimeAnalysis {
                   .is_some_and(|td| analysis.type_needs_lifetime(td))
               })
             }),
-          Some(DefinitionKind::Union) => true,
+          Some(DefinitionKind::Union) => {
+            // Forward-compatible unions already added above.
+            // Strict unions need lifetime only if any branch does.
+            if has_decorator(def, "bebop.forward_compatible") {
+              true
+            } else {
+              def
+                .union_def
+                .as_ref()
+                .and_then(|ud| ud.branches.as_deref())
+                .is_some_and(|branches| {
+                  branches.iter().any(|b| {
+                    let branch_fqn = b.type_ref_fqn.as_deref().or(b.inline_fqn.as_deref());
+                    branch_fqn.is_some_and(|fqn| analysis.lifetime_fqns.contains(fqn))
+                  })
+                })
+            }
+          }
           _ => false,
         };
 
@@ -625,15 +645,22 @@ pub fn emit_deprecated(output: &mut String, decorators: &Option<Vec<DecoratorUsa
   }
 }
 
+/// Returns `true` if the definition has a decorator with the given FQN.
+pub fn has_decorator(def: &DefinitionDescriptor, fqn: &str) -> bool {
+  def.decorators.as_ref().is_some_and(|decs| {
+    decs.iter().any(|d| d.fqn.as_deref() == Some(fqn))
+  })
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
   use std::{borrow::Cow, collections::HashMap};
 
   use crate::generated::{
-    ConstDef, DefinitionDescriptor, DefinitionKind, EnumDef, EnumMemberDescriptor, FieldDescriptor,
-    LiteralKind, LiteralValue, MessageDef, SchemaDescriptor, StructDef, TypeDescriptor, TypeKind,
-    UnionBranchDescriptor, UnionDef, Visibility,
+    ConstDef, DecoratorUsage, DefinitionDescriptor, DefinitionKind, EnumDef, EnumMemberDescriptor,
+    FieldDescriptor, LiteralKind, LiteralValue, MessageDef, SchemaDescriptor, StructDef,
+    TypeDescriptor, TypeKind, UnionBranchDescriptor, UnionDef, Visibility,
   };
 
   fn scalar_type(kind: TypeKind) -> TypeDescriptor<'static> {
@@ -1480,6 +1507,106 @@ mod tests {
       output.contains("pub(crate) const MY_VALUE: i32 = 42i32;"),
       "local const should use pub(crate), got: {}",
       output
+    );
+  }
+
+  #[test]
+  fn strict_union_omits_lifetime_when_branches_are_scalar() {
+    // Union with only scalar branches and no @forward_compatible → no 'buf
+    let inner_struct = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Struct),
+      name: Some(Cow::Borrowed("Inner")),
+      fqn: Some(Cow::Borrowed("test.Inner")),
+      struct_def: Some(StructDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("value")),
+          r#type: Some(scalar_type(TypeKind::Int32)),
+          index: Some(0),
+          ..Default::default()
+        }]),
+        fixed_size: Some(4),
+        ..Default::default()
+      }),
+      ..Default::default()
+    };
+
+    let strict_union = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Union),
+      name: Some(Cow::Borrowed("StrictUnion")),
+      fqn: Some(Cow::Borrowed("test.StrictUnion")),
+      union_def: Some(UnionDef {
+        branches: Some(vec![UnionBranchDescriptor {
+          discriminator: Some(1),
+          name: Some(Cow::Borrowed("inner")),
+          type_ref_fqn: Some(Cow::Borrowed("test.Inner")),
+          ..Default::default()
+        }]),
+      }),
+      // No decorators — strict mode
+      ..Default::default()
+    };
+
+    let schema = SchemaDescriptor {
+      path: Some(Cow::Borrowed("strict.bop")),
+      definitions: Some(vec![inner_struct, strict_union]),
+      ..Default::default()
+    };
+
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    assert!(
+      !analysis.lifetime_fqns.contains("test.StrictUnion"),
+      "strict union with scalar-only branches should NOT need lifetime"
+    );
+  }
+
+  #[test]
+  fn forward_compatible_union_always_has_lifetime() {
+    let inner_struct = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Struct),
+      name: Some(Cow::Borrowed("Inner")),
+      fqn: Some(Cow::Borrowed("test.Inner")),
+      struct_def: Some(StructDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("value")),
+          r#type: Some(scalar_type(TypeKind::Int32)),
+          index: Some(0),
+          ..Default::default()
+        }]),
+        fixed_size: Some(4),
+        ..Default::default()
+      }),
+      ..Default::default()
+    };
+
+    let fc_union = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Union),
+      name: Some(Cow::Borrowed("FcUnion")),
+      fqn: Some(Cow::Borrowed("test.FcUnion")),
+      union_def: Some(UnionDef {
+        branches: Some(vec![UnionBranchDescriptor {
+          discriminator: Some(1),
+          name: Some(Cow::Borrowed("inner")),
+          type_ref_fqn: Some(Cow::Borrowed("test.Inner")),
+          ..Default::default()
+        }]),
+      }),
+      decorators: Some(vec![DecoratorUsage {
+        fqn: Some(Cow::Borrowed("bebop.forward_compatible")),
+        ..Default::default()
+      }]),
+      ..Default::default()
+    };
+
+    let schema = SchemaDescriptor {
+      path: Some(Cow::Borrowed("fc.bop")),
+      definitions: Some(vec![inner_struct, fc_union]),
+      ..Default::default()
+    };
+
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    assert!(
+      analysis.lifetime_fqns.contains("test.FcUnion"),
+      "forward-compatible union should always need lifetime"
     );
   }
 }
