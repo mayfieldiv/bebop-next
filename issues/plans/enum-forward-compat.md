@@ -1,8 +1,10 @@
 # Plan: Enum Forward Compatibility (Accept Unknown Discriminators)
 
-**Status:** Draft
+**Status:** Superseded by [docs/plans/2026-03-03-forward-compatible-design.md](/docs/plans/2026-03-03-forward-compatible-design.md)
 **Depends on:** None
 **Blocks:** None
+
+> **Note:** This plan has been superseded by a broader design that introduces a `@forward_compatible` schema decorator covering enums, flags, unions, and messages. See the design doc for the current approach.
 
 ## Problem Statement
 
