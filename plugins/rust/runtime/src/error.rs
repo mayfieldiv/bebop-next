@@ -1,10 +1,29 @@
 use core::fmt;
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum DecodeError {
-  UnexpectedEof { needed: usize, available: usize },
+  UnexpectedEof {
+    needed: usize,
+    available: usize,
+  },
   InvalidUtf8,
-  InvalidEnum { type_name: &'static str, value: u64 },
+  InvalidEnum {
+    type_name: &'static str,
+    value: u64,
+  },
+  InvalidUnion {
+    type_name: &'static str,
+    discriminator: u8,
+  },
+  InvalidField {
+    type_name: &'static str,
+    tag: u8,
+  },
+  InvalidFlags {
+    type_name: &'static str,
+    bits: u64,
+  },
 }
 
 impl fmt::Display for DecodeError {
@@ -20,6 +39,18 @@ impl fmt::Display for DecodeError {
       Self::InvalidUtf8 => write!(f, "invalid utf-8 in string"),
       Self::InvalidEnum { type_name, value } => {
         write!(f, "invalid {} value: {}", type_name, value)
+      }
+      Self::InvalidUnion {
+        type_name,
+        discriminator,
+      } => {
+        write!(f, "invalid {} discriminator: {}", type_name, discriminator)
+      }
+      Self::InvalidField { type_name, tag } => {
+        write!(f, "invalid {} field tag: {}", type_name, tag)
+      }
+      Self::InvalidFlags { type_name, bits } => {
+        write!(f, "invalid {} bits: {:#x}", type_name, bits)
       }
     }
   }
