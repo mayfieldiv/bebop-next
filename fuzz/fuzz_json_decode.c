@@ -5,8 +5,10 @@
 #include <string.h>
 #include <unistd.h>
 
+// clang-format off
 #include "bebop_wire.c"
 #include "../tests/generated/json.bb.c"
+// clang-format on
 
 #ifndef __AFL_FUZZ_TESTCASE_LEN
 #define __AFL_FUZZ_INIT()
@@ -21,7 +23,9 @@ static int fuzz_done;
 
 static int fuzz_stdin_read(void)
 {
-  if (fuzz_done) return 0;
+  if (fuzz_done) {
+    return 0;
+  }
   fuzz_len = (int)fread(fuzz_buf, 1, sizeof(fuzz_buf), stdin);
   fuzz_done = 1;
   return fuzz_len > 0;
@@ -34,7 +38,10 @@ static void* fuzz_alloc(void* ptr, size_t old, size_t new, void* ctx)
 {
   (void)ctx;
   (void)old;
-  if (new == 0) { free(ptr); return NULL; }
+  if (new == 0) {
+    free(ptr);
+    return NULL;
+  }
   return realloc(ptr, new);
 }
 

@@ -4,8 +4,10 @@ file(READ "${CMAKE_SOURCE_DIR}/VERSION" BEBOP_VERSION)
 string(STRIP "${BEBOP_VERSION}" BEBOP_VERSION)
 string(REGEX REPLACE "[\r\n]+" "" BEBOP_VERSION "${BEBOP_VERSION}")
 
+string(REGEX REPLACE "-.*$" "" BEBOP_VERSION_NUMERIC "${BEBOP_VERSION}")
+
 project(bebop-vnext
-    VERSION ${BEBOP_VERSION}
+    VERSION ${BEBOP_VERSION_NUMERIC}
     DESCRIPTION "Bebop schema compiler"
     LANGUAGES C CXX
 )
@@ -84,11 +86,10 @@ elseif(MSVC)
     add_compile_options(/W4 /WX /utf-8 /FS)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /std:c11 /experimental:c11atomics")
-    if(CMAKE_BUILD_TYPE STREQUAL "Release")
-        add_compile_options(/O2)
-    else()
-        add_compile_options(/Od /Z7 /fsanitize=address)
-    endif()
+    add_compile_options($<$<CONFIG:Release>:/O2>)
+    add_compile_options($<$<NOT:$<CONFIG:Release>>:/Od>
+                        $<$<NOT:$<CONFIG:Release>>:/Z7>
+                        $<$<NOT:$<CONFIG:Release>>:/fsanitize=address>)
 endif()
 
 add_subdirectory(vendor)

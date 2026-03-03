@@ -1,11 +1,18 @@
-find_program(SWIFT_EXECUTABLE swift)
+include(CheckLanguage)
+check_language(Swift)
+if(CMAKE_Swift_COMPILER)
+    get_filename_component(SWIFT_BIN_DIR "${CMAKE_Swift_COMPILER}" DIRECTORY)
+    find_program(SWIFT_EXECUTABLE swift HINTS "${SWIFT_BIN_DIR}")
+else()
+    find_program(SWIFT_EXECUTABLE swift)
+endif()
 if(NOT SWIFT_EXECUTABLE)
     message(STATUS "Swift not found, skipping bebopc-gen-swift")
     return()
 endif()
 
 execute_process(
-    COMMAND ${SWIFT_EXECUTABLE} --version
+    COMMAND "${SWIFT_EXECUTABLE}" --version
     OUTPUT_VARIABLE SWIFT_VERSION_OUTPUT
     ERROR_QUIET
     OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -22,14 +29,9 @@ else()
     return()
 endif()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(SWIFT_BUILD_CONFIG release)
-else()
-    set(SWIFT_BUILD_CONFIG debug)
-endif()
-
+set(SWIFT_BUILD_CONFIG "$<IF:$<CONFIG:Release>,release,debug>")
 set(SWIFT_BUILD_DIR "${CMAKE_SOURCE_DIR}/.build/${SWIFT_BUILD_CONFIG}")
-set(SWIFT_GEN_SWIFT "${SWIFT_BUILD_DIR}/bebopc-gen-swift")
+set(SWIFT_GEN_SWIFT "${SWIFT_BUILD_DIR}/bebopc-gen-swift${CMAKE_EXECUTABLE_SUFFIX}")
 
 add_custom_target(bebopc-gen-swift ALL
     COMMAND ${SWIFT_EXECUTABLE} build
@@ -38,7 +40,7 @@ add_custom_target(bebopc-gen-swift ALL
         --package-path "${CMAKE_SOURCE_DIR}"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${SWIFT_GEN_SWIFT}"
-        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/bebopc-gen-swift"
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/bebopc-gen-swift${CMAKE_EXECUTABLE_SUFFIX}"
     COMMENT "Building bebopc-gen-swift"
     VERBATIM
 )
