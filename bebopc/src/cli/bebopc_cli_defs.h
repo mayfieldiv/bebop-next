@@ -23,13 +23,13 @@
   X(LLM, 0, "llm", false, NULL, CLI_OPT_FLAG_ROOT | CLI_OPT_FLAG_ALL, "Print LLM usage instructions") \
   X(CONFIG, 'c', "config", true, "FILE", CLI_OPT_FLAG_ROOT | CLI_OPT_FLAG_ALL, "Config file path") \
   X(COLOR, 0, "color", true, "MODE", CLI_OPT_FLAG_ROOT | CLI_OPT_FLAG_ALL, "Color mode: auto|always|never") \
-  X(FORMAT, 0, "format", true, "FMT", CLI_OPT_FLAG_ROOT | CLI_OPT_FLAG_ALL, "Output format: terminal|json|msbuild") \
+  X(FORMAT, 0, "format", true, "FMT", CLI_OPT_FLAG_ROOT | CLI_OPT_FLAG_ALL, "Output format: terminal|json|msbuild|xcode") \
   X(VERBOSE, 'v', "verbose", false, NULL, CLI_OPT_FLAG_ROOT | CLI_OPT_FLAG_ALL, "Verbose output") \
   X(QUIET, 'q', "quiet", false, NULL, CLI_OPT_FLAG_ROOT | CLI_OPT_FLAG_ALL, "Suppress non-error output") \
   X(NO_WARN, 0, "no-warn", false, NULL, CLI_OPT_FLAG_ROOT | CLI_OPT_FLAG_ALL, "Suppress warnings") \
   X(TRACE, 0, "trace", false, NULL, CLI_OPT_FLAG_ROOT | CLI_OPT_FLAG_ALL, "Enable trace output") \
   X(PLUGIN, 0, "plugin", true, "NAME=PATH", CLI_OPT_FLAG_BUILD, "Specify plugin executable path") \
-  X(OPTION, 'o', "option", true, "KEY=VAL", CLI_OPT_FLAG_BUILD, "Set plugin option") \
+  X(OPTION, 'D', "option", true, "KEY=VAL", CLI_OPT_FLAG_BUILD, "Set plugin option") \
   X(EXCLUDE, 'x', "exclude", true, "GLOB", CLI_OPT_FLAG_ALL, "Add exclude pattern") \
   X(INCLUDE, 'I', "include", true, "DIR", CLI_OPT_FLAG_ALL, "Add import search path") \
   X(EMIT_SOURCE_INFO, 0, "emit-source-info", false, NULL, CLI_OPT_FLAG_BUILD, "Include source locations in descriptors") \

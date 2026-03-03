@@ -1,0 +1,30 @@
+name: Reusable Swift Build
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: false
+        type: string
+        default: macos-26
+      swift-version:
+        required: false
+        type: string
+        default: "6.2"
+
+jobs:
+  build:
+    runs-on: ${{ inputs.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: swift-actions/setup-swift@v2.4.0
+        with:
+          swift-version: ${{ inputs.swift-version }}
+
+      - name: Build
+        run: swift build --package-path . --product bebopc-gen-swift
+
+      - name: Test
+        run: swift test --package-path .
