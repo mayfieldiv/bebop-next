@@ -3,7 +3,8 @@ use crate::generated::DefinitionDescriptor;
 
 use super::naming::{fqn_to_type_name, type_name};
 use super::{
-  emit_deprecated, emit_doc_comment, visibility_keyword, GeneratorOptions, LifetimeAnalysis,
+  emit_deprecated, emit_doc_comment, has_decorator, visibility_keyword, GeneratorOptions,
+  LifetimeAnalysis,
 };
 
 /// Generate Rust code for a union definition.
@@ -59,9 +60,14 @@ pub fn generate(
     .collect();
 
   let vis = visibility_keyword(def, options);
+  let is_forward_compatible = has_decorator(def, "bebop.forward_compatible");
 
-  // Unions always have lifetime (Unknown variant uses alloc::borrow::Cow<'buf, [u8]>)
-  let lt = "<'buf>";
+  let has_lifetime = if is_forward_compatible {
+    true // Unknown variant always needs Cow<'buf, [u8]>
+  } else {
+    analysis.lifetime_fqns.contains(fqn)
+  };
+  let lt = if has_lifetime { "<'buf>" } else { "" };
 
   // ── Doc comment + deprecated ──────────────────────────────────
   emit_doc_comment(output, &def.documentation);
@@ -92,48 +98,56 @@ pub fn generate(
     };
     output.push_str(&format!("  {}({}{}),\n", b.variant, b.inner_type, inner_lt));
   }
-  // Unknown variant for forward compatibility
-  output.push_str("  #[cfg_attr(feature = \"serde\", serde(skip))]\n");
-  output.push_str("  Unknown(u8, alloc::borrow::Cow<'buf, [u8]>),\n");
+  if is_forward_compatible {
+    output.push_str("  #[cfg_attr(feature = \"serde\", serde(skip))]\n");
+    output.push_str("  Unknown(u8, alloc::borrow::Cow<'buf, [u8]>),\n");
+  }
   output.push_str("}\n\n");
 
-  // ── Type alias ────────────────────────────────────────────────
-  output.push_str(&format!(
-    "{} type {}Owned = {}<'static>;\n\n",
-    vis, name, name
-  ));
+  // ── Type alias + into_owned() (only when lifetime is present) ──
+  if has_lifetime {
+    output.push_str(&format!(
+      "{} type {}Owned = {}<'static>;\n\n",
+      vis, name, name
+    ));
 
-  // ── into_owned() ──────────────────────────────────────────────
-  output.push_str(&format!("impl<'buf> {}<'buf> {{\n", name));
-  output.push_str(&format!("  pub fn into_owned(self) -> {}Owned {{\n", name));
-  output.push_str("    match self {\n");
-  for b in &branch_infos {
-    let has_lt = b
-      .inner_fqn
-      .as_ref()
-      .is_some_and(|fqn| analysis.lifetime_fqns.contains(fqn));
-    if has_lt {
+    output.push_str(&format!("impl<'buf> {}<'buf> {{\n", name));
+    output.push_str(&format!("  pub fn into_owned(self) -> {}Owned {{\n", name));
+    output.push_str("    match self {\n");
+    for b in &branch_infos {
+      let has_lt = b
+        .inner_fqn
+        .as_ref()
+        .is_some_and(|fqn| analysis.lifetime_fqns.contains(fqn));
+      if has_lt {
+        output.push_str(&format!(
+          "      Self::{}(inner) => {}::{}(inner.into_owned()),\n",
+          b.variant, name, b.variant
+        ));
+      } else {
+        output.push_str(&format!(
+          "      Self::{}(inner) => {}::{}(inner),\n",
+          b.variant, name, b.variant
+        ));
+      }
+    }
+    if is_forward_compatible {
       output.push_str(&format!(
-        "      Self::{}(inner) => {}::{}(inner.into_owned()),\n",
-        b.variant, name, b.variant
-      ));
-    } else {
-      output.push_str(&format!(
-        "      Self::{}(inner) => {}::{}(inner),\n",
-        b.variant, name, b.variant
+        "      Self::Unknown(disc, data) => {}::Unknown(disc, alloc::borrow::Cow::Owned(data.into_owned())),\n",
+        name
       ));
     }
+    output.push_str("    }\n");
+    output.push_str("  }\n");
+    output.push_str("}\n\n");
   }
-  output.push_str(&format!(
-    "      Self::Unknown(disc, data) => {}::Unknown(disc, alloc::borrow::Cow::Owned(data.into_owned())),\n",
-    name
-  ));
-  output.push_str("    }\n");
-  output.push_str("  }\n");
-  output.push_str("}\n\n");
 
   // ── impl BebopEncode ──────────────────────────────────────────
-  output.push_str(&format!("impl<'buf> BebopEncode for {}<'buf> {{\n", name));
+  if has_lifetime {
+    output.push_str(&format!("impl<'buf> BebopEncode for {}<'buf> {{\n", name));
+  } else {
+    output.push_str(&format!("impl BebopEncode for {} {{\n", name));
+  }
 
   // encode()
   output.push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
@@ -149,13 +163,15 @@ pub fn generate(
       b.variant, b.disc
     ));
   }
-  output.push_str(&format!(
-    "      // @@bebop_insertion_point(encode_switch:{})\n",
-    name
-  ));
-  output.push_str(
-    "      Self::Unknown(disc, data) => { writer.write_byte(*disc); writer.write_raw(data); }\n",
-  );
+  if is_forward_compatible {
+    output.push_str(&format!(
+      "      // @@bebop_insertion_point(encode_switch:{})\n",
+      name
+    ));
+    output.push_str(
+      "      Self::Unknown(disc, data) => { writer.write_byte(*disc); writer.write_raw(data); }\n",
+    );
+  }
   output.push_str("    }\n");
   output.push_str("    writer.fill_message_length(pos);\n");
   output.push_str(&format!(
@@ -173,17 +189,23 @@ pub fn generate(
       b.variant
     ));
   }
-  output.push_str("      Self::Unknown(_, data) => wire::tagged_size(data.len()),\n");
+  if is_forward_compatible {
+    output.push_str("      Self::Unknown(_, data) => wire::tagged_size(data.len()),\n");
+  }
   output.push_str("    }\n");
   output.push_str("  }\n");
 
   output.push_str("}\n\n");
 
   // ── impl BebopDecode ──────────────────────────────────────────
-  output.push_str(&format!(
-    "impl<'buf> BebopDecode<'buf> for {}<'buf> {{\n",
-    name
-  ));
+  if has_lifetime {
+    output.push_str(&format!(
+      "impl<'buf> BebopDecode<'buf> for {}<'buf> {{\n",
+      name
+    ));
+  } else {
+    output.push_str(&format!("impl<'buf> BebopDecode<'buf> for {} {{\n", name));
+  }
   output.push_str(
     "  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {\n",
   );
@@ -201,17 +223,24 @@ pub fn generate(
       b.disc, b.variant, b.inner_type
     ));
   }
-  output.push_str(&format!(
-    "      // @@bebop_insertion_point(decode_switch:{})\n",
-    name
-  ));
-  output.push_str("      _ => {\n");
-  output.push_str("        let remaining = length - (reader.position() - start);\n");
-  output.push_str("        let data = reader.read_raw_bytes(remaining)?;\n");
-  output.push_str(
-    "        ::core::result::Result::Ok(Self::Unknown(discriminator, alloc::borrow::Cow::Borrowed(data)))\n",
-  );
-  output.push_str("      }\n");
+  if is_forward_compatible {
+    output.push_str(&format!(
+      "      // @@bebop_insertion_point(decode_switch:{})\n",
+      name
+    ));
+    output.push_str("      _ => {\n");
+    output.push_str("        let remaining = length - (reader.position() - start);\n");
+    output.push_str("        let data = reader.read_raw_bytes(remaining)?;\n");
+    output.push_str(
+      "        ::core::result::Result::Ok(Self::Unknown(discriminator, alloc::borrow::Cow::Borrowed(data)))\n",
+    );
+    output.push_str("      }\n");
+  } else {
+    output.push_str(&format!(
+      "      _ => ::core::result::Result::Err(DecodeError::InvalidUnion {{ type_name: \"{}\", discriminator }}),\n",
+      name
+    ));
+  }
   output.push_str("    };\n");
   output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_end:{})\n",
@@ -222,7 +251,11 @@ pub fn generate(
 
   output.push_str("}\n\n");
 
-  output.push_str(&format!("impl<'buf> {}<'buf> {{\n", name));
+  if has_lifetime {
+    output.push_str(&format!("impl<'buf> {}<'buf> {{\n", name));
+  } else {
+    output.push_str(&format!("impl {} {{\n", name));
+  }
   output.push_str(&format!(
     "  // @@bebop_insertion_point(union_scope:{})\n",
     name
