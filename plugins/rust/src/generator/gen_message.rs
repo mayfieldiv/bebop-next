@@ -72,6 +72,15 @@ pub fn generate(
     needs_owned: bool,
   }
 
+  impl FieldMeta<'_> {
+    /// Whether the `if let` binding needs `ref` (non-Copy types and boxed fields).
+    fn needs_ref(&self) -> bool {
+      matches!(self.wrap, FieldWrap::Boxed)
+        || !self.kind.is_scalar()
+        || self.kind == TypeKind::String
+    }
+  }
+
   let field_metas: Vec<FieldMeta<'_>> = fields
     .iter()
     .map(|f| {
@@ -208,41 +217,15 @@ pub fn generate(
   );
 
   for meta in &field_metas {
-    match meta.wrap {
-      FieldWrap::Boxed => {
-        output.push_str(&format!(
-          "    if let ::core::option::Option::Some(ref v) = self.{} {{\n",
-          meta.fname
-        ));
-        output.push_str(&format!("      writer.write_tag({});\n", meta.tag));
-        let write_stmt = type_mapper::write_expression(meta.td, "v", "writer", analysis)?;
-        output.push_str(&format!("      {};\n", write_stmt));
-        output.push_str("    }\n");
-      }
-      _ => {
-        let is_scalar_copy = meta.kind.is_scalar() && meta.kind != TypeKind::String;
-
-        if is_scalar_copy {
-          output.push_str(&format!(
-            "    if let ::core::option::Option::Some(v) = self.{} {{\n",
-            meta.fname
-          ));
-          output.push_str(&format!("      writer.write_tag({});\n", meta.tag));
-          let write_stmt = type_mapper::write_expression(meta.td, "v", "writer", analysis)?;
-          output.push_str(&format!("      {};\n", write_stmt));
-          output.push_str("    }\n");
-        } else {
-          output.push_str(&format!(
-            "    if let ::core::option::Option::Some(ref v) = self.{} {{\n",
-            meta.fname
-          ));
-          output.push_str(&format!("      writer.write_tag({});\n", meta.tag));
-          let write_stmt = type_mapper::write_expression(meta.td, "v", "writer", analysis)?;
-          output.push_str(&format!("      {};\n", write_stmt));
-          output.push_str("    }\n");
-        }
-      }
-    }
+    let ref_kw = if meta.needs_ref() { "ref " } else { "" };
+    output.push_str(&format!(
+      "    if let ::core::option::Option::Some({}v) = self.{} {{\n",
+      ref_kw, meta.fname
+    ));
+    output.push_str(&format!("      writer.write_tag({});\n", meta.tag));
+    let write_stmt = type_mapper::write_expression(meta.td, "v", "writer", analysis)?;
+    output.push_str(&format!("      {};\n", write_stmt));
+    output.push_str("    }\n");
   }
 
   output.push_str("    writer.write_end_marker();\n");
@@ -257,47 +240,17 @@ pub fn generate(
   output.push_str("  fn encoded_size(&self) -> usize {\n");
   output.push_str("    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;\n");
   for meta in &field_metas {
-    match meta.wrap {
-      FieldWrap::Boxed => {
-        output.push_str(&format!(
-          "    if let ::core::option::Option::Some(ref v) = self.{} {{\n",
-          meta.fname
-        ));
-        let size_expr = type_mapper::encoded_size_expression(meta.td, "v", analysis)?;
-        output.push_str(&format!(
-          "      size += wire::tagged_size({});\n",
-          size_expr
-        ));
-        output.push_str("    }\n");
-      }
-      _ => {
-        let is_scalar_copy = meta.kind.is_scalar() && meta.kind != TypeKind::String;
-
-        if is_scalar_copy {
-          output.push_str(&format!(
-            "    if let ::core::option::Option::Some(v) = self.{} {{\n",
-            meta.fname
-          ));
-          let size_expr = type_mapper::encoded_size_expression(meta.td, "v", analysis)?;
-          output.push_str(&format!(
-            "      size += wire::tagged_size({});\n",
-            size_expr
-          ));
-          output.push_str("    }\n");
-        } else {
-          output.push_str(&format!(
-            "    if let ::core::option::Option::Some(ref v) = self.{} {{\n",
-            meta.fname
-          ));
-          let size_expr = type_mapper::encoded_size_expression(meta.td, "v", analysis)?;
-          output.push_str(&format!(
-            "      size += wire::tagged_size({});\n",
-            size_expr
-          ));
-          output.push_str("    }\n");
-        }
-      }
-    }
+    let ref_kw = if meta.needs_ref() { "ref " } else { "" };
+    output.push_str(&format!(
+      "    if let ::core::option::Option::Some({}v) = self.{} {{\n",
+      ref_kw, meta.fname
+    ));
+    let size_expr = type_mapper::encoded_size_expression(meta.td, "v", analysis)?;
+    output.push_str(&format!(
+      "      size += wire::tagged_size({});\n",
+      size_expr
+    ));
+    output.push_str("    }\n");
   }
   output.push_str("    size\n");
   output.push_str("  }\n");

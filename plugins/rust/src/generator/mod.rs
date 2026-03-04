@@ -179,7 +179,7 @@ impl LifetimeAnalysis {
         break;
       }
     }
-    analysis.analyze_trait_derives(schemas);
+    analysis.analyze_trait_derives(&def_by_fqn);
     analysis
   }
 
@@ -239,7 +239,10 @@ impl LifetimeAnalysis {
     self.hash_fqns.contains(fqn)
   }
 
-  fn analyze_trait_derives(&mut self, schemas: &[SchemaDescriptor]) {
+  fn analyze_trait_derives<'a>(
+    &mut self,
+    def_by_fqn: &HashMap<String, &'a DefinitionDescriptor<'a>>,
+  ) {
     #[derive(Clone, Copy, Default, PartialEq, Eq)]
     struct TypeTraits {
       has_float: bool,
@@ -396,14 +399,8 @@ impl LifetimeAnalysis {
       }
     }
 
-    let mut def_by_fqn: HashMap<String, &DefinitionDescriptor> = HashMap::new();
-    for schema in schemas {
-      let defs = schema.definitions.as_deref().unwrap_or(&[]);
-      collect_definitions(defs, &mut def_by_fqn);
-    }
-
     let mut deps_by_fqn: HashMap<String, (DefinitionKind, TraitDeps)> = HashMap::new();
-    for (fqn, def) in &def_by_fqn {
+    for (fqn, def) in def_by_fqn {
       if let Some(kind) = def.kind {
         if kind_supports_derives(kind) {
           deps_by_fqn.insert(fqn.clone(), (kind, definition_deps(def)));
@@ -1681,7 +1678,7 @@ mod tests {
     // Should use discriminator() in encode
     assert!(output.contains("self.discriminator()"));
     // Decode should use From
-    assert!(output.contains("Self::from(value)"));
+    assert!(output.contains("::core::convert::From<_>>::from(value)"));
   }
 
   #[test]
