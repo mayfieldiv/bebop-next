@@ -9,7 +9,7 @@ publish = false
 default = ["std"]
 std = ["half/std"]
 chrono = ["dep:chrono"]
-serde = ["dep:serde", "dep:serde_bytes", "half/serde", "uuid/serde"]
+serde = ["dep:serde", "dep:serde_bytes", "half/serde", "uuid/serde", "hashbrown/serde"]
 
 [dependencies]
 chrono = { version = "0.4", default-features = false, optional = true }
