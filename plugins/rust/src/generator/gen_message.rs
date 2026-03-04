@@ -5,7 +5,7 @@ use super::naming::{field_name, type_name};
 use super::type_mapper;
 use super::{
   emit_deprecated, emit_doc_comment, has_decorator, visibility_keyword, GeneratorOptions,
-  LifetimeAnalysis,
+  LifetimeAnalysis, FORWARD_COMPATIBLE,
 };
 
 /// Wrapping strategy for a message field.
@@ -56,7 +56,7 @@ pub fn generate(
 
   let fields = message_def.fields.as_deref().unwrap_or(&[]);
   let vis = visibility_keyword(def, options);
-  let is_forward_compatible = has_decorator(def, "bebop.forward_compatible");
+  let is_forward_compatible = has_decorator(def, FORWARD_COMPATIBLE);
   let has_lifetime = analysis.lifetime_fqns.contains(own_fqn);
 
   let lt = if has_lifetime { "<'buf>" } else { "" };

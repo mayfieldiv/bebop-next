@@ -4,7 +4,7 @@ use crate::generated::DefinitionDescriptor;
 use super::naming::{fqn_to_type_name, type_name};
 use super::{
   emit_deprecated, emit_doc_comment, has_decorator, visibility_keyword, GeneratorOptions,
-  LifetimeAnalysis,
+  LifetimeAnalysis, FORWARD_COMPATIBLE,
 };
 
 /// Generate Rust code for a union definition.
@@ -60,13 +60,8 @@ pub fn generate(
     .collect();
 
   let vis = visibility_keyword(def, options);
-  let is_forward_compatible = has_decorator(def, "bebop.forward_compatible");
-
-  let has_lifetime = if is_forward_compatible {
-    true // Unknown variant always needs Cow<'buf, [u8]>
-  } else {
-    analysis.lifetime_fqns.contains(fqn)
-  };
+  let is_forward_compatible = has_decorator(def, FORWARD_COMPATIBLE);
+  let has_lifetime = analysis.lifetime_fqns.contains(fqn);
   let lt = if has_lifetime { "<'buf>" } else { "" };
 
   // ── Doc comment + deprecated ──────────────────────────────────
