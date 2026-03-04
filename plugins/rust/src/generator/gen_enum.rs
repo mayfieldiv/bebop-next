@@ -4,7 +4,8 @@ use crate::generated::{DefinitionDescriptor, EnumDef, TypeKind};
 use super::naming::{type_name, variant_name};
 use super::type_mapper::{enum_base_rust_type, enum_read_method, enum_write_method, fixed_size};
 use super::{
-  emit_deprecated, emit_doc_comment, visibility_keyword, GeneratorOptions, LifetimeAnalysis,
+  emit_deprecated, emit_doc_comment, has_decorator, visibility_keyword, GeneratorOptions,
+  LifetimeAnalysis,
 };
 
 /// Generate Rust code for an enum definition.
@@ -37,10 +38,36 @@ pub fn generate(
   );
 
   let vis = visibility_keyword(def, options);
+  let is_forward_compatible = has_decorator(def, "bebop.forward_compatible");
 
   if is_flags {
     generate_flags(
-      def, enum_def, output, &name, vis, base_type, byte_size, is_signed, base_kind,
+      def,
+      enum_def,
+      output,
+      &name,
+      vis,
+      base_type,
+      read_method,
+      write_method,
+      byte_size,
+      is_signed,
+      base_kind,
+      is_forward_compatible,
+    )?;
+  } else if is_forward_compatible {
+    generate_forward_compatible_enum(
+      def,
+      enum_def,
+      output,
+      &name,
+      vis,
+      base_type,
+      read_method,
+      write_method,
+      byte_size,
+      is_signed,
+      base_kind,
     )?;
   } else {
     generate_enum(
@@ -201,6 +228,154 @@ fn generate_enum(
   Ok(())
 }
 
+/// Generate a forward-compatible enum with an Unknown(T) variant.
+/// Used when @forward_compatible decorator is present.
+#[allow(clippy::too_many_arguments)]
+fn generate_forward_compatible_enum(
+  def: &DefinitionDescriptor,
+  enum_def: &EnumDef,
+  output: &mut String,
+  name: &str,
+  vis: &str,
+  base_type: &str,
+  read_method: &str,
+  write_method: &str,
+  byte_size: usize,
+  is_signed: bool,
+  base_kind: TypeKind,
+) -> Result<(), GeneratorError> {
+  let members = enum_def.members.as_deref().unwrap_or(&[]);
+
+  // Doc comment + deprecated
+  emit_doc_comment(output, &def.documentation);
+  emit_deprecated(output, &def.decorators);
+
+  // Enum definition — no #[repr]
+  output
+    .push_str("#[cfg_attr(feature = \"serde\", derive(serde::Serialize, serde::Deserialize))]\n");
+  output.push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\n");
+  output.push_str(&format!("{} enum {} {{\n", vis, name));
+
+  for m in members {
+    let mname = variant_name(m.name.as_deref().unwrap_or("Unknown"));
+    emit_doc_comment(output, &m.documentation);
+    emit_deprecated(output, &m.decorators);
+    output.push_str(&format!("  {},\n", mname));
+  }
+  output.push_str("  /// A discriminator value not recognized by this version of the schema.\n");
+  output.push_str(&format!("  Unknown({}),\n", base_type));
+  output.push_str("}\n\n");
+
+  // ── impl block: FIXED_ENCODED_SIZE, discriminator(), is_known() ──
+  output.push_str(&format!("impl {} {{\n", name));
+  output.push_str(&format!(
+    "  pub const FIXED_ENCODED_SIZE: usize = {};\n\n",
+    byte_size
+  ));
+
+  // discriminator()
+  output.push_str(&format!(
+    "  /// Returns the raw discriminator value.\n  pub fn discriminator(self) -> {} {{\n    match self {{\n",
+    base_type
+  ));
+  for m in members {
+    let mname = variant_name(m.name.as_deref().unwrap_or("Unknown"));
+    let mvalue = m.value.unwrap_or(0);
+    let formatted_value = if is_signed {
+      format_signed_value(mvalue, base_kind)
+    } else {
+      format!("{}", mvalue)
+    };
+    output.push_str(&format!("      Self::{} => {},\n", mname, formatted_value));
+  }
+  output.push_str("      Self::Unknown(v) => v,\n");
+  output.push_str("    }\n  }\n\n");
+
+  // is_known()
+  output.push_str("  /// Returns `true` if this value matches a known variant.\n");
+  output.push_str("  pub fn is_known(&self) -> bool {\n");
+  output.push_str("    !matches!(self, Self::Unknown(_))\n");
+  output.push_str("  }\n");
+
+  output.push_str(&format!(
+    "  // @@bebop_insertion_point(enum_scope:{})\n",
+    name
+  ));
+  output.push_str("}\n\n");
+
+  // ── From<base_type> for Name (infallible) ──
+  output.push_str(&format!(
+    "impl ::core::convert::From<{}> for {} {{\n",
+    base_type, name
+  ));
+  output.push_str(&format!(
+    "  fn from(value: {}) -> Self {{\n    match value {{\n",
+    base_type
+  ));
+  for m in members {
+    let mname = variant_name(m.name.as_deref().unwrap_or("Unknown"));
+    let mvalue = m.value.unwrap_or(0);
+    let formatted_value = if is_signed {
+      format_signed_value(mvalue, base_kind)
+    } else {
+      format!("{}", mvalue)
+    };
+    output.push_str(&format!("      {} => Self::{},\n", formatted_value, mname));
+  }
+  output.push_str("      v => Self::Unknown(v),\n");
+  output.push_str("    }\n  }\n}\n\n");
+
+  // ── From<Name> for base_type ──
+  output.push_str(&format!(
+    "impl ::core::convert::From<{}> for {} {{\n",
+    name, base_type
+  ));
+  output.push_str(&format!(
+    "  fn from(value: {}) -> {} {{ value.discriminator() }}\n",
+    name, base_type
+  ));
+  output.push_str("}\n\n");
+
+  // ── BebopEncode ──
+  output.push_str(&format!("impl BebopEncode for {} {{\n", name));
+  output.push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(encode_start:{})\n",
+    name
+  ));
+  output.push_str(&format!(
+    "    writer.{}(self.discriminator());\n",
+    write_method
+  ));
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(encode_end:{})\n",
+    name
+  ));
+  output.push_str("  }\n\n");
+  output.push_str("  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }\n");
+  output.push_str("}\n\n");
+
+  // ── BebopDecode ──
+  output.push_str(&format!("impl<'buf> BebopDecode<'buf> for {} {{\n", name));
+  output.push_str(
+    "  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {\n",
+  );
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(decode_start:{})\n",
+    name
+  ));
+  output.push_str(&format!("    let value = reader.{}()?;\n", read_method));
+  output.push_str(&format!(
+    "    // @@bebop_insertion_point(decode_end:{})\n",
+    name
+  ));
+  output.push_str("    ::core::result::Result::Ok(Self::from(value))\n");
+  output.push_str("  }\n");
+  output.push_str("}\n\n");
+
+  Ok(())
+}
+
 /// Generate a newtype struct with bitflags utility methods for @flags enums.
 #[allow(clippy::too_many_arguments)]
 fn generate_flags(
@@ -210,9 +385,12 @@ fn generate_flags(
   name: &str,
   vis: &str,
   base_type: &str,
+  read_method: &str,
+  _write_method: &str,
   byte_size: usize,
   is_signed: bool,
   base_kind: TypeKind,
+  is_forward_compatible: bool,
 ) -> Result<(), GeneratorError> {
   let members = enum_def.members.as_deref().unwrap_or(&[]);
 
@@ -316,6 +494,23 @@ fn generate_flags(
     "impl ::core::ops::Sub for {} {{ type Output = Self; fn sub(self, rhs: Self) -> Self {{ Self(self.0 & !rhs.0) }} }}\n\n",
     name
   ));
+
+  // ── BebopDecode (generated per-type, not blanket) ──
+  output.push_str(&format!("impl<'buf> BebopDecode<'buf> for {} {{\n", name));
+  output.push_str(
+    "  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {\n",
+  );
+  output.push_str(&format!("    let bits = reader.{}()?;\n", read_method));
+  if is_forward_compatible {
+    output.push_str("    ::core::result::Result::Ok(Self::from_bits_retain(bits))\n");
+  } else {
+    output.push_str(&format!(
+      "    Self::from_bits(bits).ok_or(DecodeError::InvalidFlags {{ type_name: \"{}\", bits: bits as u64 }})\n",
+      name
+    ));
+  }
+  output.push_str("  }\n");
+  output.push_str("}\n\n");
 
   Ok(())
 }
