@@ -5,7 +5,7 @@ use super::naming::{type_name, variant_name};
 use super::type_mapper::{enum_base_rust_type, enum_read_method, enum_write_method, fixed_size};
 use super::{
   emit_deprecated, emit_doc_comment, has_decorator, visibility_keyword, GeneratorOptions,
-  LifetimeAnalysis, FORWARD_COMPATIBLE,
+  LifetimeAnalysis, SerdeMode, FORWARD_COMPATIBLE,
 };
 
 /// Shared context for enum code generation, built once in `generate()`.
@@ -13,6 +13,7 @@ struct EnumCtx<'a> {
   def: &'a DefinitionDescriptor<'a>,
   members: &'a [EnumMemberDescriptor<'a>],
   output: &'a mut String,
+  options: &'a GeneratorOptions,
   name: String,
   vis: &'static str,
   base_type: &'static str,
@@ -76,6 +77,7 @@ pub fn generate(
     def,
     members: enum_def.members.as_deref().unwrap_or(&[]),
     output,
+    options,
     name,
     vis,
     base_type,
@@ -107,9 +109,7 @@ fn generate_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorError> {
   ctx
     .output
     .push_str(&format!("#[repr({})]\n", ctx.base_type));
-  ctx
-    .output
-    .push_str("#[cfg_attr(feature = \"serde\", derive(serde::Serialize, serde::Deserialize))]\n");
+  ctx.options.serde.emit_derive(ctx.output);
   ctx
     .output
     .push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\n");
@@ -234,9 +234,7 @@ fn generate_forward_compatible_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorEr
   emit_deprecated(ctx.output, &ctx.def.decorators);
 
   // Enum definition — no #[repr]
-  ctx
-    .output
-    .push_str("#[cfg_attr(feature = \"serde\", derive(serde::Serialize, serde::Deserialize))]\n");
+  ctx.options.serde.emit_derive(ctx.output);
   ctx
     .output
     .push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\n");
@@ -388,9 +386,7 @@ fn generate_flags(ctx: &mut EnumCtx, is_forward_compatible: bool) -> Result<(), 
   emit_deprecated(ctx.output, &ctx.def.decorators);
 
   // Derive + struct
-  ctx
-    .output
-    .push_str("#[cfg_attr(feature = \"serde\", derive(serde::Serialize, serde::Deserialize))]\n");
+  ctx.options.serde.emit_derive(ctx.output);
   ctx
     .output
     .push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\n");
