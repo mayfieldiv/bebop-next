@@ -16,7 +16,10 @@ cargo check -p bebop-runtime --no-default-features
 cargo check -p bebop-integration-tests
 cargo check -p bebop-integration-tests --no-default-features
 
-echo "Unit tests..."
+echo "Generator tests..."
+cargo test -p bebopc-gen-rust
+
+echo "Runtime tests..."
 cargo test -p bebop-runtime
 cargo test -p bebop-runtime --no-default-features
 
