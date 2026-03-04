@@ -108,13 +108,6 @@ impl GeneratorOptions {
 
     Ok(options)
   }
-
-  /// Parse from host_options only (backwards compat for existing callers).
-  pub fn from_host_options(
-    host_options: Option<&HashMap<Cow<'_, str>, Cow<'_, str>>>,
-  ) -> Result<Self, GeneratorError> {
-    Self::new(host_options, None)
-  }
 }
 
 impl SerdeMode {
@@ -1340,7 +1333,7 @@ mod tests {
   fn parses_visibility_host_option() {
     let mut host_options = HashMap::new();
     host_options.insert(Cow::Borrowed("Visibility"), Cow::Borrowed("crate"));
-    let options = GeneratorOptions::from_host_options(Some(&host_options)).unwrap();
+    let options = GeneratorOptions::new(Some(&host_options), None).unwrap();
     assert_eq!(options.default_visibility, DefaultVisibility::Crate);
   }
 
@@ -1348,7 +1341,7 @@ mod tests {
   fn rejects_invalid_visibility_host_option() {
     let mut host_options = HashMap::new();
     host_options.insert(Cow::Borrowed("Visibility"), Cow::Borrowed("private"));
-    let err = GeneratorOptions::from_host_options(Some(&host_options)).unwrap_err();
+    let err = GeneratorOptions::new(Some(&host_options), None).unwrap_err();
     assert!(matches!(err, GeneratorError::InvalidOption(_)));
   }
 
@@ -1989,14 +1982,18 @@ mod tests {
     let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
     let output = RustGenerator::with_options(
       None,
-      GeneratorOptions { serde: SerdeMode::Always, ..Default::default() },
+      GeneratorOptions {
+        serde: SerdeMode::Always,
+        ..Default::default()
+      },
     )
     .generate(&schema, &[], &analysis)
     .expect("generator should succeed");
 
     assert!(
       output.contains("#[derive(serde::Serialize, serde::Deserialize)]\n#[derive(Debug"),
-      "should emit unconditional serde derive, got:\n{}", output
+      "should emit unconditional serde derive, got:\n{}",
+      output
     );
     assert!(!output.contains("cfg_attr"), "should not contain cfg_attr");
   }
@@ -2028,12 +2025,18 @@ mod tests {
     let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
     let output = RustGenerator::with_options(
       None,
-      GeneratorOptions { serde: SerdeMode::Disabled, ..Default::default() },
+      GeneratorOptions {
+        serde: SerdeMode::Disabled,
+        ..Default::default()
+      },
     )
     .generate(&schema, &[], &analysis)
     .expect("generator should succeed");
 
-    assert!(!output.contains("serde"), "should not contain any serde references");
+    assert!(
+      !output.contains("serde"),
+      "should not contain any serde references"
+    );
   }
 
   #[test]
@@ -2046,7 +2049,10 @@ mod tests {
     let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
     let output = RustGenerator::with_options(
       None,
-      GeneratorOptions { serde: SerdeMode::Always, ..Default::default() },
+      GeneratorOptions {
+        serde: SerdeMode::Always,
+        ..Default::default()
+      },
     )
     .generate(&schema, &[], &analysis)
     .expect("generator should succeed");
@@ -2086,7 +2092,10 @@ mod tests {
     let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
     let output = RustGenerator::with_options(
       None,
-      GeneratorOptions { serde: SerdeMode::Disabled, ..Default::default() },
+      GeneratorOptions {
+        serde: SerdeMode::Disabled,
+        ..Default::default()
+      },
     )
     .generate(&schema, &[], &analysis)
     .expect("generator should succeed");
@@ -2109,14 +2118,20 @@ mod tests {
   #[test]
   fn parses_serde_feature_from_parameter() {
     let options = GeneratorOptions::new(None, Some("serde-feature:my_feat")).unwrap();
-    assert_eq!(options.serde, SerdeMode::FeatureGated(String::from("my_feat")));
+    assert_eq!(
+      options.serde,
+      SerdeMode::FeatureGated(String::from("my_feat"))
+    );
   }
 
   #[test]
   fn parses_serde_among_multiple_params() {
     // Test comma-separated parsing: serde can appear with other serde-prefixed tokens
     let options = GeneratorOptions::new(None, Some("serde-feature:feat1")).unwrap();
-    assert_eq!(options.serde, SerdeMode::FeatureGated(String::from("feat1")));
+    assert_eq!(
+      options.serde,
+      SerdeMode::FeatureGated(String::from("feat1"))
+    );
     // Also test that trimming works around commas
     let options = GeneratorOptions::new(None, Some(" serde ")).unwrap();
     assert_eq!(options.serde, SerdeMode::Always);
