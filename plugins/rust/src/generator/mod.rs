@@ -117,6 +117,57 @@ impl GeneratorOptions {
   }
 }
 
+impl SerdeMode {
+  pub fn emit_derive(&self, output: &mut String) {
+    match self {
+      SerdeMode::Disabled => {}
+      SerdeMode::Always => {
+        output.push_str("#[derive(serde::Serialize, serde::Deserialize)]\n");
+      }
+      SerdeMode::FeatureGated(feat) => {
+        output.push_str(&format!(
+          "#[cfg_attr(feature = \"{}\", derive(serde::Serialize, serde::Deserialize))]\n",
+          feat
+        ));
+      }
+    }
+  }
+
+  pub fn emit_field_attr(&self, output: &mut String, attr: &str) {
+    match self {
+      SerdeMode::Disabled => {}
+      SerdeMode::Always => {
+        output.push_str(&format!("  #[serde({})]\n", attr));
+      }
+      SerdeMode::FeatureGated(feat) => {
+        output.push_str(&format!(
+          "  #[cfg_attr(feature = \"{}\", serde({}))]\n",
+          feat, attr
+        ));
+      }
+    }
+  }
+
+  pub fn emit_type_attr(&self, output: &mut String, attr: &str) {
+    match self {
+      SerdeMode::Disabled => {}
+      SerdeMode::Always => {
+        output.push_str(&format!("#[serde({})]\n", attr));
+      }
+      SerdeMode::FeatureGated(feat) => {
+        output.push_str(&format!(
+          "#[cfg_attr(feature = \"{}\", serde({}))]\n",
+          feat, attr
+        ));
+      }
+    }
+  }
+
+  pub fn is_enabled(&self) -> bool {
+    !matches!(self, SerdeMode::Disabled)
+  }
+}
+
 /// Pre-computed lifetime and kind information for all definitions in a schema.
 pub struct LifetimeAnalysis {
   /// FQNs of enum definitions (never need a lifetime parameter).
@@ -571,7 +622,18 @@ impl RustGenerator {
     output.push_str("use alloc::vec;\n");
     output.push_str("use bebop_runtime::{BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopReader, BebopTimestamp, BebopWriter, DecodeError, bf16, f16};\n");
     output.push_str("use bebop_runtime::wire_size as wire;\n");
-    output.push_str("#[cfg(feature = \"serde\")]\nuse bebop_runtime::serde;\n");
+    match &self.options.serde {
+      SerdeMode::Disabled => {}
+      SerdeMode::Always => {
+        output.push_str("use bebop_runtime::serde;\n");
+      }
+      SerdeMode::FeatureGated(feat) => {
+        output.push_str(&format!(
+          "#[cfg(feature = \"{}\")]\nuse bebop_runtime::serde;\n",
+          feat
+        ));
+      }
+    }
 
     // Cross-module imports for sibling schemas
     for stem in sibling_imports {
@@ -1898,6 +1960,64 @@ mod tests {
     assert!(output.contains("reader.skip("));
     // Should NOT have InvalidField
     assert!(!output.contains("InvalidField"));
+  }
+
+  #[test]
+  fn serde_always_emits_unconditional_import() {
+    let schema = SchemaDescriptor {
+      path: Some(Cow::Borrowed("test.bop")),
+      definitions: Some(vec![]),
+      ..Default::default()
+    };
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::with_options(
+      None,
+      GeneratorOptions { serde: SerdeMode::Always, ..Default::default() },
+    )
+    .generate(&schema, &[], &analysis)
+    .expect("generator should succeed");
+
+    assert!(output.contains("use bebop_runtime::serde;\n"));
+    assert!(!output.contains("cfg(feature"));
+  }
+
+  #[test]
+  fn serde_feature_gated_emits_cfg_import() {
+    let schema = SchemaDescriptor {
+      path: Some(Cow::Borrowed("test.bop")),
+      definitions: Some(vec![]),
+      ..Default::default()
+    };
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::with_options(
+      None,
+      GeneratorOptions {
+        serde: SerdeMode::FeatureGated(String::from("my-serde")),
+        ..Default::default()
+      },
+    )
+    .generate(&schema, &[], &analysis)
+    .expect("generator should succeed");
+
+    assert!(output.contains("#[cfg(feature = \"my-serde\")]\nuse bebop_runtime::serde;\n"));
+  }
+
+  #[test]
+  fn serde_disabled_omits_import() {
+    let schema = SchemaDescriptor {
+      path: Some(Cow::Borrowed("test.bop")),
+      definitions: Some(vec![]),
+      ..Default::default()
+    };
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::with_options(
+      None,
+      GeneratorOptions { serde: SerdeMode::Disabled, ..Default::default() },
+    )
+    .generate(&schema, &[], &analysis)
+    .expect("generator should succeed");
+
+    assert!(!output.contains("bebop_runtime::serde"));
   }
 
   #[test]
