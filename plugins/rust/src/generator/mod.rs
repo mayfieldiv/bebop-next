@@ -647,9 +647,10 @@ pub fn emit_deprecated(output: &mut String, decorators: &Option<Vec<DecoratorUsa
 
 /// Returns `true` if the definition has a decorator with the given FQN.
 pub fn has_decorator(def: &DefinitionDescriptor, fqn: &str) -> bool {
-  def.decorators.as_ref().is_some_and(|decs| {
-    decs.iter().any(|d| d.fqn.as_deref() == Some(fqn))
-  })
+  def
+    .decorators
+    .as_ref()
+    .is_some_and(|decs| decs.iter().any(|d| d.fqn.as_deref() == Some(fqn)))
 }
 
 #[cfg(test)]
@@ -1510,6 +1511,13 @@ mod tests {
     );
   }
 
+  fn forward_compatible_decorator() -> Vec<DecoratorUsage<'static>> {
+    vec![DecoratorUsage {
+      fqn: Some(Cow::Borrowed("bebop.forward_compatible")),
+      ..Default::default()
+    }]
+  }
+
   #[test]
   fn strict_union_omits_lifetime_when_branches_are_scalar() {
     // Union with only scalar branches and no @forward_compatible → no 'buf
@@ -1608,5 +1616,59 @@ mod tests {
       analysis.lifetime_fqns.contains("test.FcUnion"),
       "forward-compatible union should always need lifetime"
     );
+  }
+
+  #[test]
+  fn forward_compatible_enum_emits_unknown_variant() {
+    let fc_enum = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Enum),
+      name: Some(Cow::Borrowed("Color")),
+      fqn: Some(Cow::Borrowed("test.Color")),
+      enum_def: Some(EnumDef {
+        base_type: Some(TypeKind::Uint32),
+        members: Some(vec![
+          EnumMemberDescriptor {
+            name: Some(Cow::Borrowed("Red")),
+            value: Some(1),
+            ..Default::default()
+          },
+          EnumMemberDescriptor {
+            name: Some(Cow::Borrowed("Green")),
+            value: Some(2),
+            ..Default::default()
+          },
+        ]),
+        is_flags: Some(false),
+      }),
+      decorators: Some(forward_compatible_decorator()),
+      ..Default::default()
+    };
+
+    let schema = SchemaDescriptor {
+      path: Some(Cow::Borrowed("fc-enum.bop")),
+      definitions: Some(vec![fc_enum]),
+      ..Default::default()
+    };
+
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::new(None)
+      .generate(&schema, &[], &analysis)
+      .expect("generator should succeed");
+
+    // Should NOT have #[repr]
+    assert!(!output.contains("#[repr("));
+    // Should have Unknown variant
+    assert!(output.contains("Unknown(u32)"));
+    // Should have discriminator() method
+    assert!(output.contains("fn discriminator(self)"));
+    // Should have is_known() method
+    assert!(output.contains("fn is_known("));
+    // Should use From, not TryFrom
+    assert!(output.contains("impl ::core::convert::From<u32> for Color"));
+    assert!(!output.contains("TryFrom"));
+    // Should use discriminator() in encode
+    assert!(output.contains("self.discriminator()"));
+    // Decode should use From
+    assert!(output.contains("Self::from(value)"));
   }
 }
