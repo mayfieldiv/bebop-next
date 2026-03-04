@@ -767,6 +767,7 @@ mod tests {
           ..Default::default()
         }]),
       }),
+      decorators: Some(forward_compatible_decorator()),
       ..Default::default()
     };
 
@@ -855,6 +856,7 @@ mod tests {
           ..Default::default()
         }]),
       }),
+      decorators: Some(forward_compatible_decorator()),
       ..Default::default()
     };
 
@@ -1002,6 +1004,7 @@ mod tests {
         ]),
       }),
       nested: Some(vec![bool_msg, number_msg, list_msg, object_msg]),
+      decorators: Some(forward_compatible_decorator()),
       ..Default::default()
     };
 
@@ -1366,6 +1369,7 @@ mod tests {
           ..Default::default()
         }]),
       }),
+      decorators: Some(forward_compatible_decorator()),
       ..Default::default()
     };
 
@@ -1670,5 +1674,114 @@ mod tests {
     assert!(output.contains("self.discriminator()"));
     // Decode should use From
     assert!(output.contains("Self::from(value)"));
+  }
+
+  #[test]
+  fn strict_union_rejects_unknown_discriminator() {
+    let inner_struct = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Struct),
+      name: Some(Cow::Borrowed("Payload")),
+      fqn: Some(Cow::Borrowed("test.Payload")),
+      struct_def: Some(StructDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("id")),
+          r#type: Some(scalar_type(TypeKind::Int32)),
+          index: Some(0),
+          ..Default::default()
+        }]),
+        fixed_size: Some(4),
+        ..Default::default()
+      }),
+      ..Default::default()
+    };
+
+    let strict_union = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Union),
+      name: Some(Cow::Borrowed("StrictUnion")),
+      fqn: Some(Cow::Borrowed("test.StrictUnion")),
+      union_def: Some(UnionDef {
+        branches: Some(vec![UnionBranchDescriptor {
+          discriminator: Some(1),
+          name: Some(Cow::Borrowed("payload")),
+          type_ref_fqn: Some(Cow::Borrowed("test.Payload")),
+          ..Default::default()
+        }]),
+      }),
+      // No decorators — strict mode
+      ..Default::default()
+    };
+
+    let schema = SchemaDescriptor {
+      path: Some(Cow::Borrowed("strict-union.bop")),
+      definitions: Some(vec![inner_struct, strict_union]),
+      ..Default::default()
+    };
+
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::new(None)
+      .generate(&schema, &[], &analysis)
+      .expect("generator should succeed");
+
+    // Should NOT have Unknown variant
+    assert!(!output.contains("Unknown(u8,"));
+    // Should NOT have 'buf on the enum (all branches are scalar structs)
+    assert!(output.contains("pub enum StrictUnion {"));
+    assert!(!output.contains("pub enum StrictUnion<'buf>"));
+    // Should have InvalidUnion error in decode
+    assert!(output.contains("InvalidUnion"));
+  }
+
+  #[test]
+  fn forward_compatible_union_has_unknown_variant() {
+    let inner_struct = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Struct),
+      name: Some(Cow::Borrowed("Payload")),
+      fqn: Some(Cow::Borrowed("test.Payload")),
+      struct_def: Some(StructDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("id")),
+          r#type: Some(scalar_type(TypeKind::Int32)),
+          index: Some(0),
+          ..Default::default()
+        }]),
+        fixed_size: Some(4),
+        ..Default::default()
+      }),
+      ..Default::default()
+    };
+
+    let fc_union = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Union),
+      name: Some(Cow::Borrowed("FcUnion")),
+      fqn: Some(Cow::Borrowed("test.FcUnion")),
+      union_def: Some(UnionDef {
+        branches: Some(vec![UnionBranchDescriptor {
+          discriminator: Some(1),
+          name: Some(Cow::Borrowed("payload")),
+          type_ref_fqn: Some(Cow::Borrowed("test.Payload")),
+          ..Default::default()
+        }]),
+      }),
+      decorators: Some(forward_compatible_decorator()),
+      ..Default::default()
+    };
+
+    let schema = SchemaDescriptor {
+      path: Some(Cow::Borrowed("fc-union.bop")),
+      definitions: Some(vec![inner_struct, fc_union]),
+      ..Default::default()
+    };
+
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::new(None)
+      .generate(&schema, &[], &analysis)
+      .expect("generator should succeed");
+
+    // Should have Unknown variant with Cow
+    assert!(output.contains("Unknown(u8, alloc::borrow::Cow<'buf, [u8]>)"));
+    // Should have 'buf
+    assert!(output.contains("pub enum FcUnion<'buf>"));
+    // Should NOT have InvalidUnion
+    assert!(!output.contains("InvalidUnion"));
   }
 }
