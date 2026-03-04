@@ -45,3 +45,25 @@ package bebop
 #decorator(flags) {
     targets = ENUM
 }
+
+/// Marks a type as forward-compatible with future schema versions.
+///
+/// Without this decorator, decoding a value with an unrecognized
+/// discriminator, field tag, or bit pattern is an error. With this
+/// decorator, unknown values are preserved and can round-trip.
+///
+/// - **enum**: Adds an `Unknown(T)` variant for unrecognized discriminators.
+/// - **@flags enum**: Accepts unknown bit patterns without error.
+/// - **union**: Adds an `Unknown` branch for unrecognized discriminators.
+/// - **message**: Silently skips unrecognized field tags.
+///
+/// ```bebop
+/// @forward_compatible
+/// enum Status : uint32 {
+///   OK = 0;
+///   ERROR = 1;
+/// }
+/// ```
+#decorator(forward_compatible) {
+    targets = ENUM | UNION | MESSAGE
+}
