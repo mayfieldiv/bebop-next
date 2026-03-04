@@ -51,30 +51,69 @@ impl DefaultVisibility {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SerdeMode {
+  /// No serde code emitted.
+  Disabled,
+  /// Unconditional serde derives (no cfg_attr).
+  Always,
+  /// Wrap serde derives in `cfg_attr(feature = "<name>", ...)`.
+  FeatureGated(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GeneratorOptions {
   pub default_visibility: DefaultVisibility,
+  pub serde: SerdeMode,
 }
 
 impl Default for GeneratorOptions {
   fn default() -> Self {
     Self {
       default_visibility: DefaultVisibility::Public,
+      serde: SerdeMode::Disabled,
     }
   }
 }
 
 impl GeneratorOptions {
-  pub fn from_host_options(
+  pub fn new(
     host_options: Option<&HashMap<Cow<'_, str>, Cow<'_, str>>>,
+    parameter: Option<&str>,
   ) -> Result<Self, GeneratorError> {
     let mut options = Self::default();
+
+    // Host options: Visibility
     if let Some(host_options) = host_options {
       if let Some(value) = host_options.get("Visibility") {
         options.default_visibility = DefaultVisibility::parse(value.as_ref())?;
       }
     }
+
+    // Plugin parameter: serde, serde-feature:<name>
+    if let Some(param) = parameter {
+      for token in param.split(',').map(str::trim).filter(|s| !s.is_empty()) {
+        if token == "serde" {
+          options.serde = SerdeMode::Always;
+        } else if let Some(feat) = token.strip_prefix("serde-feature:") {
+          options.serde = SerdeMode::FeatureGated(feat.to_string());
+        } else {
+          return Err(GeneratorError::InvalidOption(format!(
+            "unknown plugin option: {:?}",
+            token
+          )));
+        }
+      }
+    }
+
     Ok(options)
+  }
+
+  /// Parse from host_options only (backwards compat for existing callers).
+  pub fn from_host_options(
+    host_options: Option<&HashMap<Cow<'_, str>, Cow<'_, str>>>,
+  ) -> Result<Self, GeneratorError> {
+    Self::new(host_options, None)
   }
 }
 
@@ -1282,6 +1321,7 @@ mod tests {
       None,
       GeneratorOptions {
         default_visibility: DefaultVisibility::Crate,
+        ..Default::default()
       },
     )
     .generate(&schema, &[], &analysis)
@@ -1858,5 +1898,56 @@ mod tests {
     assert!(output.contains("reader.skip("));
     // Should NOT have InvalidField
     assert!(!output.contains("InvalidField"));
+  }
+
+  #[test]
+  fn serde_defaults_to_disabled() {
+    let options = GeneratorOptions::new(None, None).unwrap();
+    assert_eq!(options.serde, SerdeMode::Disabled);
+  }
+
+  #[test]
+  fn parses_serde_from_parameter() {
+    let options = GeneratorOptions::new(None, Some("serde")).unwrap();
+    assert_eq!(options.serde, SerdeMode::Always);
+  }
+
+  #[test]
+  fn parses_serde_feature_from_parameter() {
+    let options = GeneratorOptions::new(None, Some("serde-feature:my_feat")).unwrap();
+    assert_eq!(options.serde, SerdeMode::FeatureGated(String::from("my_feat")));
+  }
+
+  #[test]
+  fn parses_serde_among_multiple_params() {
+    // Test comma-separated parsing: serde can appear with other serde-prefixed tokens
+    let options = GeneratorOptions::new(None, Some("serde-feature:feat1")).unwrap();
+    assert_eq!(options.serde, SerdeMode::FeatureGated(String::from("feat1")));
+    // Also test that trimming works around commas
+    let options = GeneratorOptions::new(None, Some(" serde ")).unwrap();
+    assert_eq!(options.serde, SerdeMode::Always);
+  }
+
+  #[test]
+  fn rejects_unknown_parameter() {
+    let err = GeneratorOptions::new(None, Some("bogus")).unwrap_err();
+    assert!(matches!(err, GeneratorError::InvalidOption(_)));
+  }
+
+  #[test]
+  fn visibility_still_from_host_options() {
+    let mut host_options = HashMap::new();
+    host_options.insert(Cow::Borrowed("Visibility"), Cow::Borrowed("crate"));
+    let options = GeneratorOptions::new(Some(&host_options), None).unwrap();
+    assert_eq!(options.default_visibility, DefaultVisibility::Crate);
+  }
+
+  #[test]
+  fn both_host_options_and_parameter() {
+    let mut host_options = HashMap::new();
+    host_options.insert(Cow::Borrowed("Visibility"), Cow::Borrowed("crate"));
+    let options = GeneratorOptions::new(Some(&host_options), Some("serde")).unwrap();
+    assert_eq!(options.default_visibility, DefaultVisibility::Crate);
+    assert_eq!(options.serde, SerdeMode::Always);
   }
 }
