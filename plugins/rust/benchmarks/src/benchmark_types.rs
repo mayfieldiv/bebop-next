@@ -16,7 +16,7 @@ extern crate alloc;
 extern crate bebop_runtime;
 extern crate core;
 use alloc::vec;
-#[cfg(feature = "serde")]
+
 use bebop_runtime::serde;
 use bebop_runtime::wire_size as wire;
 use bebop_runtime::{
@@ -29,8 +29,7 @@ use core::iter::Iterator as _;
 
 // @@bebop_insertion_point(imports)
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Person<'buf> {
   pub id: i32,
   pub name: alloc::borrow::Cow<'buf, str>,
@@ -110,8 +109,7 @@ impl<'buf> Person<'buf> {
   // @@bebop_insertion_point(struct_scope:Person)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
 pub struct Order {
   pub order_id: i64,
   pub customer_id: i64,
@@ -190,15 +188,14 @@ impl Order {
   // @@bebop_insertion_point(struct_scope:Order)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Event<'buf> {
   pub id: i64,
   pub r#type: alloc::borrow::Cow<'buf, str>,
   pub source: alloc::borrow::Cow<'buf, str>,
   pub timestamp: i64,
-  #[cfg_attr(feature = "serde", serde(borrow))]
-  #[cfg_attr(feature = "serde", serde(with = "bebop_runtime::serde_cow_bytes"))]
+  #[serde(borrow)]
+  #[serde(with = "bebop_runtime::serde_cow_bytes")]
   pub payload: alloc::borrow::Cow<'buf, [u8]>,
 }
 
@@ -282,8 +279,7 @@ impl<'buf> Event<'buf> {
   // @@bebop_insertion_point(struct_scope:Event)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct TreeNode {
   pub value: ::core::option::Option<i32>,
   pub children: ::core::option::Option<alloc::vec::Vec<TreeNode>>,
@@ -354,8 +350,7 @@ impl TreeNode {
   // @@bebop_insertion_point(message_scope:TreeNode)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct JsonNull {}
 
 impl JsonNull {
@@ -388,8 +383,8 @@ impl JsonNull {
   // @@bebop_insertion_point(struct_scope:JsonNull)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(tag = "type", content = "value")]
 #[derive(Debug, Clone, PartialEq)]
 pub enum JsonValue<'buf> {
   Null(JsonNull),
@@ -398,7 +393,7 @@ pub enum JsonValue<'buf> {
   String(String<'buf>),
   List(List<'buf>),
   Object(Object<'buf>),
-  #[cfg_attr(feature = "serde", serde(skip))]
+  #[serde(skip)]
   Unknown(u8, alloc::borrow::Cow<'buf, [u8]>),
 }
 
@@ -505,8 +500,7 @@ impl<'buf> JsonValue<'buf> {
   // @@bebop_insertion_point(union_scope:JsonValue)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct Bool {
   pub value: ::core::option::Option<bool>,
 }
@@ -566,8 +560,7 @@ impl Bool {
   // @@bebop_insertion_point(message_scope:Bool)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct Number {
   pub value: ::core::option::Option<f64>,
 }
@@ -627,8 +620,7 @@ impl Number {
   // @@bebop_insertion_point(message_scope:Number)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct String<'buf> {
   pub value: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
 }
@@ -702,8 +694,7 @@ impl<'buf> String<'buf> {
   // @@bebop_insertion_point(message_scope:String)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct List<'buf> {
   pub values: ::core::option::Option<alloc::vec::Vec<JsonValue<'buf>>>,
 }
@@ -777,8 +768,7 @@ impl<'buf> List<'buf> {
   // @@bebop_insertion_point(message_scope:List)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct Object<'buf> {
   pub fields: ::core::option::Option<
     ::bebop_runtime::HashMap<alloc::borrow::Cow<'buf, str>, JsonValue<'buf>>,
@@ -866,8 +856,7 @@ impl<'buf> Object<'buf> {
   // @@bebop_insertion_point(message_scope:Object)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct Document<'buf> {
   pub title: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   pub body: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
@@ -982,8 +971,7 @@ impl<'buf> Document<'buf> {
 }
 
 #[repr(u8)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChunkKind {
   Unknown = 0,
   Paragraph = 1,
@@ -1039,8 +1027,7 @@ impl<'buf> BebopDecode<'buf> for ChunkKind {
   }
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TextSpan {
   pub start: u32,
   pub len: u32,
@@ -1085,8 +1072,7 @@ impl TextSpan {
   // @@bebop_insertion_point(struct_scope:TextSpan)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ChunkedText<'buf> {
   pub source: alloc::borrow::Cow<'buf, str>,
   pub spans: alloc::vec::Vec<TextSpan>,
@@ -1143,8 +1129,7 @@ impl<'buf> ChunkedText<'buf> {
   // @@bebop_insertion_point(struct_scope:ChunkedText)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
 pub struct EmbeddingBf16 {
   pub id: ::bebop_runtime::Uuid,
   pub vector: alloc::vec::Vec<bf16>,
@@ -1186,8 +1171,7 @@ impl EmbeddingBf16 {
   // @@bebop_insertion_point(struct_scope:EmbeddingBf16)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
 pub struct EmbeddingF32 {
   pub id: ::bebop_runtime::Uuid,
   pub vector: alloc::vec::Vec<f32>,
@@ -1229,8 +1213,7 @@ impl EmbeddingF32 {
   // @@bebop_insertion_point(struct_scope:EmbeddingF32)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
 pub struct EmbeddingBatch<'buf> {
   pub model: alloc::borrow::Cow<'buf, str>,
   pub embeddings: alloc::vec::Vec<EmbeddingBf16>,
@@ -1301,8 +1284,7 @@ impl<'buf> EmbeddingBatch<'buf> {
   // @@bebop_insertion_point(struct_scope:EmbeddingBatch)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
 pub struct TokenLogprob<'buf> {
   pub token: alloc::borrow::Cow<'buf, str>,
   pub token_id: u32,
@@ -1373,8 +1355,7 @@ impl<'buf> TokenLogprob<'buf> {
   // @@bebop_insertion_point(struct_scope:TokenLogprob)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
 pub struct TokenAlternatives<'buf> {
   pub top_tokens: alloc::vec::Vec<TokenLogprob<'buf>>,
 }
@@ -1426,8 +1407,7 @@ impl<'buf> TokenAlternatives<'buf> {
   // @@bebop_insertion_point(struct_scope:TokenAlternatives)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
 pub struct LlmStreamChunk<'buf> {
   pub chunk_id: u32,
   pub tokens: alloc::vec::Vec<alloc::borrow::Cow<'buf, str>>,
@@ -1519,8 +1499,7 @@ impl<'buf> LlmStreamChunk<'buf> {
   // @@bebop_insertion_point(struct_scope:LlmStreamChunk)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
 pub struct TensorShard<'buf> {
   pub name: alloc::borrow::Cow<'buf, str>,
   pub shape: alloc::vec::Vec<u32>,
@@ -1616,8 +1595,7 @@ impl<'buf> TensorShard<'buf> {
   // @@bebop_insertion_point(struct_scope:TensorShard)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
 pub struct InferenceTiming {
   pub queue_time: BebopDuration,
   pub inference_time: BebopDuration,
@@ -1677,8 +1655,7 @@ impl InferenceTiming {
   // @@bebop_insertion_point(struct_scope:InferenceTiming)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
 pub struct InferenceResponse {
   pub request_id: ::bebop_runtime::Uuid,
   pub embeddings: alloc::vec::Vec<EmbeddingBf16>,
