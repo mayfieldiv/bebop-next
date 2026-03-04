@@ -114,7 +114,7 @@ impl LifetimeAnalysis {
       if def.kind == Some(DefinitionKind::Union) {
         // Forward-compatible unions always need lifetime (Unknown variant uses Cow<'buf, [u8]>).
         // Strict unions only need lifetime if their branches do (resolved in the fixpoint loop).
-        if has_decorator(def, "bebop.forward_compatible") {
+        if has_decorator(def, FORWARD_COMPATIBLE) {
           analysis.lifetime_fqns.insert(fqn.clone());
         }
       }
@@ -152,22 +152,19 @@ impl LifetimeAnalysis {
               })
             }),
           Some(DefinitionKind::Union) => {
-            // Forward-compatible unions already added above.
-            // Strict unions need lifetime only if any branch does.
-            if has_decorator(def, "bebop.forward_compatible") {
-              true
-            } else {
-              def
-                .union_def
-                .as_ref()
-                .and_then(|ud| ud.branches.as_deref())
-                .is_some_and(|branches| {
-                  branches.iter().any(|b| {
-                    let branch_fqn = b.type_ref_fqn.as_deref().or(b.inline_fqn.as_deref());
-                    branch_fqn.is_some_and(|fqn| analysis.lifetime_fqns.contains(fqn))
-                  })
+            // Forward-compatible unions were already seeded above and skipped
+            // by the `continue`. Only strict unions reach here; they need
+            // lifetime only if any branch does.
+            def
+              .union_def
+              .as_ref()
+              .and_then(|ud| ud.branches.as_deref())
+              .is_some_and(|branches| {
+                branches.iter().any(|b| {
+                  let branch_fqn = b.type_ref_fqn.as_deref().or(b.inline_fqn.as_deref());
+                  branch_fqn.is_some_and(|fqn| analysis.lifetime_fqns.contains(fqn))
                 })
-            }
+              })
           }
           _ => false,
         };
@@ -645,15 +642,21 @@ pub fn emit_deprecated(output: &mut String, decorators: &Option<Vec<DecoratorUsa
   }
 }
 
+/// Fully-qualified name for the `@forward_compatible` decorator.
+pub const FORWARD_COMPATIBLE: &str = "bebop.forward_compatible";
+
 /// Returns `true` if the definition has a decorator matching `name`.
 /// Matches both bare names (`"forward_compatible"`) and fully-qualified
 /// names (`"bebop.forward_compatible"`).
 pub fn has_decorator(def: &DefinitionDescriptor, name: &str) -> bool {
   def.decorators.as_ref().is_some_and(|decs| {
     decs.iter().any(|d| {
-      d.fqn
-        .as_deref()
-        .is_some_and(|fqn| fqn == name || name.ends_with(&format!(".{}", fqn)))
+      d.fqn.as_deref().is_some_and(|fqn| {
+        fqn == name
+          || (name.len() > fqn.len()
+            && name.ends_with(fqn)
+            && name.as_bytes()[name.len() - fqn.len() - 1] == b'.')
+      })
     })
   })
 }
