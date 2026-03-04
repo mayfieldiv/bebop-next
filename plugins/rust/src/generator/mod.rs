@@ -1963,6 +1963,80 @@ mod tests {
   }
 
   #[test]
+  fn serde_always_emits_unconditional_struct_derive() {
+    let payload = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Struct),
+      name: Some(Cow::Borrowed("Payload")),
+      fqn: Some(Cow::Borrowed("test.Payload")),
+      struct_def: Some(StructDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("id")),
+          r#type: Some(scalar_type(TypeKind::Int32)),
+          index: Some(0),
+          ..Default::default()
+        }]),
+        fixed_size: Some(4),
+        ..Default::default()
+      }),
+      ..Default::default()
+    };
+
+    let schema = SchemaDescriptor {
+      path: Some(Cow::Borrowed("test.bop")),
+      definitions: Some(vec![payload]),
+      ..Default::default()
+    };
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::with_options(
+      None,
+      GeneratorOptions { serde: SerdeMode::Always, ..Default::default() },
+    )
+    .generate(&schema, &[], &analysis)
+    .expect("generator should succeed");
+
+    assert!(
+      output.contains("#[derive(serde::Serialize, serde::Deserialize)]\n#[derive(Debug"),
+      "should emit unconditional serde derive, got:\n{}", output
+    );
+    assert!(!output.contains("cfg_attr"), "should not contain cfg_attr");
+  }
+
+  #[test]
+  fn serde_disabled_omits_struct_derive() {
+    let payload = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Struct),
+      name: Some(Cow::Borrowed("Payload")),
+      fqn: Some(Cow::Borrowed("test.Payload")),
+      struct_def: Some(StructDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("id")),
+          r#type: Some(scalar_type(TypeKind::Int32)),
+          index: Some(0),
+          ..Default::default()
+        }]),
+        fixed_size: Some(4),
+        ..Default::default()
+      }),
+      ..Default::default()
+    };
+
+    let schema = SchemaDescriptor {
+      path: Some(Cow::Borrowed("test.bop")),
+      definitions: Some(vec![payload]),
+      ..Default::default()
+    };
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::with_options(
+      None,
+      GeneratorOptions { serde: SerdeMode::Disabled, ..Default::default() },
+    )
+    .generate(&schema, &[], &analysis)
+    .expect("generator should succeed");
+
+    assert!(!output.contains("serde"), "should not contain any serde references");
+  }
+
+  #[test]
   fn serde_always_emits_unconditional_import() {
     let schema = SchemaDescriptor {
       path: Some(Cow::Borrowed("test.bop")),
