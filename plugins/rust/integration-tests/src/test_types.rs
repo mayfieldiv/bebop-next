@@ -160,6 +160,16 @@ impl ::core::ops::Sub for Permissions {
   }
 }
 
+impl<'buf> BebopDecode<'buf> for Permissions {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+    let bits = reader.read_byte()?;
+    Self::from_bits(bits).ok_or(DecodeError::InvalidFlags {
+      type_name: "Permissions",
+      bits: bits as u64,
+    })
+  }
+}
+
 /// Constants used to validate Rust const generation.
 pub const P_CASE: u8 = 18u8;
 
@@ -576,8 +586,11 @@ impl<'buf> BebopDecode<'buf> for UserProfile<'buf> {
           })?)
         }
         7 => msg.permissions = ::core::option::Option::Some(Permissions::decode(reader)?),
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "UserProfile",
+            tag,
+          });
         }
       }
     }
@@ -682,8 +695,11 @@ impl<'buf> BebopDecode<'buf> for DrawCommand<'buf> {
           msg.label = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
         }
         4 => msg.thickness = ::core::option::Option::Some(reader.read_f32()?),
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "DrawCommand",
+            tag,
+          });
         }
       }
     }
@@ -755,7 +771,6 @@ impl<'buf> TextLabel<'buf> {
   // @@bebop_insertion_point(struct_scope:TextLabel)
 }
 
-/// Union with type-ref branches covering fixed and variable inner types.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))]
 #[derive(Debug, Clone, PartialEq)]
@@ -847,6 +862,383 @@ impl<'buf> BebopDecode<'buf> for Shape<'buf> {
 
 impl<'buf> Shape<'buf> {
   // @@bebop_insertion_point(union_scope:Shape)
+}
+
+/// Strict union: unknown discriminators are rejected with DecodeError.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))]
+#[derive(Debug, Clone, PartialEq)]
+pub enum StrictShape {
+  Point(Point),
+  Pixel(Pixel),
+}
+
+impl BebopEncode for StrictShape {
+  fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:StrictShape)
+    let pos = writer.reserve_message_length();
+    match self {
+      Self::Point(inner) => {
+        writer.write_byte(1);
+        inner.encode(writer);
+      }
+      Self::Pixel(inner) => {
+        writer.write_byte(2);
+        inner.encode(writer);
+      }
+    }
+    writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:StrictShape)
+  }
+
+  fn encoded_size(&self) -> usize {
+    wire::WIRE_LEN_PREFIX_SIZE
+      + match self {
+        Self::Point(inner) => wire::tagged_size(inner.encoded_size()),
+        Self::Pixel(inner) => wire::tagged_size(inner.encoded_size()),
+      }
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for StrictShape {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:StrictShape)
+    let length = reader.read_message_length()? as usize;
+    let start = reader.position();
+    let discriminator = reader.read_byte()?;
+    let value = match discriminator {
+      1 => ::core::result::Result::Ok(Self::Point(Point::decode(reader)?)),
+      2 => ::core::result::Result::Ok(Self::Pixel(Pixel::decode(reader)?)),
+      _ => ::core::result::Result::Err(DecodeError::InvalidUnion {
+        type_name: "StrictShape",
+        discriminator,
+      }),
+    };
+    // @@bebop_insertion_point(decode_end:StrictShape)
+    value
+  }
+}
+
+impl StrictShape {
+  // @@bebop_insertion_point(union_scope:StrictShape)
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Priority {
+  Unspecified,
+  Low,
+  Medium,
+  High,
+  /// A discriminator value not recognized by this version of the schema.
+  Unknown(u8),
+}
+
+impl Priority {
+  pub const FIXED_ENCODED_SIZE: usize = 1;
+
+  /// Returns the raw discriminator value.
+  pub fn discriminator(self) -> u8 {
+    match self {
+      Self::Unspecified => 0,
+      Self::Low => 1,
+      Self::Medium => 2,
+      Self::High => 3,
+      Self::Unknown(v) => v,
+    }
+  }
+
+  /// Returns `true` if this value matches a known variant.
+  pub fn is_known(&self) -> bool {
+    !::core::matches!(self, Self::Unknown(_))
+  }
+  // @@bebop_insertion_point(enum_scope:Priority)
+}
+
+impl ::core::convert::From<u8> for Priority {
+  fn from(value: u8) -> Self {
+    match value {
+      0 => Self::Unspecified,
+      1 => Self::Low,
+      2 => Self::Medium,
+      3 => Self::High,
+      v => Self::Unknown(v),
+    }
+  }
+}
+
+impl ::core::convert::From<Priority> for u8 {
+  fn from(value: Priority) -> u8 {
+    value.discriminator()
+  }
+}
+
+impl BebopEncode for Priority {
+  fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:Priority)
+    writer.write_byte(self.discriminator());
+    // @@bebop_insertion_point(encode_end:Priority)
+  }
+
+  fn encoded_size(&self) -> usize {
+    Self::FIXED_ENCODED_SIZE
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for Priority {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:Priority)
+    let value = reader.read_byte()?;
+    // @@bebop_insertion_point(decode_end:Priority)
+    ::core::result::Result::Ok(<Self as ::core::convert::From<_>>::from(value))
+  }
+}
+
+/// Strict message: unknown field tags are rejected with DecodeError.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
+pub struct StrictConfig<'buf> {
+  pub name: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  pub value: ::core::option::Option<u32>,
+}
+
+pub type StrictConfigOwned = StrictConfig<'static>;
+
+impl<'buf> StrictConfig<'buf> {
+  pub fn into_owned(self) -> StrictConfigOwned {
+    StrictConfig {
+      name: self.name.map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      value: self.value,
+    }
+  }
+}
+
+impl<'buf> BebopEncode for StrictConfig<'buf> {
+  fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:StrictConfig)
+    let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
+    if let ::core::option::Option::Some(ref v) = self.name {
+      writer.write_tag(1);
+      writer.write_string(&v);
+    }
+    if let ::core::option::Option::Some(v) = self.value {
+      writer.write_tag(2);
+      writer.write_u32(v);
+    }
+    writer.write_end_marker();
+    writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:StrictConfig)
+  }
+
+  fn encoded_size(&self) -> usize {
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    if let ::core::option::Option::Some(ref v) = self.name {
+      size += wire::tagged_size(wire::string_size(v.len()));
+    }
+    if let ::core::option::Option::Some(v) = self.value {
+      size += wire::tagged_size(::core::mem::size_of::<u32>());
+    }
+    size
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for StrictConfig<'buf> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:StrictConfig)
+    let length = reader.read_message_length()? as usize;
+    let end = reader.position() + length;
+    let mut msg = <Self as ::core::default::Default>::default();
+
+    while reader.position() < end {
+      let tag = reader.read_tag()?;
+      if tag == 0 {
+        break;
+      }
+      match tag {
+        1 => {
+          msg.name = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        2 => msg.value = ::core::option::Option::Some(reader.read_u32()?),
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "StrictConfig",
+            tag,
+          });
+        }
+      }
+    }
+    // @@bebop_insertion_point(decode_end:StrictConfig)
+    ::core::result::Result::Ok(msg)
+  }
+}
+
+impl<'buf> StrictConfig<'buf> {
+  // @@bebop_insertion_point(message_scope:StrictConfig)
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
+pub struct FlexConfig<'buf> {
+  pub name: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  pub value: ::core::option::Option<u32>,
+}
+
+pub type FlexConfigOwned = FlexConfig<'static>;
+
+impl<'buf> FlexConfig<'buf> {
+  pub fn into_owned(self) -> FlexConfigOwned {
+    FlexConfig {
+      name: self.name.map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      value: self.value,
+    }
+  }
+}
+
+impl<'buf> BebopEncode for FlexConfig<'buf> {
+  fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:FlexConfig)
+    let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
+    if let ::core::option::Option::Some(ref v) = self.name {
+      writer.write_tag(1);
+      writer.write_string(&v);
+    }
+    if let ::core::option::Option::Some(v) = self.value {
+      writer.write_tag(2);
+      writer.write_u32(v);
+    }
+    writer.write_end_marker();
+    writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:FlexConfig)
+  }
+
+  fn encoded_size(&self) -> usize {
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    if let ::core::option::Option::Some(ref v) = self.name {
+      size += wire::tagged_size(wire::string_size(v.len()));
+    }
+    if let ::core::option::Option::Some(v) = self.value {
+      size += wire::tagged_size(::core::mem::size_of::<u32>());
+    }
+    size
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for FlexConfig<'buf> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:FlexConfig)
+    let length = reader.read_message_length()? as usize;
+    let end = reader.position() + length;
+    let mut msg = <Self as ::core::default::Default>::default();
+
+    while reader.position() < end {
+      let tag = reader.read_tag()?;
+      if tag == 0 {
+        break;
+      }
+      match tag {
+        1 => {
+          msg.name = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        2 => msg.value = ::core::option::Option::Some(reader.read_u32()?),
+        _ => {
+          reader.skip(end - reader.position())?;
+        }
+      }
+    }
+    // @@bebop_insertion_point(decode_end:FlexConfig)
+    ::core::result::Result::Ok(msg)
+  }
+}
+
+impl<'buf> FlexConfig<'buf> {
+  // @@bebop_insertion_point(message_scope:FlexConfig)
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct FlexPermissions(pub u8);
+
+#[allow(non_upper_case_globals)]
+impl FlexPermissions {
+  pub const FIXED_ENCODED_SIZE: usize = 1;
+  pub const NONE: Self = Self(0);
+  pub const READ: Self = Self(1);
+  pub const WRITE: Self = Self(2);
+  // @@bebop_insertion_point(enum_scope:FlexPermissions)
+}
+
+impl BebopFlags for FlexPermissions {
+  type Bits = u8;
+  const ALL_BITS: Self::Bits = 3;
+  fn bits(self) -> Self::Bits {
+    self.0
+  }
+  fn from_bits_retain(bits: Self::Bits) -> Self {
+    Self(bits)
+  }
+}
+
+impl ::core::ops::BitOr for FlexPermissions {
+  type Output = Self;
+  fn bitor(self, rhs: Self) -> Self {
+    Self(self.0 | rhs.0)
+  }
+}
+impl ::core::ops::BitOrAssign for FlexPermissions {
+  fn bitor_assign(&mut self, rhs: Self) {
+    self.0 |= rhs.0;
+  }
+}
+impl ::core::ops::BitAnd for FlexPermissions {
+  type Output = Self;
+  fn bitand(self, rhs: Self) -> Self {
+    Self(self.0 & rhs.0)
+  }
+}
+impl ::core::ops::BitAndAssign for FlexPermissions {
+  fn bitand_assign(&mut self, rhs: Self) {
+    self.0 &= rhs.0;
+  }
+}
+impl ::core::ops::BitXor for FlexPermissions {
+  type Output = Self;
+  fn bitxor(self, rhs: Self) -> Self {
+    Self(self.0 ^ rhs.0)
+  }
+}
+impl ::core::ops::BitXorAssign for FlexPermissions {
+  fn bitxor_assign(&mut self, rhs: Self) {
+    self.0 ^= rhs.0;
+  }
+}
+impl ::core::ops::Not for FlexPermissions {
+  type Output = Self;
+  fn not(self) -> Self {
+    Self(!self.0)
+  }
+}
+impl ::core::ops::Sub for FlexPermissions {
+  type Output = Self;
+  fn sub(self, rhs: Self) -> Self {
+    Self(self.0 & !rhs.0)
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for FlexPermissions {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+    let bits = reader.read_byte()?;
+    ::core::result::Result::Ok(Self::from_bits_retain(bits))
+  }
 }
 
 /// Fixed-array struct (compile-time known element count).
@@ -1073,8 +1465,11 @@ impl<'buf> BebopDecode<'buf> for HalfPrecisionMessage {
         2 => msg.bf16_val = ::core::option::Option::Some(reader.read_bf16()?),
         3 => msg.f16_arr = ::core::option::Option::Some(reader.read_array(|_r| _r.read_f16())?),
         4 => msg.bf16_arr = ::core::option::Option::Some(reader.read_array(|_r| _r.read_bf16())?),
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "HalfPrecisionMessage",
+            tag,
+          });
         }
       }
     }
@@ -1255,8 +1650,11 @@ impl<'buf> BebopDecode<'buf> for Scene<'buf> {
         3 => {
           msg.title = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "Scene",
+            tag,
+          });
         }
       }
     }
@@ -1357,8 +1755,11 @@ impl<'buf> BebopDecode<'buf> for Inventory<'buf> {
         2 => {
           msg.label = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "Inventory",
+            tag,
+          });
         }
       }
     }
@@ -1434,8 +1835,11 @@ impl<'buf> BebopDecode<'buf> for EmptyMessage<'buf> {
           msg.unused_field =
             ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "EmptyMessage",
+            tag,
+          });
         }
       }
     }
@@ -1589,8 +1993,11 @@ impl<'buf> BebopDecode<'buf> for ScheduleEntry<'buf> {
         3 => {
           msg.label = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "ScheduleEntry",
+            tag,
+          });
         }
       }
     }
@@ -1791,8 +2198,11 @@ impl<'buf> BebopDecode<'buf> for DeprecatedFieldsMessage<'buf> {
             ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
         }
         3 => msg.legacy_enabled = ::core::option::Option::Some(reader.read_bool()?),
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "DeprecatedFieldsMessage",
+            tag,
+          });
         }
       }
     }
@@ -1899,8 +2309,11 @@ impl<'buf> BebopDecode<'buf> for IntegerKeyMaps<'buf> {
             reader.read_map(|_r| ::core::result::Result::Ok((_r.read_i64()?, _r.read_bool()?)))?,
           )
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "IntegerKeyMaps",
+            tag,
+          });
         }
       }
     }
@@ -2071,8 +2484,11 @@ impl<'buf> BebopDecode<'buf> for DeepNestedCollections<'buf> {
             ))
           })?)
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "DeepNestedCollections",
+            tag,
+          });
         }
       }
     }

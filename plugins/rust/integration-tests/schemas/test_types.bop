@@ -103,10 +103,49 @@ struct TextLabel {
 }
 
 /// Union with type-ref branches covering fixed and variable inner types.
+/// Forward-compatible: unknown discriminators are preserved and round-tripped.
+@forward_compatible
 union Shape {
     point(1): Point;
     pixel(2): Pixel;
     label(3): TextLabel;
+}
+
+/// Strict union: unknown discriminators are rejected with DecodeError.
+union StrictShape {
+    point(1): Point;
+    pixel(2): Pixel;
+}
+
+/// Forward-compatible enum: unknown discriminator values become Unknown(T).
+@forward_compatible
+enum Priority : uint8 {
+    UNSPECIFIED = 0;
+    LOW = 1;
+    MEDIUM = 2;
+    HIGH = 3;
+}
+
+/// Strict message: unknown field tags are rejected with DecodeError.
+message StrictConfig {
+    name(1): string;
+    value(2): uint32;
+}
+
+/// Forward-compatible message: unknown field tags are silently skipped.
+@forward_compatible
+message FlexConfig {
+    name(1): string;
+    value(2): uint32;
+}
+
+/// Forward-compatible flags: unknown bit patterns are accepted.
+@forward_compatible
+@flags
+enum FlexPermissions : uint8 {
+    NONE = 0;
+    READ = 1;
+    WRITE = 2;
 }
 
 /// Fixed-array struct (compile-time known element count).

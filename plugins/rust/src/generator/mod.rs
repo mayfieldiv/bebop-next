@@ -645,12 +645,17 @@ pub fn emit_deprecated(output: &mut String, decorators: &Option<Vec<DecoratorUsa
   }
 }
 
-/// Returns `true` if the definition has a decorator with the given FQN.
-pub fn has_decorator(def: &DefinitionDescriptor, fqn: &str) -> bool {
-  def
-    .decorators
-    .as_ref()
-    .is_some_and(|decs| decs.iter().any(|d| d.fqn.as_deref() == Some(fqn)))
+/// Returns `true` if the definition has a decorator matching `name`.
+/// Matches both bare names (`"forward_compatible"`) and fully-qualified
+/// names (`"bebop.forward_compatible"`).
+pub fn has_decorator(def: &DefinitionDescriptor, name: &str) -> bool {
+  def.decorators.as_ref().is_some_and(|decs| {
+    decs.iter().any(|d| {
+      d.fqn
+        .as_deref()
+        .is_some_and(|fqn| fqn == name || name.ends_with(&format!(".{}", fqn)))
+    })
+  })
 }
 
 #[cfg(test)]
