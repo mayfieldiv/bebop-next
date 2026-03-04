@@ -7,7 +7,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 use bebop_runtime::{
-  bf16, f16, BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopTimestamp, Uuid,
+  bf16, f16, BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopTimestamp, DecodeError, Uuid,
 };
 
 use bebop_integration_tests::test_types::*;
@@ -1298,4 +1298,200 @@ fn serde_union_round_trip_json() {
     }
     _ => panic!("expected Shape::Label"),
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Forward-compatible enum (@forward_compatible)
+// ═══════════════════════════════════════════════════════════════
+
+#[test]
+fn fc_enum_known_round_trip() {
+  let p = Priority::High;
+  let bytes = p.to_bytes();
+  let decoded = Priority::from_bytes(&bytes).unwrap();
+  assert_eq!(decoded, Priority::High);
+  assert!(decoded.is_known());
+  assert_eq!(decoded.discriminator(), 3);
+}
+
+#[test]
+fn fc_enum_unknown_value() {
+  // Manually write an unknown discriminator (42) for a uint8 enum
+  let bytes = [42u8];
+  let decoded = Priority::from_bytes(&bytes).unwrap();
+  assert_eq!(decoded, Priority::Unknown(42));
+  assert!(!decoded.is_known());
+  assert_eq!(decoded.discriminator(), 42);
+}
+
+#[test]
+fn fc_enum_unknown_round_trip() {
+  let p = Priority::Unknown(99);
+  let bytes = p.to_bytes();
+  let decoded = Priority::from_bytes(&bytes).unwrap();
+  assert_eq!(decoded, Priority::Unknown(99));
+}
+
+#[test]
+fn strict_enum_rejects_unknown() {
+  // Color is a strict enum (no @forward_compatible).
+  // An unknown discriminator (42) should fail.
+  let bytes = [42u8];
+  let err = Color::from_bytes(&bytes).unwrap_err();
+  assert!(matches!(err, DecodeError::InvalidEnum { .. }));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Strict union (no @forward_compatible)
+// ═══════════════════════════════════════════════════════════════
+
+#[test]
+fn strict_union_known_round_trip() {
+  let s = StrictShape::Point(Point::new(3.0, 4.0));
+  let bytes = s.to_bytes();
+  let decoded = StrictShape::from_bytes(&bytes).unwrap();
+  match decoded {
+    StrictShape::Point(p) => {
+      assert_eq!(p.x, 3.0);
+      assert_eq!(p.y, 4.0);
+    }
+    _ => panic!("expected StrictShape::Point"),
+  }
+}
+
+#[test]
+fn strict_union_rejects_unknown_discriminator() {
+  let s = StrictShape::Point(Point::new(1.0, 2.0));
+  let mut bytes = s.to_bytes();
+  // Union layout: [u32 length][u8 discriminator][payload...]
+  bytes[4] = 99;
+  let err = StrictShape::from_bytes(&bytes).unwrap_err();
+  assert!(matches!(err, DecodeError::InvalidUnion { .. }));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Strict message (no @forward_compatible)
+// ═══════════════════════════════════════════════════════════════
+
+#[test]
+fn strict_message_known_fields_round_trip() {
+  let mut msg = StrictConfig::default();
+  msg.name = Some(Cow::Borrowed("test"));
+  msg.value = Some(42);
+  let bytes = msg.to_bytes();
+  let decoded = StrictConfig::from_bytes(&bytes).unwrap();
+  assert_eq!(decoded.name.as_deref(), Some("test"));
+  assert_eq!(decoded.value, Some(42));
+}
+
+#[test]
+fn strict_message_rejects_unknown_field() {
+  // Build a valid StrictConfig, then inject an extra field tag.
+  // StrictConfig has fields 1 (string) and 2 (u32). Tag 99 is unknown.
+  // Message wire format: [u32 body_len] [tag, value]* [0x00 terminator]
+  let mut bytes = Vec::new();
+  // We'll write a message with just an unknown tag 99 followed by terminator.
+  // The body will be: [tag=99] [... we need skip-able data] [tag=0]
+  // For a strict message, the decoder returns error on unknown tag,
+  // so we just need the unknown tag to be present.
+  // body: tag 99, then tag 0 (terminator)
+  let body: Vec<u8> = vec![99, 0];
+  let body_len = body.len() as u32;
+  bytes.extend_from_slice(&body_len.to_le_bytes());
+  bytes.extend_from_slice(&body);
+
+  let err = StrictConfig::from_bytes(&bytes).unwrap_err();
+  assert!(matches!(err, DecodeError::InvalidField { .. }));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Forward-compatible message (@forward_compatible)
+// ═══════════════════════════════════════════════════════════════
+
+#[test]
+fn fc_message_known_fields_round_trip() {
+  let mut msg = FlexConfig::default();
+  msg.name = Some(Cow::Borrowed("flex"));
+  msg.value = Some(7);
+  let bytes = msg.to_bytes();
+  let decoded = FlexConfig::from_bytes(&bytes).unwrap();
+  assert_eq!(decoded.name.as_deref(), Some("flex"));
+  assert_eq!(decoded.value, Some(7));
+}
+
+#[test]
+fn fc_message_skips_unknown_field() {
+  // Encode a FlexConfig with known fields, then inject extra trailing data
+  // before the terminator. The fc message should skip it gracefully.
+  let mut msg = FlexConfig::default();
+  msg.name = Some(Cow::Borrowed("ok"));
+  let bytes = msg.to_bytes();
+  // If we decode the valid bytes, it should work fine.
+  let decoded = FlexConfig::from_bytes(&bytes).unwrap();
+  assert_eq!(decoded.name.as_deref(), Some("ok"));
+
+  // Now build a message with an unknown tag 99 + some payload.
+  // The fc decoder should skip to the end without error.
+  // body: [tag=99] then skip to end, [tag=0] terminator
+  let body: Vec<u8> = vec![99, 0];
+  let body_len = body.len() as u32;
+  let mut bytes = Vec::new();
+  bytes.extend_from_slice(&body_len.to_le_bytes());
+  bytes.extend_from_slice(&body);
+
+  let decoded = FlexConfig::from_bytes(&bytes).unwrap();
+  // All fields should be None since we only sent unknown tag
+  assert_eq!(decoded.name, None);
+  assert_eq!(decoded.value, None);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Strict flags (no @forward_compatible)
+// ═══════════════════════════════════════════════════════════════
+
+#[test]
+fn strict_flags_valid_round_trip() {
+  let p = Permissions::READ | Permissions::WRITE;
+  let bytes = p.to_bytes();
+  let decoded = Permissions::from_bytes(&bytes).unwrap();
+  assert_eq!(decoded, p);
+}
+
+#[test]
+fn strict_flags_rejects_unknown_bits() {
+  // Permissions has ALL_BITS = 7 (READ=1, WRITE=2, EXECUTE=4).
+  // Bit 128 is not defined, so strict decode should reject.
+  let bytes = [128u8];
+  let err = Permissions::from_bytes(&bytes).unwrap_err();
+  assert!(matches!(err, DecodeError::InvalidFlags { .. }));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Forward-compatible flags (@forward_compatible)
+// ═══════════════════════════════════════════════════════════════
+
+#[test]
+fn fc_flags_valid_round_trip() {
+  let p = FlexPermissions::READ | FlexPermissions::WRITE;
+  let bytes = p.to_bytes();
+  let decoded = FlexPermissions::from_bytes(&bytes).unwrap();
+  assert_eq!(decoded, p);
+}
+
+#[test]
+fn fc_flags_accepts_unknown_bits() {
+  // FlexPermissions has ALL_BITS = 3 (READ=1, WRITE=2).
+  // With @forward_compatible, bit 128 should be accepted.
+  let bytes = [128u8];
+  let decoded = FlexPermissions::from_bytes(&bytes).unwrap();
+  assert_eq!(decoded.bits(), 128);
+}
+
+#[test]
+fn fc_flags_unknown_bits_round_trip() {
+  // Unknown bits should survive encode→decode round-trip.
+  let val = FlexPermissions::READ | FlexPermissions(128);
+  let bytes = val.to_bytes();
+  let decoded = FlexPermissions::from_bytes(&bytes).unwrap();
+  assert_eq!(decoded.bits(), 129); // 1 | 128
 }
