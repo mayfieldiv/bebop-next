@@ -1784,4 +1784,74 @@ mod tests {
     // Should NOT have InvalidUnion
     assert!(!output.contains("InvalidUnion"));
   }
+
+  #[test]
+  fn strict_message_rejects_unknown_field_tag() {
+    let msg = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Message),
+      name: Some(Cow::Borrowed("StrictMsg")),
+      fqn: Some(Cow::Borrowed("test.StrictMsg")),
+      message_def: Some(MessageDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("id")),
+          r#type: Some(scalar_type(TypeKind::Int32)),
+          index: Some(1),
+          ..Default::default()
+        }]),
+      }),
+      // No decorators — strict mode
+      ..Default::default()
+    };
+
+    let schema = SchemaDescriptor {
+      path: Some(Cow::Borrowed("strict-msg.bop")),
+      definitions: Some(vec![msg]),
+      ..Default::default()
+    };
+
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::new(None)
+      .generate(&schema, &[], &analysis)
+      .expect("generator should succeed");
+
+    // Should have InvalidField error
+    assert!(output.contains("InvalidField"));
+    // Should NOT have reader.skip
+    assert!(!output.contains("reader.skip("));
+  }
+
+  #[test]
+  fn forward_compatible_message_skips_unknown_fields() {
+    let msg = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Message),
+      name: Some(Cow::Borrowed("FcMsg")),
+      fqn: Some(Cow::Borrowed("test.FcMsg")),
+      message_def: Some(MessageDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("id")),
+          r#type: Some(scalar_type(TypeKind::Int32)),
+          index: Some(1),
+          ..Default::default()
+        }]),
+      }),
+      decorators: Some(forward_compatible_decorator()),
+      ..Default::default()
+    };
+
+    let schema = SchemaDescriptor {
+      path: Some(Cow::Borrowed("fc-msg.bop")),
+      definitions: Some(vec![msg]),
+      ..Default::default()
+    };
+
+    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let output = RustGenerator::new(None)
+      .generate(&schema, &[], &analysis)
+      .expect("generator should succeed");
+
+    // Should have reader.skip (forward-compatible behavior)
+    assert!(output.contains("reader.skip("));
+    // Should NOT have InvalidField
+    assert!(!output.contains("InvalidField"));
+  }
 }
