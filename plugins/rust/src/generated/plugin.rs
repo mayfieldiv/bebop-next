@@ -269,8 +269,11 @@ impl<'buf> BebopDecode<'buf> for CodeGeneratorRequest<'buf> {
             ))
           })?)
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "CodeGeneratorRequest",
+            tag,
+          });
         }
       }
     }
@@ -453,8 +456,11 @@ impl<'buf> BebopDecode<'buf> for Diagnostic<'buf> {
           msg.file = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
         }
         5 => msg.span = ::core::option::Option::Some(reader.read_fixed_array::<i32, 4>()?),
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "Diagnostic",
+            tag,
+          });
         }
       }
     }
@@ -589,8 +595,11 @@ impl<'buf> BebopDecode<'buf> for GeneratedFile<'buf> {
         4 => {
           msg.generated_code_info = ::core::option::Option::Some(SourceCodeInfo::decode(reader)?)
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "GeneratedFile",
+            tag,
+          });
         }
       }
     }
@@ -713,8 +722,11 @@ impl<'buf> BebopDecode<'buf> for CodeGeneratorResponse<'buf> {
           msg.diagnostics =
             ::core::option::Option::Some(reader.read_array(|_r| Diagnostic::decode(_r))?)
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "CodeGeneratorResponse",
+            tag,
+          });
         }
       }
     }
