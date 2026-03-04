@@ -13,3 +13,6 @@ bebop-runtime = { path = "runtime" }
 [[bin]]
 name = "bebopc-gen-rust"
 path = "src/main.rs"
+
+[lints.rust]
+unexpected_cfgs = "allow" # TODO the generated code needs to do this inline, but it doesn't seem to be working...
