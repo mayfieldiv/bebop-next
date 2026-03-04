@@ -5,7 +5,7 @@ use super::naming::{type_name, variant_name};
 use super::type_mapper::{enum_base_rust_type, enum_read_method, enum_write_method, fixed_size};
 use super::{
   emit_deprecated, emit_doc_comment, has_decorator, visibility_keyword, GeneratorOptions,
-  LifetimeAnalysis, SerdeMode, FORWARD_COMPATIBLE,
+  LifetimeAnalysis, FORWARD_COMPATIBLE,
 };
 
 /// Shared context for enum code generation, built once in `generate()`.
