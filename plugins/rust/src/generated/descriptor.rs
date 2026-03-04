@@ -484,6 +484,16 @@ impl ::core::ops::Sub for DecoratorTarget {
   }
 }
 
+impl<'buf> BebopDecode<'buf> for DecoratorTarget {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+    let bits = reader.read_byte()?;
+    Self::from_bits(bits).ok_or(DecodeError::InvalidFlags {
+      type_name: "DecoratorTarget",
+      bits: bits as u64,
+    })
+  }
+}
+
 /// Schema edition markers.
 /// Edition values are ordered for comparison. Higher values are later editions.
 /// A compiler rejects source files declaring an edition it does not support.
@@ -707,8 +717,11 @@ impl<'buf> BebopDecode<'buf> for TypeDescriptor<'buf> {
           msg.defined_fqn =
             ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "TypeDescriptor",
+            tag,
+          });
         }
       }
     }
@@ -895,8 +908,11 @@ impl<'buf> BebopDecode<'buf> for LiteralValue<'buf> {
         }
         9 => msg.timestamp_value = ::core::option::Option::Some(reader.read_timestamp()?),
         10 => msg.duration_value = ::core::option::Option::Some(reader.read_duration()?),
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "LiteralValue",
+            tag,
+          });
         }
       }
     }
@@ -1079,8 +1095,11 @@ impl<'buf> BebopDecode<'buf> for DecoratorUsage<'buf> {
             ))
           })?)
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "DecoratorUsage",
+            tag,
+          });
         }
       }
     }
@@ -1210,8 +1229,11 @@ impl<'buf> BebopDecode<'buf> for FieldDescriptor<'buf> {
           msg.decorators =
             ::core::option::Option::Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?)
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "FieldDescriptor",
+            tag,
+          });
         }
       }
     }
@@ -1344,8 +1366,11 @@ impl<'buf> BebopDecode<'buf> for EnumMemberDescriptor<'buf> {
           msg.value_expr =
             ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "EnumMemberDescriptor",
+            tag,
+          });
         }
       }
     }
@@ -1505,8 +1530,11 @@ impl<'buf> BebopDecode<'buf> for UnionBranchDescriptor<'buf> {
           msg.decorators =
             ::core::option::Option::Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?)
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "UnionBranchDescriptor",
+            tag,
+          });
         }
       }
     }
@@ -1652,8 +1680,11 @@ impl<'buf> BebopDecode<'buf> for MethodDescriptor<'buf> {
           msg.decorators =
             ::core::option::Option::Some(reader.read_array(|_r| DecoratorUsage::decode(_r))?)
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "MethodDescriptor",
+            tag,
+          });
         }
       }
     }
@@ -1754,8 +1785,11 @@ impl<'buf> BebopDecode<'buf> for EnumDef<'buf> {
             ::core::option::Option::Some(reader.read_array(|_r| EnumMemberDescriptor::decode(_r))?)
         }
         3 => msg.is_flags = ::core::option::Option::Some(reader.read_bool()?),
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "EnumDef",
+            tag,
+          });
         }
       }
     }
@@ -1857,8 +1891,11 @@ impl<'buf> BebopDecode<'buf> for StructDef<'buf> {
         }
         2 => msg.is_mutable = ::core::option::Option::Some(reader.read_bool()?),
         3 => msg.fixed_size = ::core::option::Option::Some(reader.read_u32()?),
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "StructDef",
+            tag,
+          });
         }
       }
     }
@@ -1936,8 +1973,11 @@ impl<'buf> BebopDecode<'buf> for MessageDef<'buf> {
           msg.fields =
             ::core::option::Option::Some(reader.read_array(|_r| FieldDescriptor::decode(_r))?)
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "MessageDef",
+            tag,
+          });
         }
       }
     }
@@ -2015,8 +2055,11 @@ impl<'buf> BebopDecode<'buf> for UnionDef<'buf> {
           msg.branches =
             ::core::option::Option::Some(reader.read_array(|_r| UnionBranchDescriptor::decode(_r))?)
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "UnionDef",
+            tag,
+          });
         }
       }
     }
@@ -2092,8 +2135,11 @@ impl<'buf> BebopDecode<'buf> for ServiceDef<'buf> {
           msg.methods =
             ::core::option::Option::Some(reader.read_array(|_r| MethodDescriptor::decode(_r))?)
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "ServiceDef",
+            tag,
+          });
         }
       }
     }
@@ -2181,8 +2227,11 @@ impl<'buf> BebopDecode<'buf> for ConstDef<'buf> {
       match tag {
         1 => msg.r#type = ::core::option::Option::Some(TypeDescriptor::decode(reader)?),
         2 => msg.value = ::core::option::Option::Some(LiteralValue::decode(reader)?),
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "ConstDef",
+            tag,
+          });
         }
       }
     }
@@ -2329,8 +2378,11 @@ impl<'buf> BebopDecode<'buf> for DecoratorParamDef<'buf> {
           msg.allowed_values =
             ::core::option::Option::Some(reader.read_array(|_r| LiteralValue::decode(_r))?)
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "DecoratorParamDef",
+            tag,
+          });
         }
       }
     }
@@ -2464,8 +2516,11 @@ impl<'buf> BebopDecode<'buf> for DecoratorDef<'buf> {
           msg.export_source =
             ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "DecoratorDef",
+            tag,
+          });
         }
       }
     }
@@ -2696,8 +2751,11 @@ impl<'buf> BebopDecode<'buf> for DefinitionDescriptor<'buf> {
         12 => msg.service_def = ::core::option::Option::Some(ServiceDef::decode(reader)?),
         13 => msg.const_def = ::core::option::Option::Some(ConstDef::decode(reader)?),
         14 => msg.decorator_def = ::core::option::Option::Some(DecoratorDef::decode(reader)?),
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "DefinitionDescriptor",
+            tag,
+          });
         }
       }
     }
@@ -2842,8 +2900,11 @@ impl<'buf> BebopDecode<'buf> for Location<'buf> {
             ::core::result::Result::Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))
           })?)
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "Location",
+            tag,
+          });
         }
       }
     }
@@ -2922,8 +2983,11 @@ impl<'buf> BebopDecode<'buf> for SourceCodeInfo<'buf> {
           msg.locations =
             ::core::option::Option::Some(reader.read_array(|_r| Location::decode(_r))?)
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "SourceCodeInfo",
+            tag,
+          });
         }
       }
     }
@@ -3072,8 +3136,11 @@ impl<'buf> BebopDecode<'buf> for SchemaDescriptor<'buf> {
             ::core::option::Option::Some(reader.read_array(|_r| DefinitionDescriptor::decode(_r))?)
         }
         6 => msg.source_code_info = ::core::option::Option::Some(SourceCodeInfo::decode(reader)?),
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "SchemaDescriptor",
+            tag,
+          });
         }
       }
     }
@@ -3153,8 +3220,11 @@ impl<'buf> BebopDecode<'buf> for DescriptorSet<'buf> {
           msg.schemas =
             ::core::option::Option::Some(reader.read_array(|_r| SchemaDescriptor::decode(_r))?)
         }
-        _ => {
-          reader.skip(end - reader.position())?;
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "DescriptorSet",
+            tag,
+          });
         }
       }
     }

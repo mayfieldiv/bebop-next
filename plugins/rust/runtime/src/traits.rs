@@ -224,15 +224,6 @@ where
   }
 }
 
-impl<'buf, T> BebopDecode<'buf> for T
-where
-  T: BebopFlags,
-{
-  fn decode(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
-    Ok(Self::from_bits_retain(T::Bits::decode_bits(reader)?))
-  }
-}
-
 /// Scalar types that can appear in fixed-size arrays.
 pub trait FixedScalar: Copy + Default {
   fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError>;
@@ -378,7 +369,7 @@ impl FixedScalar for f64 {
 mod tests {
   use alloc::vec;
 
-  use super::{BebopDecode, BebopEncode, BebopFlags};
+  use super::{BebopEncode, BebopFlags};
 
   #[derive(Debug, Clone, Copy, PartialEq, Eq)]
   struct Permissions(u8);
@@ -447,12 +438,10 @@ mod tests {
   }
 
   #[test]
-  fn flags_blanket_wire_impls() {
+  fn flags_blanket_encode() {
     let perms = Permissions(5);
     let bytes = perms.to_bytes();
     assert_eq!(bytes, vec![5]);
-    let decoded = Permissions::from_bytes(&bytes).unwrap();
-    assert_eq!(decoded, perms);
     assert_eq!(perms.encoded_size(), 1);
   }
 

@@ -294,7 +294,7 @@ fn generate_forward_compatible_enum(
   // is_known()
   output.push_str("  /// Returns `true` if this value matches a known variant.\n");
   output.push_str("  pub fn is_known(&self) -> bool {\n");
-  output.push_str("    !matches!(self, Self::Unknown(_))\n");
+  output.push_str("    !::core::matches!(self, Self::Unknown(_))\n");
   output.push_str("  }\n");
 
   output.push_str(&format!(
@@ -369,7 +369,8 @@ fn generate_forward_compatible_enum(
     "    // @@bebop_insertion_point(decode_end:{})\n",
     name
   ));
-  output.push_str("    ::core::result::Result::Ok(Self::from(value))\n");
+  output
+    .push_str("    ::core::result::Result::Ok(<Self as ::core::convert::From<_>>::from(value))\n");
   output.push_str("  }\n");
   output.push_str("}\n\n");
 
