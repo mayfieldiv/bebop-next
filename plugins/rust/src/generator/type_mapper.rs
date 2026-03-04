@@ -104,58 +104,52 @@ fn is_fixed_scalar(kind: TypeKind) -> bool {
   )
 }
 
+/// Returns true if the TypeKind is a valid enum/flags base type (integer types only).
+fn is_enum_base_type(kind: TypeKind) -> bool {
+  matches!(
+    kind,
+    TypeKind::Byte
+      | TypeKind::Int8
+      | TypeKind::Int16
+      | TypeKind::Uint16
+      | TypeKind::Int32
+      | TypeKind::Uint32
+      | TypeKind::Int64
+      | TypeKind::Uint64
+  )
+}
+
 /// Map an enum base TypeKind to its Rust integer type.
 pub fn enum_base_rust_type(kind: TypeKind) -> Result<&'static str, GeneratorError> {
-  match kind {
-    TypeKind::Byte => Ok("u8"),
-    TypeKind::Int8 => Ok("i8"),
-    TypeKind::Int16 => Ok("i16"),
-    TypeKind::Uint16 => Ok("u16"),
-    TypeKind::Int32 => Ok("i32"),
-    TypeKind::Uint32 => Ok("u32"),
-    TypeKind::Int64 => Ok("i64"),
-    TypeKind::Uint64 => Ok("u64"),
-    _ => Err(GeneratorError::MalformedType(format!(
+  if !is_enum_base_type(kind) {
+    return Err(GeneratorError::MalformedType(format!(
       "unsupported enum base type kind: {}",
       kind as u8
-    ))),
+    )));
   }
+  scalar_type(kind).ok_or_else(|| unreachable!())
 }
 
 /// Map an enum base TypeKind to its BebopReader read method.
 pub fn enum_read_method(kind: TypeKind) -> Result<&'static str, GeneratorError> {
-  match kind {
-    TypeKind::Byte => Ok("read_byte"),
-    TypeKind::Int8 => Ok("read_i8"),
-    TypeKind::Int16 => Ok("read_i16"),
-    TypeKind::Uint16 => Ok("read_u16"),
-    TypeKind::Int32 => Ok("read_i32"),
-    TypeKind::Uint32 => Ok("read_u32"),
-    TypeKind::Int64 => Ok("read_i64"),
-    TypeKind::Uint64 => Ok("read_u64"),
-    _ => Err(GeneratorError::MalformedType(format!(
+  if !is_enum_base_type(kind) {
+    return Err(GeneratorError::MalformedType(format!(
       "unsupported enum base type for read: {}",
       kind as u8
-    ))),
+    )));
   }
+  scalar_read_method(kind).ok_or_else(|| unreachable!())
 }
 
 /// Map an enum base TypeKind to its BebopWriter write method.
 pub fn enum_write_method(kind: TypeKind) -> Result<&'static str, GeneratorError> {
-  match kind {
-    TypeKind::Byte => Ok("write_byte"),
-    TypeKind::Int8 => Ok("write_i8"),
-    TypeKind::Int16 => Ok("write_i16"),
-    TypeKind::Uint16 => Ok("write_u16"),
-    TypeKind::Int32 => Ok("write_i32"),
-    TypeKind::Uint32 => Ok("write_u32"),
-    TypeKind::Int64 => Ok("write_i64"),
-    TypeKind::Uint64 => Ok("write_u64"),
-    _ => Err(GeneratorError::MalformedType(format!(
+  if !is_enum_base_type(kind) {
+    return Err(GeneratorError::MalformedType(format!(
       "unsupported enum base type for write: {}",
       kind as u8
-    ))),
+    )));
   }
+  scalar_write_method(kind).ok_or_else(|| unreachable!())
 }
 
 /// Returns true if a scalar TypeKind needs `&` when passed to its write method.
