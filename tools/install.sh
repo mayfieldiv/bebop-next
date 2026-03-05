@@ -295,7 +295,7 @@ info "Installing Bebop ${VERSION} for ${target}..."
 
     step "Extracting to ${PREFIX}"
     execute mkdir -p "${PREFIX}"
-    if ! execute tar xzf "${tmpdir}/${archive}" -C "${PREFIX}" 2>/dev/null; then
+    if ! execute tar xzf "${tmpdir}/${archive}" --no-overwrite-dir -C "${PREFIX}" 2>/dev/null; then
         printf "\n"
         abort "Extraction failed. The archive may be corrupt."
     fi
@@ -304,10 +304,14 @@ info "Installing Bebop ${VERSION} for ${target}..."
     if ! execute test -f "${PREFIX}/bin/bebopc"; then
         abort "bebopc binary not found after extraction."
     fi
-    execute chmod +x "${PREFIX}"/bin/bebopc*
+    # shellcheck disable=SC2016
+    if ! execute sh -c 'chmod +x "$1"/bin/bebopc*' _ "${PREFIX}"; then
+        abort "Failed to set executable permissions on bebopc."
+    fi
 
     echo "  Installed:"
-    for f in $(execute ls "${PREFIX}"/bin/bebopc* 2>/dev/null); do
+    # shellcheck disable=SC2016
+    for f in $(execute sh -c 'ls "$1"/bin/bebopc* 2>/dev/null' _ "${PREFIX}"); do
         echo "    $(basename "$f")"
     done
 
