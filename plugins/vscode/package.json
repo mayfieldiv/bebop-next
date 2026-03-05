@@ -232,7 +232,7 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -b",
+    "compile": "tsc -b --clean && tsc -b",
     "watch": "tsc -b -w",
     "lint": "eslint",
     "postinstall": "cd client && npm install",
