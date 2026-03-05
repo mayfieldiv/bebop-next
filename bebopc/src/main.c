@@ -17,8 +17,8 @@
 #include "cli/bebopc_runner.h"
 #include "watcher/bebop_fsw.h"
 
-#ifndef BEBOPC_VERSION
-#define BEBOPC_VERSION "0.0.0-dev"
+#ifndef BEBOP_VERSION_STRING
+#define BEBOP_VERSION_STRING "0.0.0-dev"
 #endif
 
 typedef struct main_ctx main_ctx_t;
@@ -39,7 +39,7 @@ struct main_ctx {
 
 static const cli_info_t cli_info = {
     .program_name = "bebopc",
-    .version = BEBOPC_VERSION,
+    .version = BEBOP_VERSION_STRING,
     .description = "Bebop schema compiler and code generation tool"
 };
 

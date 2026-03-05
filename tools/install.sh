@@ -70,18 +70,20 @@ semver_gt() {
 
 usage() {
     cat <<EOF
-Usage: install.sh [VERSION] [--root]
+Usage: install.sh [VERSION] [--root] [--pre-release]
 
 Install the Bebop compiler, libraries, and schemas.
 
-  VERSION    Version to install. Defaults to the latest release.
-  --root     Install to /usr/local instead of ~/.local.
-             Required for system tools like Xcode that do not search ~/.local.
+  VERSION        Version to install. Defaults to the latest stable release.
+  --root         Install to /usr/local instead of ~/.local.
+                 Required for system tools like Xcode that do not search ~/.local.
+  --pre-release  Install the latest pre-release version.
 
 Examples:
-  install.sh                    Install latest to ~/.local
+  install.sh                    Install latest stable to ~/.local
   install.sh 2026.0.0           Install specific version to ~/.local
-  install.sh --root             Install latest to /usr/local
+  install.sh --root             Install latest stable to /usr/local
+  install.sh --pre-release      Install latest pre-release to ~/.local
   install.sh 2026.0.0 --root    Install specific version to /usr/local
 EOF
     exit 0
@@ -117,13 +119,15 @@ REPO="6over3/bebop-next"
 VERSION=""
 PREFIX="${HOME}/.local"
 ROOT_INSTALL=0
+CHANNEL="stable"
 
 for arg in "$@"; do
     case "$arg" in
-        --root)  ROOT_INSTALL=1 ;;
-        --help)  usage ;;
-        -*)      abort "Unknown flag: $arg" ;;
-        *)       VERSION="$arg" ;;
+        --root)         ROOT_INSTALL=1 ;;
+        --pre-release)  CHANNEL="pre-release" ;;
+        --help)         usage ;;
+        -*)             abort "Unknown flag: $arg" ;;
+        *)              VERSION="$arg" ;;
     esac
 done
 
@@ -228,22 +232,27 @@ if [[ $ROOT_INSTALL -eq 1 ]]; then
     fi
 fi
 
-if [[ -d "$PREFIX" && ! -x "$PREFIX" ]]; then
+if [[ -d "$PREFIX" && ! -x "$PREFIX" ]] && [[ $ROOT_INSTALL -eq 0 ]]; then
     abort "${PREFIX} exists but is not searchable. Run: sudo chmod 775 ${PREFIX}"
 fi
 
 if [[ -z "$VERSION" ]]; then
-    info "Resolving latest version..."
-    VERSION=$(fetch "https://api.github.com/repos/${REPO}/releases/latest" \
-        | grep '"tag_name"' | head -1 | cut -d'"' -f4)
-    [[ -n "$VERSION" ]] || abort "Failed to determine latest version from GitHub."
+    info "Resolving latest ${CHANNEL} version..."
+    if [[ "$CHANNEL" == "pre-release" ]]; then
+        VERSION=$(fetch "https://api.github.com/repos/${REPO}/releases" \
+            | grep '"tag_name"' | head -1 | cut -d'"' -f4)
+    else
+        VERSION=$(fetch "https://api.github.com/repos/${REPO}/releases/latest" \
+            | grep '"tag_name"' | head -1 | cut -d'"' -f4)
+    fi
+    [[ -n "$VERSION" ]] || abort "Failed to determine latest ${CHANNEL} version from GitHub."
 fi
 
 readonly VERSION
 readonly RELEASE_URL="https://github.com/${REPO}/releases/download/${VERSION}"
 
 if command -v bebopc &>/dev/null; then
-    installed="$(bebopc --version 2>/dev/null)"
+    installed="$(bebopc --version 2>/dev/null | awk '{print $NF}')"
 
     if semver_eq "$installed" "$VERSION"; then
         info "bebopc ${installed} is already installed and up to date."
@@ -292,14 +301,14 @@ info "Installing Bebop ${VERSION} for ${target}..."
     fi
     ok
 
-    if [[ ! -f "${PREFIX}/bin/bebopc" ]]; then
+    if ! execute test -f "${PREFIX}/bin/bebopc"; then
         abort "bebopc binary not found after extraction."
     fi
     execute chmod +x "${PREFIX}"/bin/bebopc*
 
     echo "  Installed:"
-    for f in "${PREFIX}"/bin/bebopc*; do
-        [[ -x "$f" ]] && echo "    $(basename "$f")"
+    for f in $(execute ls "${PREFIX}"/bin/bebopc* 2>/dev/null); do
+        echo "    $(basename "$f")"
     done
 
     echo

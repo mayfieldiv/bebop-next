@@ -11,7 +11,10 @@ param(
     [string]$Version,
 
     [Parameter(HelpMessage = 'Install system-wide instead of per-user.')]
-    [switch]$System
+    [switch]$System,
+
+    [Parameter(HelpMessage = 'Install the latest pre-release version.')]
+    [switch]$PreRelease
 )
 
 Set-StrictMode -Version Latest
@@ -115,9 +118,15 @@ if (-not (Get-Command tar -ErrorAction SilentlyContinue)) {
 
 # Resolve version
 if (-not $Version) {
-    Write-Info 'Resolving latest version...'
-    $release = Invoke-RestMethod "https://api.github.com/repos/$Repo/releases/latest"
-    $Version = $release.tag_name
+    $channel = if ($PreRelease) { 'pre-release' } else { 'stable' }
+    Write-Info "Resolving latest $channel version..."
+    if ($PreRelease) {
+        $releases = Invoke-RestMethod "https://api.github.com/repos/$Repo/releases"
+        $Version = $releases[0].tag_name
+    } else {
+        $release = Invoke-RestMethod "https://api.github.com/repos/$Repo/releases/latest"
+        $Version = $release.tag_name
+    }
     if (-not $Version) { throw 'Failed to determine latest version from GitHub.' }
 }
 
@@ -126,7 +135,7 @@ $ReleaseUrl = "https://github.com/$Repo/releases/download/$Version"
 # Check existing installation
 $existing = Get-Command bebopc -ErrorAction SilentlyContinue
 if ($existing) {
-    $installed = (& bebopc --version 2>$null).Trim()
+    $installed = ((& bebopc --version 2>$null) -split ' ')[-1].Trim()
 
     # Compare base version, then pre-release suffix
     $instBase, $instPre = $installed -split '-', 2
