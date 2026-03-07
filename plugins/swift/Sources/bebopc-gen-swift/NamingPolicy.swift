@@ -19,17 +19,6 @@ enum NamingPolicy {
 
     static func registerSchemas(_ schemas: [SchemaDescriptor], localFiles: Set<String>) throws {
         fqnMap.removeAll()
-        fqnMap["bebop.Any"] = "BebopAny"
-        fqnMap["bebop.Empty"] = "BebopEmpty"
-        fqnMap["bebop.Null"] = "Null"
-        fqnMap["bebop.Value"] = "Value"
-        fqnMap["bebop.Value.Bool"] = "Value.Bool"
-        fqnMap["bebop.Value.Number"] = "Value.Number"
-        fqnMap["bebop.Value.String"] = "Value.String"
-        fqnMap["bebop.Value.List"] = "Value.List"
-        fqnMap["bebop.Value.Map"] = "Value.Map"
-        fqnMap["bebop.Object"] = "Object"
-        fqnMap["bebop.List"] = "List"
         for schema in schemas {
             let isLocal = schema.path.map { localFiles.contains($0) } ?? false
             let prefix: String = if let pkg = schema.package {
@@ -43,6 +32,18 @@ enum NamingPolicy {
                 }
             }
         }
+        // Well-known runtime types override whatever the loop computed
+        fqnMap["bebop.Any"] = "BebopAny"
+        fqnMap["bebop.Empty"] = "BebopEmpty"
+        fqnMap["bebop.Null"] = "Null"
+        fqnMap["bebop.Value"] = "Value"
+        fqnMap["bebop.Value.Bool"] = "Value.Bool"
+        fqnMap["bebop.Value.Number"] = "Value.Number"
+        fqnMap["bebop.Value.String"] = "Value.String"
+        fqnMap["bebop.Value.List"] = "Value.List"
+        fqnMap["bebop.Value.Map"] = "Value.Map"
+        fqnMap["bebop.Object"] = "Object"
+        fqnMap["bebop.List"] = "List"
     }
 
     private static func registerDefinition(
