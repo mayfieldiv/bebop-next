@@ -33,7 +33,7 @@ ring_bell() { [[ -t 1 ]] && printf "\a"; }
 
 # shellcheck disable=SC2001
 semver_parse() {
-    local RE='[^0-9]*\([0-9]*\)[.]\([0-9]*\)[.]\([0-9]*\)\([0-9A-Za-z-]*\)'
+    local RE='[^0-9]*\([0-9]*\)[.]\([0-9]*\)[.]\([0-9]*\)\(.*\)'
     eval "$2=$(echo "$1" | sed -e "s#$RE#\1#")"
     eval "$3=$(echo "$1" | sed -e "s#$RE#\2#")"
     eval "$4=$(echo "$1" | sed -e "s#$RE#\3#")"
