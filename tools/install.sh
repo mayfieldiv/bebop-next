@@ -251,6 +251,20 @@ fi
 readonly VERSION
 readonly RELEASE_URL="https://github.com/${REPO}/releases/download/${VERSION}"
 
+OTHER_PREFIX=""
+if [[ $ROOT_INSTALL -eq 1 && -x "${HOME}/.local/bin/bebopc" ]]; then
+    OTHER_PREFIX="${HOME}/.local"
+elif [[ $ROOT_INSTALL -eq 0 && -x "/usr/local/bin/bebopc" ]]; then
+    OTHER_PREFIX="/usr/local"
+fi
+
+if [[ -n "$OTHER_PREFIX" ]]; then
+    warn "bebopc is also installed in ${OTHER_PREFIX}/bin."
+    warn "The copy in ${OTHER_PREFIX}/bin may shadow ${PREFIX}/bin depending on your PATH."
+    echo "  To remove it: ${bold}rm ${OTHER_PREFIX}/bin/bebopc*${reset}"
+    echo
+fi
+
 if command -v bebopc &>/dev/null; then
     installed="$(bebopc --version 2>/dev/null | awk '{print $NF}')"
 
@@ -293,16 +307,26 @@ info "Installing Bebop ${VERSION} for ${target}..."
     fi
     ok
 
-    step "Extracting to ${PREFIX}"
-    execute mkdir -p "${PREFIX}"
-    if ! execute tar xzf "${tmpdir}/${archive}" --no-overwrite-dir -C "${PREFIX}" 2>/dev/null; then
+    step "Extracting"
+    stagedir="${tmpdir}/stage"
+    mkdir -p "${stagedir}"
+    if ! tar xzf "${tmpdir}/${archive}" -C "${stagedir}"; then
         printf "\n"
         abort "Extraction failed. The archive may be corrupt."
     fi
     ok
 
+    step "Installing to ${PREFIX}"
+    execute mkdir -p "${PREFIX}"
+    # Merge into prefix without overwriting existing directory permissions
+    if ! execute cp -Rf "${stagedir}/." "${PREFIX}/"; then
+        printf "\n"
+        abort "Failed to copy files to ${PREFIX}."
+    fi
+    ok
+
     if ! execute test -f "${PREFIX}/bin/bebopc"; then
-        abort "bebopc binary not found after extraction."
+        abort "bebopc binary not found after installation."
     fi
     # shellcheck disable=SC2016
     if ! execute sh -c 'chmod +x "$1"/bin/bebopc*' _ "${PREFIX}"; then
