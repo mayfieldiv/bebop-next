@@ -345,7 +345,7 @@ fn bench_structs_and_messages(c: &mut Criterion) {
   });
   g.finish();
 
-  let embedding = fixtures::embedding_bf16_1536();
+  let embedding = fixtures::embedding_bf16(1536);
   let embedding_bytes = embedding.to_bytes();
   let mut g = c.benchmark_group("EmbeddingBf16");
   g.throughput(Throughput::Bytes(embedding.encoded_size() as u64));
