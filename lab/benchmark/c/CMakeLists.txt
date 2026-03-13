@@ -96,11 +96,24 @@ add_library(bench_harness STATIC
 target_include_directories(bench_harness PUBLIC include)
 target_link_libraries(bench_harness PUBLIC benchmark::benchmark)
 
+if(BENCH_BEBOP)
+  add_executable(dump_golden
+    src/dump_golden.cpp
+    src/encode_helpers.cpp
+  )
+  target_include_directories(dump_golden PRIVATE src)
+  target_link_libraries(dump_golden PRIVATE bench_harness bebop_runtime)
+  target_compile_definitions(dump_golden PRIVATE BENCH_BEBOP=1)
+  target_compile_options(dump_golden PRIVATE
+    $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-O3 -march=native>
+  )
+endif()
+
 set(BENCH_SOURCES "")
 set(BENCH_LIBS "")
 
 if(BENCH_BEBOP)
-  list(APPEND BENCH_SOURCES src/bench_bebop.cpp)
+  list(APPEND BENCH_SOURCES src/bench_bebop.cpp src/encode_helpers.cpp)
   list(APPEND BENCH_LIBS bebop_runtime)
 endif()
 
@@ -130,6 +143,7 @@ target_link_libraries(run_benchmarks PRIVATE
 
 if(BENCH_BEBOP)
   target_compile_definitions(run_benchmarks PRIVATE BENCH_BEBOP=1)
+  target_include_directories(run_benchmarks PRIVATE src)
 endif()
 if(BENCH_PROTOBUF)
   target_compile_definitions(run_benchmarks PRIVATE BENCH_PROTOBUF=1)

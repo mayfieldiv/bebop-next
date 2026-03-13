@@ -1,11 +1,7 @@
 #include <benchmark/benchmark.h>
 
 #include "bench_harness.h"
-
-extern "C" {
-#include "bebop_wire.h"
-#include "benchmark.bb.h"
-}
+#include "encode_helpers.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -45,86 +41,6 @@ static void ensure_ctx()
     static uint8_t dummy = 0;
     Bebop_WireCtx_Reader(g_decode_ctx, &dummy, 1, &g_reader);
   }
-}
-
-static Person make_person(const TestPerson& p)
-{
-  return Person {
-      .name = {.data = p.name.c_str(), .length = static_cast<uint32_t>(p.name.size())},
-      .email = {.data = p.email.c_str(), .length = static_cast<uint32_t>(p.email.size())},
-      .id = p.id,
-      .age = p.age
-  };
-}
-
-static Order make_order(const TestOrder& o)
-{
-  Bebop_I64_Array item_ids = {
-      .data = const_cast<int64_t*>(o.item_ids.data()), .length = o.item_ids.size(), .capacity = 0
-  };
-  Bebop_I32_Array quantities = {
-      .data = const_cast<int32_t*>(o.quantities.data()),
-      .length = o.quantities.size(),
-      .capacity = 0
-  };
-  return Order {
-      .item_ids = item_ids,
-      .quantities = quantities,
-      .order_id = o.order_id,
-      .customer_id = o.customer_id,
-      .total = o.total,
-      .timestamp = o.timestamp
-  };
-}
-
-static Event make_event(const TestEvent& e)
-{
-  Bebop_U8_Array payload = {
-      .data = const_cast<uint8_t*>(e.payload.data()), .length = e.payload.size(), .capacity = 0
-  };
-  return Event {
-      .payload = payload,
-      .type = {.data = e.type.c_str(), .length = static_cast<uint32_t>(e.type.size())},
-      .source = {.data = e.source.c_str(), .length = static_cast<uint32_t>(e.source.size())},
-      .id = e.id,
-      .timestamp = e.timestamp
-  };
-}
-
-static std::vector<uint8_t> bebop_encode_person_once(const TestPerson& p)
-{
-  ensure_ctx();
-  Bebop_Writer_Reset(g_writer);
-  Person person = make_person(p);
-  BEBOP_CHECK(Person_Encode(g_writer, &person), "Person_Encode");
-  uint8_t* buf;
-  size_t len;
-  Bebop_Writer_Buf(g_writer, &buf, &len);
-  return std::vector<uint8_t>(buf, buf + len);
-}
-
-static std::vector<uint8_t> bebop_encode_order_once(const TestOrder& o)
-{
-  ensure_ctx();
-  Bebop_Writer_Reset(g_writer);
-  Order order = make_order(o);
-  BEBOP_CHECK(Order_Encode(g_writer, &order), "Order_Encode");
-  uint8_t* buf;
-  size_t len;
-  Bebop_Writer_Buf(g_writer, &buf, &len);
-  return std::vector<uint8_t>(buf, buf + len);
-}
-
-static std::vector<uint8_t> bebop_encode_event_once(const TestEvent& e)
-{
-  ensure_ctx();
-  Bebop_Writer_Reset(g_writer);
-  Event event = make_event(e);
-  BEBOP_CHECK(Event_Encode(g_writer, &event), "Event_Encode");
-  uint8_t* buf;
-  size_t len;
-  Bebop_Writer_Buf(g_writer, &buf, &len);
-  return std::vector<uint8_t>(buf, buf + len);
 }
 
 static void BM_Bebop_Encode_PersonSmall(benchmark::State& state)
@@ -388,31 +304,6 @@ static void BM_Bebop_Roundtrip_EventLarge(benchmark::State& state)
 static std::vector<TreeNode> g_converted_nodes;
 static std::vector<TreeNode_Array> g_converted_children;
 
-static void convert_tree_recursive(
-    const TestTreeNode& src,
-    TreeNode& dst,
-    std::vector<TreeNode>& nodes,
-    std::vector<TreeNode_Array>& children
-)
-{
-  dst = {};
-  BEBOP_WIRE_SET_SOME(dst.value, src.value);
-
-  if (!src.children.empty()) {
-    size_t start_idx = nodes.size();
-    for (size_t i = 0; i < src.children.size(); i++) {
-      TreeNode child_node {};
-      nodes.push_back(child_node);
-    }
-    for (size_t i = 0; i < src.children.size(); i++) {
-      convert_tree_recursive(src.children[i], nodes[start_idx + i], nodes, children);
-    }
-    TreeNode_Array arr = {.data = &nodes[start_idx], .length = src.children.size(), .capacity = 0};
-    children.push_back(arr);
-    BEBOP_WIRE_SET_SOME(dst.children, children.back());
-  }
-}
-
 static TreeNode g_wide_tree_bebop;
 static TreeNode g_deep_tree_bebop;
 static std::vector<uint8_t> g_encoded_tree_wide;
@@ -536,107 +427,6 @@ static void BM_Bebop_Roundtrip_TreeDeep(benchmark::State& state)
 static std::vector<JsonValue> g_json_storage;
 static std::vector<JsonValue_Array> g_json_array_storage;
 static std::vector<Bebop_Map> g_json_maps;
-
-static JsonValue convert_json_value(
-    Bebop_WireCtx* ctx,
-    const TestJsonValue& src,
-    std::vector<JsonValue>& storage,
-    std::vector<JsonValue_Array>& arrays,
-    std::vector<Bebop_Map>& maps
-)
-{
-  JsonValue v = {};
-  switch (src.type) {
-    case TestJsonValue::Type::Null:
-      v.discriminator = JSON_VALUE_NULL;
-      v.null = {};
-      break;
-    case TestJsonValue::Type::Bool:
-      v.discriminator = JSON_VALUE_BOOL;
-      BEBOP_WIRE_SET_SOME(v.bool_.value, src.bool_val);
-      break;
-    case TestJsonValue::Type::Number:
-      v.discriminator = JSON_VALUE_NUMBER;
-      BEBOP_WIRE_SET_SOME(v.number.value, src.number_val);
-      break;
-    case TestJsonValue::Type::String:
-      v.discriminator = JSON_VALUE_STRING;
-      BEBOP_WIRE_SET_SOME(
-          v.string.value,
-          ((Bebop_Str) {.data = src.string_val.c_str(),
-                        .length = static_cast<uint32_t>(src.string_val.size())})
-      );
-      break;
-    case TestJsonValue::Type::List: {
-      v.discriminator = JSON_VALUE_LIST;
-      size_t start = storage.size();
-      for (const auto& item : src.list_val) {
-        storage.push_back(convert_json_value(ctx, item, storage, arrays, maps));
-      }
-      JsonValue_Array arr = {
-          .data = storage.data() + start, .length = src.list_val.size(), .capacity = 0
-      };
-      arrays.push_back(arr);
-      BEBOP_WIRE_SET_SOME(v.list.values, arrays.back());
-      break;
-    }
-    case TestJsonValue::Type::Object: {
-      v.discriminator = JSON_VALUE_OBJECT;
-      Bebop_Map m = {};
-      Bebop_Map_Init(&m, ctx, Bebop_MapHash_Str, Bebop_MapEq_Str);
-      for (const auto& [key, val] : src.object_val) {
-        Bebop_Str* key_ptr = static_cast<Bebop_Str*>(Bebop_WireCtx_Alloc(ctx, sizeof(Bebop_Str)));
-        key_ptr->data = key.c_str();
-        key_ptr->length = static_cast<uint32_t>(key.size());
-        JsonValue* val_ptr = static_cast<JsonValue*>(Bebop_WireCtx_Alloc(ctx, sizeof(JsonValue)));
-        *val_ptr = convert_json_value(ctx, val, storage, arrays, maps);
-        Bebop_Map_Put(&m, key_ptr, val_ptr);
-      }
-      maps.push_back(m);
-      BEBOP_WIRE_SET_SOME(v.object.fields, maps.back());
-      break;
-    }
-  }
-  return v;
-}
-
-static Document make_document(
-    Bebop_WireCtx* ctx,
-    const TestDocument& d,
-    std::vector<JsonValue>& storage,
-    std::vector<JsonValue_Array>& arrays,
-    std::vector<Bebop_Map>& maps
-)
-{
-  Document doc = {};
-  if (!d.title.empty()) {
-    BEBOP_WIRE_SET_SOME(
-        doc.title,
-        ((Bebop_Str) {.data = d.title.c_str(), .length = static_cast<uint32_t>(d.title.size())})
-    );
-  }
-  if (!d.body.empty()) {
-    BEBOP_WIRE_SET_SOME(
-        doc.body,
-        ((Bebop_Str) {.data = d.body.c_str(), .length = static_cast<uint32_t>(d.body.size())})
-    );
-  }
-  if (!d.metadata.empty()) {
-    Bebop_Map m = {};
-    Bebop_Map_Init(&m, ctx, Bebop_MapHash_Str, Bebop_MapEq_Str);
-    for (const auto& [key, val] : d.metadata) {
-      Bebop_Str* key_ptr = static_cast<Bebop_Str*>(Bebop_WireCtx_Alloc(ctx, sizeof(Bebop_Str)));
-      key_ptr->data = key.c_str();
-      key_ptr->length = static_cast<uint32_t>(key.size());
-      JsonValue* val_ptr = static_cast<JsonValue*>(Bebop_WireCtx_Alloc(ctx, sizeof(JsonValue)));
-      *val_ptr = convert_json_value(ctx, val, storage, arrays, maps);
-      Bebop_Map_Put(&m, key_ptr, val_ptr);
-    }
-    maps.push_back(m);
-    BEBOP_WIRE_SET_SOME(doc.metadata, maps.back());
-  }
-  return doc;
-}
 
 static JsonValue g_small_json_bebop;
 static JsonValue g_large_json_bebop;
@@ -891,26 +681,6 @@ static void BM_Bebop_Decode_ChunkedText(benchmark::State& state)
     benchmark::DoNotOptimize(&decoded.spans.length);
   }
   state.SetBytesProcessed(state.iterations() * g_encoded_alice.size());
-}
-
-static EmbeddingBF16 make_embedding_bf16(const TestEmbeddingBF16& e)
-{
-  return EmbeddingBF16 {
-      .vector =
-          {.data = reinterpret_cast<Bebop_BFloat16*>(const_cast<uint16_t*>(e.vector.data())),
-           .length = e.vector.size(),
-           .capacity = 0},
-      .id = *reinterpret_cast<const Bebop_UUID*>(e.id.bytes)
-  };
-}
-
-static EmbeddingF32 make_embedding_f32(const TestEmbeddingF32& e)
-{
-  return EmbeddingF32 {
-      .vector =
-          {.data = const_cast<float*>(e.vector.data()), .length = e.vector.size(), .capacity = 0},
-      .id = *reinterpret_cast<const Bebop_UUID*>(e.id.bytes)
-  };
 }
 
 static std::vector<uint8_t> g_encoded_emb_384;

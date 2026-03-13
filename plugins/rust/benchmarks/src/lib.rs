@@ -146,7 +146,11 @@ pub mod fixtures {
       }
 
       let start = pos;
-      let kind = if pos + 3 < len && bytes[pos] == b'#' && bytes[pos + 1] == b'#' && bytes[pos + 2] == b' ' {
+      let kind = if pos + 3 < len
+        && bytes[pos] == b'#'
+        && bytes[pos + 1] == b'#'
+        && bytes[pos + 2] == b' '
+      {
         // heading line
         while pos < len && bytes[pos] != b'\n' {
           pos += 1;
@@ -172,9 +176,7 @@ pub mod fixtures {
   }
 
   pub fn embedding_f32(n: usize) -> bt::EmbeddingF32 {
-    let vector = (0..n)
-      .map(|i| (i as f32) * 0.001)
-      .collect::<Vec<_>>();
+    let vector = (0..n).map(|i| (i as f32) * 0.001).collect::<Vec<_>>();
     bt::EmbeddingF32::new(
       Uuid::from_bytes([
         0x30, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
@@ -206,9 +208,7 @@ pub mod fixtures {
     let tokens = vec!["Hello".to_string(), ",".to_string(), " world".to_string()];
     let logprobs = tokens
       .iter()
-      .map(|tok| {
-        bt::TokenAlternatives::new(vec![bt::TokenLogprob::new(tok.clone(), 1000, -0.1)])
-      })
+      .map(|tok| bt::TokenAlternatives::new(vec![bt::TokenLogprob::new(tok.clone(), 1000, -0.1)]))
       .collect();
     bt::LlmStreamChunk::new(1, tokens, logprobs, "")
   }
