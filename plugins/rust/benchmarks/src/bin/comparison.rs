@@ -397,6 +397,10 @@ fn generate_report(langs: &[LangResults], baseline: &str) -> String {
 
 // ── CLI ──
 
+/// Repo root, anchored at compile time via CARGO_MANIFEST_DIR.
+/// benchmarks/Cargo.toml is at plugins/rust/benchmarks/, so repo root is ../../..
+const REPO_ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../..");
+
 struct Args {
   /// Run Rust benchmarks and write JSON here.
   out: Option<PathBuf>,
@@ -410,11 +414,13 @@ struct Args {
 
 fn print_usage() -> ! {
   eprintln!("usage:");
+  eprintln!("  comparison                          (run Rust benchmarks, compare vs C snapshot)");
   eprintln!("  comparison --out <path> [--lang name=path]... [--baseline name] [--report path]");
   eprintln!(
     "  comparison --lang name=path [--lang name=path]... [--baseline name] [--report path]"
   );
   eprintln!();
+  eprintln!("  (no args)           Run Rust benchmarks, compare against checked-in C snapshot");
   eprintln!("  --out <path>        Run Rust benchmarks, write JSON (adds 'rust' to comparison)");
   eprintln!("  --lang name=path    Add a language's benchmark JSON to the comparison");
   eprintln!(
@@ -455,15 +461,12 @@ fn parse_args() -> Args {
       }
       "--baseline" => args.baseline = iter.next(),
       "--report" => args.report = iter.next().map(PathBuf::from),
+      "--help" | "-h" => print_usage(),
       other => {
         eprintln!("unknown argument: {other}");
         print_usage();
       }
     }
-  }
-
-  if args.out.is_none() && args.langs.is_empty() {
-    print_usage();
   }
 
   args
@@ -475,23 +478,61 @@ fn load_output(path: &PathBuf) -> Output {
     .unwrap_or_else(|e| panic!("failed to parse {}: {e}", path.display()))
 }
 
+/// Find the checked-in C benchmark snapshot.
+fn find_c_snapshot() -> Option<PathBuf> {
+  let candidates = [
+    format!("{REPO_ROOT}/lab/benchmark/results/c_benchmark.json"),
+    format!("{REPO_ROOT}/lab/benchmark/c/benchmark_results_st_3.json"),
+  ];
+  candidates
+    .into_iter()
+    .map(PathBuf::from)
+    .find(|p| p.exists())
+}
+
 fn main() {
   let args = parse_args();
 
+  // Default mode: no args → run benchmarks, compare against C snapshot, print to stdout.
+  let default_mode = args.out.is_none() && args.langs.is_empty();
+
   let mut lang_results: Vec<LangResults> = Vec::new();
 
-  // Run Rust benchmarks if --out is given; add "rust" to the comparison.
-  if let Some(ref out_path) = args.out {
-    let output = run_benchmarks();
-    if let Some(parent) = out_path.parent() {
-      fs::create_dir_all(parent).unwrap();
+  // In default mode, load C snapshot first so it becomes the default baseline.
+  if default_mode {
+    if let Some(c_path) = find_c_snapshot() {
+      let output = load_output(&c_path);
+      lang_results.push(LangResults {
+        name: "c".to_string(),
+        path: "(snapshot)".to_string(),
+        metrics: parse_means(&output.benchmarks),
+      });
+    } else {
+      eprintln!("warning: no C benchmark snapshot found, showing Rust-only results");
     }
-    fs::write(out_path, serde_json::to_vec_pretty(&output).unwrap()).unwrap();
-    eprintln!("wrote {}", out_path.display());
+  }
+
+  // Run Rust benchmarks if --out is given or in default mode.
+  if args.out.is_some() || default_mode {
+    let output = run_benchmarks();
+
+    if let Some(ref out_path) = args.out {
+      if let Some(parent) = out_path.parent() {
+        fs::create_dir_all(parent).unwrap();
+      }
+      fs::write(out_path, serde_json::to_vec_pretty(&output).unwrap()).unwrap();
+      eprintln!("wrote {}", out_path.display());
+    }
+
+    let path_label = args
+      .out
+      .as_ref()
+      .map(|p| p.display().to_string())
+      .unwrap_or_else(|| "(live run)".to_string());
 
     lang_results.push(LangResults {
       name: "rust".to_string(),
-      path: out_path.display().to_string(),
+      path: path_label,
       metrics: parse_means(&output.benchmarks),
     });
   }
