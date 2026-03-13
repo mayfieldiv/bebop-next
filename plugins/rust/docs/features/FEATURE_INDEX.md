@@ -13,6 +13,7 @@ See `CLAUDE.md` for FD lifecycle stages and management guidelines.
 | FD-008 | [OOM Handling](FD-008_OOM_HANDLING.md) | Open | Medium | High |
 | FD-009 | [Reflection Metadata](FD-009_REFLECTION_METADATA.md) | Planned | Medium | Low |
 | FD-010 | [Zero-Copy Bulk Arrays](FD-010_ZERO_COPY_BULK_ARRAYS.md) | Open | High | Low |
+| FD-022 | [Cross-Language Benchmark Expansion](FD-022_CROSS_LANGUAGE_BENCHMARKS.md) | In Progress | Medium | Medium |
 
 ## Completed
 
