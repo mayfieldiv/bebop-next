@@ -216,7 +216,7 @@ fn run_benchmarks() -> Output {
   }
 }
 
-// ── Report generation (replaces compare.py) ──
+// ── Report generation ──
 
 #[derive(Default)]
 struct ScenarioMetrics {
@@ -227,7 +227,7 @@ struct ScenarioMetrics {
   encoded_size: Option<usize>,
 }
 
-/// Parse benchmark rows into scenario → metrics, filtering for mean aggregates
+/// Parse benchmark rows into scenario -> metrics, filtering for mean aggregates
 /// with the `BM_Bebop_{Encode|Decode}_{Scenario}` naming convention.
 fn parse_means(rows: &[BenchmarkRow]) -> BTreeMap<String, ScenarioMetrics> {
   let mut map = BTreeMap::<String, ScenarioMetrics>::new();
@@ -241,7 +241,7 @@ fn parse_means(rows: &[BenchmarkRow]) -> BTreeMap<String, ScenarioMetrics> {
       continue;
     }
 
-    // BM_Bebop_Encode_PersonSmall → op="Encode", scenario="PersonSmall"
+    // BM_Bebop_Encode_PersonSmall -> op="Encode", scenario="PersonSmall"
     let rest = &run_name["BM_Bebop_".len()..];
     let (op, scenario) = match rest.split_once('_') {
       Some((op, scenario)) => (op, scenario),
@@ -272,6 +272,13 @@ fn parse_means(rows: &[BenchmarkRow]) -> BTreeMap<String, ScenarioMetrics> {
   map
 }
 
+/// A named set of parsed benchmark results.
+struct LangResults {
+  name: String,
+  path: String,
+  metrics: BTreeMap<String, ScenarioMetrics>,
+}
+
 fn fmt_ns(v: Option<f64>) -> String {
   match v {
     Some(n) => format!("{n:.2}"),
@@ -279,72 +286,109 @@ fn fmt_ns(v: Option<f64>) -> String {
   }
 }
 
-fn fmt_mibs(v: Option<f64>) -> String {
-  match v {
-    Some(n) => format!("{:.2}", n / (1024.0 * 1024.0)),
-    None => "-".to_string(),
-  }
-}
-
-/// Format as multiple of C baseline (1.0x = parity, 3.0x = Rust takes 3x longer).
-fn fmt_multiple(rust_ns: Option<f64>, c_ns: Option<f64>) -> String {
-  match (rust_ns, c_ns) {
-    (Some(r), Some(c)) if c > 0.0 => format!("{:.1}x", r / c),
+/// Format as multiple of baseline (1.0x = parity, 3.0x = takes 3x longer).
+fn fmt_multiple(lang_ns: Option<f64>, baseline_ns: Option<f64>) -> String {
+  match (lang_ns, baseline_ns) {
+    (Some(l), Some(b)) if b > 0.0 => format!("{:.1}x", l / b),
     _ => "-".to_string(),
   }
 }
 
-fn generate_report(rust_json_path: &str, c_json_path: &str, rust: &Output, c: &Output) -> String {
-  let rust_map = parse_means(&rust.benchmarks);
-  let c_map = parse_means(&c.benchmarks);
+fn generate_report(langs: &[LangResults], baseline: &str) -> String {
+  // Collect all scenario names across all languages.
+  let mut scenarios = BTreeMap::<&str, ()>::new();
+  for lang in langs {
+    for key in lang.metrics.keys() {
+      scenarios.insert(key.as_str(), ());
+    }
+  }
 
-  let mut scenarios: Vec<&str> = rust_map
-    .keys()
-    .chain(c_map.keys())
-    .map(|s| s.as_str())
-    .collect();
-  scenarios.sort_unstable();
-  scenarios.dedup();
+  // Find the baseline index.
+  let baseline_idx = langs
+    .iter()
+    .position(|l| l.name == baseline)
+    .unwrap_or_else(|| {
+      let names: Vec<_> = langs.iter().map(|l| l.name.as_str()).collect();
+      panic!("baseline {baseline:?} not found in languages: {names:?}");
+    });
 
   let mut lines = Vec::new();
-  lines.push("# Rust vs C Bebop Benchmarks".to_string());
+
+  // Title.
+  let names: Vec<_> = langs.iter().map(|l| l.name.as_str()).collect();
+  lines.push(format!("# Bebop Benchmarks: {}", names.join(" vs ")));
   lines.push(String::new());
-  lines.push(format!("- Rust source: `{rust_json_path}`"));
-  lines.push(format!("- C source: `{c_json_path}`"));
+  for lang in langs {
+    lines.push(format!("- {}: `{}`", lang.name, lang.path));
+  }
+  lines.push(format!("- baseline: {baseline}"));
   lines.push(String::new());
-  lines.push(
-    "| Scenario | Metric | Rust ns | C ns | vs C | Rust MiB/s | C MiB/s | Encoded Size (bytes) |"
-      .to_string(),
-  );
-  lines.push("|---|---:|---:|---:|---:|---:|---:|---:|".to_string());
+
+  // Header row: Scenario | Metric | <baseline> ns | <lang> ns | vs <baseline> | ... | Size
+  let mut header = "| Scenario | Metric".to_string();
+  // Baseline column first (no "vs" column for itself).
+  header.push_str(&format!(" | {} ns", langs[baseline_idx].name));
+  // Then each non-baseline language: ns + vs baseline.
+  for (i, lang) in langs.iter().enumerate() {
+    if i == baseline_idx {
+      continue;
+    }
+    header.push_str(&format!(" | {} ns | vs {}", lang.name, baseline));
+  }
+  header.push_str(" | Size |");
+  lines.push(header);
+
+  // Separator row.
+  let mut sep = "|---|---:".to_string();
+  sep.push_str("|---:"); // baseline ns
+  for (i, _) in langs.iter().enumerate() {
+    if i == baseline_idx {
+      continue;
+    }
+    sep.push_str("|---:|---:"); // lang ns + vs baseline
+  }
+  sep.push_str("|---:|");
+  lines.push(sep);
 
   let empty = ScenarioMetrics::default();
 
-  for scenario in &scenarios {
-    let r = rust_map.get(*scenario).unwrap_or(&empty);
-    let c = c_map.get(*scenario).unwrap_or(&empty);
-    let size = r
-      .encoded_size
-      .or(c.encoded_size)
-      .map(|s| s.to_string())
-      .unwrap_or_else(|| "-".to_string());
+  for scenario in scenarios.keys() {
+    for metric in ["encode", "decode"] {
+      let get_ns = |m: &ScenarioMetrics| -> Option<f64> {
+        if metric == "encode" {
+          m.encode_ns
+        } else {
+          m.decode_ns
+        }
+      };
 
-    lines.push(format!(
-      "| {scenario} | encode | {} | {} | {} | {} | {} | {size} |",
-      fmt_ns(r.encode_ns),
-      fmt_ns(c.encode_ns),
-      fmt_multiple(r.encode_ns, c.encode_ns),
-      fmt_mibs(r.encode_throughput),
-      fmt_mibs(c.encode_throughput),
-    ));
-    lines.push(format!(
-      "| {scenario} | decode | {} | {} | {} | {} | {} | {size} |",
-      fmt_ns(r.decode_ns),
-      fmt_ns(c.decode_ns),
-      fmt_multiple(r.decode_ns, c.decode_ns),
-      fmt_mibs(r.decode_throughput),
-      fmt_mibs(c.decode_throughput),
-    ));
+      let baseline_m = langs[baseline_idx].metrics.get(*scenario).unwrap_or(&empty);
+      let baseline_ns = get_ns(baseline_m);
+
+      // Find encoded size from any language that has it.
+      let size = langs
+        .iter()
+        .filter_map(|l| l.metrics.get(*scenario).and_then(|m| m.encoded_size))
+        .next()
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "-".to_string());
+
+      let mut row = format!("| {scenario} | {metric} | {}", fmt_ns(baseline_ns));
+      for (i, lang) in langs.iter().enumerate() {
+        if i == baseline_idx {
+          continue;
+        }
+        let m = lang.metrics.get(*scenario).unwrap_or(&empty);
+        let ns = get_ns(m);
+        row.push_str(&format!(
+          " | {} | {}",
+          fmt_ns(ns),
+          fmt_multiple(ns, baseline_ns)
+        ));
+      }
+      row.push_str(&format!(" | {size} |"));
+      lines.push(row);
+    }
   }
 
   lines.push(String::new());
@@ -354,21 +398,49 @@ fn generate_report(rust_json_path: &str, c_json_path: &str, rust: &Output, c: &O
 // ── CLI ──
 
 struct Args {
-  /// Write Rust benchmark JSON here (runs benchmarks).
+  /// Run Rust benchmarks and write JSON here.
   out: Option<PathBuf>,
-  /// Load pre-existing Rust benchmark JSON (skip benchmark run).
-  rust_json: Option<PathBuf>,
-  /// Path to C benchmark JSON for comparison.
-  c_json: Option<PathBuf>,
-  /// Output path for markdown report (requires --c-json). Defaults to stdout.
+  /// Language result files: Vec<(name, path)>. Insertion order preserved.
+  langs: Vec<(String, PathBuf)>,
+  /// Baseline language name for "vs" column. Defaults to first --lang.
+  baseline: Option<String>,
+  /// Output path for markdown report. Defaults to stdout.
   report: Option<PathBuf>,
+}
+
+fn print_usage() -> ! {
+  eprintln!("usage:");
+  eprintln!("  comparison --out <path> [--lang name=path]... [--baseline name] [--report path]");
+  eprintln!(
+    "  comparison --lang name=path [--lang name=path]... [--baseline name] [--report path]"
+  );
+  eprintln!();
+  eprintln!("  --out <path>        Run Rust benchmarks, write JSON (adds 'rust' to comparison)");
+  eprintln!("  --lang name=path    Add a language's benchmark JSON to the comparison");
+  eprintln!(
+    "  --baseline name     Which language is the baseline for 'vs' column (default: first --lang)"
+  );
+  eprintln!("  --report <path>     Write markdown report to file (default: stdout)");
+  std::process::exit(1);
+}
+
+fn parse_lang_arg(s: &str) -> (String, PathBuf) {
+  match s.split_once('=') {
+    Some((name, path)) if !name.is_empty() && !path.is_empty() => {
+      (name.to_string(), PathBuf::from(path))
+    }
+    _ => {
+      eprintln!("invalid --lang format: {s:?} (expected name=path)");
+      std::process::exit(1);
+    }
+  }
 }
 
 fn parse_args() -> Args {
   let mut args = Args {
     out: None,
-    rust_json: None,
-    c_json: None,
+    langs: Vec::new(),
+    baseline: None,
     report: None,
   };
 
@@ -376,69 +448,72 @@ fn parse_args() -> Args {
   while let Some(arg) = iter.next() {
     match arg.as_str() {
       "--out" => args.out = iter.next().map(PathBuf::from),
-      "--rust-json" => args.rust_json = iter.next().map(PathBuf::from),
-      "--c-json" => args.c_json = iter.next().map(PathBuf::from),
+      "--lang" => {
+        if let Some(val) = iter.next() {
+          args.langs.push(parse_lang_arg(&val));
+        }
+      }
+      "--baseline" => args.baseline = iter.next(),
       "--report" => args.report = iter.next().map(PathBuf::from),
       other => {
         eprintln!("unknown argument: {other}");
-        std::process::exit(1);
+        print_usage();
       }
     }
   }
 
-  if args.out.is_none() && args.rust_json.is_none() {
-    eprintln!("usage: comparison --out <path>  (run benchmarks)");
-    eprintln!(
-      "       comparison --rust-json <path> --c-json <path> --report <path>  (compare only)"
-    );
-    eprintln!("       comparison --out <path> --c-json <path> --report <path>  (run + compare)");
-    std::process::exit(1);
+  if args.out.is_none() && args.langs.is_empty() {
+    print_usage();
   }
 
   args
 }
 
+fn load_output(path: &PathBuf) -> Output {
+  let data = fs::read(path).unwrap_or_else(|e| panic!("failed to read {}: {e}", path.display()));
+  serde_json::from_slice(&data)
+    .unwrap_or_else(|e| panic!("failed to parse {}: {e}", path.display()))
+}
+
 fn main() {
   let args = parse_args();
 
-  // Either run benchmarks or load existing results.
-  let rust_output = if let Some(ref out_path) = args.out {
+  let mut lang_results: Vec<LangResults> = Vec::new();
+
+  // Run Rust benchmarks if --out is given; add "rust" to the comparison.
+  if let Some(ref out_path) = args.out {
     let output = run_benchmarks();
     if let Some(parent) = out_path.parent() {
       fs::create_dir_all(parent).unwrap();
     }
     fs::write(out_path, serde_json::to_vec_pretty(&output).unwrap()).unwrap();
     eprintln!("wrote {}", out_path.display());
-    output
-  } else if let Some(ref rust_path) = args.rust_json {
-    let data =
-      fs::read(rust_path).unwrap_or_else(|e| panic!("failed to read {}: {e}", rust_path.display()));
-    serde_json::from_slice(&data)
-      .unwrap_or_else(|e| panic!("failed to parse {}: {e}", rust_path.display()))
-  } else {
-    unreachable!("parse_args ensures one of --out or --rust-json is set");
-  };
 
-  // Generate comparison report if C results are provided.
-  if let Some(ref c_path) = args.c_json {
-    let c_data =
-      fs::read(c_path).unwrap_or_else(|e| panic!("failed to read {}: {e}", c_path.display()));
-    let c_output: Output = serde_json::from_slice(&c_data)
-      .unwrap_or_else(|e| panic!("failed to parse {}: {e}", c_path.display()));
+    lang_results.push(LangResults {
+      name: "rust".to_string(),
+      path: out_path.display().to_string(),
+      metrics: parse_means(&output.benchmarks),
+    });
+  }
 
-    let rust_json_label = args
-      .out
-      .as_ref()
-      .or(args.rust_json.as_ref())
-      .map(|p| p.display().to_string())
-      .unwrap_or_else(|| "(stdin)".to_string());
+  // Load each --lang file.
+  for (name, path) in &args.langs {
+    let output = load_output(path);
+    lang_results.push(LangResults {
+      name: name.clone(),
+      path: path.display().to_string(),
+      metrics: parse_means(&output.benchmarks),
+    });
+  }
 
-    let report = generate_report(
-      &rust_json_label,
-      &c_path.display().to_string(),
-      &rust_output,
-      &c_output,
-    );
+  // Generate report if we have at least 2 languages.
+  if lang_results.len() >= 2 {
+    let baseline = args
+      .baseline
+      .as_deref()
+      .unwrap_or_else(|| &lang_results[0].name);
+
+    let report = generate_report(&lang_results, baseline);
 
     if let Some(ref report_path) = args.report {
       if let Some(parent) = report_path.parent() {
@@ -449,5 +524,7 @@ fn main() {
     } else {
       print!("{report}");
     }
+  } else if lang_results.len() == 1 {
+    eprintln!("only one language loaded — nothing to compare");
   }
 }
