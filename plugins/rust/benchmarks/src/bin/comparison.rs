@@ -286,9 +286,10 @@ fn fmt_mibs(v: Option<f64>) -> String {
   }
 }
 
-fn fmt_speedup(rust_ns: Option<f64>, c_ns: Option<f64>) -> String {
+/// Format as multiple of C baseline (1.0x = parity, 3.0x = Rust takes 3x longer).
+fn fmt_multiple(rust_ns: Option<f64>, c_ns: Option<f64>) -> String {
   match (rust_ns, c_ns) {
-    (Some(r), Some(c)) if r > 0.0 => format!("{:.2}x", c / r),
+    (Some(r), Some(c)) if c > 0.0 => format!("{:.1}x", r / c),
     _ => "-".to_string(),
   }
 }
@@ -312,7 +313,7 @@ fn generate_report(rust_json_path: &str, c_json_path: &str, rust: &Output, c: &O
   lines.push(format!("- C source: `{c_json_path}`"));
   lines.push(String::new());
   lines.push(
-    "| Scenario | Metric | Rust ns | C ns | Rust/C Speedup | Rust MiB/s | C MiB/s | Encoded Size (bytes) |"
+    "| Scenario | Metric | Rust ns | C ns | vs C | Rust MiB/s | C MiB/s | Encoded Size (bytes) |"
       .to_string(),
   );
   lines.push("|---|---:|---:|---:|---:|---:|---:|---:|".to_string());
@@ -332,7 +333,7 @@ fn generate_report(rust_json_path: &str, c_json_path: &str, rust: &Output, c: &O
       "| {scenario} | encode | {} | {} | {} | {} | {} | {size} |",
       fmt_ns(r.encode_ns),
       fmt_ns(c.encode_ns),
-      fmt_speedup(r.encode_ns, c.encode_ns),
+      fmt_multiple(r.encode_ns, c.encode_ns),
       fmt_mibs(r.encode_throughput),
       fmt_mibs(c.encode_throughput),
     ));
@@ -340,7 +341,7 @@ fn generate_report(rust_json_path: &str, c_json_path: &str, rust: &Output, c: &O
       "| {scenario} | decode | {} | {} | {} | {} | {} | {size} |",
       fmt_ns(r.decode_ns),
       fmt_ns(c.decode_ns),
-      fmt_speedup(r.decode_ns, c.decode_ns),
+      fmt_multiple(r.decode_ns, c.decode_ns),
       fmt_mibs(r.decode_throughput),
       fmt_mibs(c.decode_throughput),
     ));
