@@ -30,8 +30,8 @@ pub mod fixtures {
     bt::TextSpan::new(1024, 256, bt::ChunkKind::Paragraph)
   }
 
-  pub fn embedding_bf16_1536() -> bt::EmbeddingBf16 {
-    let vector = (0..1536)
+  pub fn embedding_bf16(n: usize) -> bt::EmbeddingBf16 {
+    let vector = (0..n)
       .map(|i| bf16::from_f32((i as f32) * 0.001))
       .collect::<Vec<_>>();
     bt::EmbeddingBf16::new(
@@ -54,6 +54,190 @@ pub mod fixtures {
       value: Some(depth as i32),
       children: Some(vec![tree_deep(depth - 1)]),
     }
+  }
+
+  pub fn order_small() -> bt::Order {
+    bt::Order::new(
+      12345,
+      67890,
+      vec![101, 102, 103],
+      vec![1, 2, 1],
+      299.99,
+      1704067200000,
+    )
+  }
+
+  pub fn order_large() -> bt::Order {
+    let item_ids: Vec<i64> = (1000..1100).collect();
+    let quantities: Vec<i32> = (0..100).map(|i| (i % 10) + 1).collect();
+    let total: f64 = quantities.iter().map(|&q| q as f64 * 49.99).sum();
+    bt::Order::new(99999, 88888, item_ids, quantities, total, 1704067200000)
+  }
+
+  pub fn event_small() -> bt::Event<'static> {
+    bt::Event::new(
+      1001,
+      "click",
+      "web",
+      1704067200000,
+      vec![0x01, 0x02, 0x03, 0x04],
+    )
+  }
+
+  pub fn event_large() -> bt::Event<'static> {
+    let payload: Vec<u8> = (0..4096).map(|i| (i & 0xFF) as u8).collect();
+    bt::Event::new(
+      2002,
+      "data_transfer",
+      "backend_service_cluster_node_42",
+      1704067200000,
+      payload,
+    )
+  }
+
+  pub fn tree_wide(children: usize) -> bt::TreeNode {
+    let kids = (0..children)
+      .map(|i| bt::TreeNode {
+        value: Some(i as i32),
+        children: Some(Vec::new()),
+      })
+      .collect();
+    bt::TreeNode {
+      value: Some(999),
+      children: Some(kids),
+    }
+  }
+
+  pub fn json_object_small() -> bt::JsonValue<'static> {
+    let mut fields = HashMap::new();
+    fields.insert(
+      Cow::Borrowed("name"),
+      bt::JsonValue::String(bt::String {
+        value: Some(Cow::Borrowed("John Doe")),
+      }),
+    );
+    fields.insert(
+      Cow::Borrowed("age"),
+      bt::JsonValue::Number(bt::Number { value: Some(30.0) }),
+    );
+    fields.insert(
+      Cow::Borrowed("active"),
+      bt::JsonValue::Bool(bt::Bool { value: Some(true) }),
+    );
+    bt::JsonValue::Object(bt::Object {
+      fields: Some(fields),
+    })
+  }
+
+  pub fn chunked_text() -> bt::ChunkedText<'static> {
+    let source = ALICE_TEXT;
+    let mut spans = Vec::new();
+    let bytes = source.as_bytes();
+    let len = bytes.len();
+    let mut pos = 0;
+
+    while pos < len {
+      // skip blank lines
+      while pos < len && (bytes[pos] == b'\n' || bytes[pos] == b'\r') {
+        pos += 1;
+      }
+      if pos >= len {
+        break;
+      }
+
+      let start = pos;
+      let kind = if pos + 3 < len && bytes[pos] == b'#' && bytes[pos + 1] == b'#' && bytes[pos + 2] == b' ' {
+        // heading line
+        while pos < len && bytes[pos] != b'\n' {
+          pos += 1;
+        }
+        bt::ChunkKind::Heading
+      } else {
+        // paragraph: read until double newline
+        while pos < len {
+          if bytes[pos] == b'\n' && pos + 1 < len && bytes[pos + 1] == b'\n' {
+            break;
+          }
+          pos += 1;
+        }
+        bt::ChunkKind::Paragraph
+      };
+
+      if pos > start {
+        spans.push(bt::TextSpan::new(start as u32, (pos - start) as u32, kind));
+      }
+    }
+
+    bt::ChunkedText::new(source, spans)
+  }
+
+  pub fn embedding_f32(n: usize) -> bt::EmbeddingF32 {
+    let vector = (0..n)
+      .map(|i| (i as f32) * 0.001)
+      .collect::<Vec<_>>();
+    bt::EmbeddingF32::new(
+      Uuid::from_bytes([
+        0x30, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+        0x88,
+      ]),
+      vector,
+    )
+  }
+
+  pub fn embedding_batch() -> bt::EmbeddingBatch<'static> {
+    let embeddings = (0..8)
+      .map(|i| {
+        let vector = (0..1536)
+          .map(|j| bf16::from_f32(((i * 1536 + j) as f32) * 0.0001))
+          .collect::<Vec<_>>();
+        bt::EmbeddingBf16::new(
+          Uuid::from_bytes([
+            0x40, i as u8, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66,
+            0x77, 0x88,
+          ]),
+          vector,
+        )
+      })
+      .collect::<Vec<_>>();
+    bt::EmbeddingBatch::new("text-embedding-3-small", embeddings, 256)
+  }
+
+  pub fn llm_chunk_small() -> bt::LlmStreamChunk<'static> {
+    let tokens = vec!["Hello".to_string(), ",".to_string(), " world".to_string()];
+    let logprobs = tokens
+      .iter()
+      .map(|tok| {
+        bt::TokenAlternatives::new(vec![bt::TokenLogprob::new(tok.clone(), 1000, -0.1)])
+      })
+      .collect();
+    bt::LlmStreamChunk::new(1, tokens, logprobs, "")
+  }
+
+  pub fn llm_chunk_large() -> bt::LlmStreamChunk<'static> {
+    let tokens: Vec<String> = (0..32).map(|i| format!("tk{i:02}")).collect();
+    let logprobs = (0..32)
+      .map(|i| {
+        let alts = (0..5)
+          .map(|k| bt::TokenLogprob::new(format!("a{i}_{k}"), (i * 5 + k) as u32, -0.5))
+          .collect();
+        bt::TokenAlternatives::new(alts)
+      })
+      .collect();
+    bt::LlmStreamChunk::new(42, tokens, logprobs, "stop")
+  }
+
+  pub fn tensor_shard_small() -> bt::TensorShard<'static> {
+    let data = (0..1024)
+      .map(|i| bf16::from_f32((i as f32) * 0.001))
+      .collect::<Vec<_>>();
+    bt::TensorShard::new(
+      "model.layers.0.attention.wq.weight",
+      vec![4096, 4096],
+      "bfloat16",
+      data,
+      0,
+      4096 * 4096,
+    )
   }
 
   pub fn json_small() -> bt::JsonValue<'static> {
