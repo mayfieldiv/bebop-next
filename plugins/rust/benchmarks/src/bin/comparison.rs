@@ -104,136 +104,95 @@ fn push_case(
   }
 }
 
+/// Register a benchmark scenario. Builds fixture once, then measures
+/// encode and decode in `push_case`. Each new scenario is a single call.
+macro_rules! bench {
+  ($rows:expr, $reps:expr, $name:literal, $iters:expr, $ty:ty, $fixture:expr) => {{
+    let val = $fixture;
+    let bytes = val.to_bytes();
+    push_case(
+      $rows,
+      $name,
+      val.encoded_size(),
+      $reps,
+      $iters,
+      || {
+        black_box(val.clone().to_bytes());
+      },
+      || {
+        black_box(<$ty>::from_bytes(&bytes).unwrap());
+      },
+    );
+  }};
+}
+
 fn run_benchmarks() -> Output {
-  let repetitions = 10usize;
+  let reps = 10usize;
   let mut rows = Vec::new();
 
-  let person_small = fixtures::person_small();
-  let person_small_bytes = person_small.to_bytes();
-  push_case(
+  bench!(
     &mut rows,
+    reps,
     "PersonSmall",
-    person_small.encoded_size(),
-    repetitions,
     50_000,
-    || {
-      black_box(person_small.clone().to_bytes());
-    },
-    || {
-      black_box(bt::Person::from_bytes(&person_small_bytes).unwrap());
-    },
+    bt::Person,
+    fixtures::person_small()
   );
-
-  let person_medium = fixtures::person_medium();
-  let person_medium_bytes = person_medium.to_bytes();
-  push_case(
+  bench!(
     &mut rows,
+    reps,
     "PersonMedium",
-    person_medium.encoded_size(),
-    repetitions,
     50_000,
-    || {
-      black_box(person_medium.clone().to_bytes());
-    },
-    || {
-      black_box(bt::Person::from_bytes(&person_medium_bytes).unwrap());
-    },
+    bt::Person,
+    fixtures::person_medium()
   );
-
-  let tree = fixtures::tree_deep(64);
-  let tree_bytes = tree.to_bytes();
-  push_case(
+  bench!(
     &mut rows,
+    reps,
     "TreeDeep",
-    tree.encoded_size(),
-    repetitions,
     2_500,
-    || {
-      black_box(tree.clone().to_bytes());
-    },
-    || {
-      black_box(bt::TreeNode::from_bytes(&tree_bytes).unwrap());
-    },
+    bt::TreeNode,
+    fixtures::tree_deep(64)
   );
-
-  let json = fixtures::json_large(3, 3);
-  let json_bytes = json.to_bytes();
-  push_case(
+  bench!(
     &mut rows,
+    reps,
     "JsonLarge",
-    json.encoded_size(),
-    repetitions,
     750,
-    || {
-      black_box(json.clone().to_bytes());
-    },
-    || {
-      black_box(bt::JsonValue::from_bytes(&json_bytes).unwrap());
-    },
+    bt::JsonValue,
+    fixtures::json_large(3, 3)
   );
-
-  let doc_small = fixtures::document_small();
-  let doc_small_bytes = doc_small.to_bytes();
-  push_case(
+  bench!(
     &mut rows,
+    reps,
     "DocumentSmall",
-    doc_small.encoded_size(),
-    repetitions,
     10_000,
-    || {
-      black_box(doc_small.clone().to_bytes());
-    },
-    || {
-      black_box(bt::Document::from_bytes(&doc_small_bytes).unwrap());
-    },
+    bt::Document,
+    fixtures::document_small()
   );
-
-  let doc_large = fixtures::document_large();
-  let doc_large_bytes = doc_large.to_bytes();
-  push_case(
+  bench!(
     &mut rows,
+    reps,
     "DocumentLarge",
-    doc_large.encoded_size(),
-    repetitions,
     250,
-    || {
-      black_box(doc_large.clone().to_bytes());
-    },
-    || {
-      black_box(bt::Document::from_bytes(&doc_large_bytes).unwrap());
-    },
+    bt::Document,
+    fixtures::document_large()
   );
-
-  let shard = fixtures::tensor_shard_large();
-  let shard_bytes = shard.to_bytes();
-  push_case(
+  bench!(
     &mut rows,
+    reps,
     "TensorShardLarge",
-    shard.encoded_size(),
-    repetitions,
     200,
-    || {
-      black_box(shard.clone().to_bytes());
-    },
-    || {
-      black_box(bt::TensorShard::from_bytes(&shard_bytes).unwrap());
-    },
+    bt::TensorShard,
+    fixtures::tensor_shard_large()
   );
-
-  let response = fixtures::inference_response();
-  let response_bytes = response.to_bytes();
-  push_case(
+  bench!(
     &mut rows,
+    reps,
     "InferenceResponse",
-    response.encoded_size(),
-    repetitions,
     400,
-    || {
-      black_box(response.clone().to_bytes());
-    },
-    || {
-      black_box(bt::InferenceResponse::from_bytes(&response_bytes).unwrap());
-    },
+    bt::InferenceResponse,
+    fixtures::inference_response()
   );
 
   Output {
@@ -259,6 +218,7 @@ fn run_benchmarks() -> Output {
 
 // ── Report generation (replaces compare.py) ──
 
+#[derive(Default)]
 struct ScenarioMetrics {
   encode_ns: Option<f64>,
   decode_ns: Option<f64>,
@@ -288,13 +248,7 @@ fn parse_means(rows: &[BenchmarkRow]) -> BTreeMap<String, ScenarioMetrics> {
       None => continue,
     };
 
-    let entry = map.entry(scenario.to_string()).or_insert(ScenarioMetrics {
-      encode_ns: None,
-      decode_ns: None,
-      encode_throughput: None,
-      decode_throughput: None,
-      encoded_size: None,
-    });
+    let entry = map.entry(scenario.to_string()).or_default();
 
     match op {
       "Encode" => {
@@ -363,13 +317,7 @@ fn generate_report(rust_json_path: &str, c_json_path: &str, rust: &Output, c: &O
   );
   lines.push("|---|---:|---:|---:|---:|---:|---:|---:|".to_string());
 
-  let empty = ScenarioMetrics {
-    encode_ns: None,
-    decode_ns: None,
-    encode_throughput: None,
-    decode_throughput: None,
-    encoded_size: None,
-  };
+  let empty = ScenarioMetrics::default();
 
   for scenario in &scenarios {
     let r = rust_map.get(*scenario).unwrap_or(&empty);
