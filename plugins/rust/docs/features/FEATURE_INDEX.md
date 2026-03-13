@@ -13,12 +13,12 @@ See `CLAUDE.md` for FD lifecycle stages and management guidelines.
 | FD-008 | [OOM Handling](FD-008_OOM_HANDLING.md) | Open | Medium | High |
 | FD-009 | [Reflection Metadata](FD-009_REFLECTION_METADATA.md) | Planned | Medium | Low |
 | FD-010 | [Zero-Copy Bulk Arrays](FD-010_ZERO_COPY_BULK_ARRAYS.md) | Open | High | Low |
-| FD-022 | [Cross-Language Benchmark Expansion](FD-022_CROSS_LANGUAGE_BENCHMARKS.md) | In Progress | Medium | Medium |
 
 ## Completed
 
 | FD | Title | Completed | Notes |
 |----|-------|-----------|-------|
+| FD-022 | [Cross-Language Benchmark Expansion](archive/FD-022_CROSS_LANGUAGE_BENCHMARKS.md) | 2026-03 | All 23 scenarios with golden file cross-language verification |
 | FD-003 | [SerdeMode](archive/FD-003_SERDE_MODE.md) | 2026-03 | Always/FeatureGated/Disabled serde control |
 | FD-007 | [Enum Forward Compat](archive/FD-007_ENUM_FORWARD_COMPAT.md) | 2026-03 | `@forward_compatible` decorator, Unknown(T) variant |
 | FD-013 | [Dead Code Cleanup](archive/FD-013_DEAD_CODE_CLEANUP.md) | 2026-02 | Removed dead non-Cow generation paths |
