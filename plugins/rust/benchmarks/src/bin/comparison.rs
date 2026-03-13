@@ -117,7 +117,7 @@ macro_rules! bench {
       $reps,
       $iters,
       || {
-        black_box(val.clone().to_bytes());
+        black_box(val.to_bytes());
       },
       || {
         black_box(<$ty>::from_bytes(&bytes).unwrap());
