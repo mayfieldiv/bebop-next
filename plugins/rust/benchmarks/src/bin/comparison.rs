@@ -149,10 +149,58 @@ fn run_benchmarks() -> Output {
   bench!(
     &mut rows,
     reps,
+    "OrderSmall",
+    50_000,
+    bt::Order,
+    fixtures::order_small()
+  );
+  bench!(
+    &mut rows,
+    reps,
+    "OrderLarge",
+    10_000,
+    bt::Order,
+    fixtures::order_large()
+  );
+  bench!(
+    &mut rows,
+    reps,
+    "EventSmall",
+    50_000,
+    bt::Event,
+    fixtures::event_small()
+  );
+  bench!(
+    &mut rows,
+    reps,
+    "EventLarge",
+    10_000,
+    bt::Event,
+    fixtures::event_large()
+  );
+  bench!(
+    &mut rows,
+    reps,
+    "TreeWide",
+    5_000,
+    bt::TreeNode,
+    fixtures::tree_wide(100)
+  );
+  bench!(
+    &mut rows,
+    reps,
     "TreeDeep",
     2_500,
     bt::TreeNode,
     fixtures::tree_deep(64)
+  );
+  bench!(
+    &mut rows,
+    reps,
+    "JsonSmall",
+    50_000,
+    bt::JsonValue,
+    fixtures::json_object_small()
   );
   bench!(
     &mut rows,
@@ -177,6 +225,78 @@ fn run_benchmarks() -> Output {
     250,
     bt::Document,
     fixtures::document_large()
+  );
+  bench!(
+    &mut rows,
+    reps,
+    "ChunkedText",
+    2_500,
+    bt::ChunkedText,
+    fixtures::chunked_text()
+  );
+  bench!(
+    &mut rows,
+    reps,
+    "Embedding384",
+    20_000,
+    bt::EmbeddingBf16,
+    fixtures::embedding_bf16(384)
+  );
+  bench!(
+    &mut rows,
+    reps,
+    "Embedding768",
+    10_000,
+    bt::EmbeddingBf16,
+    fixtures::embedding_bf16(768)
+  );
+  bench!(
+    &mut rows,
+    reps,
+    "Embedding1536",
+    10_000,
+    bt::EmbeddingBf16,
+    fixtures::embedding_bf16(1536)
+  );
+  bench!(
+    &mut rows,
+    reps,
+    "EmbeddingF32_768",
+    10_000,
+    bt::EmbeddingF32,
+    fixtures::embedding_f32(768)
+  );
+  bench!(
+    &mut rows,
+    reps,
+    "EmbeddingBatch",
+    2_000,
+    bt::EmbeddingBatch,
+    fixtures::embedding_batch()
+  );
+  bench!(
+    &mut rows,
+    reps,
+    "LLMChunkSmall",
+    50_000,
+    bt::LlmStreamChunk,
+    fixtures::llm_chunk_small()
+  );
+  bench!(
+    &mut rows,
+    reps,
+    "LLMChunkLarge",
+    2_000,
+    bt::LlmStreamChunk,
+    fixtures::llm_chunk_large()
+  );
+  bench!(
+    &mut rows,
+    reps,
+    "TensorShardSmall",
+    10_000,
+    bt::TensorShard,
+    fixtures::tensor_shard_small()
   );
   bench!(
     &mut rows,
