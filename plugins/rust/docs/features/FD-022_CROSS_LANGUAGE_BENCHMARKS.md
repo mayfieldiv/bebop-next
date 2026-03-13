@@ -7,66 +7,70 @@
 
 ## Problem
 
-The cross-language benchmark infrastructure (`lab/benchmark/`) defines 23 scenarios across 5 categories, but the Rust benchmark harness only covers ~10 of them. The benchmark report shows `-` for 13 Rust scenarios, making it impossible to compare languages on those workloads.
-
-The comparison tooling is split across three languages:
-- `comparison.rs` — runs Rust benchmarks, outputs JSON
-- `run_comparison.sh` — orchestrates: runs Rust binary, runs/copies C results, calls compare.py
-- `compare.py` — reads two JSON files, generates markdown report
-
-This should all be one Rust program.
+The cross-language benchmark infrastructure (`lab/benchmark/`) defines 23 scenarios across 5 categories, but the Rust benchmark harness only covers 8 of them. The report shows `-` for 15 Rust scenarios.
 
 ## Solution
 
-### Phase 1: Rust benchmark runner (replaces shell + Python)
+### Phase 1: Rust benchmark runner ✅ DONE
 
-Extend `comparison.rs` to handle the full workflow:
-- Run Rust benchmarks and write JSON (existing)
-- Read C benchmark JSON (`--c-json <path>`)
-- Generate markdown comparison report (`--report <path>`)
-
-CLI:
-```
-# Run benchmarks only:
-cargo run --release --bin comparison -- --out rust.json
-
-# Run benchmarks + generate comparison report:
-cargo run --release --bin comparison -- --out rust.json --c-json c.json --report report.md
-
-# Compare existing results (no benchmark run):
-cargo run --release --bin comparison -- --rust-json rust.json --c-json c.json --report report.md
-```
-
-Port the `compare.py` logic:
-- Parse Google Benchmark JSON format (filter `aggregate_name == "mean"`)
-- Parse `run_name` pattern: `BM_Bebop_{Encode|Decode}_{Scenario}`
-- Join Rust + C results by scenario name
-- Generate markdown table with ns, speedup, MiB/s, encoded size
+- Replaced `compare.py` and `run_comparison.sh` with Rust binary
+- N-language comparison with `--lang name=path` and `--baseline`
+- Zero-arg default mode: runs benchmarks, auto-loads C snapshot
+- `bench!` macro for one-liner scenario registration
 
 ### Phase 2: Complete Rust benchmark coverage
 
-Add the 13 missing scenarios to the comparison binary and criterion benchmarks.
+Add the 15 missing scenarios. Each needs a fixture in `lib.rs` and a `bench!()` call in `comparison.rs`.
 
-### Phase 3: Identify optimization targets (informational)
+The fixture data does NOT need to match C exactly — different languages may use different data. What matters is that scenario names match and the data is representative of the workload category (small struct, large array, recursive tree, etc.).
 
-With full coverage, triage the performance gaps.
+#### Missing scenarios
 
-## Files to Create/Modify
+| Scenario | Type | Fixture spec | Iterations |
+|----------|------|-------------|------------|
+| **OrderSmall** | `Order` | 3 item_ids, 3 quantities, total, timestamp | 50_000 |
+| **OrderLarge** | `Order` | 100 item_ids, 100 quantities | 10_000 |
+| **EventSmall** | `Event` | short type/source strings, 4-byte payload | 50_000 |
+| **EventLarge** | `Event` | longer strings, 4096-byte payload | 10_000 |
+| **TreeWide** | `TreeNode` | 1 root with 100 leaf children | 5_000 |
+| **JsonSmall** | `JsonValue` | small Object with 3 fields (String, Number, Bool) | 50_000 |
+| **ChunkedText** | `ChunkedText` | Alice text with ~50 paragraph spans | 2_500 |
+| **Embedding384** | `EmbeddingBf16` | UUID + 384 bf16 values | 20_000 |
+| **Embedding768** | `EmbeddingBf16` | UUID + 768 bf16 values | 10_000 |
+| **EmbeddingF32_768** | `EmbeddingF32` | UUID + 768 f32 values | 10_000 |
+| **EmbeddingBatch** | `EmbeddingBatch` | model string, 8 embeddings (1536 bf16 each), usage_tokens | 2_000 |
+| **LLMChunkSmall** | `LlmStreamChunk` | chunk_id, 3 tokens, 3 logprob entries (1 alt each) | 50_000 |
+| **LLMChunkLarge** | `LlmStreamChunk` | chunk_id, 32 tokens, 32 logprob entries (5 alts each), finish_reason | 2_000 |
+| **TensorShardSmall** | `TensorShard` | shape=[4096,4096], 1024 bf16 data elements | 10_000 |
+| **InferenceResponse** | — | Already exists, keep current fixture | — |
+
+Note: the existing `InferenceResponse` fixture is fine as-is. `Embedding1536` scenario name in C maps to `EmbeddingBf16` type — use `embedding_bf16(n)` parameterized fixture for 384/768/1536.
+
+#### Existing fixtures to refactor
+
+The existing `embedding_bf16_1536()` becomes `embedding_bf16(1536)` to support multiple sizes. Similarly `tree_deep(depth)` stays as-is, and we add `tree_wide(children)`.
+
+### Phase 3: Criterion benchmarks
+
+After comparison.rs is complete with all 23 scenarios, optionally add matching criterion bench groups for Rust-only regression tracking.
+
+## Files to Modify
 
 | File | Action | Purpose |
 |------|--------|---------|
-| `benchmarks/src/bin/comparison.rs` | MODIFY | Add report generation, C JSON parsing, CLI args |
-| `benchmarks/Cargo.toml` | MODIFY | No new deps needed (already has serde_json) |
-| `lab/benchmark/rust/run_comparison.sh` | DELETE | Replaced by comparison binary |
-| `lab/benchmark/rust/compare.py` | DELETE | Replaced by comparison binary |
+| `benchmarks/src/lib.rs` | MODIFY | Add 13 new fixture functions, parameterize embedding_bf16 |
+| `benchmarks/src/bin/comparison.rs` | MODIFY | Add 15 `bench!()` calls for missing scenarios |
 
 ## Verification
 
-1. `cargo run --release --bin comparison -- --out /tmp/r.json --c-json <c-snapshot> --report /tmp/report.md` produces identical report to current `compare.py` output
-2. `cargo check` passes with no warnings
+1. `cargo run --release --bin comparison` shows all 23 scenarios with Rust numbers (no `-` in Rust column)
+2. Scenario names in Rust JSON match C JSON exactly (join produces full table)
+3. `cargo clippy -- -D warnings` passes
+4. `cargo test -p bebop-rust-benchmarks` passes
 
 ## Related
 
 - FD-010: Zero-Copy Bulk Arrays — would dramatically improve TensorShard/Embedding benchmarks
 - FD-008: OOM Handling — allocation performance relevant to large payload benchmarks
 - `lab/benchmark/c/schemas/benchmark.bop` — shared schema (source of truth for scenarios)
+- `lab/benchmark/c/src/harness.cpp` — C fixture construction (reference for data shapes)
