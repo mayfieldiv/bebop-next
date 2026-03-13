@@ -39,10 +39,16 @@ mod std_conversions {
 
   impl From<BebopTimestamp> for SystemTime {
     fn from(ts: BebopTimestamp) -> Self {
-      if ts.seconds >= 0 {
-        UNIX_EPOCH + Duration::new(ts.seconds as u64, ts.nanos as u32)
+      let total_nanos = (ts.seconds as i128) * 1_000_000_000 + (ts.nanos as i128);
+      if total_nanos >= 0 {
+        let secs = (total_nanos / 1_000_000_000) as u64;
+        let nanos = (total_nanos % 1_000_000_000) as u32;
+        UNIX_EPOCH + Duration::new(secs, nanos)
       } else {
-        UNIX_EPOCH - Duration::new((-ts.seconds) as u64, (-ts.nanos) as u32)
+        let abs = total_nanos.unsigned_abs();
+        let secs = (abs / 1_000_000_000) as u64;
+        let nanos = (abs % 1_000_000_000) as u32;
+        UNIX_EPOCH - Duration::new(secs, nanos)
       }
     }
   }
@@ -58,14 +64,16 @@ mod std_conversions {
 
   impl From<BebopDuration> for Duration {
     /// # Panics
-    /// Panics if the duration has negative seconds, since `std::time::Duration`
-    /// is unsigned.
+    /// Panics if the duration is negative, since `std::time::Duration` is unsigned.
     fn from(d: BebopDuration) -> Self {
+      let total_nanos = (d.seconds as i128) * 1_000_000_000 + (d.nanos as i128);
       assert!(
-        d.seconds >= 0,
+        total_nanos >= 0,
         "cannot convert negative BebopDuration to std::time::Duration"
       );
-      Duration::new(d.seconds as u64, d.nanos as u32)
+      let secs = (total_nanos / 1_000_000_000) as u64;
+      let nanos = (total_nanos % 1_000_000_000) as u32;
+      Duration::new(secs, nanos)
     }
   }
 }
@@ -164,11 +172,98 @@ mod tests {
     }
 
     #[test]
+    fn timestamp_mixed_sign_negative_seconds_positive_nanos() {
+      // -1s + 500ms = -0.5s before epoch
+      let ts = BebopTimestamp {
+        seconds: -1,
+        nanos: 500_000_000,
+      };
+      let st: SystemTime = ts.into();
+      assert_eq!(st, UNIX_EPOCH - Duration::new(0, 500_000_000));
+    }
+
+    #[test]
+    fn timestamp_mixed_sign_positive_seconds_negative_nanos() {
+      // 1s - 500ms = +0.5s after epoch
+      let ts = BebopTimestamp {
+        seconds: 1,
+        nanos: -500_000_000,
+      };
+      let st: SystemTime = ts.into();
+      assert_eq!(st, UNIX_EPOCH + Duration::new(0, 500_000_000));
+    }
+
+    #[test]
+    fn timestamp_non_normalized_nanos_overflow() {
+      // 0s + 2B nanos = +2s
+      let ts = BebopTimestamp {
+        seconds: 0,
+        nanos: 2_000_000_000,
+      };
+      let st: SystemTime = ts.into();
+      assert_eq!(st, UNIX_EPOCH + Duration::new(2, 0));
+    }
+
+    #[test]
+    fn timestamp_non_normalized_negative_nanos() {
+      // 0s - 1.5B nanos = -1.5s
+      let ts = BebopTimestamp {
+        seconds: 0,
+        nanos: -1_500_000_000,
+      };
+      let st: SystemTime = ts.into();
+      assert_eq!(st, UNIX_EPOCH - Duration::new(1, 500_000_000));
+    }
+
+    #[test]
+    fn timestamp_one_nanosecond_before_epoch() {
+      // -1s + 999_999_999 nanos = -1 nanosecond before epoch
+      let ts = BebopTimestamp {
+        seconds: -1,
+        nanos: 999_999_999,
+      };
+      let st: SystemTime = ts.into();
+      assert_eq!(st, UNIX_EPOCH - Duration::new(0, 1));
+    }
+
+    #[test]
+    fn duration_positive_seconds_negative_nanos() {
+      // 1s - 500ms = 0.5s
+      let bd = BebopDuration {
+        seconds: 1,
+        nanos: -500_000_000,
+      };
+      let d: Duration = bd.into();
+      assert_eq!(d, Duration::new(0, 500_000_000));
+    }
+
+    #[test]
+    fn duration_non_normalized_nanos_overflow() {
+      // 0s + 2B nanos = 2s
+      let bd = BebopDuration {
+        seconds: 0,
+        nanos: 2_000_000_000,
+      };
+      let d: Duration = bd.into();
+      assert_eq!(d, Duration::new(2, 0));
+    }
+
+    #[test]
     #[should_panic(expected = "cannot convert negative BebopDuration")]
     fn negative_duration_panics() {
       let bd = BebopDuration {
         seconds: -1,
         nanos: 0,
+      };
+      let _: Duration = bd.into();
+    }
+
+    #[test]
+    #[should_panic(expected = "cannot convert negative BebopDuration")]
+    fn negative_nanos_only_duration_panics() {
+      let bd = BebopDuration {
+        seconds: 0,
+        nanos: -1,
       };
       let _: Duration = bd.into();
     }
