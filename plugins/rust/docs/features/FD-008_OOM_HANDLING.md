@@ -1,6 +1,6 @@
 # FD-008: OOM Handling (Fallible Allocation)
 
-**Status:** Open
+**Status:** Pending Verification
 **Priority:** High
 **Effort:** Medium (2-4 hours)
 **Impact:** Security hardening — prevents DoS via malicious payloads with enormous count values

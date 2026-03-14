@@ -10,7 +10,7 @@ See `CLAUDE.md` for FD lifecycle stages and management guidelines.
 |----|-------|--------|--------|----------|
 | FD-001 | [Service Generation](FD-001_SERVICE_GENERATION.md) | Planned | High | High |
 | FD-002 | [Deprecated Field Handling](FD-002_DEPRECATED_FIELD_HANDLING.md) | Planned | Low | Medium |
-| FD-008 | [OOM Handling](FD-008_OOM_HANDLING.md) | Open | Medium | High |
+| FD-008 | [OOM Handling](FD-008_OOM_HANDLING.md) | Pending Verification | Medium | High |
 | FD-009 | [Reflection Metadata](FD-009_REFLECTION_METADATA.md) | Planned | Medium | Low |
 | FD-010 | [Zero-Copy Bulk Arrays](FD-010_ZERO_COPY_BULK_ARRAYS.md) | Open | High | Low |
 
