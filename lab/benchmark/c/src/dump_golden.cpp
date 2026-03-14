@@ -42,6 +42,7 @@ int main(int argc, char* argv[])
   write_golden(dir, "TreeDeep", bebop_encode_tree_deep_once());
   write_golden(dir, "JsonSmall", bebop_encode_json_small_once());
   write_golden(dir, "JsonLarge", bebop_encode_json_large_once());
+  write_golden(dir, "JsonNested", bebop_encode_json_nested_once());
   write_golden(dir, "DocumentSmall", bebop_encode_doc_small_once());
   write_golden(dir, "DocumentLarge", bebop_encode_doc_large_once());
   write_golden(dir, "ChunkedText", bebop_encode_chunked_text_once());
