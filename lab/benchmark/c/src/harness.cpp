@@ -16,6 +16,7 @@ static TestTreeNode g_wide_tree;
 static TestTreeNode g_deep_tree;
 static TestJsonValue g_small_json;
 static TestJsonValue g_large_json;
+static TestJsonValue g_nested_json;
 static TestDocument g_small_document;
 static TestDocument g_large_document;
 static TestChunkedText g_alice_chunks;
@@ -187,6 +188,72 @@ static void do_init_test_data()
          {"per_page", {TestJsonValue::Type::Number, false, 20.0, "", {}, {}}},
          {"has_more", {TestJsonValue::Type::Bool, true, 0.0, "", {}, {}}}}}}
   };
+
+  // Nested JSON: list-of-lists to exercise recursive storage interleaving.
+  // Structure: { "matrix": [[num,...] x10] x10, "deep": [[[[num]]]], "rows": [[{obj},...] x5] x5 }
+  {
+    g_nested_json.type = TestJsonValue::Type::Object;
+
+    // 10x10 number matrix
+    TestJsonValue matrix;
+    matrix.type = TestJsonValue::Type::List;
+    for (int r = 0; r < 10; r++) {
+      TestJsonValue row;
+      row.type = TestJsonValue::Type::List;
+      for (int c = 0; c < 10; c++) {
+        row.list_val.push_back(
+            {TestJsonValue::Type::Number, false, static_cast<double>(r * 10 + c), "", {}, {}}
+        );
+      }
+      matrix.list_val.push_back(row);
+    }
+
+    // 4-level deep nesting: [[[[ numbers ]]]]
+    TestJsonValue deep;
+    deep.type = TestJsonValue::Type::List;
+    for (int a = 0; a < 3; a++) {
+      TestJsonValue l2;
+      l2.type = TestJsonValue::Type::List;
+      for (int b = 0; b < 3; b++) {
+        TestJsonValue l3;
+        l3.type = TestJsonValue::Type::List;
+        for (int c = 0; c < 3; c++) {
+          TestJsonValue l4;
+          l4.type = TestJsonValue::Type::List;
+          for (int d = 0; d < 3; d++) {
+            l4.list_val.push_back(
+                {TestJsonValue::Type::Number, false, static_cast<double>(a * 27 + b * 9 + c * 3 + d),
+                 "", {}, {}}
+            );
+          }
+          l3.list_val.push_back(l4);
+        }
+        l2.list_val.push_back(l3);
+      }
+      deep.list_val.push_back(l2);
+    }
+
+    // 5x5 grid of objects (list of list-of-objects)
+    TestJsonValue rows;
+    rows.type = TestJsonValue::Type::List;
+    for (int r = 0; r < 5; r++) {
+      TestJsonValue row;
+      row.type = TestJsonValue::Type::List;
+      for (int c = 0; c < 5; c++) {
+        TestJsonValue cell;
+        cell.type = TestJsonValue::Type::Object;
+        cell.object_val = {
+            {"r", {TestJsonValue::Type::Number, false, static_cast<double>(r), "", {}, {}}},
+            {"c", {TestJsonValue::Type::Number, false, static_cast<double>(c), "", {}, {}}},
+            {"v", {TestJsonValue::Type::Number, false, price_dist(rng), "", {}, {}}}
+        };
+        row.list_val.push_back(cell);
+      }
+      rows.list_val.push_back(row);
+    }
+
+    g_nested_json.object_val = {{"matrix", matrix}, {"deep", deep}, {"rows", rows}};
+  }
 
   g_small_document.title = "Hello World";
   g_small_document.body = "This is a test document.";
@@ -398,6 +465,12 @@ const TestJsonValue& GetLargeJson()
 {
   init_test_data();
   return g_large_json;
+}
+
+const TestJsonValue& GetNestedJson()
+{
+  init_test_data();
+  return g_nested_json;
 }
 
 const TestDocument& GetSmallDocument()

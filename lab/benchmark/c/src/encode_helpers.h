@@ -61,6 +61,7 @@ std::vector<uint8_t> bebop_encode_tree_wide_once();
 std::vector<uint8_t> bebop_encode_tree_deep_once();
 std::vector<uint8_t> bebop_encode_json_small_once();
 std::vector<uint8_t> bebop_encode_json_large_once();
+std::vector<uint8_t> bebop_encode_json_nested_once();
 std::vector<uint8_t> bebop_encode_doc_small_once();
 std::vector<uint8_t> bebop_encode_doc_large_once();
 std::vector<uint8_t> bebop_encode_chunked_text_once();

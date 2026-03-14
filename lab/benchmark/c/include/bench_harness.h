@@ -148,6 +148,7 @@ const TestTreeNode& GetWideTree();
 const TestTreeNode& GetDeepTree();
 const TestJsonValue& GetSmallJson();
 const TestJsonValue& GetLargeJson();
+const TestJsonValue& GetNestedJson();
 const TestDocument& GetSmallDocument();
 const TestDocument& GetLargeDocument();
 const TestChunkedText& GetAliceChunks();
