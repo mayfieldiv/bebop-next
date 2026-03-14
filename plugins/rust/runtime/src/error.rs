@@ -24,6 +24,9 @@ pub enum DecodeError {
     type_name: &'static str,
     bits: u64,
   },
+  AllocationFailed {
+    requested: usize,
+  },
 }
 
 impl fmt::Display for DecodeError {
@@ -51,6 +54,9 @@ impl fmt::Display for DecodeError {
       }
       Self::InvalidFlags { type_name, bits } => {
         write!(f, "invalid {} bits: {:#x}", type_name, bits)
+      }
+      Self::AllocationFailed { requested } => {
+        write!(f, "allocation failed for {} elements", requested)
       }
     }
   }
