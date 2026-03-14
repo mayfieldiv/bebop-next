@@ -34,13 +34,12 @@ impl<'a> BebopReader<'a> {
   }
 
   fn ensure(&self, count: usize) -> Result<()> {
-    if self.pos + count > self.buf.len() {
-      Err(DecodeError::UnexpectedEof {
+    match self.pos.checked_add(count) {
+      Some(end) if end <= self.buf.len() => Ok(()),
+      _ => Err(DecodeError::UnexpectedEof {
         needed: count,
         available: self.remaining(),
-      })
-    } else {
-      Ok(())
+      }),
     }
   }
 
@@ -144,9 +143,13 @@ impl<'a> BebopReader<'a> {
   /// The u32 is the number of UTF-8 bytes (NOT including the trailing NUL).
   pub fn read_string(&mut self) -> Result<String> {
     let len = self.read_u32()? as usize;
-    self.ensure(len + 1)?; // string bytes + NUL
+    let total = len.checked_add(1).ok_or(DecodeError::UnexpectedEof {
+      needed: usize::MAX,
+      available: self.remaining(),
+    })?;
+    self.ensure(total)?; // string bytes + NUL
     let str_bytes = &self.buf[self.pos..self.pos + len];
-    self.pos += len + 1; // advance past string bytes + NUL
+    self.pos += total; // advance past string bytes + NUL
     String::from_utf8(str_bytes.to_vec()).map_err(|_| DecodeError::InvalidUtf8)
   }
 
@@ -256,9 +259,13 @@ impl<'a> BebopReader<'a> {
   /// Same wire format as `read_string`: u32 byte_count + UTF-8 bytes + NUL.
   pub fn read_str(&mut self) -> Result<&'a str> {
     let len = self.read_u32()? as usize;
-    self.ensure(len + 1)?;
+    let total = len.checked_add(1).ok_or(DecodeError::UnexpectedEof {
+      needed: usize::MAX,
+      available: self.remaining(),
+    })?;
+    self.ensure(total)?; // string bytes + NUL
     let str_bytes = &self.buf[self.pos..self.pos + len];
-    self.pos += len + 1; // advance past string bytes + NUL
+    self.pos += total; // advance past string bytes + NUL
     core::str::from_utf8(str_bytes).map_err(|_| DecodeError::InvalidUtf8)
   }
 
@@ -276,5 +283,39 @@ impl<'a> BebopReader<'a> {
     let slice = &self.buf[self.pos..self.pos + count];
     self.pos += count;
     Ok(slice)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn ensure_overflow_returns_error() {
+    let buf = [0u8; 16];
+    let mut reader = BebopReader::new(&buf);
+    reader.pos = 8;
+    let result = reader.skip(usize::MAX);
+    assert!(result.is_err(), "ensure must reject count that overflows pos + count");
+  }
+
+  #[test]
+  fn read_string_len_overflow_returns_error() {
+    let mut buf = Vec::new();
+    buf.extend_from_slice(&u32::MAX.to_le_bytes());
+    buf.extend_from_slice(&[0u8; 16]);
+    let mut reader = BebopReader::new(&buf);
+    let result = reader.read_string();
+    assert!(result.is_err(), "read_string must reject len=u32::MAX");
+  }
+
+  #[test]
+  fn read_str_len_overflow_returns_error() {
+    let mut buf = Vec::new();
+    buf.extend_from_slice(&u32::MAX.to_le_bytes());
+    buf.extend_from_slice(&[0u8; 16]);
+    let mut reader = BebopReader::new(&buf);
+    let result = reader.read_str();
+    assert!(result.is_err(), "read_str must reject len=u32::MAX");
   }
 }
