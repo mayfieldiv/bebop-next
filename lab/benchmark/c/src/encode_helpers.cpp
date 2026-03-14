@@ -337,6 +337,11 @@ std::vector<uint8_t> bebop_encode_json_large_once()
   return encode_json_once(GetLargeJson());
 }
 
+std::vector<uint8_t> bebop_encode_json_nested_once()
+{
+  return encode_json_once(GetNestedJson());
+}
+
 std::vector<uint8_t> bebop_encode_doc_small_once()
 {
   return encode_doc_once(GetSmallDocument());

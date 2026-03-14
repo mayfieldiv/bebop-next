@@ -551,6 +551,70 @@ static void BM_Bebop_Decode_JsonLarge(benchmark::State& state)
   state.SetBytesProcessed(state.iterations() * g_encoded_json_large.size());
 }
 
+// Nested JSON: separate storage to avoid sharing reservation with flat-json fixtures.
+static std::vector<JsonValue> g_nested_json_storage;
+static std::vector<JsonValue_Array> g_nested_json_array_storage;
+static std::vector<Bebop_Map> g_nested_json_maps;
+static JsonValue g_nested_json_bebop;
+static std::vector<uint8_t> g_encoded_json_nested;
+static bool g_nested_json_initialized = false;
+
+static void init_nested_json_benchmarks()
+{
+  if (g_nested_json_initialized) {
+    return;
+  }
+  ensure_ctx();
+
+  g_nested_json_storage.reserve(1000);
+  g_nested_json_array_storage.reserve(100);
+  g_nested_json_maps.reserve(50);
+
+  g_nested_json_bebop = convert_json_value(
+      g_ctx, GetNestedJson(), g_nested_json_storage, g_nested_json_array_storage, g_nested_json_maps
+  );
+
+  uint8_t* buf;
+  size_t len;
+  Bebop_Writer_Reset(g_writer);
+  BEBOP_CHECK(JsonValue_Encode(g_writer, &g_nested_json_bebop), "JsonValue_Encode (nested)");
+  Bebop_Writer_Buf(g_writer, &buf, &len);
+  g_encoded_json_nested.assign(buf, buf + len);
+
+  g_nested_json_initialized = true;
+}
+
+static void BM_Bebop_Encode_JsonNested(benchmark::State& state)
+{
+  ensure_ctx();
+  init_nested_json_benchmarks();
+
+  for (auto _ : state) {
+    Bebop_Writer_Reset(g_writer);
+    BEBOP_CHECK(JsonValue_Encode(g_writer, &g_nested_json_bebop), "JsonValue_Encode");
+    benchmark::DoNotOptimize(Bebop_Writer_Len(g_writer));
+  }
+  state.SetBytesProcessed(state.iterations() * g_encoded_json_nested.size());
+}
+
+static void BM_Bebop_Decode_JsonNested(benchmark::State& state)
+{
+  ensure_ctx();
+  init_nested_json_benchmarks();
+  Bebop_WireCtx_Reset(g_decode_ctx);
+  Bebop_WireCtx_Reader(
+      g_decode_ctx, g_encoded_json_nested.data(), g_encoded_json_nested.size(), &g_reader
+  );
+
+  for (auto _ : state) {
+    Bebop_Reader_Reset(g_reader, g_encoded_json_nested.data(), g_encoded_json_nested.size());
+    JsonValue decoded {};
+    BEBOP_CHECK(JsonValue_Decode(g_decode_ctx, g_reader, &decoded), "JsonValue_Decode");
+    benchmark::DoNotOptimize(decoded.discriminator);
+  }
+  state.SetBytesProcessed(state.iterations() * g_encoded_json_nested.size());
+}
+
 static void BM_Bebop_Encode_DocumentSmall(benchmark::State& state)
 {
   ensure_ctx();
@@ -1090,8 +1154,10 @@ void RegisterBebopBenchmarks()
 
   BENCHMARK(BM_Bebop_Encode_JsonSmall);
   BENCHMARK(BM_Bebop_Encode_JsonLarge);
+  BENCHMARK(BM_Bebop_Encode_JsonNested);
   BENCHMARK(BM_Bebop_Decode_JsonSmall);
   BENCHMARK(BM_Bebop_Decode_JsonLarge);
+  BENCHMARK(BM_Bebop_Decode_JsonNested);
 
   BENCHMARK(BM_Bebop_Encode_DocumentSmall);
   BENCHMARK(BM_Bebop_Encode_DocumentLarge);
