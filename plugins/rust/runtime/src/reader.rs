@@ -204,7 +204,16 @@ impl<'a> BebopReader<'a> {
     mut read_elem: impl FnMut(&mut Self) -> Result<T>,
   ) -> Result<Vec<T>> {
     let count = self.read_u32()? as usize;
-    let mut items = Vec::with_capacity(count);
+    if count > self.remaining() {
+      return Err(DecodeError::UnexpectedEof {
+        needed: count,
+        available: self.remaining(),
+      });
+    }
+    let mut items = Vec::new();
+    items
+      .try_reserve(count)
+      .map_err(|_| DecodeError::AllocationFailed { requested: count })?;
     for _ in 0..count {
       items.push(read_elem(self)?);
     }
@@ -217,7 +226,16 @@ impl<'a> BebopReader<'a> {
     mut read_entry: impl FnMut(&mut Self) -> Result<(K, V)>,
   ) -> Result<HashMap<K, V>> {
     let count = self.read_u32()? as usize;
-    let mut map = HashMap::with_capacity(count);
+    if count > self.remaining() / 2 {
+      return Err(DecodeError::UnexpectedEof {
+        needed: count.saturating_mul(2),
+        available: self.remaining(),
+      });
+    }
+    let mut map = HashMap::new();
+    map
+      .try_reserve(count)
+      .map_err(|_| DecodeError::AllocationFailed { requested: count })?;
     for _ in 0..count {
       let (k, v) = read_entry(self)?;
       map.insert(k, v);
@@ -289,6 +307,118 @@ impl<'a> BebopReader<'a> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use alloc::vec;
+
+  #[test]
+  fn read_array_malicious_count_returns_eof() {
+    // count = 0xFFFFFFFF but buffer only has 100 bytes after the count field
+    let mut buf = Vec::new();
+    buf.extend_from_slice(&0xFFFFFFFFu32.to_le_bytes());
+    buf.extend_from_slice(&[0u8; 100]);
+    let mut reader = BebopReader::new(&buf);
+    let result = reader.read_array(|r| r.read_u32());
+    assert!(result.is_err());
+    match result.unwrap_err() {
+      DecodeError::UnexpectedEof { .. } => {} // expected
+      other => panic!("expected UnexpectedEof, got {:?}", other),
+    }
+  }
+
+  #[test]
+  fn read_array_count_boundary_plus_one_returns_eof() {
+    // Buffer has 8 bytes after count field. count = 9 (one more than remaining).
+    let mut buf = Vec::new();
+    buf.extend_from_slice(&9u32.to_le_bytes());
+    buf.extend_from_slice(&[0u8; 8]);
+    let mut reader = BebopReader::new(&buf);
+    let result = reader.read_array(|r| r.read_byte());
+    assert!(result.is_err());
+  }
+
+  #[test]
+  fn read_array_count_equals_remaining_succeeds() {
+    // Buffer has exactly 3 bytes after count field. count = 3, read 3 bytes.
+    let mut buf = Vec::new();
+    buf.extend_from_slice(&3u32.to_le_bytes());
+    buf.extend_from_slice(&[0xAA, 0xBB, 0xCC]);
+    let mut reader = BebopReader::new(&buf);
+    let result = reader.read_array(|r| r.read_byte());
+    assert_eq!(result.unwrap(), vec![0xAA, 0xBB, 0xCC]);
+  }
+
+  #[test]
+  fn read_array_empty_succeeds() {
+    let mut buf = Vec::new();
+    buf.extend_from_slice(&0u32.to_le_bytes());
+    let mut reader = BebopReader::new(&buf);
+    let result: core::result::Result<Vec<u8>, _> = reader.read_array(|r| r.read_byte());
+    assert_eq!(result.unwrap(), Vec::<u8>::new());
+  }
+
+  #[test]
+  fn read_map_malicious_count_returns_eof() {
+    let mut buf = Vec::new();
+    buf.extend_from_slice(&0xFFFFFFFFu32.to_le_bytes());
+    buf.extend_from_slice(&[0u8; 100]);
+    let mut reader = BebopReader::new(&buf);
+    let result = reader.read_map(|r| {
+      let k = r.read_byte()?;
+      let v = r.read_byte()?;
+      Ok((k, v))
+    });
+    assert!(result.is_err());
+    match result.unwrap_err() {
+      DecodeError::UnexpectedEof { .. } => {}
+      other => panic!("expected UnexpectedEof, got {:?}", other),
+    }
+  }
+
+  #[test]
+  fn read_map_count_boundary_plus_one_returns_eof() {
+    // Buffer has 4 bytes after count. Minimum entry = 2 bytes, so max count = 2.
+    // count = 3 should fail.
+    let mut buf = Vec::new();
+    buf.extend_from_slice(&3u32.to_le_bytes());
+    buf.extend_from_slice(&[0u8; 4]);
+    let mut reader = BebopReader::new(&buf);
+    let result = reader.read_map(|r| {
+      let k = r.read_byte()?;
+      let v = r.read_byte()?;
+      Ok((k, v))
+    });
+    assert!(result.is_err());
+  }
+
+  #[test]
+  fn read_map_count_equals_boundary_succeeds() {
+    // Buffer has 4 bytes after count. count = 2, each entry = 2 bytes (1 key + 1 value).
+    let mut buf = Vec::new();
+    buf.extend_from_slice(&2u32.to_le_bytes());
+    buf.extend_from_slice(&[1, 10, 2, 20]); // key=1,val=10, key=2,val=20
+    let mut reader = BebopReader::new(&buf);
+    let result = reader.read_map(|r| {
+      let k = r.read_byte()?;
+      let v = r.read_byte()?;
+      Ok((k, v))
+    });
+    let map = result.unwrap();
+    assert_eq!(map.len(), 2);
+    assert_eq!(map[&1u8], 10u8);
+    assert_eq!(map[&2u8], 20u8);
+  }
+
+  #[test]
+  fn read_map_empty_succeeds() {
+    let mut buf = Vec::new();
+    buf.extend_from_slice(&0u32.to_le_bytes());
+    let mut reader = BebopReader::new(&buf);
+    let result = reader.read_map(|r| {
+      let k = r.read_byte()?;
+      let v = r.read_byte()?;
+      Ok((k, v))
+    });
+    assert_eq!(result.unwrap().len(), 0);
+  }
 
   #[test]
   fn ensure_overflow_returns_error() {
@@ -296,7 +426,10 @@ mod tests {
     let mut reader = BebopReader::new(&buf);
     reader.pos = 8;
     let result = reader.skip(usize::MAX);
-    assert!(result.is_err(), "ensure must reject count that overflows pos + count");
+    assert!(
+      result.is_err(),
+      "ensure must reject count that overflows pos + count"
+    );
   }
 
   #[test]
