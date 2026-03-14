@@ -1,6 +1,7 @@
 #include "encode_helpers.h"
 #include "bench_harness.h"
 
+#include <cassert>
 #include <cstdlib>
 #include <cstring>
 
@@ -150,9 +151,14 @@ static std::vector<uint8_t> encode_tree_once(const TestTreeNode& src)
   std::vector<TreeNode_Array> child_arrays;
   nodes.reserve(2000);
   child_arrays.reserve(1000);
+  TreeNode* nodes_base = nodes.data();
+  TreeNode_Array* children_base = child_arrays.data();
 
   TreeNode root;
   convert_tree_recursive(src, root, nodes, child_arrays);
+
+  assert(nodes.data() == nodes_base && "nodes reserve exceeded — increase reserve");
+  assert(child_arrays.data() == children_base && "child_arrays reserve exceeded — increase reserve");
 
   Bebop_Writer_Reset(h_writer);
   BEBOP_CHECK(TreeNode_Encode(h_writer, &root), "TreeNode_Encode");
@@ -204,8 +210,9 @@ JsonValue convert_json_value(
     case TestJsonValue::Type::List: {
       v.discriminator = JSON_VALUE_LIST;
       size_t start = storage.size();
-      for (const auto& item : src.list_val) {
-        storage.push_back(convert_json_value(ctx, item, storage, arrays, maps));
+      storage.resize(start + src.list_val.size());
+      for (size_t i = 0; i < src.list_val.size(); i++) {
+        storage[start + i] = convert_json_value(ctx, src.list_val[i], storage, arrays, maps);
       }
       JsonValue_Array arr = {
           .data = storage.data() + start, .length = src.list_val.size(), .capacity = 0
@@ -282,8 +289,15 @@ static std::vector<uint8_t> encode_json_once(const TestJsonValue& src)
   storage.reserve(1000);
   arrays.reserve(100);
   maps.reserve(50);
+  JsonValue* storage_base = storage.data();
+  JsonValue_Array* arrays_base = arrays.data();
+  Bebop_Map* maps_base = maps.data();
 
   JsonValue val = convert_json_value(h_ctx, src, storage, arrays, maps);
+
+  assert(storage.data() == storage_base && "storage reserve exceeded — increase reserve");
+  assert(arrays.data() == arrays_base && "arrays reserve exceeded — increase reserve");
+  assert(maps.data() == maps_base && "maps reserve exceeded — increase reserve");
   Bebop_Writer_Reset(h_writer);
   BEBOP_CHECK(JsonValue_Encode(h_writer, &val), "JsonValue_Encode");
   return flush_writer();
@@ -299,8 +313,15 @@ static std::vector<uint8_t> encode_doc_once(const TestDocument& d)
   storage.reserve(1000);
   arrays.reserve(100);
   maps.reserve(50);
+  JsonValue* storage_base = storage.data();
+  JsonValue_Array* arrays_base = arrays.data();
+  Bebop_Map* maps_base = maps.data();
 
   Document doc = make_document(h_ctx, d, storage, arrays, maps);
+
+  assert(storage.data() == storage_base && "storage reserve exceeded — increase reserve");
+  assert(arrays.data() == arrays_base && "arrays reserve exceeded — increase reserve");
+  assert(maps.data() == maps_base && "maps reserve exceeded — increase reserve");
   Bebop_Writer_Reset(h_writer);
   BEBOP_CHECK(Document_Encode(h_writer, &doc), "Document_Encode");
   return flush_writer();
