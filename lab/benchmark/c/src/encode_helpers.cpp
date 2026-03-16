@@ -18,28 +18,28 @@ static void* libc_alloc(void* ptr, size_t old_size, size_t new_size, void* ctx)
   return realloc(ptr, new_size);
 }
 
-static Bebop_WireCtx* h_ctx = nullptr;
-static Bebop_Writer* h_writer = nullptr;
-static constexpr size_t H_WRITER_SIZE = 256 * 1024;
+static Bebop_WireCtx* g_ctx = nullptr;
+static Bebop_Writer* g_writer = nullptr;
+static constexpr size_t WRITER_SIZE = 256 * 1024;
 
-static void ensure_helper_ctx()
+static void ensure_ctx()
 {
-  if (!h_ctx) {
+  if (!g_ctx) {
     Bebop_WireCtxOpts opts = Bebop_WireCtx_DefaultOpts();
     opts.arena_options.allocator.alloc = libc_alloc;
     opts.arena_options.allocator.ctx = nullptr;
     opts.arena_options.initial_block_size = 1024 * 1024;
-    opts.initial_writer_size = H_WRITER_SIZE;
-    h_ctx = Bebop_WireCtx_New(&opts);
-    Bebop_WireCtx_WriterHint(h_ctx, H_WRITER_SIZE, &h_writer);
+    opts.initial_writer_size = WRITER_SIZE;
+    g_ctx = Bebop_WireCtx_New(&opts);
+    Bebop_WireCtx_WriterHint(g_ctx, WRITER_SIZE, &g_writer);
   }
 }
 
-static std::vector<uint8_t> flush_writer()
+static std::vector<uint8_t> flusg_writer()
 {
   uint8_t* buf;
   size_t len;
-  Bebop_Writer_Buf(h_writer, &buf, &len);
+  Bebop_Writer_Buf(g_writer, &buf, &len);
   return std::vector<uint8_t>(buf, buf + len);
 }
 
@@ -91,29 +91,29 @@ Event make_event(const TestEvent& e)
 
 std::vector<uint8_t> bebop_encode_person_once(const TestPerson& p)
 {
-  ensure_helper_ctx();
-  Bebop_Writer_Reset(h_writer);
+  ensure_ctx();
+  Bebop_Writer_Reset(g_writer);
   Person person = make_person(p);
-  BEBOP_CHECK(Person_Encode(h_writer, &person), "Person_Encode");
-  return flush_writer();
+  BEBOP_CHECK(Person_Encode(g_writer, &person), "Person_Encode");
+  return flusg_writer();
 }
 
 std::vector<uint8_t> bebop_encode_order_once(const TestOrder& o)
 {
-  ensure_helper_ctx();
-  Bebop_Writer_Reset(h_writer);
+  ensure_ctx();
+  Bebop_Writer_Reset(g_writer);
   Order order = make_order(o);
-  BEBOP_CHECK(Order_Encode(h_writer, &order), "Order_Encode");
-  return flush_writer();
+  BEBOP_CHECK(Order_Encode(g_writer, &order), "Order_Encode");
+  return flusg_writer();
 }
 
 std::vector<uint8_t> bebop_encode_event_once(const TestEvent& e)
 {
-  ensure_helper_ctx();
-  Bebop_Writer_Reset(h_writer);
+  ensure_ctx();
+  Bebop_Writer_Reset(g_writer);
   Event event = make_event(e);
-  BEBOP_CHECK(Event_Encode(h_writer, &event), "Event_Encode");
-  return flush_writer();
+  BEBOP_CHECK(Event_Encode(g_writer, &event), "Event_Encode");
+  return flusg_writer();
 }
 
 // ---- Tree helpers ----
@@ -145,7 +145,7 @@ void convert_tree_recursive(
 
 static std::vector<uint8_t> encode_tree_once(const TestTreeNode& src)
 {
-  ensure_helper_ctx();
+  ensure_ctx();
 
   std::vector<TreeNode> nodes;
   std::vector<TreeNode_Array> child_arrays;
@@ -160,9 +160,9 @@ static std::vector<uint8_t> encode_tree_once(const TestTreeNode& src)
   assert(nodes.data() == nodes_base && "nodes reserve exceeded — increase reserve");
   assert(child_arrays.data() == children_base && "child_arrays reserve exceeded — increase reserve");
 
-  Bebop_Writer_Reset(h_writer);
-  BEBOP_CHECK(TreeNode_Encode(h_writer, &root), "TreeNode_Encode");
-  return flush_writer();
+  Bebop_Writer_Reset(g_writer);
+  BEBOP_CHECK(TreeNode_Encode(g_writer, &root), "TreeNode_Encode");
+  return flusg_writer();
 }
 
 std::vector<uint8_t> bebop_encode_tree_wide_once()
@@ -281,7 +281,7 @@ Document make_document(
 
 static std::vector<uint8_t> encode_json_once(const TestJsonValue& src)
 {
-  ensure_helper_ctx();
+  ensure_ctx();
 
   std::vector<JsonValue> storage;
   std::vector<JsonValue_Array> arrays;
@@ -293,19 +293,19 @@ static std::vector<uint8_t> encode_json_once(const TestJsonValue& src)
   JsonValue_Array* arrays_base = arrays.data();
   Bebop_Map* maps_base = maps.data();
 
-  JsonValue val = convert_json_value(h_ctx, src, storage, arrays, maps);
+  JsonValue val = convert_json_value(g_ctx, src, storage, arrays, maps);
 
   assert(storage.data() == storage_base && "storage reserve exceeded — increase reserve");
   assert(arrays.data() == arrays_base && "arrays reserve exceeded — increase reserve");
   assert(maps.data() == maps_base && "maps reserve exceeded — increase reserve");
-  Bebop_Writer_Reset(h_writer);
-  BEBOP_CHECK(JsonValue_Encode(h_writer, &val), "JsonValue_Encode");
-  return flush_writer();
+  Bebop_Writer_Reset(g_writer);
+  BEBOP_CHECK(JsonValue_Encode(g_writer, &val), "JsonValue_Encode");
+  return flusg_writer();
 }
 
 static std::vector<uint8_t> encode_doc_once(const TestDocument& d)
 {
-  ensure_helper_ctx();
+  ensure_ctx();
 
   std::vector<JsonValue> storage;
   std::vector<JsonValue_Array> arrays;
@@ -317,14 +317,14 @@ static std::vector<uint8_t> encode_doc_once(const TestDocument& d)
   JsonValue_Array* arrays_base = arrays.data();
   Bebop_Map* maps_base = maps.data();
 
-  Document doc = make_document(h_ctx, d, storage, arrays, maps);
+  Document doc = make_document(g_ctx, d, storage, arrays, maps);
 
   assert(storage.data() == storage_base && "storage reserve exceeded — increase reserve");
   assert(arrays.data() == arrays_base && "arrays reserve exceeded — increase reserve");
   assert(maps.data() == maps_base && "maps reserve exceeded — increase reserve");
-  Bebop_Writer_Reset(h_writer);
-  BEBOP_CHECK(Document_Encode(h_writer, &doc), "Document_Encode");
-  return flush_writer();
+  Bebop_Writer_Reset(g_writer);
+  BEBOP_CHECK(Document_Encode(g_writer, &doc), "Document_Encode");
+  return flusg_writer();
 }
 
 std::vector<uint8_t> bebop_encode_json_small_once()
@@ -351,7 +351,7 @@ std::vector<uint8_t> bebop_encode_doc_large_once()
 
 std::vector<uint8_t> bebop_encode_chunked_text_once()
 {
-  ensure_helper_ctx();
+  ensure_ctx();
 
   const auto& src = GetAliceChunks();
 
@@ -368,9 +368,9 @@ std::vector<uint8_t> bebop_encode_chunked_text_once()
       .source = {.data = src.source.c_str(), .length = static_cast<uint32_t>(src.source.size())}
   };
 
-  Bebop_Writer_Reset(h_writer);
-  BEBOP_CHECK(ChunkedText_Encode(h_writer, &ct), "ChunkedText_Encode");
-  return flush_writer();
+  Bebop_Writer_Reset(g_writer);
+  BEBOP_CHECK(ChunkedText_Encode(g_writer, &ct), "ChunkedText_Encode");
+  return flusg_writer();
 }
 
 // ---- AI/Embedding helpers ----
@@ -397,11 +397,11 @@ EmbeddingF32 make_embedding_f32(const TestEmbeddingF32& e)
 
 static std::vector<uint8_t> encode_embedding_bf16_once(const TestEmbeddingBF16& e)
 {
-  ensure_helper_ctx();
+  ensure_ctx();
   EmbeddingBF16 emb = make_embedding_bf16(e);
-  Bebop_Writer_Reset(h_writer);
-  BEBOP_CHECK(EmbeddingBF16_Encode(h_writer, &emb), "EmbeddingBF16_Encode");
-  return flush_writer();
+  Bebop_Writer_Reset(g_writer);
+  BEBOP_CHECK(EmbeddingBF16_Encode(g_writer, &emb), "EmbeddingBF16_Encode");
+  return flusg_writer();
 }
 
 std::vector<uint8_t> bebop_encode_embedding384_once()
@@ -421,16 +421,16 @@ std::vector<uint8_t> bebop_encode_embedding1536_once()
 
 std::vector<uint8_t> bebop_encode_embedding_f32_768_once()
 {
-  ensure_helper_ctx();
+  ensure_ctx();
   EmbeddingF32 emb = make_embedding_f32(GetEmbeddingF32_768());
-  Bebop_Writer_Reset(h_writer);
-  BEBOP_CHECK(EmbeddingF32_Encode(h_writer, &emb), "EmbeddingF32_Encode");
-  return flush_writer();
+  Bebop_Writer_Reset(g_writer);
+  BEBOP_CHECK(EmbeddingF32_Encode(g_writer, &emb), "EmbeddingF32_Encode");
+  return flusg_writer();
 }
 
 std::vector<uint8_t> bebop_encode_embedding_batch_once()
 {
-  ensure_helper_ctx();
+  ensure_ctx();
 
   const auto& batch = GetEmbeddingBatch();
   std::vector<EmbeddingBF16> batch_embeddings;
@@ -442,14 +442,14 @@ std::vector<uint8_t> bebop_encode_embedding_batch_once()
   eb.embeddings = {batch_embeddings.data(), batch_embeddings.size(), 0};
   eb.usage_tokens = batch.usage_tokens;
 
-  Bebop_Writer_Reset(h_writer);
-  BEBOP_CHECK(EmbeddingBatch_Encode(h_writer, &eb), "EmbeddingBatch_Encode");
-  return flush_writer();
+  Bebop_Writer_Reset(g_writer);
+  BEBOP_CHECK(EmbeddingBatch_Encode(g_writer, &eb), "EmbeddingBatch_Encode");
+  return flusg_writer();
 }
 
 static std::vector<uint8_t> encode_llm_chunk_once(const TestLLMStreamChunk& llm)
 {
-  ensure_helper_ctx();
+  ensure_ctx();
 
   std::vector<Bebop_Str> tokens;
   for (const auto& t : llm.tokens) {
@@ -477,9 +477,9 @@ static std::vector<uint8_t> encode_llm_chunk_once(const TestLLMStreamChunk& llm)
       llm.finish_reason.c_str(), static_cast<uint32_t>(llm.finish_reason.size())
   };
 
-  Bebop_Writer_Reset(h_writer);
-  BEBOP_CHECK(LLMStreamChunk_Encode(h_writer, &chunk), "LLMStreamChunk_Encode");
-  return flush_writer();
+  Bebop_Writer_Reset(g_writer);
+  BEBOP_CHECK(LLMStreamChunk_Encode(g_writer, &chunk), "LLMStreamChunk_Encode");
+  return flusg_writer();
 }
 
 std::vector<uint8_t> bebop_encode_llm_chunk_small_once()
@@ -494,7 +494,7 @@ std::vector<uint8_t> bebop_encode_llm_chunk_large_once()
 
 static std::vector<uint8_t> encode_tensor_shard_once(const TestTensorShard& ts)
 {
-  ensure_helper_ctx();
+  ensure_ctx();
 
   TensorShard shard;
   shard.name = {ts.name.c_str(), static_cast<uint32_t>(ts.name.size())};
@@ -506,9 +506,9 @@ static std::vector<uint8_t> encode_tensor_shard_once(const TestTensorShard& ts)
   shard.offset = ts.offset;
   shard.total_elements = ts.total_elements;
 
-  Bebop_Writer_Reset(h_writer);
-  BEBOP_CHECK(TensorShard_Encode(h_writer, &shard), "TensorShard_Encode");
-  return flush_writer();
+  Bebop_Writer_Reset(g_writer);
+  BEBOP_CHECK(TensorShard_Encode(g_writer, &shard), "TensorShard_Encode");
+  return flusg_writer();
 }
 
 std::vector<uint8_t> bebop_encode_tensor_shard_small_once()
@@ -523,7 +523,7 @@ std::vector<uint8_t> bebop_encode_tensor_shard_large_once()
 
 std::vector<uint8_t> bebop_encode_inference_response_once()
 {
-  ensure_helper_ctx();
+  ensure_ctx();
 
   const auto& inf = GetInferenceResponse();
   std::vector<EmbeddingBF16> embeddings;
@@ -539,7 +539,7 @@ std::vector<uint8_t> bebop_encode_inference_response_once()
   };
   resp.timing.tokens_per_second = inf.timing.tokens_per_second;
 
-  Bebop_Writer_Reset(h_writer);
-  BEBOP_CHECK(InferenceResponse_Encode(h_writer, &resp), "InferenceResponse_Encode");
-  return flush_writer();
+  Bebop_Writer_Reset(g_writer);
+  BEBOP_CHECK(InferenceResponse_Encode(g_writer, &resp), "InferenceResponse_Encode");
+  return flusg_writer();
 }
