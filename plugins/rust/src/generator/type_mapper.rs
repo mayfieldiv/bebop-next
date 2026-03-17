@@ -293,7 +293,7 @@ pub fn is_cow_field(td: &TypeDescriptor) -> bool {
       }
       td.array_element
         .as_ref()
-        .is_some_and(|e| e.kind.is_some_and(|k| is_bulk_scalar(k)))
+        .is_some_and(|e| e.kind.is_some_and(is_bulk_scalar))
     }
     _ => false,
   }
@@ -838,7 +838,7 @@ pub fn into_owned_expression(
         return Ok(format!("alloc::borrow::Cow::Owned({}.into_owned())", value));
       }
       // Cow<[T]> for bulk scalars → Cow::Owned(v.into_owned())
-      if elem.kind.is_some_and(|k| is_bulk_scalar(k)) {
+      if elem.kind.is_some_and(is_bulk_scalar) {
         return Ok(format!("alloc::borrow::Cow::Owned({}.into_owned())", value));
       }
       // Vec of lifetime types → map into_owned
@@ -933,7 +933,7 @@ pub fn into_borrowed_expression(
         return Ok(format!("alloc::borrow::Cow::Owned({})", value));
       }
       // Cow<[T]> for bulk scalars: Vec<T> → Cow::from(Vec)
-      if elem.kind.is_some_and(|k| is_bulk_scalar(k)) {
+      if elem.kind.is_some_and(is_bulk_scalar) {
         return Ok(format!("alloc::borrow::Cow::from({})", value));
       }
       if analysis.type_needs_lifetime(elem) {
