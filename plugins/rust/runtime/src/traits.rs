@@ -365,6 +365,31 @@ impl FixedScalar for f64 {
   }
 }
 
+/// Marker for [`FixedScalar`] types whose every bit pattern is valid,
+/// making them safe for bulk `memcpy` from wire bytes on little-endian.
+///
+/// `bool` is excluded: wire bytes other than 0/1 produce undefined behaviour.
+///
+/// # Safety
+/// Implementors must have no invalid bit patterns and `size_of::<Self>()`
+/// must equal the wire size of a single element.
+pub unsafe trait BulkScalar: FixedScalar {}
+
+unsafe impl BulkScalar for u8 {}
+unsafe impl BulkScalar for i8 {}
+unsafe impl BulkScalar for i16 {}
+unsafe impl BulkScalar for u16 {}
+unsafe impl BulkScalar for i32 {}
+unsafe impl BulkScalar for u32 {}
+unsafe impl BulkScalar for i64 {}
+unsafe impl BulkScalar for u64 {}
+unsafe impl BulkScalar for i128 {}
+unsafe impl BulkScalar for u128 {}
+unsafe impl BulkScalar for crate::f16 {}
+unsafe impl BulkScalar for crate::bf16 {}
+unsafe impl BulkScalar for f32 {}
+unsafe impl BulkScalar for f64 {}
+
 #[cfg(test)]
 mod tests {
   use alloc::vec;

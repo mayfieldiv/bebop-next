@@ -3,6 +3,7 @@ use alloc::vec::Vec;
 use core::hash::Hash;
 
 use crate::temporal::{BebopDuration, BebopTimestamp};
+use crate::traits::BulkScalar;
 use crate::traits::FixedScalar;
 use crate::HashMap;
 use crate::{bf16, f16, DecodeError};
@@ -218,6 +219,52 @@ impl<'a> BebopReader<'a> {
       items.push(read_elem(self)?);
     }
     Ok(items)
+  }
+
+  /// Read a scalar array using bulk memcpy on little-endian.
+  ///
+  /// Wire format: u32 count + `count * size_of::<T>()` bytes in LE order.
+  /// On big-endian, falls back to per-element reads.
+  pub fn read_scalar_array<T: BulkScalar>(&mut self) -> Result<Vec<T>> {
+    let count = self.read_u32()? as usize;
+    let elem_size = core::mem::size_of::<T>();
+    let byte_len = count
+      .checked_mul(elem_size)
+      .ok_or(DecodeError::UnexpectedEof {
+        needed: usize::MAX,
+        available: self.remaining(),
+      })?;
+    self.ensure(byte_len)?;
+
+    if cfg!(target_endian = "little") {
+      let mut vec = Vec::<T>::new();
+      vec
+        .try_reserve(count)
+        .map_err(|_| DecodeError::AllocationFailed { requested: count })?;
+      // SAFETY: T: BulkScalar guarantees all bit patterns are valid and
+      // size_of::<T>() == wire element size. On LE, wire bytes == memory layout.
+      // try_reserve guarantees capacity >= count. copy_nonoverlapping is safe
+      // because src (self.buf) and dst (vec) don't overlap.
+      unsafe {
+        core::ptr::copy_nonoverlapping(
+          self.buf.as_ptr().add(self.pos),
+          vec.as_mut_ptr() as *mut u8,
+          byte_len,
+        );
+        vec.set_len(count);
+      }
+      self.pos += byte_len;
+      Ok(vec)
+    } else {
+      let mut items = Vec::new();
+      items
+        .try_reserve(count)
+        .map_err(|_| DecodeError::AllocationFailed { requested: count })?;
+      for _ in 0..count {
+        items.push(T::read_from(self)?);
+      }
+      Ok(items)
+    }
   }
 
   /// Read a dynamic map: u32 count + (key, value) pairs.
@@ -450,5 +497,61 @@ mod tests {
     let mut reader = BebopReader::new(&buf);
     let result = reader.read_str();
     assert!(result.is_err(), "read_str must reject len=u32::MAX");
+  }
+
+  #[test]
+  fn read_scalar_array_i32_round_trip() {
+    let values: Vec<i32> = vec![1, -2, i32::MAX, i32::MIN, 0];
+    let mut writer = crate::BebopWriter::new();
+    writer.write_scalar_array(&values);
+    let bytes = writer.into_bytes();
+    let mut reader = BebopReader::new(&bytes);
+    let result: Vec<i32> = reader.read_scalar_array().unwrap();
+    assert_eq!(result, values);
+  }
+
+  #[test]
+  fn read_scalar_array_f64_round_trip() {
+    let values: Vec<f64> = vec![1.0, -0.0, f64::INFINITY, f64::NAN, f64::MIN];
+    let mut writer = crate::BebopWriter::new();
+    writer.write_scalar_array(&values);
+    let bytes = writer.into_bytes();
+    let mut reader = BebopReader::new(&bytes);
+    let result: Vec<f64> = reader.read_scalar_array().unwrap();
+    // NaN != NaN, so compare bit patterns
+    for (a, b) in values.iter().zip(result.iter()) {
+      assert_eq!(a.to_bits(), b.to_bits());
+    }
+  }
+
+  #[test]
+  fn read_scalar_array_empty() {
+    let values: Vec<i64> = vec![];
+    let mut writer = crate::BebopWriter::new();
+    writer.write_scalar_array(&values);
+    let bytes = writer.into_bytes();
+    let mut reader = BebopReader::new(&bytes);
+    let result: Vec<i64> = reader.read_scalar_array().unwrap();
+    assert!(result.is_empty());
+  }
+
+  #[test]
+  fn read_scalar_array_malicious_count_returns_error() {
+    let mut buf = Vec::new();
+    buf.extend_from_slice(&0xFFFFFFFFu32.to_le_bytes());
+    buf.extend_from_slice(&[0u8; 100]);
+    let mut reader = BebopReader::new(&buf);
+    let result: core::result::Result<Vec<i32>, _> = reader.read_scalar_array();
+    assert!(result.is_err());
+  }
+
+  #[test]
+  fn read_scalar_array_count_too_large_for_buffer() {
+    let mut buf = Vec::new();
+    buf.extend_from_slice(&u32::MAX.to_le_bytes());
+    buf.extend_from_slice(&[0u8; 64]);
+    let mut reader = BebopReader::new(&buf);
+    let result: core::result::Result<Vec<i64>, _> = reader.read_scalar_array();
+    assert!(result.is_err());
   }
 }
