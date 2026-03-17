@@ -1032,6 +1032,7 @@ fn forward_reference_struct_round_trip() {
 }
 
 #[test]
+#[allow(deprecated)]
 fn deprecated_message_fields_round_trip() {
   let mut msg = DeprecatedFieldsMessage::default();
   msg.current_name = Some(Cow::Owned("current".to_string()));
