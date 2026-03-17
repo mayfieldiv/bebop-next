@@ -13,12 +13,12 @@ See `CLAUDE.md` for FD lifecycle stages and management guidelines.
 | FD-009 | [Reflection Metadata](FD-009_REFLECTION_METADATA.md) | Planned | Medium | Low |
 | FD-010 | [Zero-Copy Bulk Arrays](FD-010_ZERO_COPY_BULK_ARRAYS.md) | Pending Verification | High | High |
 | FD-023 | [Zero-Copy Scalar Array Decode](FD-023_ZERO_COPY_SCALAR_ARRAY_DECODE.md) | Open | High | Medium |
-| FD-024 | [Plugin Parameter Support](FD-024_PLUGIN_PARAMETER_SUPPORT.md) | Open | Low | Medium |
 
 ## Completed
 
 | FD | Title | Completed | Notes |
 |----|-------|-----------|-------|
+| FD-024 | [Plugin Parameter Support](archive/FD-024_PLUGIN_PARAMETER_SUPPORT.md) | 2026-03 | `--<name>_opt=PARAM` CLI support in bebopc; unblocks serde in generate.sh |
 | FD-008 | [OOM Handling](archive/FD-008_OOM_HANDLING.md) | 2026-03 | Pre-validation + fallible allocation for read_array/read_map; overflow fixes in ensure/read_string/read_str |
 | FD-022 | [Cross-Language Benchmark Expansion](archive/FD-022_CROSS_LANGUAGE_BENCHMARKS.md) | 2026-03 | All 23 scenarios with golden file cross-language verification |
 | FD-003 | [SerdeMode](archive/FD-003_SERDE_MODE.md) | 2026-03 | Always/FeatureGated/Disabled serde control |
