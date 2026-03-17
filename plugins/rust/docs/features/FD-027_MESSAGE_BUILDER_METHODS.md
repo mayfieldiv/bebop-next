@@ -24,10 +24,50 @@ The pain comes from three layers of wrapping: `Some(...)`, `Cow::Owned(...)`, `.
 
 ## Solution
 
-Generate chainable setter methods on each message type. No new builder types — just methods on the existing struct:
+Two complementary APIs: a `new()` constructor for setting all fields at once, and chainable `with_*` setters for partial construction.
+
+### 1. `new()` Constructor (matching struct pattern)
+
+Structs already generate `new()` with `impl Into<Cow<'buf, str>>` for string fields, allowing `Person::new("Alice", 30)`. Messages should get the same — every field becomes a parameter wrapped in `Option`:
 
 ```rust
-// Generated on UserProfile
+impl<'buf> UserProfile<'buf> {
+    pub fn new(
+        display_name: Option<impl Into<Cow<'buf, str>>>,
+        email: Option<impl Into<Cow<'buf, str>>>,
+        age: Option<u32>,
+        active: Option<bool>,
+        tags: Option<Vec<Cow<'buf, str>>>,
+        metadata: Option<HashMap<Cow<'buf, str>, Cow<'buf, str>>>,
+        permissions: Option<Permissions>,
+    ) -> Self {
+        Self {
+            display_name: display_name.map(Into::into),
+            email: email.map(Into::into),
+            age,
+            active,
+            tags,
+            metadata,
+            permissions,
+        }
+    }
+}
+```
+
+Usage:
+
+```rust
+// Set some fields, None for the rest
+let profile = UserProfile::new(Some("Alice"), Some("alice@example.com"), Some(30), None, None, None, None);
+```
+
+This is ergonomic for messages with few fields. For messages with many fields, the positional `None`s become noisy — that's where `with_*` setters shine.
+
+**Note:** `Option<impl Into<Cow>>` works because `Into<Cow<str>>` is implemented for `&str` and `String`, and `Option<T>` can accept `Some("Alice")` directly — the `impl Into` applies inside the `Some`. For non-string/bytes fields, the param is just `Option<T>` directly with no conversion trait needed.
+
+### 2. Chainable `with_*` Setters
+
+```rust
 impl<'buf> UserProfile<'buf> {
     pub fn with_display_name(mut self, value: impl Into<Cow<'buf, str>>) -> Self {
         self.display_name = Some(value.into());
@@ -45,7 +85,7 @@ impl<'buf> UserProfile<'buf> {
 }
 ```
 
-Usage becomes:
+Usage:
 
 ```rust
 let profile = UserProfile::default()
@@ -58,6 +98,13 @@ let profile = UserProfile::default()
 
 ### Design Details
 
+**`new()` constructor:**
+- One parameter per field, each wrapped in `Option<...>`
+- String/bytes fields: `Option<impl Into<Cow<'buf, str>>>` / `Option<impl Into<Cow<'buf, [u8]>>>`
+- Scalar/enum/struct fields: `Option<T>` directly
+- Internally calls `.map(Into::into)` for conversion fields, passes through for others
+
+**`with_*` setters:**
 - Method name: `with_<field_name>` (avoids collision with `set_` which implies `&mut self`)
 - Signature: `(mut self, value: T) -> Self` for chainability
 - String/bytes fields: accept `impl Into<Cow<'buf, str>>` / `impl Into<Cow<'buf, [u8]>>`
@@ -77,7 +124,7 @@ let profile = UserProfile::default()
 
 | File | Action | Purpose |
 |------|--------|---------|
-| `src/generator/gen_message.rs` | MODIFY | Generate `with_*` setter methods |
+| `src/generator/gen_message.rs` | MODIFY | Generate `new()` constructor and `with_*` setter methods |
 | `src/generator/type_mapper.rs` | POSSIBLY MODIFY | May need `into_param_type()` for setter signatures |
 | `integration-tests/schemas/test_types.bop` | NO CHANGE | Existing messages suffice for testing |
 | `integration-tests/tests/integration.rs` | MODIFY | Add tests using builder syntax |
