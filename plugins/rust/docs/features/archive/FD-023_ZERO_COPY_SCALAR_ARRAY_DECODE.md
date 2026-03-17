@@ -1,6 +1,7 @@
 # FD-023: Zero-Copy Scalar Array Decode
 
-**Status:** Open
+**Status:** Complete
+**Completed:** 2026-03-17
 **Priority:** Medium
 **Effort:** High (> 4 hours)
 **Impact:** Eliminate allocation + memcpy on decode for scalar arrays, reaching parity with C's zero-copy pointer-into-buffer approach
