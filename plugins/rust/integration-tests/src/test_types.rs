@@ -2120,7 +2120,9 @@ impl<'buf> ForwardRefB<'buf> {
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct DeprecatedFieldsMessage<'buf> {
   pub current_name: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  #[deprecated(note = "legacy wire compatibility")]
   pub legacy_name: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  #[deprecated]
   pub legacy_enabled: ::core::option::Option<bool>,
 }
 

@@ -707,11 +707,29 @@ pub fn emit_doc_comment(output: &mut String, doc: &Option<Cow<'_, str>>) {
   }
 }
 
-/// Emit `#[deprecated]` attribute if the definition has a `@deprecated` decorator.
+/// Tests whether a decorator FQN matches an expected name.
+/// Handles both bare names (`"deprecated"`) and fully-qualified names
+/// (`"bebop.deprecated"`) because the compiler currently sends the
+/// as-written name rather than the resolved FQN.
+fn decorator_matches(fqn: &str, expected: &str) -> bool {
+  fqn == expected
+    || (expected.len() > fqn.len()
+      && expected.ends_with(fqn)
+      && expected.as_bytes()[expected.len() - fqn.len() - 1] == b'.')
+}
+
+/// Fully-qualified name for the `@deprecated` decorator.
+pub const DEPRECATED: &str = "bebop.deprecated";
+
+/// Emit `#[deprecated]` attribute if the decorators contain `@deprecated`.
 pub fn emit_deprecated(output: &mut String, decorators: &Option<Vec<DecoratorUsage<'_>>>) {
   if let Some(ref decs) = *decorators {
     for dec in decs {
-      if dec.fqn.as_deref() == Some("bebop.deprecated") {
+      if dec
+        .fqn
+        .as_deref()
+        .is_some_and(|fqn| decorator_matches(fqn, DEPRECATED))
+      {
         // Check for a message argument
         let msg = dec.args.as_ref().and_then(|args| {
           args.iter().find_map(|arg| {
@@ -746,12 +764,9 @@ pub const FORWARD_COMPATIBLE: &str = "bebop.forward_compatible";
 pub fn has_decorator(def: &DefinitionDescriptor, name: &str) -> bool {
   def.decorators.as_ref().is_some_and(|decs| {
     decs.iter().any(|d| {
-      d.fqn.as_deref().is_some_and(|fqn| {
-        fqn == name
-          || (name.len() > fqn.len()
-            && name.ends_with(fqn)
-            && name.as_bytes()[name.len() - fqn.len() - 1] == b'.')
-      })
+      d.fqn
+        .as_deref()
+        .is_some_and(|fqn| decorator_matches(fqn, name))
     })
   })
 }
