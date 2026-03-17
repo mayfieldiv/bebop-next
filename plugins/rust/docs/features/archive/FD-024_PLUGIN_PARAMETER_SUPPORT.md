@@ -1,6 +1,7 @@
 # FD-024: Plugin Parameter Support in bebopc
 
-**Status:** Open
+**Status:** Complete
+**Completed:** 2026-03-17
 **Priority:** Medium
 **Effort:** Low (< 1 hour)
 **Impact:** Enables language-specific plugin options (e.g. serde mode) via CLI, unblocking reliable code regeneration
