@@ -21,15 +21,15 @@ The C runtime achieves near-zero-cost decode by returning `{.data = reader_ptr, 
 
 ## Solution
 
-Change generated scalar array fields from `Vec<T>` to `Cow<'buf, [T]>` for types where the borrowed path is safe, and add a `read_scalar_slice` method to the runtime that returns a zero-copy borrow on LE-aligned buffers.
+Change generated scalar array fields from `Vec<T>` to `Cow<'buf, [T]>` for types where the borrowed path is safe, and replace `read_scalar_array` to return `Cow` with zero-copy borrow on LE-aligned buffers.
 
 **Runtime (reader.rs):**
-- `read_scalar_slice<T: BulkScalar>() -> Cow<'a, [T]>` — checks alignment via `ptr::align_offset()`, returns `Cow::Borrowed` when aligned on LE, falls back to `Cow::Owned` (bulk memcpy) otherwise
+- Replace `read_scalar_array<T: BulkScalar>() -> Cow<'a, [T]>` — same name, return type changes from `Vec<T>` to `Cow`. Checks alignment via `ptr::align_offset()`, returns `Cow::Borrowed` when aligned on LE, falls back to `Cow::Owned` (bulk memcpy) otherwise
 
 **Generator (type_mapper.rs + LifetimeAnalysis):**
 - Map `array[int32]` → `Cow<'buf, [i32]>` in generated struct fields (when containing type has lifetime)
 - Update `type_needs_lifetime()` to return true for structs containing scalar arrays
-- Use `read_scalar_slice` in read expressions, `write_scalar_array` in write expressions (from FD-010)
+- Read expressions unchanged (`read_scalar_array` now returns Cow), write uses `write_scalar_array` (from FD-010)
 - Update `into_owned()` to convert `Cow::Borrowed` → `Cow::Owned`
 
 **Safety:**
@@ -41,9 +41,9 @@ Change generated scalar array fields from `Vec<T>` to `Cow<'buf, [T]>` for types
 
 | File | Action | Purpose |
 |------|--------|---------|
-| `runtime/src/reader.rs` | MODIFY | Add `read_scalar_slice<T: BulkScalar>() -> Cow<'a, [T]>` |
+| `runtime/src/reader.rs` | MODIFY | Replace `read_scalar_array`: `Vec<T>` → `Cow<'a, [T]>` with alignment check |
 | `src/generator/mod.rs` | MODIFY | Update `LifetimeAnalysis` — scalar arrays now need lifetime |
-| `src/generator/type_mapper.rs` | MODIFY | Emit `Cow<'buf, [T]>` for scalar array fields, use `read_scalar_slice` |
+| `src/generator/type_mapper.rs` | MODIFY | Emit `Cow<'buf, [T]>` for scalar array fields, update is_cow_field/into_owned |
 
 ## Verification
 
