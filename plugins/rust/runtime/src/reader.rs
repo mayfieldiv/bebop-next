@@ -1,3 +1,4 @@
+use alloc::borrow::Cow;
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::hash::Hash;
@@ -221,12 +222,17 @@ impl<'a> BebopReader<'a> {
     Ok(items)
   }
 
-  /// Read a scalar array using bulk memcpy on little-endian.
+  /// Read a scalar array, borrowing directly from the buffer when possible.
   ///
   /// Wire format: u32 count + `count * size_of::<T>()` bytes in LE order.
-  /// On big-endian, falls back to per-element reads.
-  pub fn read_scalar_array<T: BulkScalar>(&mut self) -> Result<Vec<T>> {
+  /// On little-endian with aligned data, returns `Cow::Borrowed` (zero-copy).
+  /// On little-endian with unaligned data, returns `Cow::Owned` (bulk memcpy).
+  /// On big-endian, falls back to per-element reads into `Cow::Owned`.
+  pub fn read_scalar_array<T: BulkScalar>(&mut self) -> Result<Cow<'a, [T]>> {
     let count = self.read_u32()? as usize;
+    if count == 0 {
+      return Ok(Cow::Borrowed(&[]));
+    }
     let elem_size = core::mem::size_of::<T>();
     let byte_len = count
       .checked_mul(elem_size)
@@ -237,24 +243,37 @@ impl<'a> BebopReader<'a> {
     self.ensure(byte_len)?;
 
     if cfg!(target_endian = "little") {
-      let mut vec = Vec::<T>::new();
-      vec
-        .try_reserve(count)
-        .map_err(|_| DecodeError::AllocationFailed { requested: count })?;
-      // SAFETY: T: BulkScalar guarantees all bit patterns are valid and
-      // size_of::<T>() == wire element size. On LE, wire bytes == memory layout.
-      // try_reserve guarantees capacity >= count. copy_nonoverlapping is safe
-      // because src (self.buf) and dst (vec) don't overlap.
-      unsafe {
-        core::ptr::copy_nonoverlapping(
-          self.buf.as_ptr().add(self.pos),
-          vec.as_mut_ptr() as *mut u8,
-          byte_len,
-        );
-        vec.set_len(count);
+      let ptr = self.buf.as_ptr().wrapping_add(self.pos);
+      if ptr.align_offset(core::mem::align_of::<T>()) == 0 {
+        // SAFETY: T: BulkScalar guarantees all bit patterns are valid and
+        // size_of::<T>() == wire element size. On LE, wire bytes == memory
+        // layout. align_offset confirmed pointer alignment. ensure() confirmed
+        // byte_len bytes are available. The resulting slice borrows from
+        // self.buf with lifetime 'a.
+        let slice = unsafe { core::slice::from_raw_parts(ptr as *const T, count) };
+        self.pos += byte_len;
+        Ok(Cow::Borrowed(slice))
+      } else {
+        // Unaligned: bulk memcpy into Vec
+        let mut vec = Vec::<T>::new();
+        vec
+          .try_reserve(count)
+          .map_err(|_| DecodeError::AllocationFailed { requested: count })?;
+        // SAFETY: Same as above minus alignment — we copy into a properly
+        // aligned Vec instead. try_reserve guarantees capacity >= count.
+        // copy_nonoverlapping is safe because src (self.buf) and dst (vec)
+        // don't overlap.
+        unsafe {
+          core::ptr::copy_nonoverlapping(
+            self.buf.as_ptr().add(self.pos),
+            vec.as_mut_ptr() as *mut u8,
+            byte_len,
+          );
+          vec.set_len(count);
+        }
+        self.pos += byte_len;
+        Ok(Cow::Owned(vec))
       }
-      self.pos += byte_len;
-      Ok(vec)
     } else {
       let mut items = Vec::new();
       items
@@ -263,7 +282,7 @@ impl<'a> BebopReader<'a> {
       for _ in 0..count {
         items.push(T::read_from(self)?);
       }
-      Ok(items)
+      Ok(Cow::Owned(items))
     }
   }
 
@@ -354,6 +373,7 @@ impl<'a> BebopReader<'a> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use alloc::borrow::Cow;
   use alloc::vec;
 
   #[test]
@@ -506,8 +526,8 @@ mod tests {
     writer.write_scalar_array(&values);
     let bytes = writer.into_bytes();
     let mut reader = BebopReader::new(&bytes);
-    let result: Vec<i32> = reader.read_scalar_array().unwrap();
-    assert_eq!(result, values);
+    let result = reader.read_scalar_array::<i32>().unwrap();
+    assert_eq!(&*result, &*values);
   }
 
   #[test]
@@ -517,8 +537,7 @@ mod tests {
     writer.write_scalar_array(&values);
     let bytes = writer.into_bytes();
     let mut reader = BebopReader::new(&bytes);
-    let result: Vec<f64> = reader.read_scalar_array().unwrap();
-    // NaN != NaN, so compare bit patterns
+    let result = reader.read_scalar_array::<f64>().unwrap();
     for (a, b) in values.iter().zip(result.iter()) {
       assert_eq!(a.to_bits(), b.to_bits());
     }
@@ -531,8 +550,9 @@ mod tests {
     writer.write_scalar_array(&values);
     let bytes = writer.into_bytes();
     let mut reader = BebopReader::new(&bytes);
-    let result: Vec<i64> = reader.read_scalar_array().unwrap();
+    let result = reader.read_scalar_array::<i64>().unwrap();
     assert!(result.is_empty());
+    assert!(matches!(result, Cow::Borrowed(_)));
   }
 
   #[test]
@@ -541,7 +561,7 @@ mod tests {
     buf.extend_from_slice(&0xFFFFFFFFu32.to_le_bytes());
     buf.extend_from_slice(&[0u8; 100]);
     let mut reader = BebopReader::new(&buf);
-    let result: core::result::Result<Vec<i32>, _> = reader.read_scalar_array();
+    let result = reader.read_scalar_array::<i32>();
     assert!(result.is_err());
   }
 
@@ -551,7 +571,44 @@ mod tests {
     buf.extend_from_slice(&u32::MAX.to_le_bytes());
     buf.extend_from_slice(&[0u8; 64]);
     let mut reader = BebopReader::new(&buf);
-    let result: core::result::Result<Vec<i64>, _> = reader.read_scalar_array();
+    let result = reader.read_scalar_array::<i64>();
     assert!(result.is_err());
+  }
+
+  #[test]
+  fn read_scalar_array_aligned_returns_borrowed() {
+    let values: Vec<i32> = vec![10, 20, 30];
+    let mut writer = crate::BebopWriter::new();
+    writer.write_scalar_array(&values);
+    let bytes = writer.into_bytes();
+    let mut reader = BebopReader::new(&bytes);
+    let result = reader.read_scalar_array::<i32>().unwrap();
+    assert_eq!(&*result, &*values);
+    if cfg!(target_endian = "little") {
+      assert!(
+        matches!(result, Cow::Borrowed(_)),
+        "expected Cow::Borrowed on LE-aligned buffer"
+      );
+    }
+  }
+
+  #[test]
+  fn read_scalar_array_unaligned_returns_owned() {
+    let values: Vec<i32> = vec![42, 99];
+    let mut writer = crate::BebopWriter::new();
+    writer.write_scalar_array(&values);
+    let aligned_bytes = writer.into_bytes();
+    // Prepend 1 byte to misalign the data
+    let mut buf = vec![0u8];
+    buf.extend_from_slice(&aligned_bytes);
+    let mut reader = BebopReader::new(&buf[1..]);
+    let result = reader.read_scalar_array::<i32>().unwrap();
+    assert_eq!(&*result, &*values);
+    if cfg!(target_endian = "little") {
+      assert!(
+        matches!(result, Cow::Owned(_)),
+        "expected Cow::Owned on unaligned buffer"
+      );
+    }
   }
 }
