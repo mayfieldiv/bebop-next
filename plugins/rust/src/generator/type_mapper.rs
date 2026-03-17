@@ -287,7 +287,14 @@ pub fn is_cow_field(td: &TypeDescriptor) -> bool {
   };
   match kind {
     TypeKind::String => true,
-    TypeKind::Array => is_byte_array_cow_field(td),
+    TypeKind::Array => {
+      if is_byte_array_cow_field(td) {
+        return true;
+      }
+      td.array_element
+        .as_ref()
+        .is_some_and(|e| e.kind.is_some_and(|k| is_bulk_scalar(k)))
+    }
     _ => false,
   }
 }
@@ -325,6 +332,12 @@ pub fn rust_type_owned(
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
       if elem.kind == Some(TypeKind::Byte) {
         return Ok("alloc::vec::Vec<u8>".to_string());
+      }
+      // Bulk scalar arrays → Vec<T> (owned form of Cow<[T]>)
+      let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
+      if is_bulk_scalar(elem_kind) {
+        let ty = scalar_type(elem_kind).unwrap();
+        return Ok(format!("alloc::vec::Vec<{}>", ty));
       }
       let inner = rust_type_owned(elem, analysis)?;
       Ok(format!("alloc::vec::Vec<{}>", inner))
@@ -394,6 +407,12 @@ pub fn rust_type(
       // Byte arrays → Cow<'buf, [u8]>
       if elem.kind == Some(TypeKind::Byte) {
         return Ok("alloc::borrow::Cow<'buf, [u8]>".to_string());
+      }
+      // Bulk scalar arrays → Cow<'buf, [T]>
+      let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
+      if is_bulk_scalar(elem_kind) {
+        let ty = scalar_type(elem_kind).unwrap();
+        return Ok(format!("alloc::borrow::Cow<'buf, [{}]>", ty));
       }
       let inner = rust_type(elem, analysis)?;
       Ok(format!("alloc::vec::Vec<{}>", inner))
@@ -818,6 +837,10 @@ pub fn into_owned_expression(
       if elem.kind == Some(TypeKind::Byte) {
         return Ok(format!("alloc::borrow::Cow::Owned({}.into_owned())", value));
       }
+      // Cow<[T]> for bulk scalars → Cow::Owned(v.into_owned())
+      if elem.kind.is_some_and(|k| is_bulk_scalar(k)) {
+        return Ok(format!("alloc::borrow::Cow::Owned({}.into_owned())", value));
+      }
       // Vec of lifetime types → map into_owned
       if analysis.type_needs_lifetime(elem) {
         let inner = into_owned_expression(elem, "_e", analysis)?;
@@ -908,6 +931,10 @@ pub fn into_borrowed_expression(
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
       if elem.kind == Some(TypeKind::Byte) {
         return Ok(format!("alloc::borrow::Cow::Owned({})", value));
+      }
+      // Cow<[T]> for bulk scalars: Vec<T> → Cow::from(Vec)
+      if elem.kind.is_some_and(|k| is_bulk_scalar(k)) {
+        return Ok(format!("alloc::borrow::Cow::from({})", value));
       }
       if analysis.type_needs_lifetime(elem) {
         let inner = into_borrowed_expression(elem, "_e", analysis)?;
