@@ -17,7 +17,7 @@ See `CLAUDE.md` for FD lifecycle stages and management guidelines.
 | FD-028 | [Map Key Accessor Helpers](FD-028_MAP_KEY_ACCESSOR_HELPERS.md) | Planned | Low | High |
 | FD-029 | [Display for Enums & Flags](FD-029_DISPLAY_FOR_ENUMS_AND_FLAGS.md) | Planned | Low | Medium |
 | FD-030 | [DecodeError Field Context](FD-030_DECODE_ERROR_FIELD_CONTEXT.md) | Planned | Medium | Medium |
-| FD-031 | [Deprecated Attribute Emission](FD-031_DEPRECATED_ATTRIBUTE_EMISSION.md) | Planned | Low | Medium |
+| FD-031 | [Deprecated Attribute Emission](FD-031_DEPRECATED_ATTRIBUTE_EMISSION.md) | Complete | Low | Medium |
 | FD-032 | [Serde Round-Trip Test Coverage](FD-032_SERDE_ROUNDTRIP_TEST_COVERAGE.md) | Planned | Low | High |
 
 ## Completed

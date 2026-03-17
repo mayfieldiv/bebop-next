@@ -1,76 +1,37 @@
 # FD-031: Deprecated Attribute Emission
 
-**Status:** Planned
+**Status:** Complete
 **Priority:** Medium
 **Effort:** Low (< 1 hour)
 **Impact:** Compiler warnings guide users away from deprecated fields
 
 ## Problem
 
-The Bebop schema `@deprecated` decorator is not being emitted as `#[deprecated]` on generated message fields, despite the generator having code wired for it.
+The Bebop schema `@deprecated` decorator was not being emitted as `#[deprecated]` on generated message fields, despite the generator having code wired for it.
 
-Schema (test_types.bop):
-```
-message DeprecatedFieldsMessage {
-    current_name(1): string;
-    @deprecated("legacy wire compatibility")
-    legacy_name(2): string;
-    @deprecated
-    legacy_enabled(3): bool;
-}
-```
+## Root Cause
 
-Generated output (test_types.rs:2121-2125):
-```rust
-pub struct DeprecatedFieldsMessage<'buf> {
-    pub current_name: Option<Cow<'buf, str>>,
-    pub legacy_name: Option<Cow<'buf, str>>,     // missing #[deprecated]
-    pub legacy_enabled: Option<bool>,              // missing #[deprecated]
-}
-```
+Two bugs conspiring:
 
-Expected:
-```rust
-pub struct DeprecatedFieldsMessage<'buf> {
-    pub current_name: Option<Cow<'buf, str>>,
-    #[deprecated(note = "legacy wire compatibility")]
-    pub legacy_name: Option<Cow<'buf, str>>,
-    #[deprecated]
-    pub legacy_enabled: Option<bool>,
-}
-```
+1. **Compiler sends bare names** — `bebop_descriptor.c` uses `d->name` (the as-written name, e.g. `"deprecated"`) instead of `d->resolved->fqn` (e.g. `"bebop.deprecated"`) when populating `DecoratorUsage.fqn`.
+2. **`emit_deprecated` used strict FQN matching** — It checked `== Some("bebop.deprecated")` exactly, which never matched the bare `"deprecated"` the compiler sends.
 
-## Root Cause Investigation
+The existing `has_decorator()` function (used for `@forward_compatible`) already had flexible matching that handled both bare and FQN forms. `emit_deprecated` lacked this.
 
-The generator code at `gen_message.rs:126` calls `emit_deprecated` for each field. The `emit_deprecated` function (mod.rs:711-733) checks `definition.decorators` for a `deprecated` decorator. The issue is likely one of:
+Swift and C plugins both match on bare `"deprecated"` and work correctly.
 
-1. **Field decorators not populated** — The bebopc compiler may not pass `@deprecated` on individual fields through to the `FieldDescriptor.decorators` in the `CodeGeneratorRequest`. This would be an upstream compiler issue.
-2. **Decorator key mismatch** — The generator may be looking for a different decorator name than what the compiler sends.
+## Solution
 
-## Investigation Steps
+Extracted a shared `decorator_matches(fqn, expected)` helper that handles both bare and fully-qualified names via suffix matching. Used it in both `emit_deprecated()` and `has_decorator()`.
 
-1. Check what `FieldDescriptor.decorators` contains for deprecated fields by examining the self-hosted descriptor types
-2. Add debug logging to `emit_deprecated` for field descriptors to see if decorator data arrives
-3. If the data is absent, check the bebopc compiler source to see if field-level decorators are included in the plugin protocol
+## Files Modified
 
-## Files to Investigate/Modify
+| File | Change |
+|------|--------|
+| `src/generator/mod.rs` | Extracted `decorator_matches()`, added `DEPRECATED` const, updated `emit_deprecated()` and `has_decorator()` |
+| `integration-tests/src/test_types.rs` | Regenerated — now includes `#[deprecated]` on fields |
+| `integration-tests/tests/integration.rs` | Added `#[allow(deprecated)]` to test that accesses deprecated fields |
 
-| File | Action | Purpose |
-|------|--------|---------|
-| `src/generator/gen_message.rs:126` | INVESTIGATE | Where `emit_deprecated` is called for fields |
-| `src/generator/mod.rs:711-733` | INVESTIGATE | `emit_deprecated` implementation |
-| `src/generated/descriptor.rs` | INVESTIGATE | Check `FieldDescriptor` for decorators field |
-| bebopc compiler source | INVESTIGATE | Check if field decorators are included in plugin protocol |
+## Upstream Note
 
-## Verification
-
-- `legacy_name` field has `#[deprecated(note = "legacy wire compatibility")]`
-- `legacy_enabled` field has `#[deprecated]`
-- Accessing deprecated fields produces compiler warnings
-- Builder methods (FD-027) for deprecated fields also carry `#[deprecated]`
-- `./test.sh` passes
-
-## Related
-
-- FD-002: Deprecated Field Handling (covers encode/decode behavior, not attribute emission)
-- `src/generator/mod.rs:711-733` — `emit_deprecated` function
+The compiler bug (`bebop_descriptor.c:188` using `d->name` instead of `d->resolved->fqn`) should also be fixed so that `DecoratorUsage.fqn` honors its documented contract of being "always fully qualified after linking."
