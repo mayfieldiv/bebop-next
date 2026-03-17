@@ -107,7 +107,7 @@ fn is_fixed_scalar(kind: TypeKind) -> bool {
 /// Returns true if the TypeKind is safe for bulk memcpy (all bit patterns valid).
 /// Excludes Bool (UB for non-0/1 values) and Byte (already uses
 /// write_byte_array/read_byte_slice which is even better — zero-copy on read).
-fn is_bulk_scalar(kind: TypeKind) -> bool {
+pub(crate) fn is_bulk_scalar(kind: TypeKind) -> bool {
   matches!(
     kind,
     TypeKind::Int8
