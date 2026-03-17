@@ -282,7 +282,7 @@ impl LifetimeAnalysis {
             return true;
           }
           // bulk scalar arrays need lifetime (Cow<'buf, [T]>)
-          if elem.kind.is_some_and(|k| type_mapper::is_bulk_scalar(k)) {
+          if elem.kind.is_some_and(type_mapper::is_bulk_scalar) {
             return true;
           }
           self.type_needs_lifetime(elem)

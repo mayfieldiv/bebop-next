@@ -1284,7 +1284,11 @@ impl<'buf> EmbeddingBatch<'buf> {
   pub fn into_owned(self) -> EmbeddingBatchOwned {
     EmbeddingBatch {
       model: alloc::borrow::Cow::Owned(self.model.into_owned()),
-      embeddings: self.embeddings.into_iter().map(|_e| _e.into_owned()).collect(),
+      embeddings: self
+        .embeddings
+        .into_iter()
+        .map(|_e| _e.into_owned())
+        .collect(),
       usage_tokens: self.usage_tokens,
     }
   }
@@ -1725,7 +1729,11 @@ impl<'buf> InferenceResponse<'buf> {
   pub fn into_owned(self) -> InferenceResponseOwned {
     InferenceResponse {
       request_id: self.request_id,
-      embeddings: self.embeddings.into_iter().map(|_e| _e.into_owned()).collect(),
+      embeddings: self
+        .embeddings
+        .into_iter()
+        .map(|_e| _e.into_owned())
+        .collect(),
       timing: self.timing,
     }
   }
