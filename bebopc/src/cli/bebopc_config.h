@@ -21,6 +21,7 @@ typedef struct {
   char* name;
   char* out_dir;
   char* path;
+  char* parameter;
   bebopc_kv_t* options;
   uint32_t option_count;
 } bebopc_plugin_t;
