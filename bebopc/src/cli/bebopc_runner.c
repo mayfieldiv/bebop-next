@@ -296,7 +296,9 @@ static bebopc_error_code_t _invoke_plugin(bebopc_runner_t* r, const bebopc_plugi
   }
 
   bebop_plugin_request_builder_set_version(builder, bebop_version());
-  bebop_plugin_request_builder_set_parameter(builder, gen->out_dir);
+  if (gen->parameter) {
+    bebop_plugin_request_builder_set_parameter(builder, gen->parameter);
+  }
   bebop_plugin_request_builder_set_descriptor(builder, r->desc);
 
   for (uint32_t i = 0; i < r->input_file_count; i++) {

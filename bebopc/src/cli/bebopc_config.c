@@ -38,6 +38,7 @@ static void free_plugin(bebopc_plugin_t* p)
   free(p->name);
   free(p->out_dir);
   free(p->path);
+  free(p->parameter);
   free_options(p->options, p->option_count);
 }
 
@@ -573,6 +574,9 @@ bebopc_error_code_t bebopc_config_merge_cli(
 
     if (p->path) {
       cfg->plugins[cfg->plugin_count - 1].path = bebopc_strdup(p->path);
+    }
+    if (p->parameter) {
+      cfg->plugins[cfg->plugin_count - 1].parameter = bebopc_strdup(p->parameter);
     }
   }
 
