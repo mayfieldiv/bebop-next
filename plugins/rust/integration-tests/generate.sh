@@ -27,6 +27,7 @@ echo "Generating test_types.rs..."
   -I "$SCHEMAS" \
   --plugin=rust="$PLUGIN" \
   --rust_out="$TMPDIR/out" \
+  --rust_opt=serde \
   -q 2>/dev/null
 
 cp "$TMPDIR/out/test_types.rs" "$INT_DIR/src/test_types.rs"
