@@ -179,8 +179,8 @@ fn half_precision_message_some_and_none_round_trip() {
   let mut msg = HalfPrecisionMessage::default();
   msg.f16_val = Some(f16::from_bits(0x3555));
   msg.bf16_val = Some(bf16::from_bits(0x3FC0));
-  msg.f16_arr = Some(vec![f16::from_bits(0x3C00), f16::from_bits(0xBC00)]);
-  msg.bf16_arr = Some(vec![bf16::from_bits(0x3F80), bf16::from_bits(0xBF80)]);
+  msg.f16_arr = Some(vec![f16::from_bits(0x3C00), f16::from_bits(0xBC00)].into());
+  msg.bf16_arr = Some(vec![bf16::from_bits(0x3F80), bf16::from_bits(0xBF80)].into());
 
   let bytes = msg.to_bytes();
   let decoded = HalfPrecisionMessage::from_bytes(&bytes).unwrap();
