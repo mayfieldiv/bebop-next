@@ -11,6 +11,14 @@ See `CLAUDE.md` for FD lifecycle stages and management guidelines.
 | FD-001 | [Service Generation](FD-001_SERVICE_GENERATION.md) | Planned | High | High |
 | FD-002 | [Deprecated Field Handling](FD-002_DEPRECATED_FIELD_HANDLING.md) | Planned | Low | Medium |
 | FD-009 | [Reflection Metadata](FD-009_REFLECTION_METADATA.md) | Planned | Medium | Low |
+| FD-025 | [Forward-Compat Message Semantics](FD-025_FORWARD_COMPAT_MESSAGE_SEMANTICS.md) | Design | Low | Medium |
+| FD-026 | [Optional UUID/Half Features](FD-026_OPTIONAL_UUID_HALF_FEATURES.md) | Planned | Medium | Medium |
+| FD-027 | [Message Builder Methods](FD-027_MESSAGE_BUILDER_METHODS.md) | Planned | Medium | High |
+| FD-028 | [Map Key Accessor Helpers](FD-028_MAP_KEY_ACCESSOR_HELPERS.md) | Planned | Low | High |
+| FD-029 | [Display for Enums & Flags](FD-029_DISPLAY_FOR_ENUMS_AND_FLAGS.md) | Planned | Low | Medium |
+| FD-030 | [DecodeError Field Context](FD-030_DECODE_ERROR_FIELD_CONTEXT.md) | Planned | Medium | Medium |
+| FD-031 | [Deprecated Attribute Emission](FD-031_DEPRECATED_ATTRIBUTE_EMISSION.md) | Planned | Low | Medium |
+| FD-032 | [Serde Round-Trip Test Coverage](FD-032_SERDE_ROUNDTRIP_TEST_COVERAGE.md) | Planned | Low | High |
 
 ## Completed
 
