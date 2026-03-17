@@ -30,6 +30,7 @@ typedef struct {
   char* name;
   char* out_dir;
   char* path;
+  char* parameter;
 } cli_plugin_t;
 
 typedef struct {
