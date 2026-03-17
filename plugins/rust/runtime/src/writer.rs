@@ -2,6 +2,7 @@ use alloc::vec::Vec;
 use core::hash::Hash;
 
 use crate::temporal::{BebopDuration, BebopTimestamp};
+use crate::traits::BulkScalar;
 use crate::traits::FixedScalar;
 use crate::HashMap;
 use crate::{bf16, f16};
@@ -175,6 +176,30 @@ impl BebopWriter {
     self.write_u32(items.len() as u32);
     for item in items {
       write_elem(self, item);
+    }
+  }
+
+  /// Write a scalar array using bulk memcpy on little-endian.
+  ///
+  /// Wire format: u32 count + `count * size_of::<T>()` bytes in LE order.
+  /// On big-endian, falls back to per-element writes.
+  pub fn write_scalar_array<T: BulkScalar>(&mut self, items: &[T]) {
+    debug_assert!(
+      items.len() <= u32::MAX as usize,
+      "array too large for Bebop wire format"
+    );
+    self.write_u32(items.len() as u32);
+    if cfg!(target_endian = "little") {
+      // SAFETY: T: BulkScalar guarantees no padding and size_of::<T>() == wire size.
+      // On LE, in-memory bytes ARE the wire bytes. u8 alignment is 1, always satisfied.
+      let bytes = unsafe {
+        core::slice::from_raw_parts(items.as_ptr() as *const u8, core::mem::size_of_val(items))
+      };
+      self.buf.extend_from_slice(bytes);
+    } else {
+      for item in items {
+        item.write_to(self);
+      }
     }
   }
 
