@@ -103,6 +103,18 @@ static bool _set_plugin_out(cli_args_t* args, const char* name, const char* dir)
   return p->out_dir != NULL;
 }
 
+static bool _set_plugin_opt(cli_args_t* args, const char* name, const char* parameter)
+{
+  cli_plugin_t* p = _find_or_add_plugin(args, name);
+  if (!p) {
+    return false;
+  }
+
+  free(p->parameter);
+  p->parameter = bebopc_strdup(parameter);
+  return p->parameter != NULL;
+}
+
 static bool _add_exclude(cli_args_t* args, const char* pattern)
 {
   uint32_t new_count = args->exclude_count + 1;
@@ -154,6 +166,29 @@ static bool _try_parse_plugin_out(const char* opt_name, const char* value, cli_a
   }
 
   bool ok = _set_plugin_out(args, plugin_name, value);
+  free(plugin_name);
+  return ok;
+}
+
+static bool _try_parse_plugin_opt(const char* opt_name, const char* value, cli_args_t* args)
+{
+  size_t len = bebopc_strlen(opt_name);
+  if (len < 5) {
+    return false;
+  }
+
+  if (opt_name[len - 4] != '_' || opt_name[len - 3] != 'o' || opt_name[len - 2] != 'p'
+      || opt_name[len - 1] != 't')
+  {
+    return false;
+  }
+
+  char* plugin_name = bebopc_strndup(opt_name, len - 4);
+  if (!plugin_name) {
+    return false;
+  }
+
+  bool ok = _set_plugin_opt(args, plugin_name, value);
   free(plugin_name);
   return ok;
 }
@@ -338,6 +373,15 @@ bebopc_error_code_t cli_parse(cli_args_t* args, int argc, char** argv, const cha
       }
 
       if (_try_parse_plugin_out(opt_name, value, args)) {
+        if (!value) {
+          snprintf(error_buf, sizeof(error_buf), "option --%s requires a value", opt_name);
+          *error_msg = error_buf;
+          return BEBOPC_ERR_INVALID_ARG;
+        }
+        i++;
+        continue;
+      }
+      if (_try_parse_plugin_opt(opt_name, value, args)) {
         if (!value) {
           snprintf(error_buf, sizeof(error_buf), "option --%s requires a value", opt_name);
           *error_msg = error_buf;
@@ -569,6 +613,7 @@ void cli_args_cleanup(cli_args_t* args)
     free(args->plugins[i].name);
     free(args->plugins[i].out_dir);
     free(args->plugins[i].path);
+    free(args->plugins[i].parameter);
   }
   free(args->plugins);
 
