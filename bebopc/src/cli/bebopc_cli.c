@@ -147,19 +147,23 @@ static bool _add_include(cli_args_t* args, const char* path)
   return true;
 }
 
+static bool _is_plugin_out(const char* opt_name)
+{
+  size_t len = bebopc_strlen(opt_name);
+  return len >= 5 && opt_name[len - 4] == '_' && opt_name[len - 3] == 'o'
+         && opt_name[len - 2] == 'u' && opt_name[len - 1] == 't';
+}
+
+static bool _is_plugin_opt(const char* opt_name)
+{
+  size_t len = bebopc_strlen(opt_name);
+  return len >= 5 && opt_name[len - 4] == '_' && opt_name[len - 3] == 'o'
+         && opt_name[len - 2] == 'p' && opt_name[len - 1] == 't';
+}
+
 static bool _try_parse_plugin_out(const char* opt_name, const char* value, cli_args_t* args)
 {
   size_t len = bebopc_strlen(opt_name);
-  if (len < 5) {
-    return false;
-  }
-
-  if (opt_name[len - 4] != '_' || opt_name[len - 3] != 'o' || opt_name[len - 2] != 'u'
-      || opt_name[len - 1] != 't')
-  {
-    return false;
-  }
-
   char* plugin_name = bebopc_strndup(opt_name, len - 4);
   if (!plugin_name) {
     return false;
@@ -173,16 +177,6 @@ static bool _try_parse_plugin_out(const char* opt_name, const char* value, cli_a
 static bool _try_parse_plugin_opt(const char* opt_name, const char* value, cli_args_t* args)
 {
   size_t len = bebopc_strlen(opt_name);
-  if (len < 5) {
-    return false;
-  }
-
-  if (opt_name[len - 4] != '_' || opt_name[len - 3] != 'o' || opt_name[len - 2] != 'p'
-      || opt_name[len - 1] != 't')
-  {
-    return false;
-  }
-
   char* plugin_name = bebopc_strndup(opt_name, len - 4);
   if (!plugin_name) {
     return false;
@@ -372,21 +366,23 @@ bebopc_error_code_t cli_parse(cli_args_t* args, int argc, char** argv, const cha
         value = eq + 1;
       }
 
-      if (_try_parse_plugin_out(opt_name, value, args)) {
+      if (_is_plugin_out(opt_name)) {
         if (!value) {
           snprintf(error_buf, sizeof(error_buf), "option --%s requires a value", opt_name);
           *error_msg = error_buf;
           return BEBOPC_ERR_INVALID_ARG;
         }
+        _try_parse_plugin_out(opt_name, value, args);
         i++;
         continue;
       }
-      if (_try_parse_plugin_opt(opt_name, value, args)) {
+      if (_is_plugin_opt(opt_name)) {
         if (!value) {
           snprintf(error_buf, sizeof(error_buf), "option --%s requires a value", opt_name);
           *error_msg = error_buf;
           return BEBOPC_ERR_INVALID_ARG;
         }
+        _try_parse_plugin_opt(opt_name, value, args);
         i++;
         continue;
       }
