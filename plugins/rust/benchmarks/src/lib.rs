@@ -1,3 +1,4 @@
+#[rustfmt::skip]
 pub mod benchmark_types;
 
 use std::borrow::Cow;
