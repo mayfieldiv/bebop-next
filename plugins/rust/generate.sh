@@ -19,18 +19,47 @@ PLUGIN="$RUST_DIR/target/debug/bebopc-gen-rust"
 TMPDIR=$(mktemp -d)
 trap "rm -rf $TMPDIR" EXIT
 
+# ── 1. Bootstrap: descriptor.rs + plugin.rs ──────────────────────────
+
 echo "Generating descriptor.rs + plugin.rs..."
 "$BEBOPC" build \
   "$SCHEMAS/bebop/descriptor.bop" \
   "$SCHEMAS/bebop/plugin.bop" \
   -I "$SCHEMAS" \
   --plugin=rust="$PLUGIN" \
-  --rust_out="$TMPDIR/out" \
+  --rust_out="$TMPDIR/bootstrap" \
   -q
 
 mkdir -p "$RUST_DIR/src/generated"
-cp "$TMPDIR/out/descriptor.rs" "$RUST_DIR/src/generated/descriptor.rs"
-cp "$TMPDIR/out/plugin.rs" "$RUST_DIR/src/generated/plugin.rs"
+cp "$TMPDIR/bootstrap/descriptor.rs" "$RUST_DIR/src/generated/descriptor.rs"
+cp "$TMPDIR/bootstrap/plugin.rs" "$RUST_DIR/src/generated/plugin.rs"
 rustfmt "$RUST_DIR/src/generated/descriptor.rs" "$RUST_DIR/src/generated/plugin.rs"
 
-echo "Done."
+# ── 2. Integration tests: test_types.rs ──────────────────────────────
+
+echo "Generating test_types.rs..."
+"$BEBOPC" build \
+  "$RUST_DIR/integration-tests/schemas/test_types.bop" \
+  -I "$SCHEMAS" \
+  --plugin=rust="$PLUGIN" \
+  --rust_out="$TMPDIR/integration" \
+  --rust_opt=serde \
+  -q 2>/dev/null
+
+cp "$TMPDIR/integration/test_types.rs" "$RUST_DIR/integration-tests/src/test_types.rs"
+rustfmt "$RUST_DIR/integration-tests/src/test_types.rs"
+
+# ── 3. Benchmarks: benchmark_types.rs ────────────────────────────────
+
+echo "Generating benchmark_types.rs..."
+"$BEBOPC" build \
+  "$REPO_ROOT/lab/benchmark/c/schemas/benchmark.bop" \
+  -I "$SCHEMAS" \
+  --plugin=rust="$PLUGIN" \
+  --rust_out="$TMPDIR/bench" \
+  -q 2>/dev/null
+
+cp "$TMPDIR/bench/benchmark.rs" "$RUST_DIR/benchmarks/src/benchmark_types.rs"
+rustfmt "$RUST_DIR/benchmarks/src/benchmark_types.rs"
+
+echo "Done. Regenerated all generated files."
