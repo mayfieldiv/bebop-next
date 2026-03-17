@@ -30,7 +30,7 @@ pub mod fixtures {
     bt::TextSpan::new(1024, 256, bt::ChunkKind::Paragraph)
   }
 
-  pub fn embedding_bf16(n: usize) -> bt::EmbeddingBf16 {
+  pub fn embedding_bf16(n: usize) -> bt::EmbeddingBf16Owned {
     let vector = (0..n)
       .map(|i| bf16::from_f32((i as f32) * 0.001))
       .collect::<Vec<_>>();
@@ -56,7 +56,7 @@ pub mod fixtures {
     }
   }
 
-  pub fn order_small() -> bt::Order {
+  pub fn order_small() -> bt::OrderOwned {
     bt::Order::new(
       12345,
       67890,
@@ -67,7 +67,7 @@ pub mod fixtures {
     )
   }
 
-  pub fn order_large() -> bt::Order {
+  pub fn order_large() -> bt::OrderOwned {
     let item_ids: Vec<i64> = (1000..1100).collect();
     let quantities: Vec<i32> = (0..100).map(|i| (i % 10) + 1).collect();
     let total: f64 = quantities.iter().map(|&q| q as f64 * 49.99).sum();
@@ -175,7 +175,7 @@ pub mod fixtures {
     bt::ChunkedText::new(source, spans)
   }
 
-  pub fn embedding_f32(n: usize) -> bt::EmbeddingF32 {
+  pub fn embedding_f32(n: usize) -> bt::EmbeddingF32Owned {
     let vector = (0..n).map(|i| (i as f32) * 0.001).collect::<Vec<_>>();
     bt::EmbeddingF32::new(
       Uuid::from_bytes([
@@ -317,7 +317,7 @@ pub mod fixtures {
     )
   }
 
-  pub fn inference_response() -> bt::InferenceResponse {
+  pub fn inference_response() -> bt::InferenceResponseOwned {
     let embeddings = (0..8)
       .map(|i| {
         let vector = (0..384)
