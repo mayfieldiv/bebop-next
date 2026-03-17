@@ -108,6 +108,10 @@ No special handling needed. `Cow<'a, [i32]>` serializes/deserializes as a sequen
 
 Existing round-trip tests pass after regeneration. Construction sites updated with `.into()` where needed.
 
+### Full validation
+
+Run `./test.sh` as the final gate — covers formatting (`cargo fmt`), compiler checks, clippy, all unit tests (generator + runtime), integration tests (including no_std), benchmark crate tests, and golden file cross-language verification.
+
 ### Benchmarks
 
 Decode benchmarks for TensorShard, Embedding, InferenceResponse should approach C's near-zero numbers (eliminating alloc+memcpy).
