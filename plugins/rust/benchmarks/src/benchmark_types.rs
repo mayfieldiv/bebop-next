@@ -110,36 +110,49 @@ impl<'buf> Person<'buf> {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
-pub struct Order {
+pub struct Order<'buf> {
   pub order_id: i64,
   pub customer_id: i64,
-  pub item_ids: alloc::vec::Vec<i64>,
-  pub quantities: alloc::vec::Vec<i32>,
+  pub item_ids: alloc::borrow::Cow<'buf, [i64]>,
+  pub quantities: alloc::borrow::Cow<'buf, [i32]>,
   pub total: f64,
   pub timestamp: i64,
 }
 
-impl Order {
+pub type OrderOwned = Order<'static>;
+
+impl<'buf> Order<'buf> {
   pub fn new(
     order_id: i64,
     customer_id: i64,
-    item_ids: alloc::vec::Vec<i64>,
-    quantities: alloc::vec::Vec<i32>,
+    item_ids: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [i64]>>,
+    quantities: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [i32]>>,
     total: f64,
     timestamp: i64,
   ) -> Self {
     Self {
       order_id,
       customer_id,
-      item_ids,
-      quantities,
+      item_ids: item_ids.into(),
+      quantities: quantities.into(),
       total,
       timestamp,
     }
   }
+
+  pub fn into_owned(self) -> OrderOwned {
+    Order {
+      order_id: self.order_id,
+      customer_id: self.customer_id,
+      item_ids: alloc::borrow::Cow::Owned(self.item_ids.into_owned()),
+      quantities: alloc::borrow::Cow::Owned(self.quantities.into_owned()),
+      total: self.total,
+      timestamp: self.timestamp,
+    }
+  }
 }
 
-impl BebopEncode for Order {
+impl BebopEncode for Order<'_> {
   fn encode(&self, writer: &mut BebopWriter) {
     // @@bebop_insertion_point(encode_start:Order)
     writer.write_i64(self.order_id);
@@ -163,7 +176,7 @@ impl BebopEncode for Order {
   }
 }
 
-impl<'buf> BebopDecode<'buf> for Order {
+impl<'buf> BebopDecode<'buf> for Order<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:Order)
     let order_id = reader.read_i64()?;
@@ -184,7 +197,7 @@ impl<'buf> BebopDecode<'buf> for Order {
   }
 }
 
-impl Order {
+impl Order<'_> {
   // @@bebop_insertion_point(struct_scope:Order)
 }
 
@@ -1130,18 +1143,33 @@ impl<'buf> ChunkedText<'buf> {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
-pub struct EmbeddingBf16 {
+pub struct EmbeddingBf16<'buf> {
   pub id: ::bebop_runtime::Uuid,
-  pub vector: alloc::vec::Vec<bf16>,
+  pub vector: alloc::borrow::Cow<'buf, [bf16]>,
 }
 
-impl EmbeddingBf16 {
-  pub fn new(id: ::bebop_runtime::Uuid, vector: alloc::vec::Vec<bf16>) -> Self {
-    Self { id, vector }
+pub type EmbeddingBf16Owned = EmbeddingBf16<'static>;
+
+impl<'buf> EmbeddingBf16<'buf> {
+  pub fn new(
+    id: ::bebop_runtime::Uuid,
+    vector: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [bf16]>>,
+  ) -> Self {
+    Self {
+      id,
+      vector: vector.into(),
+    }
+  }
+
+  pub fn into_owned(self) -> EmbeddingBf16Owned {
+    EmbeddingBf16 {
+      id: self.id,
+      vector: alloc::borrow::Cow::Owned(self.vector.into_owned()),
+    }
   }
 }
 
-impl BebopEncode for EmbeddingBf16 {
+impl BebopEncode for EmbeddingBf16<'_> {
   fn encode(&self, writer: &mut BebopWriter) {
     // @@bebop_insertion_point(encode_start:EmbeddingBf16)
     writer.write_uuid(self.id);
@@ -1157,7 +1185,7 @@ impl BebopEncode for EmbeddingBf16 {
   }
 }
 
-impl<'buf> BebopDecode<'buf> for EmbeddingBf16 {
+impl<'buf> BebopDecode<'buf> for EmbeddingBf16<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:EmbeddingBf16)
     let id = reader.read_uuid()?;
@@ -1167,23 +1195,38 @@ impl<'buf> BebopDecode<'buf> for EmbeddingBf16 {
   }
 }
 
-impl EmbeddingBf16 {
+impl EmbeddingBf16<'_> {
   // @@bebop_insertion_point(struct_scope:EmbeddingBf16)
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
-pub struct EmbeddingF32 {
+pub struct EmbeddingF32<'buf> {
   pub id: ::bebop_runtime::Uuid,
-  pub vector: alloc::vec::Vec<f32>,
+  pub vector: alloc::borrow::Cow<'buf, [f32]>,
 }
 
-impl EmbeddingF32 {
-  pub fn new(id: ::bebop_runtime::Uuid, vector: alloc::vec::Vec<f32>) -> Self {
-    Self { id, vector }
+pub type EmbeddingF32Owned = EmbeddingF32<'static>;
+
+impl<'buf> EmbeddingF32<'buf> {
+  pub fn new(
+    id: ::bebop_runtime::Uuid,
+    vector: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [f32]>>,
+  ) -> Self {
+    Self {
+      id,
+      vector: vector.into(),
+    }
+  }
+
+  pub fn into_owned(self) -> EmbeddingF32Owned {
+    EmbeddingF32 {
+      id: self.id,
+      vector: alloc::borrow::Cow::Owned(self.vector.into_owned()),
+    }
   }
 }
 
-impl BebopEncode for EmbeddingF32 {
+impl BebopEncode for EmbeddingF32<'_> {
   fn encode(&self, writer: &mut BebopWriter) {
     // @@bebop_insertion_point(encode_start:EmbeddingF32)
     writer.write_uuid(self.id);
@@ -1199,7 +1242,7 @@ impl BebopEncode for EmbeddingF32 {
   }
 }
 
-impl<'buf> BebopDecode<'buf> for EmbeddingF32 {
+impl<'buf> BebopDecode<'buf> for EmbeddingF32<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:EmbeddingF32)
     let id = reader.read_uuid()?;
@@ -1209,14 +1252,14 @@ impl<'buf> BebopDecode<'buf> for EmbeddingF32 {
   }
 }
 
-impl EmbeddingF32 {
+impl EmbeddingF32<'_> {
   // @@bebop_insertion_point(struct_scope:EmbeddingF32)
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
 pub struct EmbeddingBatch<'buf> {
   pub model: alloc::borrow::Cow<'buf, str>,
-  pub embeddings: alloc::vec::Vec<EmbeddingBf16>,
+  pub embeddings: alloc::vec::Vec<EmbeddingBf16<'buf>>,
   pub usage_tokens: u32,
 }
 
@@ -1225,7 +1268,7 @@ pub type EmbeddingBatchOwned = EmbeddingBatch<'static>;
 impl<'buf> EmbeddingBatch<'buf> {
   pub fn new(
     model: impl ::core::convert::Into<alloc::borrow::Cow<'buf, str>>,
-    embeddings: alloc::vec::Vec<EmbeddingBf16>,
+    embeddings: alloc::vec::Vec<EmbeddingBf16<'buf>>,
     usage_tokens: u32,
   ) -> Self {
     let model = ::core::convert::Into::into(model);
@@ -1241,7 +1284,7 @@ impl<'buf> EmbeddingBatch<'buf> {
   pub fn into_owned(self) -> EmbeddingBatchOwned {
     EmbeddingBatch {
       model: alloc::borrow::Cow::Owned(self.model.into_owned()),
-      embeddings: self.embeddings,
+      embeddings: self.embeddings.into_iter().map(|_e| _e.into_owned()).collect(),
       usage_tokens: self.usage_tokens,
     }
   }
@@ -1251,7 +1294,7 @@ impl<'buf> BebopEncode for EmbeddingBatch<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
     // @@bebop_insertion_point(encode_start:EmbeddingBatch)
     writer.write_string(&self.model);
-    writer.write_array(&self.embeddings, |_w, _el| _el.encode(_w));
+    writer.write_array(&self.embeddings, |_w, _el: &EmbeddingBf16| _el.encode(_w));
     writer.write_u32(self.usage_tokens);
     // @@bebop_insertion_point(encode_end:EmbeddingBatch)
   }
@@ -1259,7 +1302,7 @@ impl<'buf> BebopEncode for EmbeddingBatch<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = 0;
     size += wire::string_size(self.model.len());
-    size += wire::array_size(&self.embeddings, |_el| _el.encoded_size());
+    size += wire::array_size(&self.embeddings, |_el: &EmbeddingBf16| _el.encoded_size());
     size += ::core::mem::size_of::<u32>();
     size
   }
@@ -1502,9 +1545,9 @@ impl<'buf> LlmStreamChunk<'buf> {
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
 pub struct TensorShard<'buf> {
   pub name: alloc::borrow::Cow<'buf, str>,
-  pub shape: alloc::vec::Vec<u32>,
+  pub shape: alloc::borrow::Cow<'buf, [u32]>,
   pub dtype: alloc::borrow::Cow<'buf, str>,
-  pub data: alloc::vec::Vec<bf16>,
+  pub data: alloc::borrow::Cow<'buf, [bf16]>,
   pub offset: u64,
   pub total_elements: u64,
 }
@@ -1514,14 +1557,16 @@ pub type TensorShardOwned = TensorShard<'static>;
 impl<'buf> TensorShard<'buf> {
   pub fn new(
     name: impl ::core::convert::Into<alloc::borrow::Cow<'buf, str>>,
-    shape: alloc::vec::Vec<u32>,
+    shape: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [u32]>>,
     dtype: impl ::core::convert::Into<alloc::borrow::Cow<'buf, str>>,
-    data: alloc::vec::Vec<bf16>,
+    data: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [bf16]>>,
     offset: u64,
     total_elements: u64,
   ) -> Self {
     let name = ::core::convert::Into::into(name);
+    let shape = ::core::convert::Into::into(shape);
     let dtype = ::core::convert::Into::into(dtype);
+    let data = ::core::convert::Into::into(data);
     Self {
       name,
       shape,
@@ -1537,9 +1582,9 @@ impl<'buf> TensorShard<'buf> {
   pub fn into_owned(self) -> TensorShardOwned {
     TensorShard {
       name: alloc::borrow::Cow::Owned(self.name.into_owned()),
-      shape: self.shape,
+      shape: alloc::borrow::Cow::Owned(self.shape.into_owned()),
       dtype: alloc::borrow::Cow::Owned(self.dtype.into_owned()),
-      data: self.data,
+      data: alloc::borrow::Cow::Owned(self.data.into_owned()),
       offset: self.offset,
       total_elements: self.total_elements,
     }
@@ -1656,16 +1701,18 @@ impl InferenceTiming {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
-pub struct InferenceResponse {
+pub struct InferenceResponse<'buf> {
   pub request_id: ::bebop_runtime::Uuid,
-  pub embeddings: alloc::vec::Vec<EmbeddingBf16>,
+  pub embeddings: alloc::vec::Vec<EmbeddingBf16<'buf>>,
   pub timing: InferenceTiming,
 }
 
-impl InferenceResponse {
+pub type InferenceResponseOwned = InferenceResponse<'static>;
+
+impl<'buf> InferenceResponse<'buf> {
   pub fn new(
     request_id: ::bebop_runtime::Uuid,
-    embeddings: alloc::vec::Vec<EmbeddingBf16>,
+    embeddings: alloc::vec::Vec<EmbeddingBf16<'buf>>,
     timing: InferenceTiming,
   ) -> Self {
     Self {
@@ -1674,13 +1721,21 @@ impl InferenceResponse {
       timing,
     }
   }
+
+  pub fn into_owned(self) -> InferenceResponseOwned {
+    InferenceResponse {
+      request_id: self.request_id,
+      embeddings: self.embeddings.into_iter().map(|_e| _e.into_owned()).collect(),
+      timing: self.timing,
+    }
+  }
 }
 
-impl BebopEncode for InferenceResponse {
+impl BebopEncode for InferenceResponse<'_> {
   fn encode(&self, writer: &mut BebopWriter) {
     // @@bebop_insertion_point(encode_start:InferenceResponse)
     writer.write_uuid(self.request_id);
-    writer.write_array(&self.embeddings, |_w, _el| _el.encode(_w));
+    writer.write_array(&self.embeddings, |_w, _el: &EmbeddingBf16| _el.encode(_w));
     self.timing.encode(writer);
     // @@bebop_insertion_point(encode_end:InferenceResponse)
   }
@@ -1688,13 +1743,13 @@ impl BebopEncode for InferenceResponse {
   fn encoded_size(&self) -> usize {
     let mut size = 0;
     size += ::core::mem::size_of::<::bebop_runtime::Uuid>();
-    size += wire::array_size(&self.embeddings, |_el| _el.encoded_size());
+    size += wire::array_size(&self.embeddings, |_el: &EmbeddingBf16| _el.encoded_size());
     size += self.timing.encoded_size();
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for InferenceResponse {
+impl<'buf> BebopDecode<'buf> for InferenceResponse<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:InferenceResponse)
     let request_id = reader.read_uuid()?;
@@ -1709,7 +1764,7 @@ impl<'buf> BebopDecode<'buf> for InferenceResponse {
   }
 }
 
-impl InferenceResponse {
+impl InferenceResponse<'_> {
   // @@bebop_insertion_point(struct_scope:InferenceResponse)
 }
 
