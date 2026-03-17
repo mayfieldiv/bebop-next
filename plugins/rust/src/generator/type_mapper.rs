@@ -104,6 +104,28 @@ fn is_fixed_scalar(kind: TypeKind) -> bool {
   )
 }
 
+/// Returns true if the TypeKind is safe for bulk memcpy (all bit patterns valid).
+/// Excludes Bool (UB for non-0/1 values) and Byte (already uses
+/// write_byte_array/read_byte_slice which is even better — zero-copy on read).
+fn is_bulk_scalar(kind: TypeKind) -> bool {
+  matches!(
+    kind,
+    TypeKind::Int8
+      | TypeKind::Int16
+      | TypeKind::Uint16
+      | TypeKind::Int32
+      | TypeKind::Uint32
+      | TypeKind::Int64
+      | TypeKind::Uint64
+      | TypeKind::Int128
+      | TypeKind::Uint128
+      | TypeKind::Float16
+      | TypeKind::Bfloat16
+      | TypeKind::Float32
+      | TypeKind::Float64
+  )
+}
+
 /// Returns true if the TypeKind is a valid enum/flags base type (integer types only).
 fn is_enum_base_type(kind: TypeKind) -> bool {
   matches!(
@@ -462,6 +484,10 @@ pub fn read_expression(
         ));
       }
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
+      if is_bulk_scalar(elem_kind) {
+        let ty = scalar_type(elem_kind).unwrap();
+        return Ok(format!("{}.read_scalar_array::<{}>()", reader, ty));
+      }
       if elem_kind == TypeKind::Defined {
         let fqn = elem.defined_fqn.as_deref().unwrap_or("");
         let type_name = fqn_to_type_name(fqn);
@@ -591,6 +617,12 @@ pub fn write_expression(
         Ok(format!(
           "{}.write_array(&{}, |_w, _el| _el.encode(_w))",
           writer, value
+        ))
+      } else if is_bulk_scalar(elem_kind) {
+        let ty = scalar_type(elem_kind).unwrap();
+        Ok(format!(
+          "{}.write_scalar_array::<{}>(&{})",
+          writer, ty, value
         ))
       } else if let Some(method) = scalar_write_method(elem_kind) {
         if scalar_needs_ref(elem_kind) {

@@ -144,8 +144,8 @@ impl BebopEncode for Order {
     // @@bebop_insertion_point(encode_start:Order)
     writer.write_i64(self.order_id);
     writer.write_i64(self.customer_id);
-    writer.write_array(&self.item_ids, |_w, _el| _w.write_i64(*_el));
-    writer.write_array(&self.quantities, |_w, _el| _w.write_i32(*_el));
+    writer.write_scalar_array::<i64>(&self.item_ids);
+    writer.write_scalar_array::<i32>(&self.quantities);
     writer.write_f64(self.total);
     writer.write_i64(self.timestamp);
     // @@bebop_insertion_point(encode_end:Order)
@@ -168,8 +168,8 @@ impl<'buf> BebopDecode<'buf> for Order {
     // @@bebop_insertion_point(decode_start:Order)
     let order_id = reader.read_i64()?;
     let customer_id = reader.read_i64()?;
-    let item_ids = reader.read_array(|_r| _r.read_i64())?;
-    let quantities = reader.read_array(|_r| _r.read_i32())?;
+    let item_ids = reader.read_scalar_array::<i64>()?;
+    let quantities = reader.read_scalar_array::<i32>()?;
     let total = reader.read_f64()?;
     let timestamp = reader.read_i64()?;
     // @@bebop_insertion_point(decode_end:Order)
@@ -1145,7 +1145,7 @@ impl BebopEncode for EmbeddingBf16 {
   fn encode(&self, writer: &mut BebopWriter) {
     // @@bebop_insertion_point(encode_start:EmbeddingBf16)
     writer.write_uuid(self.id);
-    writer.write_array(&self.vector, |_w, _el| _w.write_bf16(*_el));
+    writer.write_scalar_array::<bf16>(&self.vector);
     // @@bebop_insertion_point(encode_end:EmbeddingBf16)
   }
 
@@ -1161,7 +1161,7 @@ impl<'buf> BebopDecode<'buf> for EmbeddingBf16 {
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:EmbeddingBf16)
     let id = reader.read_uuid()?;
-    let vector = reader.read_array(|_r| _r.read_bf16())?;
+    let vector = reader.read_scalar_array::<bf16>()?;
     // @@bebop_insertion_point(decode_end:EmbeddingBf16)
     ::core::result::Result::Ok(EmbeddingBf16 { id, vector })
   }
@@ -1187,7 +1187,7 @@ impl BebopEncode for EmbeddingF32 {
   fn encode(&self, writer: &mut BebopWriter) {
     // @@bebop_insertion_point(encode_start:EmbeddingF32)
     writer.write_uuid(self.id);
-    writer.write_array(&self.vector, |_w, _el| _w.write_f32(*_el));
+    writer.write_scalar_array::<f32>(&self.vector);
     // @@bebop_insertion_point(encode_end:EmbeddingF32)
   }
 
@@ -1203,7 +1203,7 @@ impl<'buf> BebopDecode<'buf> for EmbeddingF32 {
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:EmbeddingF32)
     let id = reader.read_uuid()?;
-    let vector = reader.read_array(|_r| _r.read_f32())?;
+    let vector = reader.read_scalar_array::<f32>()?;
     // @@bebop_insertion_point(decode_end:EmbeddingF32)
     ::core::result::Result::Ok(EmbeddingF32 { id, vector })
   }
@@ -1550,9 +1550,9 @@ impl<'buf> BebopEncode for TensorShard<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
     // @@bebop_insertion_point(encode_start:TensorShard)
     writer.write_string(&self.name);
-    writer.write_array(&self.shape, |_w, _el| _w.write_u32(*_el));
+    writer.write_scalar_array::<u32>(&self.shape);
     writer.write_string(&self.dtype);
-    writer.write_array(&self.data, |_w, _el| _w.write_bf16(*_el));
+    writer.write_scalar_array::<bf16>(&self.data);
     writer.write_u64(self.offset);
     writer.write_u64(self.total_elements);
     // @@bebop_insertion_point(encode_end:TensorShard)
@@ -1574,9 +1574,9 @@ impl<'buf> BebopDecode<'buf> for TensorShard<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:TensorShard)
     let name = alloc::borrow::Cow::Borrowed(reader.read_str()?);
-    let shape = reader.read_array(|_r| _r.read_u32())?;
+    let shape = reader.read_scalar_array::<u32>()?;
     let dtype = alloc::borrow::Cow::Borrowed(reader.read_str()?);
-    let data = reader.read_array(|_r| _r.read_bf16())?;
+    let data = reader.read_scalar_array::<bf16>()?;
     let offset = reader.read_u64()?;
     let total_elements = reader.read_u64()?;
     // @@bebop_insertion_point(decode_end:TensorShard)
