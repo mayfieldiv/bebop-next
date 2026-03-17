@@ -4,11 +4,13 @@ Rust code generator plugin for the Bebop serialization framework. See `research.
 
 ## Build & Test
 
+Always run `./test.sh` to validate changes before considering work done. It is the single source of truth for whether the code is correct — covers fmt, compiler checks, clippy, unit tests (generator + runtime), integration tests (std + no_std), benchmark crate tests, and golden file cross-language verification.
+
 ```bash
 cd plugins/rust
-./test.sh          # full validation: fmt, check, test, clippy
-cargo test         # unit + integration tests
-cargo bench        # criterion benchmarks
+./test.sh          # required: full validation
+cargo test         # quick: unit + integration tests only
+cargo bench        # criterion benchmarks (separate from test.sh)
 ```
 
 ## Commit Style
