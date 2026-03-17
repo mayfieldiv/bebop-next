@@ -19,6 +19,7 @@ See `CLAUDE.md` for FD lifecycle stages and management guidelines.
 | FD-030 | [DecodeError Field Context](FD-030_DECODE_ERROR_FIELD_CONTEXT.md) | Planned | Medium | Medium |
 | FD-031 | [Deprecated Attribute Emission](FD-031_DEPRECATED_ATTRIBUTE_EMISSION.md) | Complete | Low | Medium |
 | FD-032 | [Serde Round-Trip Test Coverage](FD-032_SERDE_ROUNDTRIP_TEST_COVERAGE.md) | Planned | Low | High |
+| FD-033 | [Compiler Decorator FQN](FD-033_COMPILER_DECORATOR_FQN.md) | Planned | Low | Medium |
 
 ## Completed
 
