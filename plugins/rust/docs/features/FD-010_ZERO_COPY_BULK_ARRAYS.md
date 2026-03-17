@@ -1,9 +1,9 @@
 # FD-010: Zero-Copy / Bulk Read for Primitive Arrays
 
-**Status:** Open
-**Priority:** Low
+**Status:** Pending Verification
+**Priority:** High
 **Effort:** High (> 4 hours)
-**Impact:** ~10-100x faster for large arrays of primitives
+**Impact:** 30-60,000x faster for large scalar arrays (benchmarked 2026-03-16)
 
 ## Problem
 
@@ -46,6 +46,22 @@ Implement both runtime methods and generator integration:
 - Enormous count triggers error, not panic
 - Unaligned buffer falls back to `Cow::Owned`
 - Benchmark: throughput improvement for 10K-element arrays
+
+## Benchmark Data (2026-03-16)
+
+Rust vs C comparison for scenarios dominated by scalar arrays:
+
+| Scenario | Encode | Decode | Array size |
+|----------|--------|--------|------------|
+| TensorShardLarge | 539x slower | 62,615x slower | 368K bf16 |
+| Embedding1536 | 35x | 569x | 1536 bf16 |
+| EmbeddingBatch | 33x | 504x | 8×1536 bf16 |
+| InferenceResponse | 34x | 205x | 4×768 bf16 |
+| OrderLarge | 23x | 50x | 100 i64 + 100 i32 |
+
+The write path (`write_scalar_array`) is the easy win — no API changes, just
+`extend_from_slice` on LE. The read path (`Cow` slices) is harder because it
+changes generated type signatures and lifetime analysis.
 
 ## Source
 
