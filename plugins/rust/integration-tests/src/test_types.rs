@@ -1310,20 +1310,24 @@ impl HalfPrecisionScalars {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
-pub struct HalfPrecisionArrays {
-  pub f16_dynamic: alloc::vec::Vec<f16>,
-  pub bf16_dynamic: alloc::vec::Vec<bf16>,
+pub struct HalfPrecisionArrays<'buf> {
+  pub f16_dynamic: alloc::borrow::Cow<'buf, [f16]>,
+  pub bf16_dynamic: alloc::borrow::Cow<'buf, [bf16]>,
   pub f16_fixed: [f16; 4],
   pub bf16_fixed: [bf16; 4],
 }
 
-impl HalfPrecisionArrays {
+pub type HalfPrecisionArraysOwned = HalfPrecisionArrays<'static>;
+
+impl<'buf> HalfPrecisionArrays<'buf> {
   pub fn new(
-    f16_dynamic: alloc::vec::Vec<f16>,
-    bf16_dynamic: alloc::vec::Vec<bf16>,
+    f16_dynamic: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [f16]>>,
+    bf16_dynamic: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [bf16]>>,
     f16_fixed: [f16; 4],
     bf16_fixed: [bf16; 4],
   ) -> Self {
+    let f16_dynamic = ::core::convert::Into::into(f16_dynamic);
+    let bf16_dynamic = ::core::convert::Into::into(bf16_dynamic);
     Self {
       f16_dynamic,
       bf16_dynamic,
@@ -1333,7 +1337,18 @@ impl HalfPrecisionArrays {
   }
 }
 
-impl BebopEncode for HalfPrecisionArrays {
+impl<'buf> HalfPrecisionArrays<'buf> {
+  pub fn into_owned(self) -> HalfPrecisionArraysOwned {
+    HalfPrecisionArrays {
+      f16_dynamic: alloc::borrow::Cow::Owned(self.f16_dynamic.into_owned()),
+      bf16_dynamic: alloc::borrow::Cow::Owned(self.bf16_dynamic.into_owned()),
+      f16_fixed: self.f16_fixed,
+      bf16_fixed: self.bf16_fixed,
+    }
+  }
+}
+
+impl<'buf> BebopEncode for HalfPrecisionArrays<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
     // @@bebop_insertion_point(encode_start:HalfPrecisionArrays)
     writer.write_scalar_array::<f16>(&self.f16_dynamic);
@@ -1353,7 +1368,7 @@ impl BebopEncode for HalfPrecisionArrays {
   }
 }
 
-impl<'buf> BebopDecode<'buf> for HalfPrecisionArrays {
+impl<'buf> BebopDecode<'buf> for HalfPrecisionArrays<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:HalfPrecisionArrays)
     let f16_dynamic = reader.read_scalar_array::<f16>()?;
@@ -1370,19 +1385,36 @@ impl<'buf> BebopDecode<'buf> for HalfPrecisionArrays {
   }
 }
 
-impl HalfPrecisionArrays {
+impl<'buf> HalfPrecisionArrays<'buf> {
   // @@bebop_insertion_point(struct_scope:HalfPrecisionArrays)
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq)]
-pub struct HalfPrecisionMessage {
+pub struct HalfPrecisionMessage<'buf> {
   pub f16_val: ::core::option::Option<f16>,
   pub bf16_val: ::core::option::Option<bf16>,
-  pub f16_arr: ::core::option::Option<alloc::vec::Vec<f16>>,
-  pub bf16_arr: ::core::option::Option<alloc::vec::Vec<bf16>>,
+  pub f16_arr: ::core::option::Option<alloc::borrow::Cow<'buf, [f16]>>,
+  pub bf16_arr: ::core::option::Option<alloc::borrow::Cow<'buf, [bf16]>>,
 }
 
-impl BebopEncode for HalfPrecisionMessage {
+pub type HalfPrecisionMessageOwned = HalfPrecisionMessage<'static>;
+
+impl<'buf> HalfPrecisionMessage<'buf> {
+  pub fn into_owned(self) -> HalfPrecisionMessageOwned {
+    HalfPrecisionMessage {
+      f16_val: self.f16_val,
+      bf16_val: self.bf16_val,
+      f16_arr: self
+        .f16_arr
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      bf16_arr: self
+        .bf16_arr
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+    }
+  }
+}
+
+impl<'buf> BebopEncode for HalfPrecisionMessage<'buf> {
   fn encode(&self, writer: &mut BebopWriter) {
     // @@bebop_insertion_point(encode_start:HalfPrecisionMessage)
     let pos = writer.reserve_message_length();
@@ -1430,7 +1462,7 @@ impl BebopEncode for HalfPrecisionMessage {
   }
 }
 
-impl<'buf> BebopDecode<'buf> for HalfPrecisionMessage {
+impl<'buf> BebopDecode<'buf> for HalfPrecisionMessage<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:HalfPrecisionMessage)
     let length = reader.read_message_length()? as usize;
@@ -1460,7 +1492,7 @@ impl<'buf> BebopDecode<'buf> for HalfPrecisionMessage {
   }
 }
 
-impl HalfPrecisionMessage {
+impl<'buf> HalfPrecisionMessage<'buf> {
   // @@bebop_insertion_point(message_scope:HalfPrecisionMessage)
 }
 
