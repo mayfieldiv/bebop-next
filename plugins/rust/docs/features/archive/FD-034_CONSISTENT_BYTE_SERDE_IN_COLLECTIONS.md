@@ -1,6 +1,7 @@
 # FD-034: Consistent Byte Serialization in Collections
 
-**Status:** Pending Verification
+**Status:** Complete
+**Completed:** 2026-03-18
 **Priority:** Medium
 **Effort:** Medium (1-4 hours)
 **Impact:** Byte arrays work correctly in all contexts (Option, Vec, HashMap); fixes compile error for byte[] in messages
