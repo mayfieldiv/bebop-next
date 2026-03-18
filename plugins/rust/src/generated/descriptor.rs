@@ -741,7 +741,7 @@ pub struct LiteralValue<'buf> {
   /// literals that contained environment variable references.
   pub raw_value: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
   /// When `kind == BYTES`.
-  pub bytes_value: ::core::option::Option<alloc::borrow::Cow<'buf, [u8]>>,
+  pub bytes_value: ::core::option::Option<::bebop_runtime::BebopBytes<'buf>>,
   /// When `kind == TIMESTAMP`.
   pub timestamp_value: ::core::option::Option<BebopTimestamp>,
   /// When `kind == DURATION`.
@@ -764,9 +764,7 @@ impl<'buf> LiteralValue<'buf> {
       raw_value: self
         .raw_value
         .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
-      bytes_value: self
-        .bytes_value
-        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      bytes_value: self.bytes_value.map(|v| v.into_owned()),
       timestamp_value: self.timestamp_value,
       duration_value: self.duration_value,
     }
@@ -890,8 +888,9 @@ impl<'buf> BebopDecode<'buf> for LiteralValue<'buf> {
             ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
         }
         8 => {
-          msg.bytes_value =
-            ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_byte_slice()?))
+          msg.bytes_value = ::core::option::Option::Some(::bebop_runtime::BebopBytes::borrowed(
+            reader.read_byte_slice()?,
+          ))
         }
         9 => msg.timestamp_value = ::core::option::Option::Some(reader.read_timestamp()?),
         10 => msg.duration_value = ::core::option::Option::Some(reader.read_duration()?),

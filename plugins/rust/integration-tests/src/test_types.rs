@@ -368,15 +368,16 @@ impl<'buf> Person<'buf> {
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BinaryPayload<'buf> {
   pub tag: u32,
-  #[serde(borrow)]
-  #[serde(with = "bebop_runtime::serde_cow_bytes")]
-  pub data: alloc::borrow::Cow<'buf, [u8]>,
+  pub data: ::bebop_runtime::BebopBytes<'buf>,
 }
 
 pub type BinaryPayloadOwned = BinaryPayload<'static>;
 
 impl<'buf> BinaryPayload<'buf> {
-  pub fn new(tag: u32, data: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [u8]>>) -> Self {
+  pub fn new(
+    tag: u32,
+    data: impl ::core::convert::Into<::bebop_runtime::BebopBytes<'buf>>,
+  ) -> Self {
     let data = ::core::convert::Into::into(data);
     Self { tag, data }
   }
@@ -386,7 +387,7 @@ impl<'buf> BinaryPayload<'buf> {
   pub fn into_owned(self) -> BinaryPayloadOwned {
     BinaryPayload {
       tag: self.tag,
-      data: alloc::borrow::Cow::Owned(self.data.into_owned()),
+      data: self.data.into_owned(),
     }
   }
 }
@@ -411,7 +412,7 @@ impl<'buf> BebopDecode<'buf> for BinaryPayload<'buf> {
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:BinaryPayload)
     let tag = reader.read_u32()?;
-    let data = alloc::borrow::Cow::Borrowed(reader.read_byte_slice()?);
+    let data = ::bebop_runtime::BebopBytes::borrowed(reader.read_byte_slice()?);
     // @@bebop_insertion_point(decode_end:BinaryPayload)
     ::core::result::Result::Ok(BinaryPayload { tag, data })
   }
@@ -2503,6 +2504,338 @@ impl<'buf> BebopDecode<'buf> for DeepNestedCollections<'buf> {
 
 impl<'buf> DeepNestedCollections<'buf> {
   // @@bebop_insertion_point(message_scope:DeepNestedCollections)
+}
+
+/// Struct with nested byte array (byte[][]).
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ByteMatrix<'buf> {
+  pub rows: alloc::vec::Vec<::bebop_runtime::BebopBytes<'buf>>,
+}
+
+pub type ByteMatrixOwned = ByteMatrix<'static>;
+
+impl<'buf> ByteMatrix<'buf> {
+  pub fn new(rows: alloc::vec::Vec<::bebop_runtime::BebopBytes<'static>>) -> Self {
+    let rows = rows
+      .into_iter()
+      .map(|_e| <::bebop_runtime::BebopBytes as ::core::convert::From<_>>::from(_e))
+      .collect();
+    Self { rows }
+  }
+}
+
+impl<'buf> ByteMatrix<'buf> {
+  pub fn into_owned(self) -> ByteMatrixOwned {
+    ByteMatrix {
+      rows: self.rows.into_iter().map(|_e| _e.into_owned()).collect(),
+    }
+  }
+}
+
+impl<'buf> BebopEncode for ByteMatrix<'buf> {
+  fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:ByteMatrix)
+    writer.write_array(&self.rows, |_w, _el| _w.write_byte_array(&_el));
+    // @@bebop_insertion_point(encode_end:ByteMatrix)
+  }
+
+  fn encoded_size(&self) -> usize {
+    let mut size = 0;
+    size += wire::array_size(&self.rows, |_el| wire::byte_array_size(_el.len()));
+    size
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for ByteMatrix<'buf> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:ByteMatrix)
+    let rows = reader.read_array(|_r| {
+      ::core::result::Result::Ok(::bebop_runtime::BebopBytes::borrowed(_r.read_byte_slice()?))
+    })?;
+    // @@bebop_insertion_point(decode_end:ByteMatrix)
+    ::core::result::Result::Ok(ByteMatrix { rows })
+  }
+}
+
+impl<'buf> ByteMatrix<'buf> {
+  // @@bebop_insertion_point(struct_scope:ByteMatrix)
+}
+
+/// Struct with map containing byte array values.
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct ByteTagMap<'buf> {
+  pub entries:
+    ::bebop_runtime::HashMap<alloc::borrow::Cow<'buf, str>, ::bebop_runtime::BebopBytes<'buf>>,
+}
+
+pub type ByteTagMapOwned = ByteTagMap<'static>;
+
+impl<'buf> ByteTagMap<'buf> {
+  pub fn new(
+    entries: ::bebop_runtime::HashMap<alloc::string::String, ::bebop_runtime::BebopBytes<'static>>,
+  ) -> Self {
+    let entries = entries
+      .into_iter()
+      .map(|(_k, _v)| {
+        (
+          alloc::borrow::Cow::Owned(_k),
+          <::bebop_runtime::BebopBytes as ::core::convert::From<_>>::from(_v),
+        )
+      })
+      .collect();
+    Self { entries }
+  }
+}
+
+impl<'buf> ByteTagMap<'buf> {
+  pub fn into_owned(self) -> ByteTagMapOwned {
+    ByteTagMap {
+      entries: self
+        .entries
+        .into_iter()
+        .map(|(_k, _v)| (alloc::borrow::Cow::Owned(_k.into_owned()), _v.into_owned()))
+        .collect(),
+    }
+  }
+}
+
+impl<'buf> BebopEncode for ByteTagMap<'buf> {
+  fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:ByteTagMap)
+    writer.write_map(&self.entries, |_w, _k, _v| {
+      _w.write_string(&_k);
+      _w.write_byte_array(&_v);
+    });
+    // @@bebop_insertion_point(encode_end:ByteTagMap)
+  }
+
+  fn encoded_size(&self) -> usize {
+    let mut size = 0;
+    size += wire::map_size(&self.entries, |_k, _v| {
+      wire::string_size(_k.len()) + wire::byte_array_size(_v.len())
+    });
+    size
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for ByteTagMap<'buf> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:ByteTagMap)
+    let entries = reader.read_map(|_r| {
+      ::core::result::Result::Ok((
+        ::core::result::Result::Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))?,
+        ::core::result::Result::Ok(::bebop_runtime::BebopBytes::borrowed(_r.read_byte_slice()?))?,
+      ))
+    })?;
+    // @@bebop_insertion_point(decode_end:ByteTagMap)
+    ::core::result::Result::Ok(ByteTagMap { entries })
+  }
+}
+
+impl<'buf> ByteTagMap<'buf> {
+  // @@bebop_insertion_point(struct_scope:ByteTagMap)
+}
+
+/// Message with byte array field — tests Option<BebopBytes> serde.
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq, Hash)]
+pub struct ByteArrayMessage<'buf> {
+  pub label: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  pub payload: ::core::option::Option<::bebop_runtime::BebopBytes<'buf>>,
+}
+
+pub type ByteArrayMessageOwned = ByteArrayMessage<'static>;
+
+impl<'buf> ByteArrayMessage<'buf> {
+  pub fn into_owned(self) -> ByteArrayMessageOwned {
+    ByteArrayMessage {
+      label: self
+        .label
+        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      payload: self.payload.map(|v| v.into_owned()),
+    }
+  }
+}
+
+impl<'buf> BebopEncode for ByteArrayMessage<'buf> {
+  fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:ByteArrayMessage)
+    let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
+    if let ::core::option::Option::Some(ref v) = self.label {
+      writer.write_tag(1);
+      writer.write_string(&v);
+    }
+    if let ::core::option::Option::Some(ref v) = self.payload {
+      writer.write_tag(2);
+      writer.write_byte_array(&v);
+    }
+    writer.write_end_marker();
+    writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:ByteArrayMessage)
+  }
+
+  fn encoded_size(&self) -> usize {
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    if let ::core::option::Option::Some(ref v) = self.label {
+      size += wire::tagged_size(wire::string_size(v.len()));
+    }
+    if let ::core::option::Option::Some(ref v) = self.payload {
+      size += wire::tagged_size(wire::byte_array_size(v.len()));
+    }
+    size
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for ByteArrayMessage<'buf> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:ByteArrayMessage)
+    let length = reader.read_message_length()? as usize;
+    let end = reader.position() + length;
+    let mut msg = <Self as ::core::default::Default>::default();
+
+    while reader.position() < end {
+      let tag = reader.read_tag()?;
+      if tag == 0 {
+        break;
+      }
+      match tag {
+        1 => {
+          msg.label = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
+        }
+        2 => {
+          msg.payload = ::core::option::Option::Some(::bebop_runtime::BebopBytes::borrowed(
+            reader.read_byte_slice()?,
+          ))
+        }
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "ByteArrayMessage",
+            tag,
+          });
+        }
+      }
+    }
+    // @@bebop_insertion_point(decode_end:ByteArrayMessage)
+    ::core::result::Result::Ok(msg)
+  }
+}
+
+impl<'buf> ByteArrayMessage<'buf> {
+  // @@bebop_insertion_point(message_scope:ByteArrayMessage)
+}
+
+/// Message with nested byte arrays and maps.
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq)]
+pub struct ByteCollectionMessage<'buf> {
+  pub matrix: ::core::option::Option<alloc::vec::Vec<::bebop_runtime::BebopBytes<'buf>>>,
+  pub tagged: ::core::option::Option<
+    ::bebop_runtime::HashMap<alloc::borrow::Cow<'buf, str>, ::bebop_runtime::BebopBytes<'buf>>,
+  >,
+}
+
+pub type ByteCollectionMessageOwned = ByteCollectionMessage<'static>;
+
+impl<'buf> ByteCollectionMessage<'buf> {
+  pub fn into_owned(self) -> ByteCollectionMessageOwned {
+    ByteCollectionMessage {
+      matrix: self
+        .matrix
+        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      tagged: self.tagged.map(|v| {
+        v.into_iter()
+          .map(|(_k, _v)| (alloc::borrow::Cow::Owned(_k.into_owned()), _v.into_owned()))
+          .collect()
+      }),
+    }
+  }
+}
+
+impl<'buf> BebopEncode for ByteCollectionMessage<'buf> {
+  fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:ByteCollectionMessage)
+    let pos = writer.reserve_message_length();
+    // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
+    // The GRAMMAR.md spec says deprecated message fields should be skipped during
+    // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
+    // them on encode/size but still decodes them. The Swift plugin encodes them
+    // normally. This behavior should be revisited once the spec intent is clarified.
+    if let ::core::option::Option::Some(ref v) = self.matrix {
+      writer.write_tag(1);
+      writer.write_array(&v, |_w, _el| _w.write_byte_array(&_el));
+    }
+    if let ::core::option::Option::Some(ref v) = self.tagged {
+      writer.write_tag(2);
+      writer.write_map(&v, |_w, _k, _v| {
+        _w.write_string(&_k);
+        _w.write_byte_array(&_v);
+      });
+    }
+    writer.write_end_marker();
+    writer.fill_message_length(pos);
+    // @@bebop_insertion_point(encode_end:ByteCollectionMessage)
+  }
+
+  fn encoded_size(&self) -> usize {
+    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    if let ::core::option::Option::Some(ref v) = self.matrix {
+      size += wire::tagged_size(wire::array_size(v, |_el| wire::byte_array_size(_el.len())));
+    }
+    if let ::core::option::Option::Some(ref v) = self.tagged {
+      size += wire::tagged_size(wire::map_size(v, |_k, _v| {
+        wire::string_size(_k.len()) + wire::byte_array_size(_v.len())
+      }));
+    }
+    size
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for ByteCollectionMessage<'buf> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:ByteCollectionMessage)
+    let length = reader.read_message_length()? as usize;
+    let end = reader.position() + length;
+    let mut msg = <Self as ::core::default::Default>::default();
+
+    while reader.position() < end {
+      let tag = reader.read_tag()?;
+      if tag == 0 {
+        break;
+      }
+      match tag {
+        1 => {
+          msg.matrix = ::core::option::Option::Some(reader.read_array(|_r| {
+            ::core::result::Result::Ok(::bebop_runtime::BebopBytes::borrowed(_r.read_byte_slice()?))
+          })?)
+        }
+        2 => {
+          msg.tagged = ::core::option::Option::Some(reader.read_map(|_r| {
+            ::core::result::Result::Ok((
+              ::core::result::Result::Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))?,
+              ::core::result::Result::Ok(::bebop_runtime::BebopBytes::borrowed(
+                _r.read_byte_slice()?,
+              ))?,
+            ))
+          })?)
+        }
+        tag => {
+          return ::core::result::Result::Err(DecodeError::InvalidField {
+            type_name: "ByteCollectionMessage",
+            tag,
+          });
+        }
+      }
+    }
+    // @@bebop_insertion_point(decode_end:ByteCollectionMessage)
+    ::core::result::Result::Ok(msg)
+  }
+}
+
+impl<'buf> ByteCollectionMessage<'buf> {
+  // @@bebop_insertion_point(message_scope:ByteCollectionMessage)
 }
 
 // @@bebop_insertion_point(eof)

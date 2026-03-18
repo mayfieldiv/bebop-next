@@ -7,7 +7,8 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 use bebop_runtime::{
-  bf16, f16, BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopTimestamp, DecodeError, Uuid,
+  bf16, f16, BebopBytes, BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopTimestamp,
+  DecodeError, Uuid,
 };
 
 use bebop_integration_tests::test_types::*;
@@ -415,7 +416,7 @@ fn byte_array_struct_zero_copy() {
   let bp = BinaryPayload::new(1, vec![1, 2, 3]);
   let bytes = bp.to_bytes();
   let decoded = BinaryPayload::from_bytes(&bytes).unwrap();
-  match &decoded.data {
+  match &decoded.data.0 {
     Cow::Borrowed(_) => {} // zero-copy confirmed
     Cow::Owned(_) => panic!("expected Cow::Borrowed for zero-copy byte array"),
   }
@@ -428,7 +429,7 @@ fn byte_array_struct_into_owned() {
   let decoded = BinaryPayload::from_bytes(&bytes).unwrap();
   let owned: BinaryPayloadOwned = decoded.into_owned();
   assert_eq!(&*owned.data, &[9, 8, 7]);
-  match &owned.data {
+  match &owned.data.0 {
     Cow::Owned(_) => {}
     Cow::Borrowed(_) => panic!("expected Cow::Owned after into_owned"),
   }
@@ -446,6 +447,100 @@ fn byte_array_struct_empty_data() {
 fn byte_array_struct_encoded_size_matches() {
   let bp = BinaryPayload::new(42, vec![1, 2, 3, 4, 5]);
   assert_eq!(bp.encoded_size(), bp.to_bytes().len());
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Nested byte arrays (byte[][], map[K, byte[]])
+// ═══════════════════════════════════════════════════════════════
+
+#[test]
+fn byte_matrix_struct_round_trip() {
+  let bm = ByteMatrix::new(vec![
+    BebopBytes::from(vec![1, 2, 3]),
+    BebopBytes::from(vec![4, 5]),
+  ]);
+  let bytes = bm.to_bytes();
+  let bm2 = ByteMatrix::from_bytes(&bytes).unwrap();
+  assert_eq!(bm2.rows.len(), 2);
+  assert_eq!(&*bm2.rows[0], &[1, 2, 3]);
+  assert_eq!(&*bm2.rows[1], &[4, 5]);
+}
+
+#[test]
+fn byte_matrix_struct_encoded_size_matches() {
+  let bm = ByteMatrix::new(vec![
+    BebopBytes::from(vec![1, 2]),
+    BebopBytes::from(vec![3, 4, 5, 6]),
+  ]);
+  assert_eq!(bm.encoded_size(), bm.to_bytes().len());
+}
+
+#[test]
+fn byte_tag_map_struct_round_trip() {
+  let mut entries = HashMap::new();
+  entries.insert("key1".to_string(), BebopBytes::from(vec![10, 20]));
+  entries.insert("key2".to_string(), BebopBytes::from(vec![30, 40, 50]));
+  let btm = ByteTagMap::new(entries);
+  let bytes = btm.to_bytes();
+  let btm2 = ByteTagMap::from_bytes(&bytes).unwrap();
+  assert_eq!(&*btm2.entries[&Cow::Borrowed("key1")], &[10, 20]);
+  assert_eq!(&*btm2.entries[&Cow::Borrowed("key2")], &[30, 40, 50]);
+}
+
+#[test]
+fn byte_tag_map_struct_encoded_size_matches() {
+  let mut entries = HashMap::new();
+  entries.insert("a".to_string(), BebopBytes::from(vec![1]));
+  let btm = ByteTagMap::new(entries);
+  assert_eq!(btm.encoded_size(), btm.to_bytes().len());
+}
+
+#[test]
+fn byte_array_message_round_trip() {
+  let mut msg = ByteArrayMessage::default();
+  msg.label = Some(Cow::Owned("test".to_string()));
+  msg.payload = Some(BebopBytes::from(vec![0xDE, 0xAD]));
+  let bytes = msg.to_bytes();
+  let msg2 = ByteArrayMessage::from_bytes(&bytes).unwrap();
+  assert_eq!(msg2.label.as_deref(), Some("test"));
+  assert_eq!(msg2.payload.as_deref(), Some(&[0xDE, 0xAD][..]));
+}
+
+#[test]
+fn byte_array_message_encoded_size_matches() {
+  let mut msg = ByteArrayMessage::default();
+  msg.payload = Some(BebopBytes::from(vec![1, 2, 3]));
+  assert_eq!(msg.encoded_size(), msg.to_bytes().len());
+}
+
+#[test]
+fn byte_collection_message_round_trip() {
+  let mut msg = ByteCollectionMessage::default();
+  msg.matrix = Some(vec![
+    BebopBytes::from(vec![1, 2]),
+    BebopBytes::from(vec![3, 4, 5]),
+  ]);
+  let mut tagged = HashMap::new();
+  tagged.insert(Cow::Owned("a".to_string()), BebopBytes::from(vec![10]));
+  tagged.insert(Cow::Owned("b".to_string()), BebopBytes::from(vec![20, 30]));
+  msg.tagged = Some(tagged);
+
+  let bytes = msg.to_bytes();
+  let msg2 = ByteCollectionMessage::from_bytes(&bytes).unwrap();
+  let matrix = msg2.matrix.as_ref().unwrap();
+  assert_eq!(matrix.len(), 2);
+  assert_eq!(&*matrix[0], &[1, 2]);
+  assert_eq!(&*matrix[1], &[3, 4, 5]);
+  let tagged = msg2.tagged.as_ref().unwrap();
+  assert_eq!(&*tagged[&Cow::Borrowed("a")], &[10]);
+  assert_eq!(&*tagged[&Cow::Borrowed("b")], &[20, 30]);
+}
+
+#[test]
+fn byte_collection_message_encoded_size_matches() {
+  let mut msg = ByteCollectionMessage::default();
+  msg.matrix = Some(vec![BebopBytes::from(vec![1, 2, 3])]);
+  assert_eq!(msg.encoded_size(), msg.to_bytes().len());
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1001,7 +1096,7 @@ fn large_byte_array() {
   let bp = BinaryPayload::new(1, data.clone());
   let bytes = bp.to_bytes();
   let bp2 = BinaryPayload::from_bytes(&bytes).unwrap();
-  assert_eq!(bp2.data, &data[..]);
+  assert_eq!(&*bp2.data, &data[..]);
   assert_eq!(bp.encoded_size(), bytes.len());
 }
 
@@ -1242,6 +1337,64 @@ fn serde_byte_array_struct_round_trip_json() {
   let decoded: BinaryPayload = serde_json::from_str(&json).unwrap();
   assert_eq!(decoded.tag, 7);
   assert_eq!(decoded.data.as_ref(), &[1, 2, 3, 4]);
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn serde_byte_array_message_round_trip_json() {
+  let mut msg = ByteArrayMessage::default();
+  msg.label = Some(Cow::Owned("test".to_string()));
+  msg.payload = Some(BebopBytes::from(vec![0xCA, 0xFE]));
+  let json = serde_json::to_string(&msg).unwrap();
+  let decoded: ByteArrayMessageOwned = serde_json::from_str(&json).unwrap();
+  assert_eq!(decoded.label.as_deref(), Some("test"));
+  assert_eq!(decoded.payload.as_deref(), Some(&[0xCA, 0xFE][..]));
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn serde_byte_matrix_struct_round_trip_json() {
+  let bm = ByteMatrix::new(vec![
+    BebopBytes::from(vec![1, 2, 3]),
+    BebopBytes::from(vec![4, 5]),
+  ]);
+  let json = serde_json::to_string(&bm).unwrap();
+  let decoded: ByteMatrixOwned = serde_json::from_str(&json).unwrap();
+  assert_eq!(decoded.rows.len(), 2);
+  assert_eq!(&*decoded.rows[0], &[1, 2, 3]);
+  assert_eq!(&*decoded.rows[1], &[4, 5]);
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn serde_byte_tag_map_round_trip_json() {
+  let mut entries = HashMap::new();
+  entries.insert("k".to_string(), BebopBytes::from(vec![10, 20, 30]));
+  let btm = ByteTagMap::new(entries);
+  let json = serde_json::to_string(&btm).unwrap();
+  let decoded: ByteTagMapOwned = serde_json::from_str(&json).unwrap();
+  assert_eq!(&*decoded.entries[&Cow::Borrowed("k")], &[10, 20, 30]);
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn serde_byte_collection_message_round_trip_json() {
+  let mut msg = ByteCollectionMessage::default();
+  msg.matrix = Some(vec![
+    BebopBytes::from(vec![0xAA, 0xBB]),
+    BebopBytes::from(vec![0xCC]),
+  ]);
+  let mut tagged = HashMap::new();
+  tagged.insert(Cow::Owned("x".to_string()), BebopBytes::from(vec![0xFF]));
+  msg.tagged = Some(tagged);
+
+  let json = serde_json::to_string(&msg).unwrap();
+  let decoded: ByteCollectionMessageOwned = serde_json::from_str(&json).unwrap();
+  let matrix = decoded.matrix.as_ref().unwrap();
+  assert_eq!(&*matrix[0], &[0xAA, 0xBB]);
+  assert_eq!(&*matrix[1], &[0xCC]);
+  let tagged = decoded.tagged.as_ref().unwrap();
+  assert_eq!(&*tagged[&Cow::Borrowed("x")], &[0xFF]);
 }
 
 #[cfg(feature = "serde")]
