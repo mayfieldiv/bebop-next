@@ -14,7 +14,7 @@ The integration tests verify serde round-tripping for basic types (structs, mess
 1. **`BebopTimestamp` / `BebopDuration`** — Custom newtypes with manual serde impls behind `cfg(feature = "serde")`. Unknown how they serialize (struct with fields? unix timestamp number?).
 2. **`f16` / `bf16`** — Half-precision floats from the `half` crate. The `half` crate serializes these as `f32` in human-readable formats (serde_json), but this may lose the "this was half-precision" semantic. Round-trip through JSON may alter precision.
 3. **`Uuid`** — The `uuid` crate serializes as a hyphenated string in human-readable formats. Should work, but untested in the generated code context.
-4. **`Cow<[u8]>` in non-serde_bytes context** — The generator emits `#[serde(with = "bebop_runtime::serde_cow_bytes")]` for byte array fields. But what about `Vec<Cow<[u8]>>`?  Or `HashMap<String, Cow<[u8]>>`?
+4. **`BebopBytes` in collections** — FD-034 replaced `Cow<[u8]>` with `BebopBytes<'buf>` (a newtype with built-in serde impls). This fixed serde for `byte[]` in messages, `byte[][]`, and `map[K, byte[]]`. Round-trip tests exist but edge cases (empty collections, large payloads) could use more coverage.
 5. **Maps with non-string keys** — `map[uint32, T]` generates `HashMap<u32, T>`. serde_json serializes map keys as strings, so `{42: "val"}` becomes `{"42": "val"}`. Does round-trip work?
 
 ### Risk
