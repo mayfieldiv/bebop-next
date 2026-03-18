@@ -4,15 +4,15 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
+mod bytes;
 mod error;
 mod reader;
-#[cfg(feature = "serde")]
-pub mod serde_cow_bytes;
 mod temporal;
 mod traits;
 pub mod wire_size;
 mod writer;
 
+pub use bytes::BebopBytes;
 pub use error::DecodeError;
 pub use half::bf16;
 pub use half::f16;

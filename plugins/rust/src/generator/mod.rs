@@ -155,10 +155,6 @@ impl SerdeMode {
       }
     }
   }
-
-  pub fn is_enabled(&self) -> bool {
-    !matches!(self, SerdeMode::Disabled)
-  }
 }
 
 /// Pre-computed lifetime and kind information for all definitions in a schema.

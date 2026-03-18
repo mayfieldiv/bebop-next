@@ -209,7 +209,7 @@ pub struct Event<'buf> {
   pub r#type: alloc::borrow::Cow<'buf, str>,
   pub source: alloc::borrow::Cow<'buf, str>,
   pub timestamp: i64,
-  pub payload: alloc::borrow::Cow<'buf, [u8]>,
+  pub payload: ::bebop_runtime::BebopBytes<'buf>,
 }
 
 pub type EventOwned = Event<'static>;
@@ -220,7 +220,7 @@ impl<'buf> Event<'buf> {
     r#type: impl ::core::convert::Into<alloc::borrow::Cow<'buf, str>>,
     source: impl ::core::convert::Into<alloc::borrow::Cow<'buf, str>>,
     timestamp: i64,
-    payload: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [u8]>>,
+    payload: impl ::core::convert::Into<::bebop_runtime::BebopBytes<'buf>>,
   ) -> Self {
     let r#type = ::core::convert::Into::into(r#type);
     let source = ::core::convert::Into::into(source);
@@ -242,7 +242,7 @@ impl<'buf> Event<'buf> {
       r#type: alloc::borrow::Cow::Owned(self.r#type.into_owned()),
       source: alloc::borrow::Cow::Owned(self.source.into_owned()),
       timestamp: self.timestamp,
-      payload: alloc::borrow::Cow::Owned(self.payload.into_owned()),
+      payload: self.payload.into_owned(),
     }
   }
 }
@@ -276,7 +276,7 @@ impl<'buf> BebopDecode<'buf> for Event<'buf> {
     let r#type = alloc::borrow::Cow::Borrowed(reader.read_str()?);
     let source = alloc::borrow::Cow::Borrowed(reader.read_str()?);
     let timestamp = reader.read_i64()?;
-    let payload = alloc::borrow::Cow::Borrowed(reader.read_byte_slice()?);
+    let payload = ::bebop_runtime::BebopBytes::borrowed(reader.read_byte_slice()?);
     // @@bebop_insertion_point(decode_end:Event)
     ::core::result::Result::Ok(Event {
       id,
