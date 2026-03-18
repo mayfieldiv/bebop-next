@@ -4,12 +4,16 @@ use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::ops::Deref;
 
-/// A newtype around `Cow<'buf, [u8]>` that provides compact serde serialization
-/// via `serde_bytes`.
+/// A newtype around `Cow<'buf, [u8]>` that provides correct serde serialization
+/// via `serde_bytes` in all nesting contexts.
 ///
-/// When serde is enabled, byte arrays serialize compactly (e.g. base64 in JSON)
-/// rather than as arrays of numbers. This works automatically in all contexts:
-/// direct fields, `Option<BebopBytes>`, `Vec<BebopBytes>`, `HashMap<K, BebopBytes>`, etc.
+/// Without this newtype, `Cow<[u8]>` inside `Option`, `Vec`, or `HashMap` would
+/// either fail to compile (due to `#[serde(with = ...)]` not composing with
+/// `Option`) or serialize each byte as a separate number in JSON.
+///
+/// `BebopBytes` carries its own `Serialize`/`Deserialize` impls, so it works
+/// automatically in any context: direct fields, `Option<BebopBytes>`,
+/// `Vec<BebopBytes>`, `HashMap<K, BebopBytes>`, etc.
 #[derive(Clone, Default)]
 pub struct BebopBytes<'buf>(pub Cow<'buf, [u8]>);
 
