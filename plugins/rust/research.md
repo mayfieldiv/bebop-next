@@ -122,7 +122,7 @@ Constants and functions for computing encoded sizes without actually encoding:
 When the `serde` feature is enabled:
 
 - All generated types get `#[derive(serde::Serialize, serde::Deserialize)]`
-- `Cow<'buf, [u8]>` fields use a custom `serde_cow_bytes` module for efficient binary serialization via `serde_bytes`
+- Byte array fields use the `BebopBytes<'buf>` newtype which has built-in `Serialize`/`Deserialize` via `serde_bytes`, working in all contexts (direct fields, `Option`, `Vec`, `HashMap`)
 - Unions use `#[serde(tag = "type", content = "value")]` for internally-tagged JSON representation
 - The `Unknown` variant of unions is `#[serde(skip)]`
 
@@ -324,15 +324,13 @@ Plus:
 
 **Constructor ergonomics:**
 
-- Cow fields (`String`, `byte[]`) accept `impl Into<Cow<'buf, str>>` or `impl Into<Cow<'buf, [u8]>>`, allowing both `&str` and `String` arguments
+- Cow fields (`String`, `byte[]`) accept `impl Into<Cow<'buf, str>>` or `impl Into<BebopBytes<'buf>>`, allowing both `&[u8]` and `Vec<u8>` arguments
 - Non-Cow fields that need lifetime conversion use `into_borrowed_expression()` to handle `Vec<String>` → `Vec<Cow<'buf, str>>` etc.
 
-**Byte array fields** get additional serde attributes:
+**Byte array fields** use the `BebopBytes<'buf>` newtype which carries its own serde impls:
 
 ```rust
-#[cfg_attr(feature = "serde", serde(borrow))]
-#[cfg_attr(feature = "serde", serde(with = "bebop_runtime::serde_cow_bytes"))]
-pub data: Cow<'buf, [u8]>,
+pub data: ::bebop_runtime::BebopBytes<'buf>,
 ```
 
 #### 4.6.3 Messages (`gen_message.rs`)
