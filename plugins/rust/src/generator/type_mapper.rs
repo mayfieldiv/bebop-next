@@ -299,7 +299,7 @@ pub fn is_cow_field(td: &TypeDescriptor) -> bool {
   }
 }
 
-/// Returns true when a field is represented as `Cow<'buf, [u8]>`.
+/// Returns true when a field is represented as `BebopBytes<'buf>` (byte array).
 pub fn is_byte_array_cow_field(td: &TypeDescriptor) -> bool {
   td.kind == Some(TypeKind::Array)
     && td
@@ -331,7 +331,7 @@ pub fn rust_type_owned(
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
       if elem.kind == Some(TypeKind::Byte) {
-        return Ok("alloc::vec::Vec<u8>".to_string());
+        return Ok("::bebop_runtime::BebopBytes<'static>".to_string());
       }
       // Bulk scalar arrays → Vec<T> (owned form of Cow<[T]>)
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
@@ -404,9 +404,9 @@ pub fn rust_type(
         .array_element
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
-      // Byte arrays → Cow<'buf, [u8]>
+      // Byte arrays → BebopBytes<'buf>
       if elem.kind == Some(TypeKind::Byte) {
-        return Ok("alloc::borrow::Cow<'buf, [u8]>".to_string());
+        return Ok("::bebop_runtime::BebopBytes<'buf>".to_string());
       }
       // Bulk scalar arrays → Cow<'buf, [T]>
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
@@ -495,10 +495,10 @@ pub fn read_expression(
         .array_element
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
-      // Byte array → Cow::Borrowed
+      // Byte array → BebopBytes::borrowed
       if elem.kind == Some(TypeKind::Byte) {
         return Ok(format!(
-          "::core::result::Result::Ok(alloc::borrow::Cow::Borrowed({}.read_byte_slice()?))",
+          "::core::result::Result::Ok(::bebop_runtime::BebopBytes::borrowed({}.read_byte_slice()?))",
           reader
         ));
       }
@@ -586,7 +586,7 @@ pub fn borrowed_cow_read_expression(td: &TypeDescriptor, reader: &str) -> Option
       let elem = td.array_element.as_ref()?;
       if elem.kind == Some(TypeKind::Byte) {
         Some(format!(
-          "alloc::borrow::Cow::Borrowed({}.read_byte_slice()?)",
+          "::bebop_runtime::BebopBytes::borrowed({}.read_byte_slice()?)",
           reader
         ))
       } else {
@@ -833,9 +833,9 @@ pub fn into_owned_expression(
         .array_element
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
-      // Cow<[u8]> → Cow::Owned(v.into_owned())
+      // BebopBytes → BebopBytes::into_owned()
       if elem.kind == Some(TypeKind::Byte) {
-        return Ok(format!("alloc::borrow::Cow::Owned({}.into_owned())", value));
+        return Ok(format!("{}.into_owned()", value));
       }
       // Cow<[T]> for bulk scalars → Cow::Owned(v.into_owned())
       if elem.kind.is_some_and(is_bulk_scalar) {
@@ -930,7 +930,10 @@ pub fn into_borrowed_expression(
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
       if elem.kind == Some(TypeKind::Byte) {
-        return Ok(format!("alloc::borrow::Cow::Owned({})", value));
+        return Ok(format!(
+          "<::bebop_runtime::BebopBytes as ::core::convert::From<_>>::from({})",
+          value
+        ));
       }
       // Cow<[T]> for bulk scalars: Vec<T> → Cow::from(Vec)
       if elem.kind.is_some_and(is_bulk_scalar) {

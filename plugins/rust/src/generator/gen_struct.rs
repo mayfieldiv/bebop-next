@@ -75,12 +75,6 @@ pub fn generate(
   for (f, meta) in fields.iter().zip(&field_metas) {
     emit_doc_comment(output, &f.documentation);
     emit_deprecated(output, &f.decorators);
-    if options.serde.is_enabled() && type_mapper::is_byte_array_cow_field(meta.td) {
-      options.serde.emit_field_attr(output, "borrow");
-      options
-        .serde
-        .emit_field_attr(output, "with = \"bebop_runtime::serde_cow_bytes\"");
-    }
     output.push_str(&format!("  {} {}: {},\n", vis, meta.fname, meta.cow_type));
   }
   output.push_str("}\n\n");
