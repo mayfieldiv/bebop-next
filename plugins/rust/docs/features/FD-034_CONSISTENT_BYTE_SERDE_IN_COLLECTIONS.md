@@ -7,7 +7,7 @@
 
 ## Problem
 
-The generator emits `#[serde(with = "bebop_runtime::serde_cow_bytes")]` on direct `byte[]` fields (`Cow<'buf, [u8]>`), which uses `serde_bytes` for compact serialization (base64 in JSON, raw bytes in binary formats).
+The generator emits `#[serde(with = "bebop_runtime::serde_cow_bytes")]` on direct `byte[]` fields (`Cow<'buf, [u8]>`), which uses `serde_bytes` for efficient serialization in binary formats (bincode, postcard, etc.).
 
 Three problems exist:
 

@@ -21,8 +21,6 @@ pub use hashbrown::HashMap;
 pub use reader::BebopReader;
 #[cfg(feature = "serde")]
 pub use serde;
-#[cfg(feature = "serde")]
-pub use serde_bytes;
 #[cfg(feature = "std")]
 pub use std::collections::HashMap;
 pub use temporal::{BebopDuration, BebopTimestamp};
