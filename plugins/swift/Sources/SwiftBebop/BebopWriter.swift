@@ -175,10 +175,12 @@ public struct BebopWriter: ~Copyable, @unchecked Sendable {
         _count &+= 16
     }
 
+    #if !os(macOS) || arch(arm64)
     @inlinable @inline(__always)
     public mutating func writeFloat16(_ value: Float16) {
         writeUInt16(value.bitPattern)
     }
+    #endif
 
     @inlinable @inline(__always)
     public mutating func writeFloat32(_ value: Float) {

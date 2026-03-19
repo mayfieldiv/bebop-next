@@ -128,10 +128,12 @@ public struct BebopReader: @unchecked Sendable {
         try Int128(bitPattern: readUInt128())
     }
 
+    #if !os(macOS) || arch(arm64)
     @inlinable @inline(__always)
     public mutating func readFloat16() throws -> Float16 {
         try Float16(bitPattern: readUInt16())
     }
+    #endif
 
     @inlinable @inline(__always)
     public mutating func readFloat32() throws -> Float {

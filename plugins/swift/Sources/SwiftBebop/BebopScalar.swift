@@ -20,7 +20,9 @@ extension Int64: BebopScalar {}
 extension UInt64: BebopScalar {}
 extension Int128: BebopScalar {}
 extension UInt128: BebopScalar {}
+#if !os(macOS) || arch(arm64)
 extension Float16: BebopScalar {}
+#endif
 extension Float: BebopScalar {}
 extension Double: BebopScalar {}
 extension BFloat16: BebopScalar {}
