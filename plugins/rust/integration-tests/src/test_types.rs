@@ -2838,4 +2838,62 @@ impl<'buf> ByteCollectionMessage<'buf> {
   // @@bebop_insertion_point(message_scope:ByteCollectionMessage)
 }
 
+/// Struct with a UUID field for serde round-trip testing.
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct UuidHolder<'buf> {
+  pub id: ::bebop_runtime::Uuid,
+  pub label: alloc::borrow::Cow<'buf, str>,
+}
+
+pub type UuidHolderOwned = UuidHolder<'static>;
+
+impl<'buf> UuidHolder<'buf> {
+  pub fn new(
+    id: ::bebop_runtime::Uuid,
+    label: impl ::core::convert::Into<alloc::borrow::Cow<'buf, str>>,
+  ) -> Self {
+    let label = ::core::convert::Into::into(label);
+    Self { id, label }
+  }
+}
+
+impl<'buf> UuidHolder<'buf> {
+  pub fn into_owned(self) -> UuidHolderOwned {
+    UuidHolder {
+      id: self.id,
+      label: alloc::borrow::Cow::Owned(self.label.into_owned()),
+    }
+  }
+}
+
+impl<'buf> BebopEncode for UuidHolder<'buf> {
+  fn encode(&self, writer: &mut BebopWriter) {
+    // @@bebop_insertion_point(encode_start:UuidHolder)
+    writer.write_uuid(self.id);
+    writer.write_string(&self.label);
+    // @@bebop_insertion_point(encode_end:UuidHolder)
+  }
+
+  fn encoded_size(&self) -> usize {
+    let mut size = 0;
+    size += ::core::mem::size_of::<::bebop_runtime::Uuid>();
+    size += wire::string_size(self.label.len());
+    size
+  }
+}
+
+impl<'buf> BebopDecode<'buf> for UuidHolder<'buf> {
+  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+    // @@bebop_insertion_point(decode_start:UuidHolder)
+    let id = reader.read_uuid()?;
+    let label = alloc::borrow::Cow::Borrowed(reader.read_str()?);
+    // @@bebop_insertion_point(decode_end:UuidHolder)
+    ::core::result::Result::Ok(UuidHolder { id, label })
+  }
+}
+
+impl<'buf> UuidHolder<'buf> {
+  // @@bebop_insertion_point(struct_scope:UuidHolder)
+}
+
 // @@bebop_insertion_point(eof)
