@@ -1454,6 +1454,129 @@ fn serde_union_round_trip_json() {
   }
 }
 
+#[cfg(feature = "serde")]
+#[test]
+fn serde_timestamp_roundtrip() {
+  let event = TimestampedEvent::new(
+    BebopTimestamp {
+      seconds: 1_234_567_890,
+      nanos: 500_000_000,
+    },
+    "test event",
+  );
+  let json = serde_json::to_string(&event).unwrap();
+  let decoded: TimestampedEventOwned = serde_json::from_str(&json).unwrap();
+  assert_eq!(decoded.when.seconds, 1_234_567_890);
+  assert_eq!(decoded.when.nanos, 500_000_000);
+  assert_eq!(decoded.what, "test event");
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn serde_duration_message_roundtrip() {
+  let mut entry = ScheduleEntry::default();
+  entry.start = Some(BebopTimestamp {
+    seconds: 1_000_000,
+    nanos: 0,
+  });
+  entry.duration = Some(BebopDuration {
+    seconds: 3600,
+    nanos: 500_000,
+  });
+  entry.label = Some(Cow::Owned("daily standup".to_string()));
+
+  let json = serde_json::to_string(&entry).unwrap();
+  let decoded: ScheduleEntryOwned = serde_json::from_str(&json).unwrap();
+  assert_eq!(decoded.start.unwrap().seconds, 1_000_000);
+  assert_eq!(decoded.duration.unwrap().seconds, 3600);
+  assert_eq!(decoded.duration.unwrap().nanos, 500_000);
+  assert_eq!(decoded.label.as_deref(), Some("daily standup"));
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn serde_duration_message_partial_roundtrip() {
+  let mut entry = ScheduleEntry::default();
+  entry.start = Some(BebopTimestamp {
+    seconds: 2_000_000,
+    nanos: 100,
+  });
+  entry.label = Some(Cow::Owned("no duration".to_string()));
+  // duration intentionally left as None
+
+  let json = serde_json::to_string(&entry).unwrap();
+  let decoded: ScheduleEntryOwned = serde_json::from_str(&json).unwrap();
+  assert_eq!(decoded.start.unwrap().seconds, 2_000_000);
+  assert!(decoded.duration.is_none());
+  assert_eq!(decoded.label.as_deref(), Some("no duration"));
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn serde_half_precision_roundtrip() {
+  let scalars = HalfPrecisionScalars::new(f16::from_f32(1.5), bf16::from_f32(2.5));
+  let json = serde_json::to_string(&scalars).unwrap();
+
+  // f16/bf16 serialize as their raw u16 bit representations
+  assert!(
+    json.contains("15872"),
+    "f16(1.5) should serialize as bits 15872, got: {json}"
+  );
+  assert!(
+    json.contains("16416"),
+    "bf16(2.5) should serialize as bits 16416, got: {json}"
+  );
+
+  let decoded: HalfPrecisionScalars = serde_json::from_str(&json).unwrap();
+  assert_eq!(decoded.f16_val, f16::from_f32(1.5));
+  assert_eq!(decoded.bf16_val, bf16::from_f32(2.5));
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn serde_uuid_roundtrip() {
+  let id = Uuid::parse_str("e215a946-b26f-4567-a276-13136f0a1708").unwrap();
+  let holder = UuidHolder::new(id, "test label");
+  let json = serde_json::to_string(&holder).unwrap();
+
+  // Verify UUID serializes as hyphenated string
+  assert!(
+    json.contains("e215a946-b26f-4567-a276-13136f0a1708"),
+    "UUID should appear as hyphenated string, got: {json}"
+  );
+
+  let decoded: UuidHolderOwned = serde_json::from_str(&json).unwrap();
+  assert_eq!(decoded.id, id);
+  assert_eq!(decoded.label, "test label");
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn serde_integer_key_map_roundtrip() {
+  let mut msg = IntegerKeyMaps::default();
+
+  let mut labels = HashMap::new();
+  labels.insert(42u32, Cow::Owned("answer".to_string()));
+  labels.insert(7u32, Cow::Owned("lucky".to_string()));
+  msg.labels_by_id = Some(labels);
+
+  let mut flags = HashMap::new();
+  flags.insert(-1i64, true);
+  flags.insert(100i64, false);
+  msg.flags_by_id = Some(flags);
+
+  let json = serde_json::to_string(&msg).unwrap();
+  let decoded: IntegerKeyMapsOwned = serde_json::from_str(&json).unwrap();
+
+  let decoded_labels = decoded.labels_by_id.unwrap();
+  assert_eq!(decoded_labels[&42], "answer");
+  assert_eq!(decoded_labels[&7], "lucky");
+
+  let decoded_flags = decoded.flags_by_id.unwrap();
+  assert_eq!(decoded_flags[&-1], true);
+  assert_eq!(decoded_flags[&100], false);
+}
+
 // ═══════════════════════════════════════════════════════════════
 // Forward-compatible enum (@forward_compatible)
 // ═══════════════════════════════════════════════════════════════
