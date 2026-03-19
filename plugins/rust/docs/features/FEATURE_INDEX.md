@@ -18,13 +18,13 @@ See `CLAUDE.md` for FD lifecycle stages and management guidelines.
 | FD-029 | [Display for Enums & Flags](FD-029_DISPLAY_FOR_ENUMS_AND_FLAGS.md) | Planned | Low | Medium |
 | FD-030 | [DecodeError Field Context](FD-030_DECODE_ERROR_FIELD_CONTEXT.md) | Planned | Medium | Medium |
 | FD-031 | [Deprecated Attribute Emission](FD-031_DEPRECATED_ATTRIBUTE_EMISSION.md) | Complete | Low | Medium |
-| FD-032 | [Serde Round-Trip Test Coverage](FD-032_SERDE_ROUNDTRIP_TEST_COVERAGE.md) | Planned | Low | High |
 | FD-033 | [Compiler Decorator FQN](FD-033_COMPILER_DECORATOR_FQN.md) | Planned | Low | Medium |
 
 ## Completed
 
 | FD | Title | Completed | Notes |
 |----|-------|-----------|-------|
+| FD-032 | [Serde Round-Trip Test Coverage](archive/FD-032_SERDE_ROUNDTRIP_TEST_COVERAGE.md) | 2026-03 | 6 serde JSON round-trip tests for timestamp, duration, f16/bf16, uuid, integer-key maps |
 | FD-034 | [Consistent Byte Serde in Collections](archive/FD-034_CONSISTENT_BYTE_SERDE_IN_COLLECTIONS.md) | 2026-03 | `BebopBytes<'buf>` newtype; fixes byte[] in messages, nested byte array serde |
 | FD-023 | [Zero-Copy Scalar Array Decode](archive/FD-023_ZERO_COPY_SCALAR_ARRAY_DECODE.md) | 2026-03 | Zero-copy `Cow<'buf, [T]>` decode for scalar arrays; 300x decode improvement on TensorShard |
 | FD-010 | [Zero-Copy Bulk Arrays](archive/FD-010_ZERO_COPY_BULK_ARRAYS.md) | 2026-03 | Bulk memcpy encode/decode for scalar arrays on LE; `BulkScalar` trait excludes bool |

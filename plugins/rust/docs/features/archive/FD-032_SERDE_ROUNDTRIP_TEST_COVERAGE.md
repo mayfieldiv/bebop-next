@@ -1,6 +1,7 @@
 # FD-032: Serde Round-Trip Test Coverage
 
-**Status:** Planned
+**Status:** Complete
+**Completed:** 2026-03-19
 **Priority:** High
 **Effort:** Low (< 1 hour)
 **Impact:** Catches serde edge cases before users hit them
