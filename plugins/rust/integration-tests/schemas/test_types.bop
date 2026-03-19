@@ -267,3 +267,9 @@ message ByteCollectionMessage {
     matrix(1): byte[][];
     tagged(2): map[string, byte[]];
 }
+
+/// Struct with a UUID field for serde round-trip testing.
+struct UuidHolder {
+    id: guid;
+    label: string;
+}
