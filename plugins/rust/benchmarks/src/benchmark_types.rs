@@ -861,7 +861,7 @@ impl BebopEncode for ChunkKind {
 }
 
 impl<'buf> BebopDecode<'buf> for ChunkKind {
-  #[inline]
+  #[inline(always)]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:ChunkKind)
     let value = reader.read_byte()?;

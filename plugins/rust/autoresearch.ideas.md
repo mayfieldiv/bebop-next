@@ -5,10 +5,16 @@
 - Optimized `read_byte`/`read_bool` (avoid checked_add, use get_unchecked)
 - Optimized `read_str`/`read_string` (combine bounds checks, use get_unchecked)
 - `#[inline]` on all generated decode methods via code generator
+- `Vec::with_capacity` and `HashMap::with_capacity` instead of new+try_reserve
+- `simdutf8` for SIMD-accelerated UTF-8 validation (huge win for large strings)
+- `#[inline(always)]` on generated struct decode methods
 
 ## Tried and Discarded
 - `#[inline(always)]` on FixedScalar/BebopFlagBits trait impl methods (no measurable effect)
 - `#[inline]` on `from_bytes` + `read_raw_bytes` with get_unchecked (no measurable effect)
+- `#[cold]` on error paths (regression, changed code layout unfavorably)
+- Single 12-byte read for timestamp/duration (no effect, not on hot path)
+- Validated message boundary + combined next_message_tag (no improvement, branch prediction already excellent on aarch64)
 
 ## Deferred Ideas
 - **Switch HashMap to hashbrown unconditionally**: Would use foldhash instead of SipHash. ~2-5x faster hashing. Blocked by public API change (fixtures use std::collections::HashMap). Could work if generated code imports `bebop_runtime::HashMap` for construction too.
