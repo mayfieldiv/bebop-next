@@ -74,18 +74,32 @@ impl<'a> BebopReader<'a> {
 
   #[inline(always)]
   pub fn read_bool(&mut self) -> Result<bool> {
-    self.ensure(1)?;
-    let v = self.buf[self.pos];
-    self.pos += 1;
-    Ok(v != 0)
+    if self.pos < self.buf.len() {
+      // SAFETY: pos < buf.len() verified above
+      let v = unsafe { *self.buf.get_unchecked(self.pos) };
+      self.pos += 1;
+      Ok(v != 0)
+    } else {
+      Err(DecodeError::UnexpectedEof {
+        needed: 1,
+        available: 0,
+      })
+    }
   }
 
   #[inline(always)]
   pub fn read_byte(&mut self) -> Result<u8> {
-    self.ensure(1)?;
-    let v = self.buf[self.pos];
-    self.pos += 1;
-    Ok(v)
+    if self.pos < self.buf.len() {
+      // SAFETY: pos < buf.len() verified above
+      let v = unsafe { *self.buf.get_unchecked(self.pos) };
+      self.pos += 1;
+      Ok(v)
+    } else {
+      Err(DecodeError::UnexpectedEof {
+        needed: 1,
+        available: 0,
+      })
+    }
   }
 
   #[inline(always)]
@@ -160,13 +174,17 @@ impl<'a> BebopReader<'a> {
   #[inline]
   pub fn read_string(&mut self) -> Result<String> {
     let len = self.read_u32()? as usize;
-    let total = len.checked_add(1).ok_or(DecodeError::UnexpectedEof {
-      needed: usize::MAX,
-      available: self.remaining(),
-    })?;
-    self.ensure(total)?; // string bytes + NUL
-    let str_bytes = &self.buf[self.pos..self.pos + len];
-    self.pos += total; // advance past string bytes + NUL
+    // len ≤ u32::MAX, so len + 1 can't overflow usize (min 32 bits).
+    let end = self.pos + len + 1;
+    if end > self.buf.len() {
+      return Err(DecodeError::UnexpectedEof {
+        needed: len + 1,
+        available: self.remaining(),
+      });
+    }
+    // SAFETY: end ≤ buf.len() and pos + len < end, both verified above
+    let str_bytes = unsafe { self.buf.get_unchecked(self.pos..self.pos + len) };
+    self.pos = end; // advance past string bytes + NUL
     String::from_utf8(str_bytes.to_vec()).map_err(|_| DecodeError::InvalidUtf8)
   }
 
@@ -370,13 +388,17 @@ impl<'a> BebopReader<'a> {
   #[inline]
   pub fn read_str(&mut self) -> Result<&'a str> {
     let len = self.read_u32()? as usize;
-    let total = len.checked_add(1).ok_or(DecodeError::UnexpectedEof {
-      needed: usize::MAX,
-      available: self.remaining(),
-    })?;
-    self.ensure(total)?; // string bytes + NUL
-    let str_bytes = &self.buf[self.pos..self.pos + len];
-    self.pos += total; // advance past string bytes + NUL
+    // len ≤ u32::MAX, so len + 1 can't overflow usize (min 32 bits).
+    let end = self.pos + len + 1;
+    if end > self.buf.len() {
+      return Err(DecodeError::UnexpectedEof {
+        needed: len + 1,
+        available: self.remaining(),
+      });
+    }
+    // SAFETY: end ≤ buf.len() and pos + len < end, both verified above
+    let str_bytes = unsafe { self.buf.get_unchecked(self.pos..self.pos + len) };
+    self.pos = end; // advance past string bytes + NUL
     core::str::from_utf8(str_bytes).map_err(|_| DecodeError::InvalidUtf8)
   }
 
