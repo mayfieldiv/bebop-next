@@ -203,6 +203,7 @@ fn generate_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorError> {
     "impl<'buf> BebopDecode<'buf> for {} {{\n",
     ctx.name
   ));
+  ctx.output.push_str("  #[inline]\n");
   ctx.output.push_str(
     "  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {\n",
   );
@@ -356,6 +357,7 @@ fn generate_forward_compatible_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorEr
     "impl<'buf> BebopDecode<'buf> for {} {{\n",
     ctx.name
   ));
+  ctx.output.push_str("  #[inline]\n");
   ctx.output.push_str(
     "  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {\n",
   );
@@ -487,6 +489,7 @@ fn generate_flags(ctx: &mut EnumCtx, is_forward_compatible: bool) -> Result<(), 
     "impl<'buf> BebopDecode<'buf> for {} {{\n",
     ctx.name
   ));
+  ctx.output.push_str("  #[inline]\n");
   ctx.output.push_str(
     "  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {\n",
   );

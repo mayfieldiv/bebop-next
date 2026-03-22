@@ -202,6 +202,7 @@ pub fn generate(
   } else {
     output.push_str(&format!("impl<'buf> BebopDecode<'buf> for {} {{\n", name));
   }
+  output.push_str("  #[inline]\n");
   output.push_str(
     "  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {\n",
   );
