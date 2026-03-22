@@ -249,9 +249,29 @@ impl<'a> BebopReader<'a> {
         available: self.remaining(),
       });
     }
-    let mut items = Vec::with_capacity(count);
-    for _ in 0..count {
-      items.push(read_elem(self)?);
+    let mut items: Vec<T> = Vec::with_capacity(count);
+    // Use ptr::write + set_len instead of push to avoid per-element
+    // capacity check. with_capacity guarantees capacity >= count.
+    let ptr = items.as_mut_ptr();
+    for i in 0..count {
+      match read_elem(self) {
+        Ok(elem) => {
+          // SAFETY: i < count <= capacity. We write each index once.
+          unsafe { ptr.add(i).write(elem) };
+        }
+        Err(e) => {
+          // Drop already-initialized elements before returning error
+          // SAFETY: elements 0..i were initialized by previous iterations.
+          unsafe {
+            items.set_len(i);
+          }
+          return Err(e);
+        }
+      }
+    }
+    // SAFETY: All count elements have been initialized above.
+    unsafe {
+      items.set_len(count);
     }
     Ok(items)
   }
