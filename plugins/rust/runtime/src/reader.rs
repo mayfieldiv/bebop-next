@@ -81,8 +81,7 @@ impl<'a> BebopReader<'a> {
   #[inline(always)]
   pub fn read_bool(&mut self) -> Result<bool> {
     if self.pos < self.buf.len() {
-      // SAFETY: pos < buf.len() verified above
-      let v = unsafe { *self.buf.get_unchecked(self.pos) };
+      let v = self.buf[self.pos];
       self.pos += 1;
       Ok(v != 0)
     } else {
@@ -96,8 +95,7 @@ impl<'a> BebopReader<'a> {
   #[inline(always)]
   pub fn read_byte(&mut self) -> Result<u8> {
     if self.pos < self.buf.len() {
-      // SAFETY: pos < buf.len() verified above
-      let v = unsafe { *self.buf.get_unchecked(self.pos) };
+      let v = self.buf[self.pos];
       self.pos += 1;
       Ok(v)
     } else {
@@ -188,12 +186,12 @@ impl<'a> BebopReader<'a> {
         available: self.remaining(),
       });
     }
-    // SAFETY: end ≤ buf.len() and pos + len < end, both verified above
-    let str_bytes = unsafe { self.buf.get_unchecked(self.pos..self.pos + len) };
+    let str_bytes = &self.buf[self.pos..self.pos + len];
     self.pos = end; // advance past string bytes + NUL
     if !validate_utf8(str_bytes) {
       return Err(DecodeError::InvalidUtf8);
     }
+    // SAFETY: validate_utf8 confirmed str_bytes is valid UTF-8
     Ok(unsafe { String::from_utf8_unchecked(str_bytes.to_vec()) })
   }
 
@@ -399,8 +397,7 @@ impl<'a> BebopReader<'a> {
         available: self.remaining(),
       });
     }
-    // SAFETY: end ≤ buf.len() and pos + len < end, both verified above
-    let str_bytes = unsafe { self.buf.get_unchecked(self.pos..self.pos + len) };
+    let str_bytes = &self.buf[self.pos..self.pos + len];
     self.pos = end; // advance past string bytes + NUL
     if !validate_utf8(str_bytes) {
       return Err(DecodeError::InvalidUtf8);
