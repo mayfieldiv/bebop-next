@@ -358,6 +358,37 @@ struct SwiftGeneratorTests {
         #expect(code.contains("readInlineArray"))
     }
 
+    @Test func structNestedFixedArrayField() throws {
+        let code = try generate(
+            DefinitionDescriptor(
+                kind: .struct, name: "Embedding", fqn: "test.Embedding",
+                structDef: StructDef(
+                    fields: [
+                        FieldDescriptor(
+                            name: "weights",
+                            type: TypeDescriptor(
+                                kind: .fixedArray,
+                                fixedArrayElement: TypeDescriptor(
+                                    kind: .fixedArray,
+                                    fixedArrayElement: TypeDescriptor(kind: .float16),
+                                    fixedArraySize: 8
+                                ),
+                                fixedArraySize: 4
+                            )
+                        ),
+                    ], isMutable: false
+                )
+            ))
+        #expect(code.contains("InlineArray<4, InlineArray<8, Float16>>"))
+        // 2D == overload
+        #expect(code.contains("InlineArray<N, InlineArray<M, Element>>"))
+        // nested Codable encode uses nested unkeyed containers
+        #expect(code.contains("nestedUnkeyedContainer()"))
+        // nested Codable decode produces nested InlineArray init
+        #expect(code.contains("InlineArray<4, InlineArray<8, Float16>> { _ in"))
+        #expect(code.contains("InlineArray<8, Float16> { _ in"))
+    }
+
     @Test func structReflection() throws {
         let code = try generate(
             DefinitionDescriptor(

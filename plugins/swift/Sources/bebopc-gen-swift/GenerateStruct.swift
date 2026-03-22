@@ -83,12 +83,13 @@ enum GenerateStruct {
             var encCodableBody = ["var container = encoder.container(keyedBy: CodingKeys.self)"]
             for f in fieldDecls {
                 if f.type.kind == .fixedArray {
-                    let size = f.type.fixedArraySize!
                     encCodableBody.append(
                         "var \(f.swiftName)Container = container.nestedUnkeyedContainer(forKey: .\(f.swiftName))"
                     )
                     encCodableBody.append(
-                        "for i in 0..<\(size) { try \(f.swiftName)Container.encode(\(f.swiftName)[i]) }"
+                        contentsOf: try fixedArrayEncodeLines(
+                            type: f.type, container: "\(f.swiftName)Container", value: f.swiftName
+                        )
                     )
                 } else {
                     encCodableBody.append("try container.encode(\(f.swiftName), forKey: .\(f.swiftName))")
@@ -102,14 +103,13 @@ enum GenerateStruct {
             ]
             for f in fieldDecls {
                 if f.type.kind == .fixedArray {
-                    let size = f.type.fixedArraySize!
-                    let elemType = try TypeMapper.swiftType(for: f.type.fixedArrayElement!)
                     decCodableBody.append(
                         "var \(f.swiftName)Container = try container.nestedUnkeyedContainer(forKey: .\(f.swiftName))"
                     )
-                    decCodableBody.append(
-                        "let \(f.swiftName) = try InlineArray<\(size), \(elemType)> { _ in try \(f.swiftName)Container.decode(\(elemType).self) }"
+                    let decodeExpr = try fixedArrayDecodeExpr(
+                        type: f.type, container: "\(f.swiftName)Container"
                     )
+                    decCodableBody.append("let \(f.swiftName) = try \(decodeExpr)")
                 } else {
                     decCodableBody.append(
                         "let \(f.swiftName) = try container.decode(\(f.swiftType).self, forKey: .\(f.swiftName))"
@@ -202,4 +202,5 @@ enum GenerateStruct {
             """
         }.joined(separator: ",\n")
     }
+
 }

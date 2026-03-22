@@ -314,11 +314,10 @@ enum TypeMapper {
         if let s = scalarSize(kind) { return Int(s) }
         if kind == .fixedArray {
             guard let elem = type.fixedArrayElement,
-                  let elemKind = elem.kind,
-                  let elemSize = scalarSize(elemKind),
-                  let count = type.fixedArraySize
+                  let count = type.fixedArraySize,
+                  let elemSize = fixedSize(for: elem)
             else { return nil }
-            return Int(count) * Int(elemSize)
+            return Int(count) * elemSize
         }
         return nil
     }

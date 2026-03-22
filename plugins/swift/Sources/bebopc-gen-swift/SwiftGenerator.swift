@@ -158,6 +158,44 @@ func codingKeysDecl(_ fields: [(swiftName: String, originalName: String)]) -> St
     return "enum CodingKeys: \(rawType), CodingKey {\n\(cases)\n}"
 }
 
+func fixedArrayEncodeLines(
+    type: TypeDescriptor, container: String, value: String, depth: Int = 0
+) throws -> [String] {
+    let size = type.fixedArraySize!
+    let elem = type.fixedArrayElement!
+    let idx = "i\(depth)"
+
+    if elem.kind == .fixedArray {
+        let innerContainer = "c\(depth)"
+        let innerLines = try fixedArrayEncodeLines(
+            type: elem, container: innerContainer, value: "\(value)[\(idx)]", depth: depth + 1
+        )
+        return [
+            "for \(idx) in 0..<\(size) {",
+            "    var \(innerContainer) = \(container).nestedUnkeyedContainer()",
+        ] + innerLines.map { "    " + $0 } + ["}"]
+    }
+    return ["for \(idx) in 0..<\(size) { try \(container).encode(\(value)[\(idx)]) }"]
+}
+
+func fixedArrayDecodeExpr(
+    type: TypeDescriptor, container: String, depth: Int = 0
+) throws -> String {
+    let size = type.fixedArraySize!
+    let elem = type.fixedArrayElement!
+    let elemSwiftType = try TypeMapper.swiftType(for: elem)
+    let fullType = "InlineArray<\(size), \(elemSwiftType)>"
+
+    if elem.kind == .fixedArray {
+        let innerContainer = "c\(depth)"
+        let innerExpr = try fixedArrayDecodeExpr(
+            type: elem, container: innerContainer, depth: depth + 1
+        )
+        return "\(fullType) { _ in var \(innerContainer) = try \(container).nestedUnkeyedContainer(); return try \(innerExpr) }"
+    }
+    return "\(fullType) { _ in try \(container).decode(\(elemSwiftType).self) }"
+}
+
 func indent(_ text: String, _ level: Int = 1) -> String {
     let pad = String(repeating: "    ", count: level)
     return text.split(separator: "\n", omittingEmptySubsequences: false)
@@ -173,8 +211,25 @@ fileprivate func == <let N: Int, Element: Equatable>(
     return true
 }
 
+fileprivate func == <let N: Int, let M: Int, Element: Equatable>(
+    lhs: InlineArray<N, InlineArray<M, Element>>, rhs: InlineArray<N, InlineArray<M, Element>>
+) -> Bool {
+    for i in 0..<N { for j in 0..<M { if lhs[i][j] != rhs[i][j] { return false } } }
+    return true
+}
+
 fileprivate func == <let N: Int, Element: Equatable>(
     lhs: InlineArray<N, Element>?, rhs: InlineArray<N, Element>?
+) -> Bool {
+    switch (lhs, rhs) {
+    case (.none, .none): return true
+    case let (.some(l), .some(r)): return l == r
+    default: return false
+    }
+}
+
+fileprivate func == <let N: Int, let M: Int, Element: Equatable>(
+    lhs: InlineArray<N, InlineArray<M, Element>>?, rhs: InlineArray<N, InlineArray<M, Element>>?
 ) -> Bool {
     switch (lhs, rhs) {
     case (.none, .none): return true
@@ -190,6 +245,12 @@ extension Hasher {
         for i in 0..<N { combine(value[i]) }
     }
 
+    fileprivate mutating func combine<let N: Int, let M: Int, Element: Hashable>(
+        _ value: InlineArray<N, InlineArray<M, Element>>
+    ) {
+        for i in 0..<N { for j in 0..<M { combine(value[i][j]) } }
+    }
+
     fileprivate mutating func combine<let N: Int, Element: Hashable>(
         _ value: InlineArray<N, Element>?
     ) {
@@ -198,6 +259,17 @@ extension Hasher {
         case .some(let v):
             combine(true)
             for i in 0..<N { combine(v[i]) }
+        }
+    }
+
+    fileprivate mutating func combine<let N: Int, let M: Int, Element: Hashable>(
+        _ value: InlineArray<N, InlineArray<M, Element>>?
+    ) {
+        switch value {
+        case .none: combine(false)
+        case .some(let v):
+            combine(true)
+            for i in 0..<N { for j in 0..<M { combine(v[i][j]) } }
         }
     }
 }

@@ -157,14 +157,14 @@ enum GenerateMessage {
             var encCodableBody = ["var container = encoder.container(keyedBy: CodingKeys.self)"]
             for f in fieldDecls {
                 if f.type.kind == .fixedArray {
-                    let size = f.type.fixedArraySize!
                     encCodableBody.append("if let \(f.swiftName) = \(f.swiftName) {")
                     encCodableBody.append(
                         "    var \(f.swiftName)Container = container.nestedUnkeyedContainer(forKey: .\(f.swiftName))"
                     )
-                    encCodableBody.append(
-                        "    for i in 0..<\(size) { try \(f.swiftName)Container.encode(\(f.swiftName)[i]) }"
+                    let encLines = try fixedArrayEncodeLines(
+                        type: f.type, container: "\(f.swiftName)Container", value: f.swiftName
                     )
+                    encCodableBody.append(contentsOf: encLines.map { "    " + $0 })
                     encCodableBody.append("}")
                 } else {
                     encCodableBody.append(
@@ -180,15 +180,14 @@ enum GenerateMessage {
             ]
             for f in fieldDecls {
                 if f.type.kind == .fixedArray {
-                    let size = f.type.fixedArraySize!
-                    let elemType = try TypeMapper.swiftType(for: f.type.fixedArrayElement!)
                     decCodableBody.append("if container.contains(.\(f.swiftName)) {")
                     decCodableBody.append(
                         "    var \(f.swiftName)Container = try container.nestedUnkeyedContainer(forKey: .\(f.swiftName))"
                     )
-                    decCodableBody.append(
-                        "    \(f.swiftName) = try InlineArray<\(size), \(elemType)> { _ in try \(f.swiftName)Container.decode(\(elemType).self) }"
+                    let decodeExpr = try fixedArrayDecodeExpr(
+                        type: f.type, container: "\(f.swiftName)Container"
                     )
+                    decCodableBody.append("    \(f.swiftName) = try \(decodeExpr)")
                     decCodableBody.append("}")
                 } else {
                     decCodableBody.append(
