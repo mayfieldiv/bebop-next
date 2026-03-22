@@ -48,12 +48,15 @@ impl<'a> BebopReader<'a> {
 
   #[inline]
   fn ensure(&self, count: usize) -> Result<()> {
-    match self.pos.checked_add(count) {
-      Some(end) if end <= self.buf.len() => Ok(()),
-      _ => Err(DecodeError::UnexpectedEof {
+    // pos is always <= buf.len() (invariant), so buf.len() - pos is safe.
+    // Comparing count <= remaining avoids checked_add overhead.
+    if count <= self.buf.len().wrapping_sub(self.pos) {
+      Ok(())
+    } else {
+      Err(DecodeError::UnexpectedEof {
         needed: count,
         available: self.remaining(),
-      }),
+      })
     }
   }
 
