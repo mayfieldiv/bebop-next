@@ -9,6 +9,12 @@ use crate::traits::FixedScalar;
 use crate::HashMap;
 use crate::{bf16, f16, DecodeError};
 
+/// Validate UTF-8 using SIMD-accelerated validation when available.
+#[inline]
+fn validate_utf8(bytes: &[u8]) -> bool {
+  simdutf8::basic::from_utf8(bytes).is_ok()
+}
+
 type Result<T> = core::result::Result<T, DecodeError>;
 
 /// Cursor-based reader for Bebop wire format over a byte slice.
@@ -185,7 +191,10 @@ impl<'a> BebopReader<'a> {
     // SAFETY: end ≤ buf.len() and pos + len < end, both verified above
     let str_bytes = unsafe { self.buf.get_unchecked(self.pos..self.pos + len) };
     self.pos = end; // advance past string bytes + NUL
-    String::from_utf8(str_bytes.to_vec()).map_err(|_| DecodeError::InvalidUtf8)
+    if !validate_utf8(str_bytes) {
+      return Err(DecodeError::InvalidUtf8);
+    }
+    Ok(unsafe { String::from_utf8_unchecked(str_bytes.to_vec()) })
   }
 
   // ── UUID ────────────────────────────────────────────────────
@@ -393,7 +402,11 @@ impl<'a> BebopReader<'a> {
     // SAFETY: end ≤ buf.len() and pos + len < end, both verified above
     let str_bytes = unsafe { self.buf.get_unchecked(self.pos..self.pos + len) };
     self.pos = end; // advance past string bytes + NUL
-    core::str::from_utf8(str_bytes).map_err(|_| DecodeError::InvalidUtf8)
+    if !validate_utf8(str_bytes) {
+      return Err(DecodeError::InvalidUtf8);
+    }
+    // SAFETY: validate_utf8 confirmed str_bytes is valid UTF-8
+    Ok(unsafe { core::str::from_utf8_unchecked(str_bytes) })
   }
 
   /// Read a byte array as a borrowed `&[u8]` (zero-copy).
