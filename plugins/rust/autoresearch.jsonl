@@ -1,0 +1,1 @@
+{"type":"config","name":"Rust Bebop decode performance vs C","metricName":"total_decode_ns","metricUnit":"ns","bestDirection":"lower"}
