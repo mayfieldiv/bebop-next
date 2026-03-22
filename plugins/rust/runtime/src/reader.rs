@@ -36,17 +36,17 @@ impl<'a> BebopReader<'a> {
     Self { buf, pos: 0 }
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn position(&self) -> usize {
     self.pos
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn remaining(&self) -> usize {
     self.buf.len().saturating_sub(self.pos)
   }
 
-  #[inline(always)]
+  #[inline]
   fn ensure(&self, count: usize) -> Result<()> {
     match self.pos.checked_add(count) {
       Some(end) if end <= self.buf.len() => Ok(()),
@@ -58,7 +58,7 @@ impl<'a> BebopReader<'a> {
   }
 
   /// Read exactly N bytes into a fixed-size array with a single bounds check.
-  #[inline(always)]
+  #[inline]
   fn read_n<const N: usize>(&mut self) -> Result<[u8; N]> {
     self.ensure(N)?;
     // ensure() guarantees pos + N <= buf.len(); try_into cannot fail
@@ -70,7 +70,7 @@ impl<'a> BebopReader<'a> {
 
   // ── Primitives ──────────────────────────────────────────────
 
-  #[inline(always)]
+  #[inline]
   pub fn read_bool(&mut self) -> Result<bool> {
     if self.pos < self.buf.len() {
       let v = self.buf[self.pos];
@@ -84,7 +84,7 @@ impl<'a> BebopReader<'a> {
     }
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn read_byte(&mut self) -> Result<u8> {
     if self.pos < self.buf.len() {
       let v = self.buf[self.pos];
@@ -98,67 +98,67 @@ impl<'a> BebopReader<'a> {
     }
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn read_i8(&mut self) -> Result<i8> {
     Ok(self.read_byte()? as i8)
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn read_u16(&mut self) -> Result<u16> {
     Ok(u16::from_le_bytes(self.read_n()?))
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn read_i16(&mut self) -> Result<i16> {
     Ok(i16::from_le_bytes(self.read_n()?))
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn read_u32(&mut self) -> Result<u32> {
     Ok(u32::from_le_bytes(self.read_n()?))
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn read_i32(&mut self) -> Result<i32> {
     Ok(i32::from_le_bytes(self.read_n()?))
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn read_u64(&mut self) -> Result<u64> {
     Ok(u64::from_le_bytes(self.read_n()?))
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn read_i64(&mut self) -> Result<i64> {
     Ok(i64::from_le_bytes(self.read_n()?))
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn read_i128(&mut self) -> Result<i128> {
     Ok(i128::from_le_bytes(self.read_n()?))
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn read_u128(&mut self) -> Result<u128> {
     Ok(u128::from_le_bytes(self.read_n()?))
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn read_f16(&mut self) -> Result<f16> {
     Ok(f16::from_bits(self.read_u16()?))
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn read_bf16(&mut self) -> Result<bf16> {
     Ok(bf16::from_bits(self.read_u16()?))
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn read_f32(&mut self) -> Result<f32> {
     Ok(f32::from_le_bytes(self.read_n()?))
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn read_f64(&mut self) -> Result<f64> {
     Ok(f64::from_le_bytes(self.read_n()?))
   }
@@ -186,7 +186,7 @@ impl<'a> BebopReader<'a> {
 
   // ── UUID ────────────────────────────────────────────────────
 
-  #[inline(always)]
+  #[inline]
   pub fn read_uuid(&mut self) -> Result<uuid::Uuid> {
     Ok(uuid::Uuid::from_bytes(self.read_n()?))
   }
@@ -212,13 +212,13 @@ impl<'a> BebopReader<'a> {
   // ── Message helpers ─────────────────────────────────────────
 
   /// Read message body length (u32).
-  #[inline(always)]
+  #[inline]
   pub fn read_message_length(&mut self) -> Result<u32> {
     self.read_u32()
   }
 
   /// Read a message field tag (u8). Tag 0 = end marker.
-  #[inline(always)]
+  #[inline]
   pub fn read_tag(&mut self) -> Result<u8> {
     self.read_byte()
   }
