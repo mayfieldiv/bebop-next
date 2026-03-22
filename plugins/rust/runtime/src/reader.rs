@@ -1,5 +1,4 @@
 use alloc::borrow::Cow;
-use alloc::borrow::ToOwned;
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::hash::Hash;
@@ -184,7 +183,7 @@ impl<'a> BebopReader<'a> {
     let str_bytes = &self.buf[self.pos..self.pos + len];
     self.pos = end; // advance past string bytes + NUL
     let s = validate_utf8(str_bytes)?;
-    Ok(s.to_owned())
+    Ok(String::from(s))
   }
 
   // ── UUID ────────────────────────────────────────────────────
