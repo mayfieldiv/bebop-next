@@ -60,21 +60,11 @@ impl<'a> BebopReader<'a> {
   /// Read exactly N bytes into a fixed-size array with a single bounds check.
   #[inline(always)]
   fn read_n<const N: usize>(&mut self) -> Result<[u8; N]> {
-    let end = match self.pos.checked_add(N) {
-      Some(end) if end <= self.buf.len() => end,
-      _ => {
-        return Err(DecodeError::UnexpectedEof {
-          needed: N,
-          available: self.remaining(),
-        })
-      }
-    };
-    // SAFETY: we just verified end <= buf.len(), and end - pos == N.
-    let arr = unsafe {
-      let ptr = self.buf.as_ptr().add(self.pos);
-      core::ptr::read_unaligned(ptr as *const [u8; N])
-    };
-    self.pos = end;
+    self.ensure(N)?;
+    // ensure() guarantees pos + N <= buf.len(); try_into cannot fail
+    // because the slice length is exactly N (known at compile time).
+    let arr = self.buf[self.pos..self.pos + N].try_into().unwrap();
+    self.pos += N;
     Ok(arr)
   }
 
