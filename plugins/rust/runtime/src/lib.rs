@@ -16,13 +16,10 @@ pub use bytes::BebopBytes;
 pub use error::DecodeError;
 pub use half::bf16;
 pub use half::f16;
-#[cfg(not(feature = "std"))]
 pub use hashbrown::HashMap;
 pub use reader::BebopReader;
 #[cfg(feature = "serde")]
 pub use serde;
-#[cfg(feature = "std")]
-pub use std::collections::HashMap;
 pub use temporal::{BebopDuration, BebopTimestamp};
 pub use traits::{BebopDecode, BebopDecodeOwned};
 pub use traits::{BebopEncode, BebopFlagBits, BebopFlags, FixedScalar};

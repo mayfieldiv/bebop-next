@@ -4,11 +4,10 @@
 #![allow(clippy::bool_assert_comparison)]
 
 use std::borrow::Cow;
-use std::collections::HashMap;
 
 use bebop_runtime::{
   bf16, f16, BebopBytes, BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopTimestamp,
-  DecodeError, Uuid,
+  DecodeError, HashMap, Uuid,
 };
 
 use bebop_integration_tests::test_types::*;

@@ -77,8 +77,10 @@ fn run() -> Result<CodeGeneratorResponse<'static>, GeneratorError> {
     .filter_map(|p| std::path::Path::new(p).file_stem().and_then(|s| s.to_str()))
     .collect();
 
+  let std_host_options: Option<std::collections::HashMap<_, _>> =
+    request.host_options.map(|m| m.into_iter().collect());
   let generator_options =
-    GeneratorOptions::new(request.host_options.as_ref(), request.parameter.as_deref())?;
+    GeneratorOptions::new(std_host_options.as_ref(), request.parameter.as_deref())?;
   eprintln!(
     "[bebopc-gen-rust] default visibility: {}",
     generator_options.default_visibility.keyword()
