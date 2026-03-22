@@ -1,4 +1,5 @@
 use alloc::borrow::Cow;
+use alloc::borrow::ToOwned;
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::hash::Hash;
@@ -10,9 +11,10 @@ use crate::HashMap;
 use crate::{bf16, f16, DecodeError};
 
 /// Validate UTF-8 using SIMD-accelerated validation when available.
+/// Returns the validated `&str` directly, avoiding `from_utf8_unchecked`.
 #[inline]
-fn validate_utf8(bytes: &[u8]) -> bool {
-  simdutf8::basic::from_utf8(bytes).is_ok()
+fn validate_utf8(bytes: &[u8]) -> core::result::Result<&str, DecodeError> {
+  simdutf8::basic::from_utf8(bytes).map_err(|_| DecodeError::InvalidUtf8)
 }
 
 type Result<T> = core::result::Result<T, DecodeError>;
@@ -188,11 +190,8 @@ impl<'a> BebopReader<'a> {
     }
     let str_bytes = &self.buf[self.pos..self.pos + len];
     self.pos = end; // advance past string bytes + NUL
-    if !validate_utf8(str_bytes) {
-      return Err(DecodeError::InvalidUtf8);
-    }
-    // SAFETY: validate_utf8 confirmed str_bytes is valid UTF-8
-    Ok(unsafe { String::from_utf8_unchecked(str_bytes.to_vec()) })
+    let s = validate_utf8(str_bytes)?;
+    Ok(s.to_owned())
   }
 
   // ── UUID ────────────────────────────────────────────────────
@@ -399,11 +398,7 @@ impl<'a> BebopReader<'a> {
     }
     let str_bytes = &self.buf[self.pos..self.pos + len];
     self.pos = end; // advance past string bytes + NUL
-    if !validate_utf8(str_bytes) {
-      return Err(DecodeError::InvalidUtf8);
-    }
-    // SAFETY: validate_utf8 confirmed str_bytes is valid UTF-8
-    Ok(unsafe { core::str::from_utf8_unchecked(str_bytes) })
+    validate_utf8(str_bytes)
   }
 
   /// Read a byte array as a borrowed `&[u8]` (zero-copy).
