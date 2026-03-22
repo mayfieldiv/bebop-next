@@ -250,10 +250,7 @@ impl<'a> BebopReader<'a> {
         available: self.remaining(),
       });
     }
-    let mut items = Vec::new();
-    items
-      .try_reserve(count)
-      .map_err(|_| DecodeError::AllocationFailed { requested: count })?;
+    let mut items = Vec::with_capacity(count);
     for _ in 0..count {
       items.push(read_elem(self)?);
     }
@@ -338,10 +335,7 @@ impl<'a> BebopReader<'a> {
         available: self.remaining(),
       });
     }
-    let mut map = HashMap::new();
-    map
-      .try_reserve(count)
-      .map_err(|_| DecodeError::AllocationFailed { requested: count })?;
+    let mut map = HashMap::with_capacity(count);
     for _ in 0..count {
       let (k, v) = read_entry(self)?;
       map.insert(k, v);
