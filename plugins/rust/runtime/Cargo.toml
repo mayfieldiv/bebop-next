@@ -17,4 +17,5 @@ half = { version = "2.7", default-features = false, features = ["alloc"] }
 hashbrown = { version = "0.15" }
 serde = { version = "1", default-features = false, features = ["derive"], optional = true }
 serde_bytes = { version = "0.11", default-features = false, features = ["alloc"], optional = true }
+simdutf8 = { version = "0.1", default-features = false, features = ["aarch64_neon"] }
 uuid = { version = "1", default-features = false }
