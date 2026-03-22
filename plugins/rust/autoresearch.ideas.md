@@ -1,50 +1,38 @@
 # Autoresearch Ideas — Rust Decode Performance
 
 ## Summary
-Total improvement: **42.5%** (20,062ns → 11,533ns baseline best)
+Total improvement: **~44%** (20,062ns → ~11,225ns)
 
 ## Optimizations Applied (Kept)
-1. `#[inline(always)]` on all reader methods + `read_n<const N>` for single bounds check (-10.4%)
-2. Optimized `read_byte`/`read_bool` (avoid checked_add, use get_unchecked) + `read_str`/`read_string` (combine bounds checks, use get_unchecked) (-1.4%)
-3. `#[inline]` on all generated decode methods via code generator (-4.4%)
-4. `Vec::with_capacity` and `HashMap::with_capacity` instead of new+try_reserve (-2.7%)
+1. `#[inline]` on all reader methods + `read_n<const N>` for single bounds check (-10.4%)
+2. ~~Optimized read_byte/read_bool/read_str/read_string with get_unchecked~~ → **ABLATED AWAY** (safe indexing is equally fast)
+3. `#[inline]` on all generated decode methods (-4.4%)
+4. `Vec::with_capacity` and `HashMap::with_capacity` instead of new (-2.7%)
 5. **`simdutf8` for SIMD-accelerated UTF-8 validation** (-28.2% — biggest single win)
-6. `#[inline(always)]` on generated struct decode methods (-1.0%)
+6. `#[inline]` on generated struct decode methods (downgraded from `#[inline(always)]` with no cost)
 7. `#[inline(always)]` on generated enum decode methods (-1.5%)
+8. **`hashbrown::HashMap` (foldhash) always** — breaking API change (-1.7% total, JsonLarge -17.7%)
 
-## Tried and Discarded (18 experiments)
-- `#[inline(always)]` on FixedScalar/BebopFlagBits trait impl methods (no effect)
-- `#[inline]` on `from_bytes` + `read_raw_bytes` with get_unchecked (no effect)
-- `#[cold]` on error paths (regression — unfavorable code layout)
-- Single 12-byte read for timestamp/duration (no effect — not on hot path)
-- Validated message boundary + combined next_message_tag (no improvement — aarch64 branch prediction already excellent)
-- Split UTF-8 validation: std for short vs simdutf8 for long (extra branch hurts)
-- Writer inline annotations + scalar array fallback with_capacity (code bloat)
-- read_decode_array (direct trait dispatch instead of closure) (Rust monomorphization already inlines closures)
-- simdutf8 default features (no improvement over aarch64_neon)
-- Generated encode/encoded_size inline annotations (no decode improvement)
-- simd_from_utf8 direct return (compiler already equivalent)
-- Batch struct decode (ensure_available + unchecked reads for TextSpan) — within noise, only 1 struct qualified
-- Thin LTO (no improvement — #[inline(always)] already handles cross-crate)
-- read_cow_str convenience method (regression — extra function layer)
-- `#[inline(always)]` on read_str (compiler already inlines with just #[inline])
-- Remove checked_mul in read_scalar_array on 64-bit (compiler already optimizes)
-- `#[inline(always)]` on validate_utf8 wrapper (already inlined)
-- Message decode with local vars instead of Default+mutation (LLVM generates identical code)
+## Ablation Results (Simplification Confirmed)
+- **get_unchecked REMOVED**: All `unsafe { get_unchecked }` in read_byte/read_bool/read_str/read_string is unnecessary. LLVM eliminates bounds checks after manual `if pos < len` / `if end > len` checks. Zero performance cost to use safe indexing.
+- **from_utf8_unchecked REMOVED**: simdutf8::basic::from_utf8() returns `&str` directly, no need for separate validate + unchecked. Eliminates 2 unsafe blocks.
+- **ptr::read_unaligned REMOVED**: `buf[pos..pos+N].try_into().unwrap()` generates identical code to `ptr::read_unaligned` when N is const generic. LLVM optimizes perfectly.
+- **#[inline(always)] → #[inline] on reader.rs**: All 22 `#[inline(always)]` downgraded to `#[inline]` with marginal improvement. Compiler makes better decisions without being forced.
+- **#[inline(always)] → #[inline] on struct decode**: Struct decode methods work fine with `#[inline]`. Only enum decode needs `#[inline(always)]`.
+
+## Confirmed Essential (Cannot Simplify)
+- **simdutf8**: +46% regression without it. NEON SIMD gives 2x+ speedup for large strings.
+- **Vec/HashMap::with_capacity**: +16% regression without it. Multiple reallocations are expensive.
+- **#[inline(always)] on enum decode**: Enums are tiny (1 byte + match). Without forced inlining, call overhead dominates. +3.9% regression when removed.
+- **#[inline] on message/union decode**: +5.4% regression without it. Cross-crate code won't inline tag loops without the hint.
+- **hashbrown HashMap**: Foldhash is ~2x faster than SipHash for small keys.
 
 ## Remaining Bottlenecks (require structural changes)
-- **HashMap SipHash** (JsonLarge ~1800ns): std HashMap uses SipHash. Switching to hashbrown (foldhash) requires public API change. Would need generated code + fixtures to use `bebop_runtime::HashMap`.
 - **Recursive Vec allocations** (TreeDeep ~1600ns): Each node allocates a Vec. SmallVec<[T;1]> would help but changes public API.
-- **UTF-8 validation floor** (DocumentLarge ~3000ns, ChunkedText ~2000ns): simdutf8 is already near-optimal. 146KB × ~13ns/KB = ~1900ns theoretical minimum. We're close.
+- **UTF-8 validation floor** (DocumentLarge ~2800ns, ChunkedText ~2000ns): simdutf8 is already near-optimal. ~146KB × ~13ns/KB = ~1900ns theoretical minimum.
 - **Per-element overhead in arrays** (TreeWide ~880ns): 100 message decodes with tag loops. Fundamental overhead of the wire format.
 
-## Plateau Reached
-15 consecutive discards (runs 14–28) confirm the optimization plateau. All safe, API-compatible micro-optimizations have been exhausted. The compiler (LLVM on aarch64) is generating near-optimal code for the current patterns. Additional discarded experiments in session 4:
-- Cached buf.len() as struct field (LLVM already hoists it into a register)
-- #[inline(always)] on message/union decoders (code bloat regression in TreeWide)
-
 ## Future Ideas (require API or structural changes)
-- **Switch to hashbrown HashMap unconditionally** (if API break is acceptable): Estimate ~30-40% reduction for JsonLarge/JsonSmall/DocumentSmall. Would require changing `bebop_runtime::HashMap` to `hashbrown::HashMap` and updating all consumer code.
-- **Arena allocator for recursive types**: Custom allocator that batches small allocations. Would eliminate per-node Vec alloc in TreeDeep/TreeWide. Significant engineering effort.
-- **Lazy UTF-8 validation**: Validate only on `.as_str()` access, not at decode time. Would eliminate UTF-8 cost from decode entirely. Major API change (field type would need to be `LazyStr` not `Cow<str>`).
-- **SVE2 SIMD for UTF-8** (future ARM cores): Wider SIMD could improve large string validation beyond NEON's ~48 GB/s throughput.
+- **SmallVec for arrays in recursive types** (if API break acceptable): Estimate ~1000-1500ns reduction for TreeDeep. Feature-gated behind cargo feature flag.
+- **Arena allocator for recursive types**: Custom allocator that batches small allocations. Significant engineering effort.
+- **Lazy UTF-8 validation**: Validate only on `.as_str()` access. Major ergonomic regression — not recommended.
