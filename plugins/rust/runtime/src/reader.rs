@@ -31,22 +31,29 @@ pub struct BebopReader<'a> {
 
 impl<'a> BebopReader<'a> {
   #[inline]
+  #[must_use]
   pub fn new(buf: &'a [u8]) -> Self {
     Self { buf, pos: 0 }
   }
 
   #[inline]
+  #[must_use]
   pub fn position(&self) -> usize {
     self.pos
   }
 
   #[inline]
+  #[must_use]
   pub fn remaining(&self) -> usize {
     self.buf.len().saturating_sub(self.pos)
   }
 
   #[inline]
   fn ensure(&self, count: usize) -> Result<()> {
+    debug_assert!(
+      self.pos <= self.buf.len(),
+      "BebopReader pos exceeded buf len"
+    );
     // pos is always <= buf.len() (invariant), so buf.len() - pos is safe.
     // Comparing count <= remaining avoids checked_add overhead.
     if count <= self.buf.len().wrapping_sub(self.pos) {
@@ -300,7 +307,9 @@ impl<'a> BebopReader<'a> {
     self.ensure(byte_len)?;
 
     if cfg!(target_endian = "little") {
-      let ptr = self.buf.as_ptr().wrapping_add(self.pos);
+      // SAFETY: ensure(byte_len) guarantees pos + byte_len <= buf.len(),
+      // so pos is within the allocation and add() is sound.
+      let ptr = unsafe { self.buf.as_ptr().add(self.pos) };
       if ptr.align_offset(core::mem::align_of::<T>()) == 0 {
         // SAFETY: T: BulkScalar guarantees all bit patterns are valid and
         // size_of::<T>() == wire element size. On LE, wire bytes == memory
@@ -319,13 +328,9 @@ impl<'a> BebopReader<'a> {
         // SAFETY: Same as above minus alignment — we copy into a properly
         // aligned Vec instead. try_reserve guarantees capacity >= count.
         // copy_nonoverlapping is safe because src (self.buf) and dst (vec)
-        // don't overlap.
+        // don't overlap. ptr was computed via add() above (same SAFETY).
         unsafe {
-          core::ptr::copy_nonoverlapping(
-            self.buf.as_ptr().add(self.pos),
-            vec.as_mut_ptr() as *mut u8,
-            byte_len,
-          );
+          core::ptr::copy_nonoverlapping(ptr, vec.as_mut_ptr() as *mut u8, byte_len);
           vec.set_len(count);
         }
         self.pos += byte_len;
