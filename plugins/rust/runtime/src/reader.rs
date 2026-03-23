@@ -66,12 +66,21 @@ impl<'a> BebopReader<'a> {
   }
 
   /// Read exactly N bytes into a fixed-size array with a single bounds check.
+  ///
+  /// Uses `copy_nonoverlapping` rather than slice indexing after `ensure()`.
+  /// LLVM cannot prove that `ensure(N)` makes `buf[pos..pos+N]` in-bounds,
+  /// so a safe slice emits a redundant second bounds check plus dead
+  /// `slice_index_fail` panic code.  `copy_nonoverlapping` trusts `ensure()`
+  /// and produces the same tight codegen for all N — including N=1, which
+  /// lets `read_bool`/`read_byte` delegate here instead of hand-rolling.
   #[inline]
   fn read_n<const N: usize>(&mut self) -> Result<[u8; N]> {
     self.ensure(N)?;
-    // ensure() guarantees pos + N <= buf.len(); try_into cannot fail
-    // because the slice length is exactly N (known at compile time).
-    let arr = self.buf[self.pos..self.pos + N].try_into().unwrap();
+    let mut arr = [0u8; N];
+    // SAFETY: ensure() guarantees pos + N <= buf.len().
+    unsafe {
+      core::ptr::copy_nonoverlapping(self.buf.as_ptr().add(self.pos), arr.as_mut_ptr(), N);
+    }
     self.pos += N;
     Ok(arr)
   }
@@ -80,30 +89,12 @@ impl<'a> BebopReader<'a> {
 
   #[inline]
   pub fn read_bool(&mut self) -> Result<bool> {
-    if self.pos < self.buf.len() {
-      let v = self.buf[self.pos];
-      self.pos += 1;
-      Ok(v != 0)
-    } else {
-      Err(DecodeError::UnexpectedEof {
-        needed: 1,
-        available: 0,
-      })
-    }
+    Ok(self.read_n::<1>()?[0] != 0)
   }
 
   #[inline]
   pub fn read_byte(&mut self) -> Result<u8> {
-    if self.pos < self.buf.len() {
-      let v = self.buf[self.pos];
-      self.pos += 1;
-      Ok(v)
-    } else {
-      Err(DecodeError::UnexpectedEof {
-        needed: 1,
-        available: 0,
-      })
-    }
+    Ok(self.read_n::<1>()?[0])
   }
 
   #[inline]
