@@ -432,46 +432,32 @@ fn generate_report(langs: &[LangResults], baseline: &str) -> String {
       panic!("baseline {baseline:?} not found in languages: {names:?}");
     });
 
-  let mut lines = Vec::new();
+  let empty = ScenarioMetrics::default();
 
-  // Title.
-  let names: Vec<_> = langs.iter().map(|l| l.name.as_str()).collect();
-  lines.push(format!("# Bebop Benchmarks: {}", names.join(" vs ")));
-  lines.push(String::new());
-  for lang in langs {
-    lines.push(format!("- {}: `{}`", lang.name, lang.path));
-  }
-  lines.push(format!("- baseline: {baseline}"));
-  lines.push(String::new());
-
-  // Header row: Scenario | Metric | <baseline> ns | <lang> ns | vs <baseline> | ... | Size
-  let mut header = "| Scenario | Metric".to_string();
-  // Baseline column first (no "vs" column for itself).
-  header.push_str(&format!(" | {} ns", langs[baseline_idx].name));
-  // Then each non-baseline language: ns + vs baseline.
+  // Build all cell values first, then compute column widths for alignment.
+  // Column layout: Scenario | Metric | <baseline> ns | [<lang> ns | vs <baseline>]... | Size
+  let mut headers: Vec<String> = vec![
+    "Scenario".to_string(),
+    "Metric".to_string(),
+    format!("{} ns", langs[baseline_idx].name),
+  ];
+  let mut right_align = vec![false, false, true]; // right-align numeric columns
   for (i, lang) in langs.iter().enumerate() {
     if i == baseline_idx {
       continue;
     }
-    header.push_str(&format!(" | {} ns | vs {}", lang.name, baseline));
+    headers.push(format!("{} ns", lang.name));
+    headers.push(format!("vs {}", baseline));
+    right_align.push(true);
+    right_align.push(true);
   }
-  header.push_str(" | Size |");
-  lines.push(header);
+  headers.push("Size".to_string());
+  right_align.push(true);
 
-  // Separator row.
-  let mut sep = "|---|---:".to_string();
-  sep.push_str("|---:"); // baseline ns
-  for (i, _) in langs.iter().enumerate() {
-    if i == baseline_idx {
-      continue;
-    }
-    sep.push_str("|---:|---:"); // lang ns + vs baseline
-  }
-  sep.push_str("|---:|");
-  lines.push(sep);
+  let num_cols = headers.len();
 
-  let empty = ScenarioMetrics::default();
-
+  // Build data rows.
+  let mut data_rows: Vec<Vec<String>> = Vec::new();
   for scenario in scenarios.keys() {
     for metric in ["encode", "decode"] {
       let get_ns = |m: &ScenarioMetrics| -> Option<f64> {
@@ -485,7 +471,6 @@ fn generate_report(langs: &[LangResults], baseline: &str) -> String {
       let baseline_m = langs[baseline_idx].metrics.get(*scenario).unwrap_or(&empty);
       let baseline_ns = get_ns(baseline_m);
 
-      // Find encoded size from any language that has it.
       let size = langs
         .iter()
         .filter_map(|l| l.metrics.get(*scenario).and_then(|m| m.encoded_size))
@@ -493,22 +478,81 @@ fn generate_report(langs: &[LangResults], baseline: &str) -> String {
         .map(|s| s.to_string())
         .unwrap_or_else(|| "-".to_string());
 
-      let mut row = format!("| {scenario} | {metric} | {}", fmt_ns(baseline_ns));
+      let mut cells: Vec<String> = vec![
+        scenario.to_string(),
+        metric.to_string(),
+        fmt_ns(baseline_ns),
+      ];
       for (i, lang) in langs.iter().enumerate() {
         if i == baseline_idx {
           continue;
         }
         let m = lang.metrics.get(*scenario).unwrap_or(&empty);
         let ns = get_ns(m);
-        row.push_str(&format!(
-          " | {} | {}",
-          fmt_ns(ns),
-          fmt_multiple(ns, baseline_ns)
-        ));
+        cells.push(fmt_ns(ns));
+        cells.push(fmt_multiple(ns, baseline_ns));
       }
-      row.push_str(&format!(" | {size} |"));
-      lines.push(row);
+      cells.push(size);
+      data_rows.push(cells);
     }
+  }
+
+  // Compute column widths.
+  let mut widths = vec![0usize; num_cols];
+  for (i, h) in headers.iter().enumerate() {
+    widths[i] = widths[i].max(h.len());
+  }
+  for row in &data_rows {
+    for (i, cell) in row.iter().enumerate() {
+      widths[i] = widths[i].max(cell.len());
+    }
+  }
+
+  // Format a row with padding.
+  let fmt_row = |cells: &[String]| -> String {
+    let mut parts = Vec::with_capacity(cells.len());
+    for (i, cell) in cells.iter().enumerate() {
+      let w = widths[i];
+      if right_align[i] {
+        parts.push(format!("{cell:>w$}"));
+      } else {
+        parts.push(format!("{cell:<w$}"));
+      }
+    }
+    format!("| {} |", parts.join(" | "))
+  };
+
+  let mut lines = Vec::new();
+
+  // Title.
+  let names: Vec<_> = langs.iter().map(|l| l.name.as_str()).collect();
+  lines.push(format!("# Bebop Benchmarks: {}", names.join(" vs ")));
+  lines.push(String::new());
+  for lang in langs {
+    lines.push(format!("- {}: `{}`", lang.name, lang.path));
+  }
+  lines.push(format!("- baseline: {baseline}"));
+  lines.push(String::new());
+
+  // Header row.
+  lines.push(fmt_row(&headers));
+
+  // Separator row.
+  let sep_cells: Vec<String> = (0..num_cols)
+    .map(|i| {
+      let w = widths[i];
+      if right_align[i] {
+        format!("{:-<width$}:", "", width = w.saturating_sub(1))
+      } else {
+        format!("{:-<width$}", "", width = w)
+      }
+    })
+    .collect();
+  lines.push(format!("| {} |", sep_cells.join(" | ")));
+
+  // Data rows.
+  for row in &data_rows {
+    lines.push(fmt_row(row));
   }
 
   lines.push(String::new());

@@ -9,6 +9,13 @@ use crate::traits::FixedScalar;
 use crate::HashMap;
 use crate::{bf16, f16, DecodeError};
 
+/// Validate UTF-8 using SIMD-accelerated validation when available.
+/// Returns the validated `&str` directly, avoiding `from_utf8_unchecked`.
+#[inline]
+fn validate_utf8(bytes: &[u8]) -> core::result::Result<&str, DecodeError> {
+  simdutf8::basic::from_utf8(bytes).map_err(|_| DecodeError::InvalidUtf8)
+}
+
 type Result<T> = core::result::Result<T, DecodeError>;
 
 /// Cursor-based reader for Bebop wire format over a byte slice.
@@ -23,128 +30,147 @@ pub struct BebopReader<'a> {
 }
 
 impl<'a> BebopReader<'a> {
+  #[inline]
+  #[must_use]
   pub fn new(buf: &'a [u8]) -> Self {
     Self { buf, pos: 0 }
   }
 
+  #[inline]
+  #[must_use]
   pub fn position(&self) -> usize {
     self.pos
   }
 
+  #[inline]
+  #[must_use]
   pub fn remaining(&self) -> usize {
-    self.buf.len().saturating_sub(self.pos)
+    // INVARIANT: pos <= buf.len() (maintained by all methods).
+    self.buf.len() - self.pos
   }
 
+  #[inline]
   fn ensure(&self, count: usize) -> Result<()> {
-    match self.pos.checked_add(count) {
-      Some(end) if end <= self.buf.len() => Ok(()),
-      _ => Err(DecodeError::UnexpectedEof {
+    // INVARIANT: pos <= buf.len() (maintained by all methods).
+    // Plain subtraction is safe under the invariant.  In debug mode an
+    // underflow panics immediately; in release mode the wrap-around yields
+    // a huge value that will be caught by subsequent slice bounds checks.
+    if count <= self.buf.len() - self.pos {
+      Ok(())
+    } else {
+      Err(DecodeError::UnexpectedEof {
         needed: count,
         available: self.remaining(),
-      }),
+      })
     }
   }
 
-  fn advance(&mut self, count: usize) -> &'a [u8] {
-    let slice = &self.buf[self.pos..self.pos + count];
-    self.pos += count;
-    slice
+  /// Read exactly N bytes into a fixed-size array with a single bounds check.
+  ///
+  /// Uses `copy_nonoverlapping` rather than slice indexing after `ensure()`.
+  /// LLVM cannot prove that `ensure(N)` makes `buf[pos..pos+N]` in-bounds,
+  /// so a safe slice emits a redundant second bounds check plus dead
+  /// `slice_index_fail` panic code.  `copy_nonoverlapping` trusts `ensure()`
+  /// and produces the same tight codegen for all N — including N=1, which
+  /// lets `read_bool`/`read_byte` delegate here instead of hand-rolling.
+  #[inline]
+  fn read_n<const N: usize>(&mut self) -> Result<[u8; N]> {
+    self.ensure(N)?;
+    let mut arr = [0u8; N];
+    // SAFETY: ensure() guarantees pos + N <= buf.len().
+    unsafe {
+      core::ptr::copy_nonoverlapping(self.buf.as_ptr().add(self.pos), arr.as_mut_ptr(), N);
+    }
+    self.pos += N;
+    Ok(arr)
   }
 
   // ── Primitives ──────────────────────────────────────────────
 
+  #[inline]
   pub fn read_bool(&mut self) -> Result<bool> {
-    self.ensure(1)?;
-    let v = self.buf[self.pos];
-    self.pos += 1;
-    Ok(v != 0)
+    Ok(self.read_n::<1>()?[0] != 0)
   }
 
+  #[inline]
   pub fn read_byte(&mut self) -> Result<u8> {
-    self.ensure(1)?;
-    let v = self.buf[self.pos];
-    self.pos += 1;
-    Ok(v)
+    Ok(self.read_n::<1>()?[0])
   }
 
+  #[inline]
   pub fn read_i8(&mut self) -> Result<i8> {
     Ok(self.read_byte()? as i8)
   }
 
+  #[inline]
   pub fn read_u16(&mut self) -> Result<u16> {
-    self.ensure(2)?;
-    let bytes: [u8; 2] = self.advance(2).try_into().unwrap();
-    Ok(u16::from_le_bytes(bytes))
+    Ok(u16::from_le_bytes(self.read_n()?))
   }
 
+  #[inline]
   pub fn read_i16(&mut self) -> Result<i16> {
-    self.ensure(2)?;
-    let bytes: [u8; 2] = self.advance(2).try_into().unwrap();
-    Ok(i16::from_le_bytes(bytes))
+    Ok(i16::from_le_bytes(self.read_n()?))
   }
 
+  #[inline]
   pub fn read_u32(&mut self) -> Result<u32> {
-    self.ensure(4)?;
-    let bytes: [u8; 4] = self.advance(4).try_into().unwrap();
-    Ok(u32::from_le_bytes(bytes))
+    Ok(u32::from_le_bytes(self.read_n()?))
   }
 
+  #[inline]
   pub fn read_i32(&mut self) -> Result<i32> {
-    self.ensure(4)?;
-    let bytes: [u8; 4] = self.advance(4).try_into().unwrap();
-    Ok(i32::from_le_bytes(bytes))
+    Ok(i32::from_le_bytes(self.read_n()?))
   }
 
+  #[inline]
   pub fn read_u64(&mut self) -> Result<u64> {
-    self.ensure(8)?;
-    let bytes: [u8; 8] = self.advance(8).try_into().unwrap();
-    Ok(u64::from_le_bytes(bytes))
+    Ok(u64::from_le_bytes(self.read_n()?))
   }
 
+  #[inline]
   pub fn read_i64(&mut self) -> Result<i64> {
-    self.ensure(8)?;
-    let bytes: [u8; 8] = self.advance(8).try_into().unwrap();
-    Ok(i64::from_le_bytes(bytes))
+    Ok(i64::from_le_bytes(self.read_n()?))
   }
 
+  #[inline]
   pub fn read_i128(&mut self) -> Result<i128> {
-    self.ensure(16)?;
-    let bytes: [u8; 16] = self.advance(16).try_into().unwrap();
-    Ok(i128::from_le_bytes(bytes))
+    Ok(i128::from_le_bytes(self.read_n()?))
   }
 
+  #[inline]
   pub fn read_u128(&mut self) -> Result<u128> {
-    self.ensure(16)?;
-    let bytes: [u8; 16] = self.advance(16).try_into().unwrap();
-    Ok(u128::from_le_bytes(bytes))
+    Ok(u128::from_le_bytes(self.read_n()?))
   }
 
+  #[inline]
   pub fn read_f16(&mut self) -> Result<f16> {
     Ok(f16::from_bits(self.read_u16()?))
   }
 
+  #[inline]
   pub fn read_bf16(&mut self) -> Result<bf16> {
     Ok(bf16::from_bits(self.read_u16()?))
   }
 
+  #[inline]
   pub fn read_f32(&mut self) -> Result<f32> {
-    self.ensure(4)?;
-    let bytes: [u8; 4] = self.advance(4).try_into().unwrap();
-    Ok(f32::from_le_bytes(bytes))
+    Ok(f32::from_le_bytes(self.read_n()?))
   }
 
+  #[inline]
   pub fn read_f64(&mut self) -> Result<f64> {
-    self.ensure(8)?;
-    let bytes: [u8; 8] = self.advance(8).try_into().unwrap();
-    Ok(f64::from_le_bytes(bytes))
+    Ok(f64::from_le_bytes(self.read_n()?))
   }
 
   // ── String ──────────────────────────────────────────────────
 
   /// Read a Bebop string: u32 byte_count + UTF-8 bytes + NUL terminator.
   /// The u32 is the number of UTF-8 bytes (NOT including the trailing NUL).
+  #[inline]
   pub fn read_string(&mut self) -> Result<String> {
     let len = self.read_u32()? as usize;
+    // On 32-bit targets usize == u32, so len + 1 can overflow when
+    // len == u32::MAX.  Use checked arithmetic to surface a clean error.
     let total = len.checked_add(1).ok_or(DecodeError::UnexpectedEof {
       needed: usize::MAX,
       available: self.remaining(),
@@ -152,20 +178,21 @@ impl<'a> BebopReader<'a> {
     self.ensure(total)?; // string bytes + NUL
     let str_bytes = &self.buf[self.pos..self.pos + len];
     self.pos += total; // advance past string bytes + NUL
-    String::from_utf8(str_bytes.to_vec()).map_err(|_| DecodeError::InvalidUtf8)
+    let s = validate_utf8(str_bytes)?;
+    Ok(String::from(s))
   }
 
   // ── UUID ────────────────────────────────────────────────────
 
+  #[inline]
   pub fn read_uuid(&mut self) -> Result<uuid::Uuid> {
-    self.ensure(16)?;
-    let bytes: [u8; 16] = self.advance(16).try_into().unwrap();
-    Ok(uuid::Uuid::from_bytes(bytes))
+    Ok(uuid::Uuid::from_bytes(self.read_n()?))
   }
 
   // ── Timestamp / Duration ────────────────────────────────────
 
   /// Read a timestamp: i64 seconds + i32 nanos (12 bytes total).
+  #[inline]
   pub fn read_timestamp(&mut self) -> Result<BebopTimestamp> {
     let seconds = self.read_i64()?;
     let nanos = self.read_i32()?;
@@ -173,6 +200,7 @@ impl<'a> BebopReader<'a> {
   }
 
   /// Read a duration: i64 seconds + i32 nanos (12 bytes total).
+  #[inline]
   pub fn read_duration(&mut self) -> Result<BebopDuration> {
     let seconds = self.read_i64()?;
     let nanos = self.read_i32()?;
@@ -182,16 +210,19 @@ impl<'a> BebopReader<'a> {
   // ── Message helpers ─────────────────────────────────────────
 
   /// Read message body length (u32).
+  #[inline]
   pub fn read_message_length(&mut self) -> Result<u32> {
     self.read_u32()
   }
 
   /// Read a message field tag (u8). Tag 0 = end marker.
+  #[inline]
   pub fn read_tag(&mut self) -> Result<u8> {
     self.read_byte()
   }
 
   /// Skip `count` bytes.
+  #[inline]
   pub fn skip(&mut self, count: usize) -> Result<()> {
     self.ensure(count)?;
     self.pos += count;
@@ -201,6 +232,7 @@ impl<'a> BebopReader<'a> {
   // ── Collections ─────────────────────────────────────────────
 
   /// Read a dynamic array: u32 count + elements.
+  #[inline]
   pub fn read_array<T>(
     &mut self,
     mut read_elem: impl FnMut(&mut Self) -> Result<T>,
@@ -212,12 +244,35 @@ impl<'a> BebopReader<'a> {
         available: self.remaining(),
       });
     }
-    let mut items = Vec::new();
+    let mut items: Vec<T> = Vec::new();
     items
       .try_reserve(count)
       .map_err(|_| DecodeError::AllocationFailed { requested: count })?;
-    for _ in 0..count {
-      items.push(read_elem(self)?);
+    // Use ptr::write + set_len instead of push to avoid per-element
+    // capacity check. try_reserve guarantees capacity >= count and
+    // ptr remains valid for the entire loop (no reallocation occurs).
+    // Note: if read_elem panics, elements 0..i leak (Vec len is still 0).
+    // This matches std's collect() behavior and is acceptable here.
+    let ptr = items.as_mut_ptr();
+    for i in 0..count {
+      match read_elem(self) {
+        Ok(elem) => {
+          // SAFETY: i < count <= capacity. We write each index once.
+          unsafe { ptr.add(i).write(elem) };
+        }
+        Err(e) => {
+          // Drop already-initialized elements before returning error
+          // SAFETY: elements 0..i were initialized by previous iterations.
+          unsafe {
+            items.set_len(i);
+          }
+          return Err(e);
+        }
+      }
+    }
+    // SAFETY: All count elements have been initialized above.
+    unsafe {
+      items.set_len(count);
     }
     Ok(items)
   }
@@ -228,6 +283,7 @@ impl<'a> BebopReader<'a> {
   /// On little-endian with aligned data, returns `Cow::Borrowed` (zero-copy).
   /// On little-endian with unaligned data, returns `Cow::Owned` (bulk memcpy).
   /// On big-endian, falls back to per-element reads into `Cow::Owned`.
+  #[inline]
   pub fn read_scalar_array<T: BulkScalar>(&mut self) -> Result<Cow<'a, [T]>> {
     let count = self.read_u32()? as usize;
     if count == 0 {
@@ -243,7 +299,9 @@ impl<'a> BebopReader<'a> {
     self.ensure(byte_len)?;
 
     if cfg!(target_endian = "little") {
-      let ptr = self.buf.as_ptr().wrapping_add(self.pos);
+      // SAFETY: ensure(byte_len) guarantees pos + byte_len <= buf.len(),
+      // so pos is within the allocation and add() is sound.
+      let ptr = unsafe { self.buf.as_ptr().add(self.pos) };
       if ptr.align_offset(core::mem::align_of::<T>()) == 0 {
         // SAFETY: T: BulkScalar guarantees all bit patterns are valid and
         // size_of::<T>() == wire element size. On LE, wire bytes == memory
@@ -262,13 +320,9 @@ impl<'a> BebopReader<'a> {
         // SAFETY: Same as above minus alignment — we copy into a properly
         // aligned Vec instead. try_reserve guarantees capacity >= count.
         // copy_nonoverlapping is safe because src (self.buf) and dst (vec)
-        // don't overlap.
+        // don't overlap. ptr was computed via add() above (same SAFETY).
         unsafe {
-          core::ptr::copy_nonoverlapping(
-            self.buf.as_ptr().add(self.pos),
-            vec.as_mut_ptr() as *mut u8,
-            byte_len,
-          );
+          core::ptr::copy_nonoverlapping(ptr, vec.as_mut_ptr() as *mut u8, byte_len);
           vec.set_len(count);
         }
         self.pos += byte_len;
@@ -287,6 +341,7 @@ impl<'a> BebopReader<'a> {
   }
 
   /// Read a dynamic map: u32 count + (key, value) pairs.
+  #[inline]
   pub fn read_map<K: Eq + Hash, V>(
     &mut self,
     mut read_entry: impl FnMut(&mut Self) -> Result<(K, V)>,
@@ -310,6 +365,7 @@ impl<'a> BebopReader<'a> {
   }
 
   /// Read a fixed-size array of any scalar type (no length prefix).
+  #[inline]
   pub fn read_fixed_array<T: FixedScalar, const N: usize>(&mut self) -> Result<[T; N]> {
     let mut arr = [T::default(); N];
     for item in &mut arr {
@@ -319,11 +375,13 @@ impl<'a> BebopReader<'a> {
   }
 
   /// Read a fixed-size i32 array (no length prefix).
+  #[inline]
   pub fn read_fixed_i32_array<const N: usize>(&mut self) -> Result<[i32; N]> {
     self.read_fixed_array::<i32, N>()
   }
 
   /// Read raw bytes.
+  #[inline]
   pub fn read_bytes(&mut self, count: usize) -> Result<Vec<u8>> {
     self.ensure(count)?;
     let bytes = self.buf[self.pos..self.pos + count].to_vec();
@@ -332,6 +390,7 @@ impl<'a> BebopReader<'a> {
   }
 
   /// Read a byte array with length prefix: u32 count + bytes.
+  #[inline]
   pub fn read_byte_array(&mut self) -> Result<Vec<u8>> {
     let count = self.read_u32()? as usize;
     self.read_bytes(count)
@@ -341,8 +400,11 @@ impl<'a> BebopReader<'a> {
 
   /// Read a Bebop string as a borrowed `&str` (zero-copy).
   /// Same wire format as `read_string`: u32 byte_count + UTF-8 bytes + NUL.
+  #[inline]
   pub fn read_str(&mut self) -> Result<&'a str> {
     let len = self.read_u32()? as usize;
+    // On 32-bit targets usize == u32, so len + 1 can overflow when
+    // len == u32::MAX.  Use checked arithmetic to surface a clean error.
     let total = len.checked_add(1).ok_or(DecodeError::UnexpectedEof {
       needed: usize::MAX,
       available: self.remaining(),
@@ -350,11 +412,12 @@ impl<'a> BebopReader<'a> {
     self.ensure(total)?; // string bytes + NUL
     let str_bytes = &self.buf[self.pos..self.pos + len];
     self.pos += total; // advance past string bytes + NUL
-    core::str::from_utf8(str_bytes).map_err(|_| DecodeError::InvalidUtf8)
+    validate_utf8(str_bytes)
   }
 
   /// Read a byte array as a borrowed `&[u8]` (zero-copy).
   /// Same wire format as `read_byte_array`: u32 count + bytes.
+  #[inline]
   pub fn read_byte_slice(&mut self) -> Result<&'a [u8]> {
     let count = self.read_u32()? as usize;
     self.read_raw_bytes(count)
@@ -362,6 +425,7 @@ impl<'a> BebopReader<'a> {
 
   /// Read `count` raw bytes as a borrowed slice (zero-copy).
   /// Like `read_bytes` but borrows instead of allocating.
+  #[inline]
   pub fn read_raw_bytes(&mut self, count: usize) -> Result<&'a [u8]> {
     self.ensure(count)?;
     let slice = &self.buf[self.pos..self.pos + count];

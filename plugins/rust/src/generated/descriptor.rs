@@ -125,6 +125,7 @@ impl BebopEncode for TypeKind {
 }
 
 impl<'buf> BebopDecode<'buf> for TypeKind {
+  #[inline(always)]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:TypeKind)
     let value = reader.read_byte()?;
@@ -194,6 +195,7 @@ impl BebopEncode for DefinitionKind {
 }
 
 impl<'buf> BebopDecode<'buf> for DefinitionKind {
+  #[inline(always)]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:DefinitionKind)
     let value = reader.read_byte()?;
@@ -261,6 +263,7 @@ impl BebopEncode for MethodType {
 }
 
 impl<'buf> BebopDecode<'buf> for MethodType {
+  #[inline(always)]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:MethodType)
     let value = reader.read_byte()?;
@@ -323,6 +326,7 @@ impl BebopEncode for Visibility {
 }
 
 impl<'buf> BebopDecode<'buf> for Visibility {
+  #[inline(always)]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:Visibility)
     let value = reader.read_byte()?;
@@ -392,6 +396,7 @@ impl BebopEncode for LiteralKind {
 }
 
 impl<'buf> BebopDecode<'buf> for LiteralKind {
+  #[inline(always)]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:LiteralKind)
     let value = reader.read_byte()?;
@@ -477,6 +482,7 @@ impl ::core::ops::Sub for DecoratorTarget {
 }
 
 impl<'buf> BebopDecode<'buf> for DecoratorTarget {
+  #[inline(always)]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     let bits = reader.read_byte()?;
     Self::from_bits(bits).ok_or(DecodeError::InvalidFlags {
@@ -536,6 +542,7 @@ impl BebopEncode for Edition {
 }
 
 impl<'buf> BebopDecode<'buf> for Edition {
+  #[inline(always)]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:Edition)
     let value = reader.read_i32()?;
@@ -673,6 +680,7 @@ impl<'buf> BebopEncode for TypeDescriptor<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for TypeDescriptor<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:TypeDescriptor)
     let length = reader.read_message_length()? as usize;
@@ -862,6 +870,7 @@ impl<'buf> BebopEncode for LiteralValue<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for LiteralValue<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:LiteralValue)
     let length = reader.read_message_length()? as usize;
@@ -957,6 +966,7 @@ impl<'buf> BebopEncode for DecoratorArg<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for DecoratorArg<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:DecoratorArg)
     let name = alloc::borrow::Cow::Borrowed(reader.read_str()?);
@@ -1053,6 +1063,7 @@ impl<'buf> BebopEncode for DecoratorUsage<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for DecoratorUsage<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:DecoratorUsage)
     let length = reader.read_message_length()? as usize;
@@ -1187,6 +1198,7 @@ impl<'buf> BebopEncode for FieldDescriptor<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for FieldDescriptor<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:FieldDescriptor)
     let length = reader.read_message_length()? as usize;
@@ -1320,6 +1332,7 @@ impl<'buf> BebopEncode for EnumMemberDescriptor<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for EnumMemberDescriptor<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:EnumMemberDescriptor)
     let length = reader.read_message_length()? as usize;
@@ -1479,6 +1492,7 @@ impl<'buf> BebopEncode for UnionBranchDescriptor<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for UnionBranchDescriptor<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:UnionBranchDescriptor)
     let length = reader.read_message_length()? as usize;
@@ -1633,6 +1647,7 @@ impl<'buf> BebopEncode for MethodDescriptor<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for MethodDescriptor<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:MethodDescriptor)
     let length = reader.read_message_length()? as usize;
@@ -1746,6 +1761,7 @@ impl<'buf> BebopEncode for EnumDef<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for EnumDef<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:EnumDef)
     let length = reader.read_message_length()? as usize;
@@ -1851,6 +1867,7 @@ impl<'buf> BebopEncode for StructDef<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for StructDef<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:StructDef)
     let length = reader.read_message_length()? as usize;
@@ -1934,6 +1951,7 @@ impl<'buf> BebopEncode for MessageDef<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for MessageDef<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:MessageDef)
     let length = reader.read_message_length()? as usize;
@@ -2015,6 +2033,7 @@ impl<'buf> BebopEncode for UnionDef<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for UnionDef<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:UnionDef)
     let length = reader.read_message_length()? as usize;
@@ -2094,6 +2113,7 @@ impl<'buf> BebopEncode for ServiceDef<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for ServiceDef<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:ServiceDef)
     let length = reader.read_message_length()? as usize;
@@ -2187,6 +2207,7 @@ impl<'buf> BebopEncode for ConstDef<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for ConstDef<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:ConstDef)
     let length = reader.read_message_length()? as usize;
@@ -2325,6 +2346,7 @@ impl<'buf> BebopEncode for DecoratorParamDef<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for DecoratorParamDef<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:DecoratorParamDef)
     let length = reader.read_message_length()? as usize;
@@ -2462,6 +2484,7 @@ impl<'buf> BebopEncode for DecoratorDef<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for DecoratorDef<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:DecoratorDef)
     let length = reader.read_message_length()? as usize;
@@ -2683,6 +2706,7 @@ impl<'buf> BebopEncode for DefinitionDescriptor<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for DefinitionDescriptor<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:DefinitionDescriptor)
     let length = reader.read_message_length()? as usize;
@@ -2843,6 +2867,7 @@ impl<'buf> BebopEncode for Location<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for Location<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:Location)
     let length = reader.read_message_length()? as usize;
@@ -2936,6 +2961,7 @@ impl<'buf> BebopEncode for SourceCodeInfo<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for SourceCodeInfo<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:SourceCodeInfo)
     let length = reader.read_message_length()? as usize;
@@ -3074,6 +3100,7 @@ impl<'buf> BebopEncode for SchemaDescriptor<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for SchemaDescriptor<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:SchemaDescriptor)
     let length = reader.read_message_length()? as usize;
@@ -3171,6 +3198,7 @@ impl<'buf> BebopEncode for DescriptorSet<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for DescriptorSet<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:DescriptorSet)
     let length = reader.read_message_length()? as usize;

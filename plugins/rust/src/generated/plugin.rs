@@ -91,6 +91,7 @@ impl<'buf> BebopEncode for Version<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for Version<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:Version)
     let major = reader.read_i32()?;
@@ -231,6 +232,7 @@ impl<'buf> BebopEncode for CodeGeneratorRequest<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for CodeGeneratorRequest<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:CodeGeneratorRequest)
     let length = reader.read_message_length()? as usize;
@@ -332,6 +334,7 @@ impl BebopEncode for DiagnosticSeverity {
 }
 
 impl<'buf> BebopDecode<'buf> for DiagnosticSeverity {
+  #[inline(always)]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:DiagnosticSeverity)
     let value = reader.read_byte()?;
@@ -427,6 +430,7 @@ impl<'buf> BebopEncode for Diagnostic<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for Diagnostic<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:Diagnostic)
     let length = reader.read_message_length()? as usize;
@@ -562,6 +566,7 @@ impl<'buf> BebopEncode for GeneratedFile<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for GeneratedFile<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:GeneratedFile)
     let length = reader.read_message_length()? as usize;
@@ -691,6 +696,7 @@ impl<'buf> BebopEncode for CodeGeneratorResponse<'buf> {
 }
 
 impl<'buf> BebopDecode<'buf> for CodeGeneratorResponse<'buf> {
+  #[inline]
   fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
     // @@bebop_insertion_point(decode_start:CodeGeneratorResponse)
     let length = reader.read_message_length()? as usize;

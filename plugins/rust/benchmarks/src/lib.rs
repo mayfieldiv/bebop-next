@@ -1,8 +1,8 @@
 #[rustfmt::skip]
 pub mod benchmark_types;
 
+use bebop_runtime::HashMap;
 use std::borrow::Cow;
-use std::collections::HashMap;
 
 use bebop_runtime::{bf16, BebopDuration, Uuid};
 

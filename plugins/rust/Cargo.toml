@@ -14,5 +14,9 @@ bebop-runtime = { path = "runtime" }
 name = "bebopc-gen-rust"
 path = "src/main.rs"
 
+[profile.release]
+codegen-units = 1
+lto = "thin"
+
 [lints.rust]
 unexpected_cfgs = "allow" # TODO the generated code needs to do this inline, but it doesn't seem to be working...

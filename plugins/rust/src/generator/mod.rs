@@ -78,7 +78,7 @@ impl Default for GeneratorOptions {
 
 impl GeneratorOptions {
   pub fn new(
-    host_options: Option<&HashMap<Cow<'_, str>, Cow<'_, str>>>,
+    host_options: Option<&bebop_runtime::HashMap<Cow<'_, str>, Cow<'_, str>>>,
     parameter: Option<&str>,
   ) -> Result<Self, GeneratorError> {
     let mut options = Self::default();
@@ -770,7 +770,7 @@ pub fn has_decorator(def: &DefinitionDescriptor, name: &str) -> bool {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use std::{borrow::Cow, collections::HashMap};
+  use std::borrow::Cow;
 
   use crate::generated::{
     ConstDef, DecoratorUsage, DefinitionDescriptor, DefinitionKind, EnumDef, EnumMemberDescriptor,
@@ -1346,7 +1346,7 @@ mod tests {
 
   #[test]
   fn parses_visibility_host_option() {
-    let mut host_options = HashMap::new();
+    let mut host_options = bebop_runtime::HashMap::new();
     host_options.insert(Cow::Borrowed("Visibility"), Cow::Borrowed("crate"));
     let options = GeneratorOptions::new(Some(&host_options), None).unwrap();
     assert_eq!(options.default_visibility, DefaultVisibility::Crate);
@@ -1354,7 +1354,7 @@ mod tests {
 
   #[test]
   fn rejects_invalid_visibility_host_option() {
-    let mut host_options = HashMap::new();
+    let mut host_options = bebop_runtime::HashMap::new();
     host_options.insert(Cow::Borrowed("Visibility"), Cow::Borrowed("private"));
     let err = GeneratorOptions::new(Some(&host_options), None).unwrap_err();
     assert!(matches!(err, GeneratorError::InvalidOption(_)));
@@ -2160,7 +2160,7 @@ mod tests {
 
   #[test]
   fn visibility_still_from_host_options() {
-    let mut host_options = HashMap::new();
+    let mut host_options = bebop_runtime::HashMap::new();
     host_options.insert(Cow::Borrowed("Visibility"), Cow::Borrowed("crate"));
     let options = GeneratorOptions::new(Some(&host_options), None).unwrap();
     assert_eq!(options.default_visibility, DefaultVisibility::Crate);
@@ -2168,7 +2168,7 @@ mod tests {
 
   #[test]
   fn both_host_options_and_parameter() {
-    let mut host_options = HashMap::new();
+    let mut host_options = bebop_runtime::HashMap::new();
     host_options.insert(Cow::Borrowed("Visibility"), Cow::Borrowed("crate"));
     let options = GeneratorOptions::new(Some(&host_options), Some("serde")).unwrap();
     assert_eq!(options.default_visibility, DefaultVisibility::Crate);
