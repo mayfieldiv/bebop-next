@@ -52,8 +52,9 @@ impl<'a> BebopReader<'a> {
   #[inline]
   fn ensure(&self, count: usize) -> Result<()> {
     // INVARIANT: pos <= buf.len() (maintained by all methods).
-    // Plain subtraction is safe under the invariant and will panic in
-    // debug+release if it is ever violated, rather than silently wrapping.
+    // Plain subtraction is safe under the invariant.  In debug mode an
+    // underflow panics immediately; in release mode the wrap-around yields
+    // a huge value that will be caught by subsequent slice bounds checks.
     if count <= self.buf.len() - self.pos {
       Ok(())
     } else {
@@ -259,6 +260,8 @@ impl<'a> BebopReader<'a> {
     // Use ptr::write + set_len instead of push to avoid per-element
     // capacity check. try_reserve guarantees capacity >= count and
     // ptr remains valid for the entire loop (no reallocation occurs).
+    // Note: if read_elem panics, elements 0..i leak (Vec len is still 0).
+    // This matches std's collect() behavior and is acceptable here.
     let ptr = items.as_mut_ptr();
     for i in 0..count {
       match read_elem(self) {
