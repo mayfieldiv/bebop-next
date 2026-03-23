@@ -172,16 +172,15 @@ impl<'a> BebopReader<'a> {
   #[inline]
   pub fn read_string(&mut self) -> Result<String> {
     let len = self.read_u32()? as usize;
-    // len ≤ u32::MAX, so len + 1 can't overflow usize (min 32 bits).
-    let end = self.pos + len + 1;
-    if end > self.buf.len() {
-      return Err(DecodeError::UnexpectedEof {
-        needed: len + 1,
-        available: self.remaining(),
-      });
-    }
+    // On 32-bit targets usize == u32, so len + 1 can overflow when
+    // len == u32::MAX.  Use checked arithmetic to surface a clean error.
+    let total = len.checked_add(1).ok_or(DecodeError::UnexpectedEof {
+      needed: usize::MAX,
+      available: self.remaining(),
+    })?;
+    self.ensure(total)?; // string bytes + NUL
     let str_bytes = &self.buf[self.pos..self.pos + len];
-    self.pos = end; // advance past string bytes + NUL
+    self.pos += total; // advance past string bytes + NUL
     let s = validate_utf8(str_bytes)?;
     Ok(String::from(s))
   }
@@ -400,16 +399,15 @@ impl<'a> BebopReader<'a> {
   #[inline]
   pub fn read_str(&mut self) -> Result<&'a str> {
     let len = self.read_u32()? as usize;
-    // len ≤ u32::MAX, so len + 1 can't overflow usize (min 32 bits).
-    let end = self.pos + len + 1;
-    if end > self.buf.len() {
-      return Err(DecodeError::UnexpectedEof {
-        needed: len + 1,
-        available: self.remaining(),
-      });
-    }
+    // On 32-bit targets usize == u32, so len + 1 can overflow when
+    // len == u32::MAX.  Use checked arithmetic to surface a clean error.
+    let total = len.checked_add(1).ok_or(DecodeError::UnexpectedEof {
+      needed: usize::MAX,
+      available: self.remaining(),
+    })?;
+    self.ensure(total)?; // string bytes + NUL
     let str_bytes = &self.buf[self.pos..self.pos + len];
-    self.pos = end; // advance past string bytes + NUL
+    self.pos += total; // advance past string bytes + NUL
     validate_utf8(str_bytes)
   }
 
