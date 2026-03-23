@@ -18,12 +18,6 @@ extern crate core;
 use alloc::vec;
 use bebop_runtime::serde;
 use bebop_runtime::wire_size as wire;
-use bebop_runtime::Uuid;
-use bebop_runtime::{bf16, f16};
-use bebop_runtime::{
-  BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopReader, BebopTimestamp, BebopWriter,
-  DecodeError,
-};
 use core::convert::Into as _;
 use core::iter::IntoIterator as _;
 use core::iter::Iterator as _;
@@ -41,14 +35,14 @@ pub enum Color {
 }
 
 impl ::core::convert::TryFrom<u8> for Color {
-  type Error = DecodeError;
-  fn try_from(value: u8) -> ::core::result::Result<Self, DecodeError> {
+  type Error = ::bebop_runtime::DecodeError;
+  fn try_from(value: u8) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     match value {
       0 => ::core::result::Result::Ok(Self::Unknown),
       1 => ::core::result::Result::Ok(Self::Red),
       2 => ::core::result::Result::Ok(Self::Green),
       3 => ::core::result::Result::Ok(Self::Blue),
-      _ => ::core::result::Result::Err(DecodeError::InvalidEnum {
+      _ => ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidEnum {
         type_name: "Color",
         value: value as u64,
       }),
@@ -67,8 +61,8 @@ impl Color {
   // @@bebop_insertion_point(enum_scope:Color)
 }
 
-impl BebopEncode for Color {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl ::bebop_runtime::BebopEncode for Color {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:Color)
     writer.write_byte(*self as u8);
     // @@bebop_insertion_point(encode_end:Color)
@@ -79,9 +73,11 @@ impl BebopEncode for Color {
   }
 }
 
-impl<'buf> BebopDecode<'buf> for Color {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for Color {
   #[inline(always)]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:Color)
     let value = reader.read_byte()?;
     // @@bebop_insertion_point(decode_end:Color)
@@ -103,7 +99,7 @@ impl Permissions {
   // @@bebop_insertion_point(enum_scope:Permissions)
 }
 
-impl BebopFlags for Permissions {
+impl ::bebop_runtime::BebopFlags for Permissions {
   type Bits = u8;
   const ALL_BITS: Self::Bits = 7;
   fn bits(self) -> Self::Bits {
@@ -160,14 +156,18 @@ impl ::core::ops::Sub for Permissions {
   }
 }
 
-impl<'buf> BebopDecode<'buf> for Permissions {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for Permissions {
   #[inline(always)]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     let bits = reader.read_byte()?;
-    Self::from_bits(bits).ok_or(DecodeError::InvalidFlags {
-      type_name: "Permissions",
-      bits: bits as u64,
-    })
+    <Self as ::bebop_runtime::BebopFlags>::from_bits(bits).ok_or(
+      ::bebop_runtime::DecodeError::InvalidFlags {
+        type_name: "Permissions",
+        bits: bits as u64,
+      },
+    )
   }
 }
 
@@ -200,21 +200,23 @@ pub const EXAMPLE_CONST_GUID: ::bebop_runtime::Uuid = ::bebop_runtime::Uuid::fro
   0xE2, 0x15, 0xA9, 0x46, 0xB2, 0x6F, 0x45, 0x67, 0xA2, 0x76, 0x13, 0x13, 0x6F, 0x0A, 0x17, 0x08,
 ]);
 
-pub const EXAMPLE_CONST_F16: f16 = f16::from_f64_const(1.5f64);
+pub const EXAMPLE_CONST_F16: ::bebop_runtime::f16 = ::bebop_runtime::f16::from_f64_const(1.5f64);
 
-pub const EXAMPLE_CONST_BF16: bf16 = bf16::from_f64_const(1.5f64);
+pub const EXAMPLE_CONST_BF16: ::bebop_runtime::bf16 = ::bebop_runtime::bf16::from_f64_const(1.5f64);
 
-pub const EXAMPLE_CONST_F16_INF: f16 = f16::INFINITY;
+pub const EXAMPLE_CONST_F16_INF: ::bebop_runtime::f16 = ::bebop_runtime::f16::INFINITY;
 
-pub const EXAMPLE_CONST_BF16_NEG_INF: bf16 = bf16::NEG_INFINITY;
+pub const EXAMPLE_CONST_BF16_NEG_INF: ::bebop_runtime::bf16 = ::bebop_runtime::bf16::NEG_INFINITY;
 
-pub const EXAMPLE_CONST_F16_NAN: f16 = f16::NAN;
+pub const EXAMPLE_CONST_F16_NAN: ::bebop_runtime::f16 = ::bebop_runtime::f16::NAN;
 
-pub const EXAMPLE_CONST_BF16_NAN: bf16 = bf16::NAN;
+pub const EXAMPLE_CONST_BF16_NAN: ::bebop_runtime::bf16 = ::bebop_runtime::bf16::NAN;
 
-pub const EXAMPLE_CONST_F16_FROM_INT: f16 = f16::from_f64_const(1f64);
+pub const EXAMPLE_CONST_F16_FROM_INT: ::bebop_runtime::f16 =
+  ::bebop_runtime::f16::from_f64_const(1f64);
 
-pub const EXAMPLE_CONST_BF16_FROM_INT: bf16 = bf16::from_f64_const(2f64);
+pub const EXAMPLE_CONST_BF16_FROM_INT: ::bebop_runtime::bf16 =
+  ::bebop_runtime::bf16::from_f64_const(2f64);
 
 /// Fixed-size struct (all scalar fields).
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
@@ -232,8 +234,8 @@ impl Point {
   }
 }
 
-impl BebopEncode for Point {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl ::bebop_runtime::BebopEncode for Point {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:Point)
     writer.write_f32(self.x);
     writer.write_f32(self.y);
@@ -245,9 +247,11 @@ impl BebopEncode for Point {
   }
 }
 
-impl<'buf> BebopDecode<'buf> for Point {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for Point {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:Point)
     let x = reader.read_f32()?;
     let y = reader.read_f32()?;
@@ -281,8 +285,8 @@ impl Pixel {
   }
 }
 
-impl BebopEncode for Pixel {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl ::bebop_runtime::BebopEncode for Pixel {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:Pixel)
     self.position.encode(writer);
     self.color.encode(writer);
@@ -295,9 +299,11 @@ impl BebopEncode for Pixel {
   }
 }
 
-impl<'buf> BebopDecode<'buf> for Pixel {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for Pixel {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:Pixel)
     let position = Point::decode(reader)?;
     let color = Color::decode(reader)?;
@@ -340,8 +346,8 @@ impl<'buf> Person<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for Person<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for Person<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:Person)
     writer.write_string(&self.name);
     writer.write_u32(self.age);
@@ -350,15 +356,17 @@ impl<'buf> BebopEncode for Person<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += wire::string_size(self.name.len());
+    size += ::bebop_runtime::wire_size::string_size(self.name.len());
     size += ::core::mem::size_of::<u32>();
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for Person<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for Person<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:Person)
     let name = alloc::borrow::Cow::Borrowed(reader.read_str()?);
     let age = reader.read_u32()?;
@@ -399,8 +407,8 @@ impl<'buf> BinaryPayload<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for BinaryPayload<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for BinaryPayload<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:BinaryPayload)
     writer.write_u32(self.tag);
     writer.write_byte_array(&self.data);
@@ -410,14 +418,16 @@ impl<'buf> BebopEncode for BinaryPayload<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = 0;
     size += ::core::mem::size_of::<u32>();
-    size += wire::byte_array_size(self.data.len());
+    size += ::bebop_runtime::wire_size::byte_array_size(self.data.len());
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for BinaryPayload<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for BinaryPayload<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:BinaryPayload)
     let tag = reader.read_u32()?;
     let data = ::bebop_runtime::BebopBytes::borrowed(reader.read_byte_slice()?);
@@ -477,8 +487,8 @@ impl<'buf> UserProfile<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for UserProfile<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for UserProfile<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:UserProfile)
     let pos = writer.reserve_message_length();
     // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
@@ -523,37 +533,48 @@ impl<'buf> BebopEncode for UserProfile<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    let mut size = ::bebop_runtime::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let ::core::option::Option::Some(ref v) = self.display_name {
-      size += wire::tagged_size(wire::string_size(v.len()));
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::string_size(v.len()));
     }
     if let ::core::option::Option::Some(ref v) = self.email {
-      size += wire::tagged_size(wire::string_size(v.len()));
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::string_size(v.len()));
     }
     if let ::core::option::Option::Some(v) = self.age {
-      size += wire::tagged_size(::core::mem::size_of::<u32>());
+      size += ::bebop_runtime::wire_size::tagged_size(::core::mem::size_of::<u32>());
     }
     if let ::core::option::Option::Some(v) = self.active {
-      size += wire::tagged_size(::core::mem::size_of::<bool>());
+      size += ::bebop_runtime::wire_size::tagged_size(::core::mem::size_of::<bool>());
     }
     if let ::core::option::Option::Some(ref v) = self.tags {
-      size += wire::tagged_size(wire::array_size(v, |_el| wire::string_size(_el.len())));
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::array_size(v, |_el| {
+          ::bebop_runtime::wire_size::string_size(_el.len())
+        }));
     }
     if let ::core::option::Option::Some(ref v) = self.metadata {
-      size += wire::tagged_size(wire::map_size(v, |_k, _v| {
-        wire::string_size(_k.len()) + wire::string_size(_v.len())
-      }));
+      size += ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::map_size(
+        v,
+        |_k, _v| {
+          ::bebop_runtime::wire_size::string_size(_k.len())
+            + ::bebop_runtime::wire_size::string_size(_v.len())
+        },
+      ));
     }
     if let ::core::option::Option::Some(ref v) = self.permissions {
-      size += wire::tagged_size(v.encoded_size());
+      size += ::bebop_runtime::wire_size::tagged_size(v.encoded_size());
     }
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for UserProfile<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for UserProfile<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:UserProfile)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
@@ -589,7 +610,7 @@ impl<'buf> BebopDecode<'buf> for UserProfile<'buf> {
         }
         7 => msg.permissions = ::core::option::Option::Some(Permissions::decode(reader)?),
         tag => {
-          return ::core::result::Result::Err(DecodeError::InvalidField {
+          return ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidField {
             type_name: "UserProfile",
             tag,
           });
@@ -629,8 +650,8 @@ impl<'buf> DrawCommand<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for DrawCommand<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for DrawCommand<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:DrawCommand)
     let pos = writer.reserve_message_length();
     // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
@@ -660,26 +681,29 @@ impl<'buf> BebopEncode for DrawCommand<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    let mut size = ::bebop_runtime::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let ::core::option::Option::Some(ref v) = self.target {
-      size += wire::tagged_size(v.encoded_size());
+      size += ::bebop_runtime::wire_size::tagged_size(v.encoded_size());
     }
     if let ::core::option::Option::Some(ref v) = self.color {
-      size += wire::tagged_size(v.encoded_size());
+      size += ::bebop_runtime::wire_size::tagged_size(v.encoded_size());
     }
     if let ::core::option::Option::Some(ref v) = self.label {
-      size += wire::tagged_size(wire::string_size(v.len()));
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::string_size(v.len()));
     }
     if let ::core::option::Option::Some(v) = self.thickness {
-      size += wire::tagged_size(::core::mem::size_of::<f32>());
+      size += ::bebop_runtime::wire_size::tagged_size(::core::mem::size_of::<f32>());
     }
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for DrawCommand<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for DrawCommand<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:DrawCommand)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
@@ -698,7 +722,7 @@ impl<'buf> BebopDecode<'buf> for DrawCommand<'buf> {
         }
         4 => msg.thickness = ::core::option::Option::Some(reader.read_f32()?),
         tag => {
-          return ::core::result::Result::Err(DecodeError::InvalidField {
+          return ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidField {
             type_name: "DrawCommand",
             tag,
           });
@@ -742,8 +766,8 @@ impl<'buf> TextLabel<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for TextLabel<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for TextLabel<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:TextLabel)
     self.position.encode(writer);
     writer.write_string(&self.text);
@@ -753,14 +777,16 @@ impl<'buf> BebopEncode for TextLabel<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = 0;
     size += self.position.encoded_size();
-    size += wire::string_size(self.text.len());
+    size += ::bebop_runtime::wire_size::string_size(self.text.len());
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for TextLabel<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for TextLabel<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:TextLabel)
     let position = Point::decode(reader)?;
     let text = alloc::borrow::Cow::Borrowed(reader.read_str()?);
@@ -799,8 +825,8 @@ impl<'buf> Shape<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for Shape<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for Shape<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:Shape)
     let pos = writer.reserve_message_length();
     match self {
@@ -827,19 +853,21 @@ impl<'buf> BebopEncode for Shape<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    wire::WIRE_LEN_PREFIX_SIZE
+    ::bebop_runtime::wire_size::WIRE_LEN_PREFIX_SIZE
       + match self {
-        Self::Point(inner) => wire::tagged_size(inner.encoded_size()),
-        Self::Pixel(inner) => wire::tagged_size(inner.encoded_size()),
-        Self::Label(inner) => wire::tagged_size(inner.encoded_size()),
-        Self::Unknown(_, data) => wire::tagged_size(data.len()),
+        Self::Point(inner) => ::bebop_runtime::wire_size::tagged_size(inner.encoded_size()),
+        Self::Pixel(inner) => ::bebop_runtime::wire_size::tagged_size(inner.encoded_size()),
+        Self::Label(inner) => ::bebop_runtime::wire_size::tagged_size(inner.encoded_size()),
+        Self::Unknown(_, data) => ::bebop_runtime::wire_size::tagged_size(data.len()),
       }
   }
 }
 
-impl<'buf> BebopDecode<'buf> for Shape<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for Shape<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:Shape)
     let length = reader.read_message_length()? as usize;
     let start = reader.position();
@@ -876,8 +904,8 @@ pub enum StrictShape {
   Pixel(Pixel),
 }
 
-impl BebopEncode for StrictShape {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl ::bebop_runtime::BebopEncode for StrictShape {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:StrictShape)
     let pos = writer.reserve_message_length();
     match self {
@@ -895,17 +923,19 @@ impl BebopEncode for StrictShape {
   }
 
   fn encoded_size(&self) -> usize {
-    wire::WIRE_LEN_PREFIX_SIZE
+    ::bebop_runtime::wire_size::WIRE_LEN_PREFIX_SIZE
       + match self {
-        Self::Point(inner) => wire::tagged_size(inner.encoded_size()),
-        Self::Pixel(inner) => wire::tagged_size(inner.encoded_size()),
+        Self::Point(inner) => ::bebop_runtime::wire_size::tagged_size(inner.encoded_size()),
+        Self::Pixel(inner) => ::bebop_runtime::wire_size::tagged_size(inner.encoded_size()),
       }
   }
 }
 
-impl<'buf> BebopDecode<'buf> for StrictShape {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for StrictShape {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:StrictShape)
     let length = reader.read_message_length()? as usize;
     let start = reader.position();
@@ -913,7 +943,7 @@ impl<'buf> BebopDecode<'buf> for StrictShape {
     let value = match discriminator {
       1 => ::core::result::Result::Ok(Self::Point(Point::decode(reader)?)),
       2 => ::core::result::Result::Ok(Self::Pixel(Pixel::decode(reader)?)),
-      _ => ::core::result::Result::Err(DecodeError::InvalidUnion {
+      _ => ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidUnion {
         type_name: "StrictShape",
         discriminator,
       }),
@@ -976,8 +1006,8 @@ impl ::core::convert::From<Priority> for u8 {
   }
 }
 
-impl BebopEncode for Priority {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl ::bebop_runtime::BebopEncode for Priority {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:Priority)
     writer.write_byte(self.discriminator());
     // @@bebop_insertion_point(encode_end:Priority)
@@ -988,9 +1018,11 @@ impl BebopEncode for Priority {
   }
 }
 
-impl<'buf> BebopDecode<'buf> for Priority {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for Priority {
   #[inline(always)]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:Priority)
     let value = reader.read_byte()?;
     // @@bebop_insertion_point(decode_end:Priority)
@@ -1016,8 +1048,8 @@ impl<'buf> StrictConfig<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for StrictConfig<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for StrictConfig<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:StrictConfig)
     let pos = writer.reserve_message_length();
     // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
@@ -1039,20 +1071,23 @@ impl<'buf> BebopEncode for StrictConfig<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    let mut size = ::bebop_runtime::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let ::core::option::Option::Some(ref v) = self.name {
-      size += wire::tagged_size(wire::string_size(v.len()));
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::string_size(v.len()));
     }
     if let ::core::option::Option::Some(v) = self.value {
-      size += wire::tagged_size(::core::mem::size_of::<u32>());
+      size += ::bebop_runtime::wire_size::tagged_size(::core::mem::size_of::<u32>());
     }
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for StrictConfig<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for StrictConfig<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:StrictConfig)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
@@ -1069,7 +1104,7 @@ impl<'buf> BebopDecode<'buf> for StrictConfig<'buf> {
         }
         2 => msg.value = ::core::option::Option::Some(reader.read_u32()?),
         tag => {
-          return ::core::result::Result::Err(DecodeError::InvalidField {
+          return ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidField {
             type_name: "StrictConfig",
             tag,
           });
@@ -1102,8 +1137,8 @@ impl<'buf> FlexConfig<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for FlexConfig<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for FlexConfig<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:FlexConfig)
     let pos = writer.reserve_message_length();
     // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
@@ -1125,20 +1160,23 @@ impl<'buf> BebopEncode for FlexConfig<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    let mut size = ::bebop_runtime::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let ::core::option::Option::Some(ref v) = self.name {
-      size += wire::tagged_size(wire::string_size(v.len()));
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::string_size(v.len()));
     }
     if let ::core::option::Option::Some(v) = self.value {
-      size += wire::tagged_size(::core::mem::size_of::<u32>());
+      size += ::bebop_runtime::wire_size::tagged_size(::core::mem::size_of::<u32>());
     }
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for FlexConfig<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for FlexConfig<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:FlexConfig)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
@@ -1180,7 +1218,7 @@ impl FlexPermissions {
   // @@bebop_insertion_point(enum_scope:FlexPermissions)
 }
 
-impl BebopFlags for FlexPermissions {
+impl ::bebop_runtime::BebopFlags for FlexPermissions {
   type Bits = u8;
   const ALL_BITS: Self::Bits = 3;
   fn bits(self) -> Self::Bits {
@@ -1237,11 +1275,15 @@ impl ::core::ops::Sub for FlexPermissions {
   }
 }
 
-impl<'buf> BebopDecode<'buf> for FlexPermissions {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for FlexPermissions {
   #[inline(always)]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     let bits = reader.read_byte()?;
-    ::core::result::Result::Ok(Self::from_bits_retain(bits))
+    ::core::result::Result::Ok(<Self as ::bebop_runtime::BebopFlags>::from_bits_retain(
+      bits,
+    ))
   }
 }
 
@@ -1259,8 +1301,8 @@ impl Matrix2x2 {
   }
 }
 
-impl BebopEncode for Matrix2x2 {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl ::bebop_runtime::BebopEncode for Matrix2x2 {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:Matrix2x2)
     writer.write_fixed_array::<f32, 4>(&self.values);
     // @@bebop_insertion_point(encode_end:Matrix2x2)
@@ -1271,9 +1313,11 @@ impl BebopEncode for Matrix2x2 {
   }
 }
 
-impl<'buf> BebopDecode<'buf> for Matrix2x2 {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for Matrix2x2 {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:Matrix2x2)
     let values = reader.read_fixed_array::<f32, 4>()?;
     // @@bebop_insertion_point(decode_end:Matrix2x2)
@@ -1288,21 +1332,21 @@ impl Matrix2x2 {
 /// Fixed-size and variable-size half-precision scalar coverage.
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
 pub struct HalfPrecisionScalars {
-  pub f16_val: f16,
-  pub bf16_val: bf16,
+  pub f16_val: ::bebop_runtime::f16,
+  pub bf16_val: ::bebop_runtime::bf16,
 }
 
 impl HalfPrecisionScalars {
-  pub const FIXED_ENCODED_SIZE: usize =
-    ::core::mem::size_of::<f16>() + ::core::mem::size_of::<bf16>();
+  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<::bebop_runtime::f16>()
+    + ::core::mem::size_of::<::bebop_runtime::bf16>();
 
-  pub fn new(f16_val: f16, bf16_val: bf16) -> Self {
+  pub fn new(f16_val: ::bebop_runtime::f16, bf16_val: ::bebop_runtime::bf16) -> Self {
     Self { f16_val, bf16_val }
   }
 }
 
-impl BebopEncode for HalfPrecisionScalars {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl ::bebop_runtime::BebopEncode for HalfPrecisionScalars {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:HalfPrecisionScalars)
     writer.write_f16(self.f16_val);
     writer.write_bf16(self.bf16_val);
@@ -1314,9 +1358,11 @@ impl BebopEncode for HalfPrecisionScalars {
   }
 }
 
-impl<'buf> BebopDecode<'buf> for HalfPrecisionScalars {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for HalfPrecisionScalars {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:HalfPrecisionScalars)
     let f16_val = reader.read_f16()?;
     let bf16_val = reader.read_bf16()?;
@@ -1331,20 +1377,20 @@ impl HalfPrecisionScalars {
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
 pub struct HalfPrecisionArrays<'buf> {
-  pub f16_dynamic: alloc::borrow::Cow<'buf, [f16]>,
-  pub bf16_dynamic: alloc::borrow::Cow<'buf, [bf16]>,
-  pub f16_fixed: [f16; 4],
-  pub bf16_fixed: [bf16; 4],
+  pub f16_dynamic: alloc::borrow::Cow<'buf, [::bebop_runtime::f16]>,
+  pub bf16_dynamic: alloc::borrow::Cow<'buf, [::bebop_runtime::bf16]>,
+  pub f16_fixed: [::bebop_runtime::f16; 4],
+  pub bf16_fixed: [::bebop_runtime::bf16; 4],
 }
 
 pub type HalfPrecisionArraysOwned = HalfPrecisionArrays<'static>;
 
 impl<'buf> HalfPrecisionArrays<'buf> {
   pub fn new(
-    f16_dynamic: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [f16]>>,
-    bf16_dynamic: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [bf16]>>,
-    f16_fixed: [f16; 4],
-    bf16_fixed: [bf16; 4],
+    f16_dynamic: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [::bebop_runtime::f16]>>,
+    bf16_dynamic: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [::bebop_runtime::bf16]>>,
+    f16_fixed: [::bebop_runtime::f16; 4],
+    bf16_fixed: [::bebop_runtime::bf16; 4],
   ) -> Self {
     let f16_dynamic = ::core::convert::Into::into(f16_dynamic);
     let bf16_dynamic = ::core::convert::Into::into(bf16_dynamic);
@@ -1368,34 +1414,40 @@ impl<'buf> HalfPrecisionArrays<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for HalfPrecisionArrays<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for HalfPrecisionArrays<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:HalfPrecisionArrays)
-    writer.write_scalar_array::<f16>(&self.f16_dynamic);
-    writer.write_scalar_array::<bf16>(&self.bf16_dynamic);
-    writer.write_fixed_array::<f16, 4>(&self.f16_fixed);
-    writer.write_fixed_array::<bf16, 4>(&self.bf16_fixed);
+    writer.write_scalar_array::<::bebop_runtime::f16>(&self.f16_dynamic);
+    writer.write_scalar_array::<::bebop_runtime::bf16>(&self.bf16_dynamic);
+    writer.write_fixed_array::<::bebop_runtime::f16, 4>(&self.f16_fixed);
+    writer.write_fixed_array::<::bebop_runtime::bf16, 4>(&self.bf16_fixed);
     // @@bebop_insertion_point(encode_end:HalfPrecisionArrays)
   }
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += wire::array_size(&self.f16_dynamic, |_el| (::core::mem::size_of::<f16>()));
-    size += wire::array_size(&self.bf16_dynamic, |_el| (::core::mem::size_of::<bf16>()));
-    size += 4usize * (::core::mem::size_of::<f16>());
-    size += 4usize * (::core::mem::size_of::<bf16>());
+    size += ::bebop_runtime::wire_size::array_size(&self.f16_dynamic, |_el| {
+      (::core::mem::size_of::<::bebop_runtime::f16>())
+    });
+    size += ::bebop_runtime::wire_size::array_size(&self.bf16_dynamic, |_el| {
+      (::core::mem::size_of::<::bebop_runtime::bf16>())
+    });
+    size += 4usize * (::core::mem::size_of::<::bebop_runtime::f16>());
+    size += 4usize * (::core::mem::size_of::<::bebop_runtime::bf16>());
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for HalfPrecisionArrays<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for HalfPrecisionArrays<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:HalfPrecisionArrays)
-    let f16_dynamic = reader.read_scalar_array::<f16>()?;
-    let bf16_dynamic = reader.read_scalar_array::<bf16>()?;
-    let f16_fixed = reader.read_fixed_array::<f16, 4>()?;
-    let bf16_fixed = reader.read_fixed_array::<bf16, 4>()?;
+    let f16_dynamic = reader.read_scalar_array::<::bebop_runtime::f16>()?;
+    let bf16_dynamic = reader.read_scalar_array::<::bebop_runtime::bf16>()?;
+    let f16_fixed = reader.read_fixed_array::<::bebop_runtime::f16, 4>()?;
+    let bf16_fixed = reader.read_fixed_array::<::bebop_runtime::bf16, 4>()?;
     // @@bebop_insertion_point(decode_end:HalfPrecisionArrays)
     ::core::result::Result::Ok(HalfPrecisionArrays {
       f16_dynamic,
@@ -1412,10 +1464,10 @@ impl<'buf> HalfPrecisionArrays<'buf> {
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct HalfPrecisionMessage<'buf> {
-  pub f16_val: ::core::option::Option<f16>,
-  pub bf16_val: ::core::option::Option<bf16>,
-  pub f16_arr: ::core::option::Option<alloc::borrow::Cow<'buf, [f16]>>,
-  pub bf16_arr: ::core::option::Option<alloc::borrow::Cow<'buf, [bf16]>>,
+  pub f16_val: ::core::option::Option<::bebop_runtime::f16>,
+  pub bf16_val: ::core::option::Option<::bebop_runtime::bf16>,
+  pub f16_arr: ::core::option::Option<alloc::borrow::Cow<'buf, [::bebop_runtime::f16]>>,
+  pub bf16_arr: ::core::option::Option<alloc::borrow::Cow<'buf, [::bebop_runtime::bf16]>>,
 }
 
 pub type HalfPrecisionMessageOwned = HalfPrecisionMessage<'static>;
@@ -1435,8 +1487,8 @@ impl<'buf> HalfPrecisionMessage<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for HalfPrecisionMessage<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for HalfPrecisionMessage<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:HalfPrecisionMessage)
     let pos = writer.reserve_message_length();
     // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
@@ -1454,11 +1506,11 @@ impl<'buf> BebopEncode for HalfPrecisionMessage<'buf> {
     }
     if let ::core::option::Option::Some(ref v) = self.f16_arr {
       writer.write_tag(3);
-      writer.write_scalar_array::<f16>(&v);
+      writer.write_scalar_array::<::bebop_runtime::f16>(&v);
     }
     if let ::core::option::Option::Some(ref v) = self.bf16_arr {
       writer.write_tag(4);
-      writer.write_scalar_array::<bf16>(&v);
+      writer.write_scalar_array::<::bebop_runtime::bf16>(&v);
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
@@ -1466,26 +1518,36 @@ impl<'buf> BebopEncode for HalfPrecisionMessage<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    let mut size = ::bebop_runtime::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let ::core::option::Option::Some(v) = self.f16_val {
-      size += wire::tagged_size(::core::mem::size_of::<f16>());
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::core::mem::size_of::<::bebop_runtime::f16>());
     }
     if let ::core::option::Option::Some(v) = self.bf16_val {
-      size += wire::tagged_size(::core::mem::size_of::<bf16>());
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::core::mem::size_of::<::bebop_runtime::bf16>());
     }
     if let ::core::option::Option::Some(ref v) = self.f16_arr {
-      size += wire::tagged_size(wire::array_size(v, |_el| (::core::mem::size_of::<f16>())));
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::array_size(v, |_el| {
+          (::core::mem::size_of::<::bebop_runtime::f16>())
+        }));
     }
     if let ::core::option::Option::Some(ref v) = self.bf16_arr {
-      size += wire::tagged_size(wire::array_size(v, |_el| (::core::mem::size_of::<bf16>())));
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::array_size(v, |_el| {
+          (::core::mem::size_of::<::bebop_runtime::bf16>())
+        }));
     }
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for HalfPrecisionMessage<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for HalfPrecisionMessage<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:HalfPrecisionMessage)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
@@ -1499,10 +1561,16 @@ impl<'buf> BebopDecode<'buf> for HalfPrecisionMessage<'buf> {
       match tag {
         1 => msg.f16_val = ::core::option::Option::Some(reader.read_f16()?),
         2 => msg.bf16_val = ::core::option::Option::Some(reader.read_bf16()?),
-        3 => msg.f16_arr = ::core::option::Option::Some(reader.read_scalar_array::<f16>()?),
-        4 => msg.bf16_arr = ::core::option::Option::Some(reader.read_scalar_array::<bf16>()?),
+        3 => {
+          msg.f16_arr =
+            ::core::option::Option::Some(reader.read_scalar_array::<::bebop_runtime::f16>()?)
+        }
+        4 => {
+          msg.bf16_arr =
+            ::core::option::Option::Some(reader.read_scalar_array::<::bebop_runtime::bf16>()?)
+        }
         tag => {
-          return ::core::result::Result::Err(DecodeError::InvalidField {
+          return ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidField {
             type_name: "HalfPrecisionMessage",
             tag,
           });
@@ -1560,8 +1628,8 @@ impl<'buf> Address<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for Address<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for Address<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:Address)
     writer.write_string(&self.street);
     writer.write_string(&self.city);
@@ -1572,17 +1640,19 @@ impl<'buf> BebopEncode for Address<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += wire::string_size(self.street.len());
-    size += wire::string_size(self.city.len());
-    size += wire::string_size(self.country.len());
-    size += wire::string_size(self.zip_code.len());
+    size += ::bebop_runtime::wire_size::string_size(self.street.len());
+    size += ::bebop_runtime::wire_size::string_size(self.city.len());
+    size += ::bebop_runtime::wire_size::string_size(self.country.len());
+    size += ::bebop_runtime::wire_size::string_size(self.zip_code.len());
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for Address<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for Address<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:Address)
     let street = alloc::borrow::Cow::Borrowed(reader.read_str()?);
     let city = alloc::borrow::Cow::Borrowed(reader.read_str()?);
@@ -1626,8 +1696,8 @@ impl<'buf> Scene<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for Scene<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for Scene<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:Scene)
     let pos = writer.reserve_message_length();
     // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
@@ -1653,23 +1723,29 @@ impl<'buf> BebopEncode for Scene<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    let mut size = ::bebop_runtime::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let ::core::option::Option::Some(ref v) = self.shapes {
-      size += wire::tagged_size(wire::array_size(v, |_el| _el.encoded_size()));
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::array_size(v, |_el| {
+          _el.encoded_size()
+        }));
     }
     if let ::core::option::Option::Some(ref v) = self.background {
-      size += wire::tagged_size(v.encoded_size());
+      size += ::bebop_runtime::wire_size::tagged_size(v.encoded_size());
     }
     if let ::core::option::Option::Some(ref v) = self.title {
-      size += wire::tagged_size(wire::string_size(v.len()));
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::string_size(v.len()));
     }
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for Scene<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for Scene<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:Scene)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
@@ -1687,7 +1763,7 @@ impl<'buf> BebopDecode<'buf> for Scene<'buf> {
           msg.title = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
         }
         tag => {
-          return ::core::result::Result::Err(DecodeError::InvalidField {
+          return ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidField {
             type_name: "Scene",
             tag,
           });
@@ -1727,8 +1803,8 @@ impl<'buf> Inventory<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for Inventory<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for Inventory<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:Inventory)
     let pos = writer.reserve_message_length();
     // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
@@ -1753,22 +1829,26 @@ impl<'buf> BebopEncode for Inventory<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    let mut size = ::bebop_runtime::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let ::core::option::Option::Some(ref v) = self.items {
-      size += wire::tagged_size(wire::map_size(v, |_k, _v| {
-        wire::string_size(_k.len()) + ::core::mem::size_of::<u32>()
-      }));
+      size += ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::map_size(
+        v,
+        |_k, _v| ::bebop_runtime::wire_size::string_size(_k.len()) + ::core::mem::size_of::<u32>(),
+      ));
     }
     if let ::core::option::Option::Some(ref v) = self.label {
-      size += wire::tagged_size(wire::string_size(v.len()));
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::string_size(v.len()));
     }
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for Inventory<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for Inventory<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:Inventory)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
@@ -1792,7 +1872,7 @@ impl<'buf> BebopDecode<'buf> for Inventory<'buf> {
           msg.label = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
         }
         tag => {
-          return ::core::result::Result::Err(DecodeError::InvalidField {
+          return ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidField {
             type_name: "Inventory",
             tag,
           });
@@ -1826,8 +1906,8 @@ impl<'buf> EmptyMessage<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for EmptyMessage<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for EmptyMessage<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:EmptyMessage)
     let pos = writer.reserve_message_length();
     // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
@@ -1845,17 +1925,20 @@ impl<'buf> BebopEncode for EmptyMessage<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    let mut size = ::bebop_runtime::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let ::core::option::Option::Some(ref v) = self.unused_field {
-      size += wire::tagged_size(wire::string_size(v.len()));
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::string_size(v.len()));
     }
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for EmptyMessage<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for EmptyMessage<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:EmptyMessage)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
@@ -1872,7 +1955,7 @@ impl<'buf> BebopDecode<'buf> for EmptyMessage<'buf> {
             ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
         }
         tag => {
-          return ::core::result::Result::Err(DecodeError::InvalidField {
+          return ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidField {
             type_name: "EmptyMessage",
             tag,
           });
@@ -1891,7 +1974,7 @@ impl<'buf> EmptyMessage<'buf> {
 /// Struct with a timestamp field.
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TimestampedEvent<'buf> {
-  pub when: BebopTimestamp,
+  pub when: ::bebop_runtime::BebopTimestamp,
   pub what: alloc::borrow::Cow<'buf, str>,
 }
 
@@ -1899,7 +1982,7 @@ pub type TimestampedEventOwned = TimestampedEvent<'static>;
 
 impl<'buf> TimestampedEvent<'buf> {
   pub fn new(
-    when: BebopTimestamp,
+    when: ::bebop_runtime::BebopTimestamp,
     what: impl ::core::convert::Into<alloc::borrow::Cow<'buf, str>>,
   ) -> Self {
     let what = ::core::convert::Into::into(what);
@@ -1916,8 +1999,8 @@ impl<'buf> TimestampedEvent<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for TimestampedEvent<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for TimestampedEvent<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:TimestampedEvent)
     writer.write_timestamp(self.when);
     writer.write_string(&self.what);
@@ -1927,14 +2010,16 @@ impl<'buf> BebopEncode for TimestampedEvent<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = 0;
     size += ::core::mem::size_of::<i64>() + ::core::mem::size_of::<i32>();
-    size += wire::string_size(self.what.len());
+    size += ::bebop_runtime::wire_size::string_size(self.what.len());
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for TimestampedEvent<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for TimestampedEvent<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:TimestampedEvent)
     let when = reader.read_timestamp()?;
     let what = alloc::borrow::Cow::Borrowed(reader.read_str()?);
@@ -1950,8 +2035,8 @@ impl<'buf> TimestampedEvent<'buf> {
 /// Message with temporal fields.
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct ScheduleEntry<'buf> {
-  pub start: ::core::option::Option<BebopTimestamp>,
-  pub duration: ::core::option::Option<BebopDuration>,
+  pub start: ::core::option::Option<::bebop_runtime::BebopTimestamp>,
+  pub duration: ::core::option::Option<::bebop_runtime::BebopDuration>,
   pub label: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
 }
 
@@ -1969,8 +2054,8 @@ impl<'buf> ScheduleEntry<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for ScheduleEntry<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for ScheduleEntry<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:ScheduleEntry)
     let pos = writer.reserve_message_length();
     // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
@@ -1996,23 +2081,30 @@ impl<'buf> BebopEncode for ScheduleEntry<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    let mut size = ::bebop_runtime::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let ::core::option::Option::Some(v) = self.start {
-      size += wire::tagged_size(::core::mem::size_of::<i64>() + ::core::mem::size_of::<i32>());
+      size += ::bebop_runtime::wire_size::tagged_size(
+        ::core::mem::size_of::<i64>() + ::core::mem::size_of::<i32>(),
+      );
     }
     if let ::core::option::Option::Some(v) = self.duration {
-      size += wire::tagged_size(::core::mem::size_of::<i64>() + ::core::mem::size_of::<i32>());
+      size += ::bebop_runtime::wire_size::tagged_size(
+        ::core::mem::size_of::<i64>() + ::core::mem::size_of::<i32>(),
+      );
     }
     if let ::core::option::Option::Some(ref v) = self.label {
-      size += wire::tagged_size(wire::string_size(v.len()));
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::string_size(v.len()));
     }
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for ScheduleEntry<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for ScheduleEntry<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:ScheduleEntry)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
@@ -2030,7 +2122,7 @@ impl<'buf> BebopDecode<'buf> for ScheduleEntry<'buf> {
           msg.label = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
         }
         tag => {
-          return ::core::result::Result::Err(DecodeError::InvalidField {
+          return ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidField {
             type_name: "ScheduleEntry",
             tag,
           });
@@ -2068,8 +2160,8 @@ impl<'buf> ForwardRefA<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for ForwardRefA<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for ForwardRefA<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:ForwardRefA)
     self.b.encode(writer);
     // @@bebop_insertion_point(encode_end:ForwardRefA)
@@ -2082,9 +2174,11 @@ impl<'buf> BebopEncode for ForwardRefA<'buf> {
   }
 }
 
-impl<'buf> BebopDecode<'buf> for ForwardRefA<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for ForwardRefA<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:ForwardRefA)
     let b = ForwardRefB::decode(reader)?;
     // @@bebop_insertion_point(decode_end:ForwardRefA)
@@ -2118,8 +2212,8 @@ impl<'buf> ForwardRefB<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for ForwardRefB<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for ForwardRefB<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:ForwardRefB)
     writer.write_string(&self.value);
     // @@bebop_insertion_point(encode_end:ForwardRefB)
@@ -2127,14 +2221,16 @@ impl<'buf> BebopEncode for ForwardRefB<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += wire::string_size(self.value.len());
+    size += ::bebop_runtime::wire_size::string_size(self.value.len());
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for ForwardRefB<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for ForwardRefB<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:ForwardRefB)
     let value = alloc::borrow::Cow::Borrowed(reader.read_str()?);
     // @@bebop_insertion_point(decode_end:ForwardRefB)
@@ -2172,8 +2268,8 @@ impl<'buf> DeprecatedFieldsMessage<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for DeprecatedFieldsMessage<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for DeprecatedFieldsMessage<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:DeprecatedFieldsMessage)
     let pos = writer.reserve_message_length();
     // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
@@ -2199,23 +2295,27 @@ impl<'buf> BebopEncode for DeprecatedFieldsMessage<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    let mut size = ::bebop_runtime::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let ::core::option::Option::Some(ref v) = self.current_name {
-      size += wire::tagged_size(wire::string_size(v.len()));
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::string_size(v.len()));
     }
     if let ::core::option::Option::Some(ref v) = self.legacy_name {
-      size += wire::tagged_size(wire::string_size(v.len()));
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::string_size(v.len()));
     }
     if let ::core::option::Option::Some(v) = self.legacy_enabled {
-      size += wire::tagged_size(::core::mem::size_of::<bool>());
+      size += ::bebop_runtime::wire_size::tagged_size(::core::mem::size_of::<bool>());
     }
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for DeprecatedFieldsMessage<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for DeprecatedFieldsMessage<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:DeprecatedFieldsMessage)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
@@ -2237,7 +2337,7 @@ impl<'buf> BebopDecode<'buf> for DeprecatedFieldsMessage<'buf> {
         }
         3 => msg.legacy_enabled = ::core::option::Option::Some(reader.read_bool()?),
         tag => {
-          return ::core::result::Result::Err(DecodeError::InvalidField {
+          return ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidField {
             type_name: "DeprecatedFieldsMessage",
             tag,
           });
@@ -2276,8 +2376,8 @@ impl<'buf> IntegerKeyMaps<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for IntegerKeyMaps<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for IntegerKeyMaps<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:IntegerKeyMaps)
     let pos = writer.reserve_message_length();
     // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
@@ -2305,24 +2405,28 @@ impl<'buf> BebopEncode for IntegerKeyMaps<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    let mut size = ::bebop_runtime::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let ::core::option::Option::Some(ref v) = self.labels_by_id {
-      size += wire::tagged_size(wire::map_size(v, |_k, _v| {
-        ::core::mem::size_of::<u32>() + wire::string_size(_v.len())
-      }));
+      size += ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::map_size(
+        v,
+        |_k, _v| ::core::mem::size_of::<u32>() + ::bebop_runtime::wire_size::string_size(_v.len()),
+      ));
     }
     if let ::core::option::Option::Some(ref v) = self.flags_by_id {
-      size += wire::tagged_size(wire::map_size(v, |_k, _v| {
-        ::core::mem::size_of::<i64>() + ::core::mem::size_of::<bool>()
-      }));
+      size += ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::map_size(
+        v,
+        |_k, _v| ::core::mem::size_of::<i64>() + ::core::mem::size_of::<bool>(),
+      ));
     }
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for IntegerKeyMaps<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for IntegerKeyMaps<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:IntegerKeyMaps)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
@@ -2348,7 +2452,7 @@ impl<'buf> BebopDecode<'buf> for IntegerKeyMaps<'buf> {
           )
         }
         tag => {
-          return ::core::result::Result::Err(DecodeError::InvalidField {
+          return ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidField {
             type_name: "IntegerKeyMaps",
             tag,
           });
@@ -2387,8 +2491,8 @@ impl<'buf> NestedLeaf<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for NestedLeaf<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for NestedLeaf<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:NestedLeaf)
     writer.write_string(&self.label);
     // @@bebop_insertion_point(encode_end:NestedLeaf)
@@ -2396,14 +2500,16 @@ impl<'buf> BebopEncode for NestedLeaf<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += wire::string_size(self.label.len());
+    size += ::bebop_runtime::wire_size::string_size(self.label.len());
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for NestedLeaf<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for NestedLeaf<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:NestedLeaf)
     let label = alloc::borrow::Cow::Borrowed(reader.read_str()?);
     // @@bebop_insertion_point(decode_end:NestedLeaf)
@@ -2451,8 +2557,8 @@ impl<'buf> DeepNestedCollections<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for DeepNestedCollections<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for DeepNestedCollections<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:DeepNestedCollections)
     let pos = writer.reserve_message_length();
     // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
@@ -2478,24 +2584,29 @@ impl<'buf> BebopEncode for DeepNestedCollections<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    let mut size = ::bebop_runtime::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let ::core::option::Option::Some(ref v) = self.nested {
-      size += wire::tagged_size(wire::map_size(v, |_k, _v| {
-        wire::string_size(_k.len())
-          + wire::array_size(_v, |_el| {
-            wire::map_size(_el, |_k, _v| {
-              wire::string_size(_k.len()) + _v.encoded_size()
+      size += ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::map_size(
+        v,
+        |_k, _v| {
+          ::bebop_runtime::wire_size::string_size(_k.len())
+            + ::bebop_runtime::wire_size::array_size(_v, |_el| {
+              ::bebop_runtime::wire_size::map_size(_el, |_k, _v| {
+                ::bebop_runtime::wire_size::string_size(_k.len()) + _v.encoded_size()
+              })
             })
-          })
-      }));
+        },
+      ));
     }
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for DeepNestedCollections<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for DeepNestedCollections<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:DeepNestedCollections)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
@@ -2523,7 +2634,7 @@ impl<'buf> BebopDecode<'buf> for DeepNestedCollections<'buf> {
           })?)
         }
         tag => {
-          return ::core::result::Result::Err(DecodeError::InvalidField {
+          return ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidField {
             type_name: "DeepNestedCollections",
             tag,
           });
@@ -2565,8 +2676,8 @@ impl<'buf> ByteMatrix<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for ByteMatrix<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for ByteMatrix<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:ByteMatrix)
     writer.write_array(&self.rows, |_w, _el| _w.write_byte_array(&_el));
     // @@bebop_insertion_point(encode_end:ByteMatrix)
@@ -2574,14 +2685,18 @@ impl<'buf> BebopEncode for ByteMatrix<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += wire::array_size(&self.rows, |_el| wire::byte_array_size(_el.len()));
+    size += ::bebop_runtime::wire_size::array_size(&self.rows, |_el| {
+      ::bebop_runtime::wire_size::byte_array_size(_el.len())
+    });
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for ByteMatrix<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for ByteMatrix<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:ByteMatrix)
     let rows = reader.read_array(|_r| {
       ::core::result::Result::Ok(::bebop_runtime::BebopBytes::borrowed(_r.read_byte_slice()?))
@@ -2633,8 +2748,8 @@ impl<'buf> ByteTagMap<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for ByteTagMap<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for ByteTagMap<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:ByteTagMap)
     writer.write_map(&self.entries, |_w, _k, _v| {
       _w.write_string(&_k);
@@ -2645,16 +2760,19 @@ impl<'buf> BebopEncode for ByteTagMap<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += wire::map_size(&self.entries, |_k, _v| {
-      wire::string_size(_k.len()) + wire::byte_array_size(_v.len())
+    size += ::bebop_runtime::wire_size::map_size(&self.entries, |_k, _v| {
+      ::bebop_runtime::wire_size::string_size(_k.len())
+        + ::bebop_runtime::wire_size::byte_array_size(_v.len())
     });
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for ByteTagMap<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for ByteTagMap<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:ByteTagMap)
     let entries = reader.read_map(|_r| {
       ::core::result::Result::Ok((
@@ -2691,8 +2809,8 @@ impl<'buf> ByteArrayMessage<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for ByteArrayMessage<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for ByteArrayMessage<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:ByteArrayMessage)
     let pos = writer.reserve_message_length();
     // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
@@ -2714,20 +2832,25 @@ impl<'buf> BebopEncode for ByteArrayMessage<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    let mut size = ::bebop_runtime::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let ::core::option::Option::Some(ref v) = self.label {
-      size += wire::tagged_size(wire::string_size(v.len()));
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::string_size(v.len()));
     }
     if let ::core::option::Option::Some(ref v) = self.payload {
-      size += wire::tagged_size(wire::byte_array_size(v.len()));
+      size += ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::byte_array_size(
+        v.len(),
+      ));
     }
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for ByteArrayMessage<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for ByteArrayMessage<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:ByteArrayMessage)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
@@ -2748,7 +2871,7 @@ impl<'buf> BebopDecode<'buf> for ByteArrayMessage<'buf> {
           ))
         }
         tag => {
-          return ::core::result::Result::Err(DecodeError::InvalidField {
+          return ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidField {
             type_name: "ByteArrayMessage",
             tag,
           });
@@ -2790,8 +2913,8 @@ impl<'buf> ByteCollectionMessage<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for ByteCollectionMessage<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for ByteCollectionMessage<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:ByteCollectionMessage)
     let pos = writer.reserve_message_length();
     // NOTE: Deprecated fields are currently encoded and decoded like normal fields.
@@ -2816,22 +2939,31 @@ impl<'buf> BebopEncode for ByteCollectionMessage<'buf> {
   }
 
   fn encoded_size(&self) -> usize {
-    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;
+    let mut size = ::bebop_runtime::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let ::core::option::Option::Some(ref v) = self.matrix {
-      size += wire::tagged_size(wire::array_size(v, |_el| wire::byte_array_size(_el.len())));
+      size +=
+        ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::array_size(v, |_el| {
+          ::bebop_runtime::wire_size::byte_array_size(_el.len())
+        }));
     }
     if let ::core::option::Option::Some(ref v) = self.tagged {
-      size += wire::tagged_size(wire::map_size(v, |_k, _v| {
-        wire::string_size(_k.len()) + wire::byte_array_size(_v.len())
-      }));
+      size += ::bebop_runtime::wire_size::tagged_size(::bebop_runtime::wire_size::map_size(
+        v,
+        |_k, _v| {
+          ::bebop_runtime::wire_size::string_size(_k.len())
+            + ::bebop_runtime::wire_size::byte_array_size(_v.len())
+        },
+      ));
     }
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for ByteCollectionMessage<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for ByteCollectionMessage<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:ByteCollectionMessage)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
@@ -2859,7 +2991,7 @@ impl<'buf> BebopDecode<'buf> for ByteCollectionMessage<'buf> {
           })?)
         }
         tag => {
-          return ::core::result::Result::Err(DecodeError::InvalidField {
+          return ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidField {
             type_name: "ByteCollectionMessage",
             tag,
           });
@@ -2903,8 +3035,8 @@ impl<'buf> UuidHolder<'buf> {
   }
 }
 
-impl<'buf> BebopEncode for UuidHolder<'buf> {
-  fn encode(&self, writer: &mut BebopWriter) {
+impl<'buf> ::bebop_runtime::BebopEncode for UuidHolder<'buf> {
+  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {
     // @@bebop_insertion_point(encode_start:UuidHolder)
     writer.write_uuid(self.id);
     writer.write_string(&self.label);
@@ -2914,14 +3046,16 @@ impl<'buf> BebopEncode for UuidHolder<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = 0;
     size += ::core::mem::size_of::<::bebop_runtime::Uuid>();
-    size += wire::string_size(self.label.len());
+    size += ::bebop_runtime::wire_size::string_size(self.label.len());
     size
   }
 }
 
-impl<'buf> BebopDecode<'buf> for UuidHolder<'buf> {
+impl<'buf> ::bebop_runtime::BebopDecode<'buf> for UuidHolder<'buf> {
   #[inline]
-  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {
+  fn decode(
+    reader: &mut ::bebop_runtime::BebopReader<'buf>,
+  ) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {
     // @@bebop_insertion_point(decode_start:UuidHolder)
     let id = reader.read_uuid()?;
     let label = alloc::borrow::Cow::Borrowed(reader.read_str()?);
