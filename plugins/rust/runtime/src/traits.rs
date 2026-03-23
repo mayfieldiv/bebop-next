@@ -331,7 +331,8 @@ impl FixedScalar for u128 {
   }
 }
 
-impl FixedScalar for crate::f16 {
+#[cfg(feature = "half")]
+impl FixedScalar for ::half::f16 {
   fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
     reader.read_f16()
   }
@@ -340,7 +341,8 @@ impl FixedScalar for crate::f16 {
   }
 }
 
-impl FixedScalar for crate::bf16 {
+#[cfg(feature = "half")]
+impl FixedScalar for ::half::bf16 {
   fn read_from<'buf>(reader: &mut BebopReader<'buf>) -> Result<Self, DecodeError> {
     reader.read_bf16()
   }
@@ -387,8 +389,10 @@ unsafe impl BulkScalar for i64 {}
 unsafe impl BulkScalar for u64 {}
 unsafe impl BulkScalar for i128 {}
 unsafe impl BulkScalar for u128 {}
-unsafe impl BulkScalar for crate::f16 {}
-unsafe impl BulkScalar for crate::bf16 {}
+#[cfg(feature = "half")]
+unsafe impl BulkScalar for ::half::f16 {}
+#[cfg(feature = "half")]
+unsafe impl BulkScalar for ::half::bf16 {}
 unsafe impl BulkScalar for f32 {}
 unsafe impl BulkScalar for f64 {}
 
