@@ -542,9 +542,9 @@ fn generate_report(langs: &[LangResults], baseline: &str) -> String {
     .map(|i| {
       let w = widths[i];
       if right_align[i] {
-        format!("{:-<width$}:", "", width = w)
+        format!("{:-<width$}:", "", width = w.saturating_sub(1))
       } else {
-        format!("{:-<width$}-", "", width = w)
+        format!("{:-<width$}", "", width = w)
       }
     })
     .collect();
