@@ -49,6 +49,18 @@ echo "Generating test_types.rs..."
 cp "$TMPDIR/integration/test_types.rs" "$RUST_DIR/integration-tests/src/test_types.rs"
 rustfmt "$RUST_DIR/integration-tests/src/test_types.rs"
 
+echo "Generating collision_types.rs..."
+"$BEBOPC" build \
+  "$RUST_DIR/integration-tests/schemas/collision_types.bop" \
+  -I "$SCHEMAS" \
+  --plugin=rust="$PLUGIN" \
+  --rust_out="$TMPDIR/collision" \
+  --rust_opt=serde \
+  -q 2>/dev/null
+
+cp "$TMPDIR/collision/collision_types.rs" "$RUST_DIR/integration-tests/src/collision_types.rs"
+rustfmt "$RUST_DIR/integration-tests/src/collision_types.rs"
+
 # ── 3. Benchmarks: benchmark_types.rs ────────────────────────────────
 
 echo "Generating benchmark_types.rs..."
