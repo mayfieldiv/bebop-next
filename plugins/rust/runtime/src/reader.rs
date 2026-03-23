@@ -247,9 +247,13 @@ impl<'a> BebopReader<'a> {
         available: self.remaining(),
       });
     }
-    let mut items: Vec<T> = Vec::with_capacity(count);
+    let mut items: Vec<T> = Vec::new();
+    items
+      .try_reserve(count)
+      .map_err(|_| DecodeError::AllocationFailed { requested: count })?;
     // Use ptr::write + set_len instead of push to avoid per-element
-    // capacity check. with_capacity guarantees capacity >= count.
+    // capacity check. try_reserve guarantees capacity >= count and
+    // ptr remains valid for the entire loop (no reallocation occurs).
     let ptr = items.as_mut_ptr();
     for i in 0..count {
       match read_elem(self) {
@@ -352,7 +356,10 @@ impl<'a> BebopReader<'a> {
         available: self.remaining(),
       });
     }
-    let mut map = HashMap::with_capacity(count);
+    let mut map = HashMap::new();
+    map
+      .try_reserve(count)
+      .map_err(|_| DecodeError::AllocationFailed { requested: count })?;
     for _ in 0..count {
       let (k, v) = read_entry(self)?;
       map.insert(k, v);
