@@ -45,18 +45,16 @@ impl<'a> BebopReader<'a> {
   #[inline]
   #[must_use]
   pub fn remaining(&self) -> usize {
-    self.buf.len().saturating_sub(self.pos)
+    // INVARIANT: pos <= buf.len() (maintained by all methods).
+    self.buf.len() - self.pos
   }
 
   #[inline]
   fn ensure(&self, count: usize) -> Result<()> {
-    debug_assert!(
-      self.pos <= self.buf.len(),
-      "BebopReader pos exceeded buf len"
-    );
-    // pos is always <= buf.len() (invariant), so buf.len() - pos is safe.
-    // Comparing count <= remaining avoids checked_add overhead.
-    if count <= self.buf.len().wrapping_sub(self.pos) {
+    // INVARIANT: pos <= buf.len() (maintained by all methods).
+    // Plain subtraction is safe under the invariant and will panic in
+    // debug+release if it is ever violated, rather than silently wrapping.
+    if count <= self.buf.len() - self.pos {
       Ok(())
     } else {
       Err(DecodeError::UnexpectedEof {
