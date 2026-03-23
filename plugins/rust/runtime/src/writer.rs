@@ -23,24 +23,29 @@ impl Default for BebopWriter {
 }
 
 impl BebopWriter {
+  #[must_use]
   pub fn new() -> Self {
     Self { buf: Vec::new() }
   }
 
+  #[must_use]
   pub fn with_capacity(cap: usize) -> Self {
     Self {
       buf: Vec::with_capacity(cap),
     }
   }
 
+  #[must_use]
   pub fn into_bytes(self) -> Vec<u8> {
     self.buf
   }
 
+  #[must_use]
   pub fn len(&self) -> usize {
     self.buf.len()
   }
 
+  #[must_use]
   pub fn is_empty(&self) -> bool {
     self.buf.is_empty()
   }
@@ -111,8 +116,11 @@ impl BebopWriter {
 
   /// Write a Bebop string: u32 byte_count + UTF-8 bytes + NUL.
   /// The u32 is the number of UTF-8 bytes (NOT including the trailing NUL).
+  ///
+  /// # Panics
+  /// Panics if the string exceeds `u32::MAX` bytes.
   pub fn write_string(&mut self, s: &str) {
-    let len = s.len() as u32;
+    let len = u32::try_from(s.len()).expect("string exceeds u32::MAX bytes for Bebop wire format");
     self.write_u32(len);
     self.buf.extend_from_slice(s.as_bytes());
     self.buf.push(0); // NUL terminator
@@ -172,8 +180,13 @@ impl BebopWriter {
   // ── Collections ─────────────────────────────────────────────
 
   /// Write an array: u32 count + elements.
+  ///
+  /// # Panics
+  /// Panics if the array exceeds `u32::MAX` elements.
   pub fn write_array<T>(&mut self, items: &[T], mut write_elem: impl FnMut(&mut Self, &T)) {
-    self.write_u32(items.len() as u32);
+    let count =
+      u32::try_from(items.len()).expect("array exceeds u32::MAX elements for Bebop wire format");
+    self.write_u32(count);
     for item in items {
       write_elem(self, item);
     }
@@ -183,12 +196,12 @@ impl BebopWriter {
   ///
   /// Wire format: u32 count + `count * size_of::<T>()` bytes in LE order.
   /// On big-endian, falls back to per-element writes.
+  /// # Panics
+  /// Panics if the array exceeds `u32::MAX` elements.
   pub fn write_scalar_array<T: BulkScalar>(&mut self, items: &[T]) {
-    debug_assert!(
-      items.len() <= u32::MAX as usize,
-      "array too large for Bebop wire format"
-    );
-    self.write_u32(items.len() as u32);
+    let count = u32::try_from(items.len())
+      .expect("scalar array exceeds u32::MAX elements for Bebop wire format");
+    self.write_u32(count);
     if cfg!(target_endian = "little") {
       // SAFETY: T: BulkScalar guarantees no padding and size_of::<T>() == wire size.
       // On LE, in-memory bytes ARE the wire bytes. u8 alignment is 1, always satisfied.
@@ -204,20 +217,30 @@ impl BebopWriter {
   }
 
   /// Write a map: u32 count + (key, value) pairs.
+  ///
+  /// # Panics
+  /// Panics if the map exceeds `u32::MAX` entries.
   pub fn write_map<K: Eq + Hash, V>(
     &mut self,
     map: &HashMap<K, V>,
     mut write_entry: impl FnMut(&mut Self, &K, &V),
   ) {
-    self.write_u32(map.len() as u32);
+    let count =
+      u32::try_from(map.len()).expect("map exceeds u32::MAX entries for Bebop wire format");
+    self.write_u32(count);
     for (k, v) in map {
       write_entry(self, k, v);
     }
   }
 
   /// Write a byte array with length prefix: u32 count + bytes.
+  ///
+  /// # Panics
+  /// Panics if the byte array exceeds `u32::MAX` bytes.
   pub fn write_byte_array(&mut self, v: &[u8]) {
-    self.write_u32(v.len() as u32);
+    let count =
+      u32::try_from(v.len()).expect("byte array exceeds u32::MAX bytes for Bebop wire format");
+    self.write_u32(count);
     self.buf.extend_from_slice(v);
   }
 
