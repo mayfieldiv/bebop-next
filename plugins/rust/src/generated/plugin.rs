@@ -19,8 +19,8 @@ use super::descriptor::*;
 use alloc::vec;
 use bebop_runtime::wire_size as wire;
 use bebop_runtime::{
-  bf16, f16, BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopReader, BebopTimestamp,
-  BebopWriter, DecodeError,
+  BebopDecode, BebopDuration, BebopEncode, BebopFlags, BebopReader, BebopTimestamp, BebopWriter,
+  DecodeError,
 };
 use core::convert::Into as _;
 use core::iter::IntoIterator as _;

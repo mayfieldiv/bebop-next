@@ -5,7 +5,6 @@ use crate::temporal::{BebopDuration, BebopTimestamp};
 use crate::traits::BulkScalar;
 use crate::traits::FixedScalar;
 use crate::HashMap;
-use crate::{bf16, f16};
 
 /// Accumulating writer for Bebop wire format.
 ///
@@ -96,11 +95,13 @@ impl BebopWriter {
     self.buf.extend_from_slice(&v.to_le_bytes());
   }
 
-  pub fn write_f16(&mut self, v: f16) {
+  #[cfg(feature = "half")]
+  pub fn write_f16(&mut self, v: ::half::f16) {
     self.buf.extend_from_slice(&v.to_bits().to_le_bytes());
   }
 
-  pub fn write_bf16(&mut self, v: bf16) {
+  #[cfg(feature = "half")]
+  pub fn write_bf16(&mut self, v: ::half::bf16) {
     self.buf.extend_from_slice(&v.to_bits().to_le_bytes());
   }
 
@@ -128,7 +129,8 @@ impl BebopWriter {
 
   // ── UUID ────────────────────────────────────────────────────
 
-  pub fn write_uuid(&mut self, v: uuid::Uuid) {
+  #[cfg(feature = "uuid")]
+  pub fn write_uuid(&mut self, v: ::uuid::Uuid) {
     self.buf.extend_from_slice(v.as_bytes());
   }
 

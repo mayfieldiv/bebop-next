@@ -14,7 +14,9 @@ mod writer;
 
 pub use bytes::BebopBytes;
 pub use error::DecodeError;
+#[cfg(feature = "half")]
 pub use half::bf16;
+#[cfg(feature = "half")]
 pub use half::f16;
 pub use hashbrown::HashMap;
 pub use reader::BebopReader;
@@ -23,5 +25,6 @@ pub use serde;
 pub use temporal::{BebopDuration, BebopTimestamp};
 pub use traits::{BebopDecode, BebopDecodeOwned};
 pub use traits::{BebopEncode, BebopFlagBits, BebopFlags, FixedScalar};
+#[cfg(feature = "uuid")]
 pub use uuid::Uuid;
 pub use writer::BebopWriter;

@@ -6,8 +6,8 @@ use core::hash::Hash;
 use crate::temporal::{BebopDuration, BebopTimestamp};
 use crate::traits::BulkScalar;
 use crate::traits::FixedScalar;
+use crate::DecodeError;
 use crate::HashMap;
-use crate::{bf16, f16, DecodeError};
 
 /// Validate UTF-8 using SIMD-accelerated validation when available.
 /// Returns the validated `&str` directly, avoiding `from_utf8_unchecked`.
@@ -142,14 +142,16 @@ impl<'a> BebopReader<'a> {
     Ok(u128::from_le_bytes(self.read_n()?))
   }
 
+  #[cfg(feature = "half")]
   #[inline]
-  pub fn read_f16(&mut self) -> Result<f16> {
-    Ok(f16::from_bits(self.read_u16()?))
+  pub fn read_f16(&mut self) -> Result<::half::f16> {
+    Ok(::half::f16::from_bits(self.read_u16()?))
   }
 
+  #[cfg(feature = "half")]
   #[inline]
-  pub fn read_bf16(&mut self) -> Result<bf16> {
-    Ok(bf16::from_bits(self.read_u16()?))
+  pub fn read_bf16(&mut self) -> Result<::half::bf16> {
+    Ok(::half::bf16::from_bits(self.read_u16()?))
   }
 
   #[inline]
@@ -184,9 +186,10 @@ impl<'a> BebopReader<'a> {
 
   // ── UUID ────────────────────────────────────────────────────
 
+  #[cfg(feature = "uuid")]
   #[inline]
-  pub fn read_uuid(&mut self) -> Result<uuid::Uuid> {
-    Ok(uuid::Uuid::from_bytes(self.read_n()?))
+  pub fn read_uuid(&mut self) -> Result<::uuid::Uuid> {
+    Ok(::uuid::Uuid::from_bytes(self.read_n()?))
   }
 
   // ── Timestamp / Duration ────────────────────────────────────

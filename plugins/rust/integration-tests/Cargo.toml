@@ -10,6 +10,6 @@ std = ["bebop-runtime/std"]
 serde = []
 
 [dependencies]
-bebop-runtime = { path = "../runtime", features = ["serde"], default-features = false }
+bebop-runtime = { path = "../runtime", features = ["serde", "uuid", "half"], default-features = false }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
