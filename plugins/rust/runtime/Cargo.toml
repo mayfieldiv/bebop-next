@@ -7,7 +7,7 @@ publish = false
 
 [features]
 default = ["std"]
-std = ["half/std"]
+std = ["half/std", "simdutf8/std"]
 chrono = ["dep:chrono"]
 serde = ["dep:serde", "dep:serde_bytes", "half/serde", "uuid/serde", "hashbrown/serde"]
 
