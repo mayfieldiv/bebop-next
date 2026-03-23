@@ -215,10 +215,12 @@ impl<T> BebopEncode for T
 where
   T: BebopFlags + Copy,
 {
+  #[inline]
   fn encode(&self, writer: &mut BebopWriter) {
     self.bits().encode_bits(writer);
   }
 
+  #[inline]
   fn encoded_size(&self) -> usize {
     <T::Bits as BebopFlagBits>::FIXED_ENCODED_SIZE
   }
