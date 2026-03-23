@@ -93,12 +93,43 @@ pub fn variant_name(name: &str) -> String {
 
 /// Escape and convert a field name to idiomatic Rust.
 pub fn field_name(name: &str) -> String {
-  escape_keyword(&to_snake_case(name))
+  let s = to_snake_case(name);
+  // `r#self` / `r#super` are not valid in struct field / pattern positions (rustc).
+  match s.as_str() {
+    "self" => "self_".to_string(),
+    "super" => "super_".to_string(),
+    _ => escape_keyword(&s),
+  }
+}
+
+/// Original Bebop field name for serde `rename` when [field_name] mangles `self` / `super`.
+pub fn serde_field_rename(name: &str) -> Option<&'static str> {
+  match to_snake_case(name).as_str() {
+    "self" => Some("self"),
+    "super" => Some("super"),
+    _ => None,
+  }
 }
 
 /// Escape and convert a type name to idiomatic Rust.
 pub fn type_name(name: &str) -> String {
-  escape_keyword(&to_pascal_case(name))
+  let p = to_pascal_case(name);
+  // `r#Self` is not a valid raw identifier (rustc rejects it). Bebop string fields are emitted as
+  // `alloc::string::String`, so a user-defined type named `String` does not need `String_`.
+  match p.as_str() {
+    "Self" => "Self_".to_string(),
+    _ => escape_keyword(&p),
+  }
+}
+
+/// Rust enum variant identifier (Bebop member name → PascalCase), avoiding `Self`.
+pub fn enum_variant_name(name: &str) -> String {
+  let v = variant_name(name);
+  if v == "Self" {
+    "Self_".to_string()
+  } else {
+    v
+  }
 }
 
 /// Convert a const name to idiomatic Rust SCREAMING_SNAKE_CASE.
