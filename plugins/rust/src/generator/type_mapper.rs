@@ -21,11 +21,11 @@ pub fn scalar_type(kind: TypeKind) -> Option<&'static str> {
     TypeKind::Float32 => Some("f32"),
     TypeKind::Float64 => Some("f64"),
     TypeKind::String => Some("alloc::string::String"),
-    TypeKind::Float16 => Some("f16"),
-    TypeKind::Bfloat16 => Some("bf16"),
+    TypeKind::Float16 => Some("::bebop_runtime::f16"),
+    TypeKind::Bfloat16 => Some("::bebop_runtime::bf16"),
     TypeKind::Uuid => Some("::bebop_runtime::Uuid"),
-    TypeKind::Timestamp => Some("BebopTimestamp"),
-    TypeKind::Duration => Some("BebopDuration"),
+    TypeKind::Timestamp => Some("::bebop_runtime::BebopTimestamp"),
+    TypeKind::Duration => Some("::bebop_runtime::BebopDuration"),
     _ => None,
   }
 }
@@ -208,8 +208,8 @@ pub fn fixed_size_expr(kind: TypeKind) -> Option<&'static str> {
     TypeKind::Uint64 => Some("::core::mem::size_of::<u64>()"),
     TypeKind::Int128 => Some("::core::mem::size_of::<i128>()"),
     TypeKind::Uint128 => Some("::core::mem::size_of::<u128>()"),
-    TypeKind::Float16 => Some("::core::mem::size_of::<f16>()"),
-    TypeKind::Bfloat16 => Some("::core::mem::size_of::<bf16>()"),
+    TypeKind::Float16 => Some("::core::mem::size_of::<::bebop_runtime::f16>()"),
+    TypeKind::Bfloat16 => Some("::core::mem::size_of::<::bebop_runtime::bf16>()"),
     TypeKind::Float32 => Some("::core::mem::size_of::<f32>()"),
     TypeKind::Float64 => Some("::core::mem::size_of::<f64>()"),
     TypeKind::Uuid => Some("::core::mem::size_of::<::bebop_runtime::Uuid>()"),
@@ -750,25 +750,34 @@ pub fn encoded_size_expression(
   }
 
   match kind {
-    TypeKind::String => Ok(format!("wire::string_size({}.len())", value)),
+    TypeKind::String => Ok(format!(
+      "::bebop_runtime::wire_size::string_size({}.len())",
+      value
+    )),
     TypeKind::Array => {
       let elem = td
         .array_element
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
       if elem.kind == Some(TypeKind::Byte) {
-        return Ok(format!("wire::byte_array_size({}.len())", value));
+        return Ok(format!(
+          "::bebop_runtime::wire_size::byte_array_size({}.len())",
+          value
+        ));
       }
       let items_ref = collection_ref(value);
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
       if let Some(sz_expr) = fixed_size_expr(elem_kind) {
         Ok(format!(
-          "wire::array_size({}, |_el| ({}))",
+          "::bebop_runtime::wire_size::array_size({}, |_el| ({}))",
           items_ref, sz_expr
         ))
       } else {
         let inner = encoded_size_expression(elem, "_el", _analysis)?;
-        Ok(format!("wire::array_size({}, |_el| {})", items_ref, inner))
+        Ok(format!(
+          "::bebop_runtime::wire_size::array_size({}, |_el| {})",
+          items_ref, inner
+        ))
       }
     }
     TypeKind::FixedArray => {
@@ -803,7 +812,7 @@ pub fn encoded_size_expression(
       let v_size = encoded_size_expression(val, "_v", _analysis)?;
       let map_ref = collection_ref(value);
       Ok(format!(
-        "wire::map_size({}, |_k, _v| {} + {})",
+        "::bebop_runtime::wire_size::map_size({}, |_k, _v| {} + {})",
         map_ref, k_size, v_size
       ))
     }

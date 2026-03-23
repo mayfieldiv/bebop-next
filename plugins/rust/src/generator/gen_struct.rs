@@ -1,7 +1,7 @@
 use crate::error::GeneratorError;
 use crate::generated::{DefinitionDescriptor, TypeDescriptor};
 
-use super::naming::{field_name, type_name};
+use super::naming::{field_name, serde_field_rename, type_name};
 use super::type_mapper;
 use super::{
   emit_deprecated, emit_doc_comment, visibility_keyword, GeneratorOptions, LifetimeAnalysis,
@@ -75,6 +75,11 @@ pub fn generate(
   for (f, meta) in fields.iter().zip(&field_metas) {
     emit_doc_comment(output, &f.documentation);
     emit_deprecated(output, &f.decorators);
+    if let Some(rename) = serde_field_rename(f.name.as_deref().unwrap_or("")) {
+      options
+        .serde
+        .emit_field_attr(output, &format!("rename = \"{}\"", rename));
+    }
     output.push_str(&format!("  {} {}: {},\n", vis, meta.fname, meta.cow_type));
   }
   output.push_str("}\n\n");
@@ -190,11 +195,14 @@ pub fn generate(
     output.push_str("}\n\n");
   }
 
-  // ── impl BebopEncode ──────────────────────────────────────────
-  output.push_str(&format!("impl{} BebopEncode for {}{} {{\n", lt, name, lt));
+  // ── impl ::bebop_runtime::BebopEncode ──────────────────────────────────────────
+  output.push_str(&format!(
+    "impl{} ::bebop_runtime::BebopEncode for {}{} {{\n",
+    lt, name, lt
+  ));
 
   // encode()
-  output.push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
+  output.push_str("  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {\n");
   output.push_str(&format!(
     "    // @@bebop_insertion_point(encode_start:{})\n",
     name
@@ -225,14 +233,14 @@ pub fn generate(
 
   output.push_str("}\n\n");
 
-  // ── impl BebopDecode ──────────────────────────────────────────
+  // ── impl ::bebop_runtime::BebopDecode ──────────────────────────────────────────
   output.push_str(&format!(
-    "impl<'buf> BebopDecode<'buf> for {}{} {{\n",
+    "impl<'buf> ::bebop_runtime::BebopDecode<'buf> for {}{} {{\n",
     name, lt
   ));
   output.push_str("  #[inline]\n");
   output.push_str(
-    "  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {\n",
+    "  fn decode(reader: &mut ::bebop_runtime::BebopReader<'buf>) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {\n",
   );
   output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_start:{})\n",

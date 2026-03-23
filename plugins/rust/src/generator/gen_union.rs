@@ -138,15 +138,21 @@ pub fn generate(
     output.push_str("}\n\n");
   }
 
-  // ── impl BebopEncode ──────────────────────────────────────────
+  // ── impl ::bebop_runtime::BebopEncode ──────────────────────────────────────────
   if has_lifetime {
-    output.push_str(&format!("impl<'buf> BebopEncode for {}<'buf> {{\n", name));
+    output.push_str(&format!(
+      "impl<'buf> ::bebop_runtime::BebopEncode for {}<'buf> {{\n",
+      name
+    ));
   } else {
-    output.push_str(&format!("impl BebopEncode for {} {{\n", name));
+    output.push_str(&format!(
+      "impl ::bebop_runtime::BebopEncode for {} {{\n",
+      name
+    ));
   }
 
   // encode()
-  output.push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
+  output.push_str("  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {\n");
   output.push_str(&format!(
     "    // @@bebop_insertion_point(encode_start:{})\n",
     name
@@ -178,33 +184,38 @@ pub fn generate(
 
   // encoded_size()
   output.push_str("  fn encoded_size(&self) -> usize {\n");
-  output.push_str("    wire::WIRE_LEN_PREFIX_SIZE + match self {\n");
+  output.push_str("    ::bebop_runtime::wire_size::WIRE_LEN_PREFIX_SIZE + match self {\n");
   for b in &branch_infos {
     output.push_str(&format!(
-      "      Self::{}(inner) => wire::tagged_size(inner.encoded_size()),\n",
+      "      Self::{}(inner) => ::bebop_runtime::wire_size::tagged_size(inner.encoded_size()),\n",
       b.variant
     ));
   }
   if is_forward_compatible {
-    output.push_str("      Self::Unknown(_, data) => wire::tagged_size(data.len()),\n");
+    output.push_str(
+      "      Self::Unknown(_, data) => ::bebop_runtime::wire_size::tagged_size(data.len()),\n",
+    );
   }
   output.push_str("    }\n");
   output.push_str("  }\n");
 
   output.push_str("}\n\n");
 
-  // ── impl BebopDecode ──────────────────────────────────────────
+  // ── impl ::bebop_runtime::BebopDecode ──────────────────────────────────────────
   if has_lifetime {
     output.push_str(&format!(
-      "impl<'buf> BebopDecode<'buf> for {}<'buf> {{\n",
+      "impl<'buf> ::bebop_runtime::BebopDecode<'buf> for {}<'buf> {{\n",
       name
     ));
   } else {
-    output.push_str(&format!("impl<'buf> BebopDecode<'buf> for {} {{\n", name));
+    output.push_str(&format!(
+      "impl<'buf> ::bebop_runtime::BebopDecode<'buf> for {} {{\n",
+      name
+    ));
   }
   output.push_str("  #[inline]\n");
   output.push_str(
-    "  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {\n",
+    "  fn decode(reader: &mut ::bebop_runtime::BebopReader<'buf>) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {\n",
   );
   output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_start:{})\n",
@@ -234,7 +245,7 @@ pub fn generate(
     output.push_str("      }\n");
   } else {
     output.push_str(&format!(
-      "      _ => ::core::result::Result::Err(DecodeError::InvalidUnion {{ type_name: \"{}\", discriminator }}),\n",
+      "      _ => ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidUnion {{ type_name: \"{}\", discriminator }}),\n",
       name
     ));
   }

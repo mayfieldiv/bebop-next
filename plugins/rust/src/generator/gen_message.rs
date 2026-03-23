@@ -1,7 +1,7 @@
 use crate::error::GeneratorError;
 use crate::generated::{DefinitionDescriptor, TypeDescriptor, TypeKind};
 
-use super::naming::{field_name, type_name};
+use super::naming::{field_name, serde_field_rename, type_name};
 use super::type_mapper;
 use super::{
   emit_deprecated, emit_doc_comment, has_decorator, visibility_keyword, GeneratorOptions,
@@ -124,6 +124,11 @@ pub fn generate(
   for (f, meta) in fields.iter().zip(&field_metas) {
     emit_doc_comment(output, &f.documentation);
     emit_deprecated(output, &f.decorators);
+    if let Some(rename) = serde_field_rename(f.name.as_deref().unwrap_or("")) {
+      options
+        .serde
+        .emit_field_attr(output, &format!("rename = \"{}\"", rename));
+    }
     match meta.wrap {
       FieldWrap::Boxed => {
         output.push_str(&format!(
@@ -184,11 +189,14 @@ pub fn generate(
     output.push_str("}\n\n");
   }
 
-  // ── impl BebopEncode ──────────────────────────────────────────
-  output.push_str(&format!("impl{} BebopEncode for {}{} {{\n", lt, name, lt));
+  // ── impl ::bebop_runtime::BebopEncode ──────────────────────────────────────────
+  output.push_str(&format!(
+    "impl{} ::bebop_runtime::BebopEncode for {}{} {{\n",
+    lt, name, lt
+  ));
 
   // encode()
-  output.push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
+  output.push_str("  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {\n");
   output.push_str(&format!(
     "    // @@bebop_insertion_point(encode_start:{})\n",
     name
@@ -231,7 +239,7 @@ pub fn generate(
 
   // encoded_size()
   output.push_str("  fn encoded_size(&self) -> usize {\n");
-  output.push_str("    let mut size = wire::WIRE_MESSAGE_BASE_SIZE;\n");
+  output.push_str("    let mut size = ::bebop_runtime::wire_size::WIRE_MESSAGE_BASE_SIZE;\n");
   for meta in &field_metas {
     let ref_kw = if meta.needs_ref() { "ref " } else { "" };
     output.push_str(&format!(
@@ -240,7 +248,7 @@ pub fn generate(
     ));
     let size_expr = type_mapper::encoded_size_expression(meta.td, "v", analysis)?;
     output.push_str(&format!(
-      "      size += wire::tagged_size({});\n",
+      "      size += ::bebop_runtime::wire_size::tagged_size({});\n",
       size_expr
     ));
     output.push_str("    }\n");
@@ -250,14 +258,14 @@ pub fn generate(
 
   output.push_str("}\n\n");
 
-  // ── impl BebopDecode ──────────────────────────────────────────
+  // ── impl ::bebop_runtime::BebopDecode ──────────────────────────────────────────
   output.push_str(&format!(
-    "impl<'buf> BebopDecode<'buf> for {}{} {{\n",
+    "impl<'buf> ::bebop_runtime::BebopDecode<'buf> for {}{} {{\n",
     name, lt
   ));
   output.push_str("  #[inline]\n");
   output.push_str(
-    "  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {\n",
+    "  fn decode(reader: &mut ::bebop_runtime::BebopReader<'buf>) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {\n",
   );
   output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_start:{})\n",
@@ -301,7 +309,7 @@ pub fn generate(
     output.push_str("        _ => { reader.skip(end - reader.position())?; }\n");
   } else {
     output.push_str(&format!(
-      "        tag => {{ return ::core::result::Result::Err(DecodeError::InvalidField {{ type_name: \"{}\", tag }}); }}\n",
+      "        tag => {{ return ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidField {{ type_name: \"{}\", tag }}); }}\n",
       name
     ));
   }
