@@ -5692,6 +5692,8 @@ pub struct RustKeywordFields {
   pub self_: i32,
   #[serde(rename = "super")]
   pub super_: i32,
+  #[serde(rename = "crate")]
+  pub crate_: i32,
   pub r#match: i32,
   pub r#where: i32,
   pub r#loop: i32,
@@ -5724,6 +5726,7 @@ impl RustKeywordFields {
     + mem::size_of::<i32>()
     + mem::size_of::<i32>()
     + mem::size_of::<i32>()
+    + mem::size_of::<i32>()
     + mem::size_of::<i32>();
 
   pub fn new(
@@ -5731,6 +5734,7 @@ impl RustKeywordFields {
     r#mod: i32,
     self_: i32,
     super_: i32,
+    crate_: i32,
     r#match: i32,
     r#where: i32,
     r#loop: i32,
@@ -5750,6 +5754,7 @@ impl RustKeywordFields {
       r#mod,
       self_,
       super_,
+      crate_,
       r#match,
       r#where,
       r#loop,
@@ -5774,6 +5779,7 @@ impl bebop::BebopEncode for RustKeywordFields {
     writer.write_i32(self.r#mod);
     writer.write_i32(self.self_);
     writer.write_i32(self.super_);
+    writer.write_i32(self.crate_);
     writer.write_i32(self.r#match);
     writer.write_i32(self.r#where);
     writer.write_i32(self.r#loop);
@@ -5803,6 +5809,7 @@ impl<'buf> bebop::BebopDecode<'buf> for RustKeywordFields {
     let r#mod = reader.read_i32()?;
     let self_ = reader.read_i32()?;
     let super_ = reader.read_i32()?;
+    let crate_ = reader.read_i32()?;
     let r#match = reader.read_i32()?;
     let r#where = reader.read_i32()?;
     let r#loop = reader.read_i32()?;
@@ -5822,6 +5829,7 @@ impl<'buf> bebop::BebopDecode<'buf> for RustKeywordFields {
       r#mod,
       self_,
       super_,
+      crate_,
       r#match,
       r#where,
       r#loop,
@@ -6065,6 +6073,8 @@ pub struct KeywordFieldMessage<'buf> {
   pub r#mod: option::Option<borrow::Cow<'buf, str>>,
   #[serde(rename = "self")]
   pub self_: option::Option<bool>,
+  #[serde(rename = "crate")]
+  pub crate_: option::Option<i32>,
 }
 
 pub type KeywordFieldMessageOwned = KeywordFieldMessage<'static>;
@@ -6075,6 +6085,7 @@ impl<'buf> KeywordFieldMessage<'buf> {
       r#type: self.r#type,
       r#mod: self.r#mod.map(|v| borrow::Cow::Owned(v.into_owned())),
       self_: self.self_,
+      crate_: self.crate_,
     }
   }
 }
@@ -6100,6 +6111,10 @@ impl<'buf> bebop::BebopEncode for KeywordFieldMessage<'buf> {
       writer.write_tag(3);
       writer.write_bool(v);
     }
+    if let option::Option::Some(v) = self.crate_ {
+      writer.write_tag(4);
+      writer.write_i32(v);
+    }
     writer.write_end_marker();
     writer.fill_message_length(pos);
     // @@bebop_insertion_point(encode_end:KeywordFieldMessage)
@@ -6115,6 +6130,9 @@ impl<'buf> bebop::BebopEncode for KeywordFieldMessage<'buf> {
     }
     if let option::Option::Some(v) = self.self_ {
       size += bebop::wire_size::tagged_size(mem::size_of::<bool>());
+    }
+    if let option::Option::Some(v) = self.crate_ {
+      size += bebop::wire_size::tagged_size(mem::size_of::<i32>());
     }
     size
   }
@@ -6137,6 +6155,7 @@ impl<'buf> bebop::BebopDecode<'buf> for KeywordFieldMessage<'buf> {
         1 => msg.r#type = option::Option::Some(reader.read_i32()?),
         2 => msg.r#mod = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
         3 => msg.self_ = option::Option::Some(reader.read_bool()?),
+        4 => msg.crate_ = option::Option::Some(reader.read_i32()?),
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "KeywordFieldMessage",

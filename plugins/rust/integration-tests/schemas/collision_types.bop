@@ -469,6 +469,7 @@ struct RustKeywordFields {
     mod: int32;
     self: int32;
     super: int32;
+    crate: int32;
     match: int32;
     where: int32;
     loop: int32;
@@ -519,6 +520,7 @@ message KeywordFieldMessage {
     type(1): int32;
     mod(2): string;
     self(3): bool;
+    crate(4): int32;
 }
 
 /// Holds both a wire `guid` (runtime UUID) and a user-defined `Uuid` struct.
