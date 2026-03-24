@@ -15,26 +15,24 @@
 extern crate alloc;
 extern crate bebop_runtime;
 extern crate core;
-use alloc::vec;
+use alloc::{borrow, boxed, string, vec};
 use bebop_runtime as bebop;
+use bebop_runtime::serde;
 use core::convert::Into as _;
-use core::iter::IntoIterator as _;
-use core::iter::Iterator as _;
+use core::iter::{IntoIterator as _, Iterator as _};
+use core::{convert, default, mem, ops, option, result};
 
 // @@bebop_insertion_point(imports)
 
 /// Same wire layout as `Point` in test_types.bop; used by `KeywordUnion` only.
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
 pub struct Point {
   pub x: f32,
   pub y: f32,
 }
 
 impl Point {
-  pub const FIXED_ENCODED_SIZE: usize =
-    ::core::mem::size_of::<f32>() + ::core::mem::size_of::<f32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<f32>() + mem::size_of::<f32>();
 
   pub fn new(x: f32, y: f32) -> Self {
     Self { x, y }
@@ -56,14 +54,12 @@ impl bebop::BebopEncode for Point {
 
 impl<'buf> bebop::BebopDecode<'buf> for Point {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Point)
     let x = reader.read_f32()?;
     let y = reader.read_f32()?;
     // @@bebop_insertion_point(decode_end:Point)
-    ::core::result::Result::Ok(Point { x, y })
+    result::Result::Ok(Point { x, y })
   }
 }
 
@@ -71,15 +67,13 @@ impl Point {
   // @@bebop_insertion_point(struct_scope:Point)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Uuid {
   pub tag: i32,
 }
 
 impl Uuid {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -100,13 +94,11 @@ impl bebop::BebopEncode for Uuid {
 
 impl<'buf> bebop::BebopDecode<'buf> for Uuid {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Uuid)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Uuid)
-    ::core::result::Result::Ok(Uuid { tag })
+    result::Result::Ok(Uuid { tag })
   }
 }
 
@@ -114,15 +106,13 @@ impl Uuid {
   // @@bebop_insertion_point(struct_scope:Uuid)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct HashMap {
   pub tag: i32,
 }
 
 impl HashMap {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -143,13 +133,11 @@ impl bebop::BebopEncode for HashMap {
 
 impl<'buf> bebop::BebopDecode<'buf> for HashMap {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:HashMap)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:HashMap)
-    ::core::result::Result::Ok(HashMap { tag })
+    result::Result::Ok(HashMap { tag })
   }
 }
 
@@ -157,15 +145,13 @@ impl HashMap {
   // @@bebop_insertion_point(struct_scope:HashMap)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DecodeError {
   pub tag: i32,
 }
 
 impl DecodeError {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -186,13 +172,11 @@ impl bebop::BebopEncode for DecodeError {
 
 impl<'buf> bebop::BebopDecode<'buf> for DecodeError {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:DecodeError)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:DecodeError)
-    ::core::result::Result::Ok(DecodeError { tag })
+    result::Result::Ok(DecodeError { tag })
   }
 }
 
@@ -200,15 +184,13 @@ impl DecodeError {
   // @@bebop_insertion_point(struct_scope:DecodeError)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopReader {
   pub tag: i32,
 }
 
 impl BebopReader {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -229,13 +211,11 @@ impl bebop::BebopEncode for BebopReader {
 
 impl<'buf> bebop::BebopDecode<'buf> for BebopReader {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopReader)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:BebopReader)
-    ::core::result::Result::Ok(BebopReader { tag })
+    result::Result::Ok(BebopReader { tag })
   }
 }
 
@@ -243,15 +223,13 @@ impl BebopReader {
   // @@bebop_insertion_point(struct_scope:BebopReader)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopWriter {
   pub tag: i32,
 }
 
 impl BebopWriter {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -272,13 +250,11 @@ impl bebop::BebopEncode for BebopWriter {
 
 impl<'buf> bebop::BebopDecode<'buf> for BebopWriter {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopWriter)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:BebopWriter)
-    ::core::result::Result::Ok(BebopWriter { tag })
+    result::Result::Ok(BebopWriter { tag })
   }
 }
 
@@ -286,15 +262,13 @@ impl BebopWriter {
   // @@bebop_insertion_point(struct_scope:BebopWriter)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopDecode {
   pub tag: i32,
 }
 
 impl BebopDecode {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -315,13 +289,11 @@ impl bebop::BebopEncode for BebopDecode {
 
 impl<'buf> bebop::BebopDecode<'buf> for BebopDecode {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopDecode)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:BebopDecode)
-    ::core::result::Result::Ok(BebopDecode { tag })
+    result::Result::Ok(BebopDecode { tag })
   }
 }
 
@@ -329,15 +301,13 @@ impl BebopDecode {
   // @@bebop_insertion_point(struct_scope:BebopDecode)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopEncode {
   pub tag: i32,
 }
 
 impl BebopEncode {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -358,13 +328,11 @@ impl bebop::BebopEncode for BebopEncode {
 
 impl<'buf> bebop::BebopDecode<'buf> for BebopEncode {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopEncode)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:BebopEncode)
-    ::core::result::Result::Ok(BebopEncode { tag })
+    result::Result::Ok(BebopEncode { tag })
   }
 }
 
@@ -372,15 +340,13 @@ impl BebopEncode {
   // @@bebop_insertion_point(struct_scope:BebopEncode)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopDuration {
   pub tag: i32,
 }
 
 impl BebopDuration {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -401,13 +367,11 @@ impl bebop::BebopEncode for BebopDuration {
 
 impl<'buf> bebop::BebopDecode<'buf> for BebopDuration {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopDuration)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:BebopDuration)
-    ::core::result::Result::Ok(BebopDuration { tag })
+    result::Result::Ok(BebopDuration { tag })
   }
 }
 
@@ -415,15 +379,13 @@ impl BebopDuration {
   // @@bebop_insertion_point(struct_scope:BebopDuration)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopTimestamp {
   pub tag: i32,
 }
 
 impl BebopTimestamp {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -444,13 +406,11 @@ impl bebop::BebopEncode for BebopTimestamp {
 
 impl<'buf> bebop::BebopDecode<'buf> for BebopTimestamp {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopTimestamp)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:BebopTimestamp)
-    ::core::result::Result::Ok(BebopTimestamp { tag })
+    result::Result::Ok(BebopTimestamp { tag })
   }
 }
 
@@ -458,15 +418,13 @@ impl BebopTimestamp {
   // @@bebop_insertion_point(struct_scope:BebopTimestamp)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopFlags {
   pub tag: i32,
 }
 
 impl BebopFlags {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -487,13 +445,11 @@ impl bebop::BebopEncode for BebopFlags {
 
 impl<'buf> bebop::BebopDecode<'buf> for BebopFlags {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopFlags)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:BebopFlags)
-    ::core::result::Result::Ok(BebopFlags { tag })
+    result::Result::Ok(BebopFlags { tag })
   }
 }
 
@@ -501,15 +457,13 @@ impl BebopFlags {
   // @@bebop_insertion_point(struct_scope:BebopFlags)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopBytes {
   pub tag: i32,
 }
 
 impl BebopBytes {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -530,13 +484,11 @@ impl bebop::BebopEncode for BebopBytes {
 
 impl<'buf> bebop::BebopDecode<'buf> for BebopBytes {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopBytes)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:BebopBytes)
-    ::core::result::Result::Ok(BebopBytes { tag })
+    result::Result::Ok(BebopBytes { tag })
   }
 }
 
@@ -544,15 +496,13 @@ impl BebopBytes {
   // @@bebop_insertion_point(struct_scope:BebopBytes)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Serde {
   pub tag: i32,
 }
 
 impl Serde {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -573,13 +523,11 @@ impl bebop::BebopEncode for Serde {
 
 impl<'buf> bebop::BebopDecode<'buf> for Serde {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Serde)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Serde)
-    ::core::result::Result::Ok(Serde { tag })
+    result::Result::Ok(Serde { tag })
   }
 }
 
@@ -587,15 +535,13 @@ impl Serde {
   // @@bebop_insertion_point(struct_scope:Serde)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Wire {
   pub tag: i32,
 }
 
 impl Wire {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -616,13 +562,11 @@ impl bebop::BebopEncode for Wire {
 
 impl<'buf> bebop::BebopDecode<'buf> for Wire {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Wire)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Wire)
-    ::core::result::Result::Ok(Wire { tag })
+    result::Result::Ok(Wire { tag })
   }
 }
 
@@ -630,15 +574,13 @@ impl Wire {
   // @@bebop_insertion_point(struct_scope:Wire)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Mod {
   pub tag: i32,
 }
 
 impl Mod {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -659,13 +601,11 @@ impl bebop::BebopEncode for Mod {
 
 impl<'buf> bebop::BebopDecode<'buf> for Mod {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Mod)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Mod)
-    ::core::result::Result::Ok(Mod { tag })
+    result::Result::Ok(Mod { tag })
   }
 }
 
@@ -673,15 +613,13 @@ impl Mod {
   // @@bebop_insertion_point(struct_scope:Mod)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Trait {
   pub tag: i32,
 }
 
 impl Trait {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -702,13 +640,11 @@ impl bebop::BebopEncode for Trait {
 
 impl<'buf> bebop::BebopDecode<'buf> for Trait {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Trait)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Trait)
-    ::core::result::Result::Ok(Trait { tag })
+    result::Result::Ok(Trait { tag })
   }
 }
 
@@ -716,15 +652,13 @@ impl Trait {
   // @@bebop_insertion_point(struct_scope:Trait)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Impl {
   pub tag: i32,
 }
 
 impl Impl {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -745,13 +679,11 @@ impl bebop::BebopEncode for Impl {
 
 impl<'buf> bebop::BebopDecode<'buf> for Impl {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Impl)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Impl)
-    ::core::result::Result::Ok(Impl { tag })
+    result::Result::Ok(Impl { tag })
   }
 }
 
@@ -759,15 +691,13 @@ impl Impl {
   // @@bebop_insertion_point(struct_scope:Impl)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Fn {
   pub tag: i32,
 }
 
 impl Fn {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -788,13 +718,11 @@ impl bebop::BebopEncode for Fn {
 
 impl<'buf> bebop::BebopDecode<'buf> for Fn {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Fn)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Fn)
-    ::core::result::Result::Ok(Fn { tag })
+    result::Result::Ok(Fn { tag })
   }
 }
 
@@ -802,15 +730,13 @@ impl Fn {
   // @@bebop_insertion_point(struct_scope:Fn)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Let {
   pub tag: i32,
 }
 
 impl Let {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -831,13 +757,11 @@ impl bebop::BebopEncode for Let {
 
 impl<'buf> bebop::BebopDecode<'buf> for Let {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Let)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Let)
-    ::core::result::Result::Ok(Let { tag })
+    result::Result::Ok(Let { tag })
   }
 }
 
@@ -845,15 +769,13 @@ impl Let {
   // @@bebop_insertion_point(struct_scope:Let)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Use {
   pub tag: i32,
 }
 
 impl Use {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -874,13 +796,11 @@ impl bebop::BebopEncode for Use {
 
 impl<'buf> bebop::BebopDecode<'buf> for Use {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Use)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Use)
-    ::core::result::Result::Ok(Use { tag })
+    result::Result::Ok(Use { tag })
   }
 }
 
@@ -888,15 +808,13 @@ impl Use {
   // @@bebop_insertion_point(struct_scope:Use)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Crate {
   pub tag: i32,
 }
 
 impl Crate {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -917,13 +835,11 @@ impl bebop::BebopEncode for Crate {
 
 impl<'buf> bebop::BebopDecode<'buf> for Crate {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Crate)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Crate)
-    ::core::result::Result::Ok(Crate { tag })
+    result::Result::Ok(Crate { tag })
   }
 }
 
@@ -931,15 +847,13 @@ impl Crate {
   // @@bebop_insertion_point(struct_scope:Crate)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Async {
   pub tag: i32,
 }
 
 impl Async {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -960,13 +874,11 @@ impl bebop::BebopEncode for Async {
 
 impl<'buf> bebop::BebopDecode<'buf> for Async {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Async)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Async)
-    ::core::result::Result::Ok(Async { tag })
+    result::Result::Ok(Async { tag })
   }
 }
 
@@ -974,15 +886,13 @@ impl Async {
   // @@bebop_insertion_point(struct_scope:Async)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Await {
   pub tag: i32,
 }
 
 impl Await {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1003,13 +913,11 @@ impl bebop::BebopEncode for Await {
 
 impl<'buf> bebop::BebopDecode<'buf> for Await {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Await)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Await)
-    ::core::result::Result::Ok(Await { tag })
+    result::Result::Ok(Await { tag })
   }
 }
 
@@ -1017,15 +925,13 @@ impl Await {
   // @@bebop_insertion_point(struct_scope:Await)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Match {
   pub tag: i32,
 }
 
 impl Match {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1046,13 +952,11 @@ impl bebop::BebopEncode for Match {
 
 impl<'buf> bebop::BebopDecode<'buf> for Match {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Match)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Match)
-    ::core::result::Result::Ok(Match { tag })
+    result::Result::Ok(Match { tag })
   }
 }
 
@@ -1060,15 +964,13 @@ impl Match {
   // @@bebop_insertion_point(struct_scope:Match)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Where {
   pub tag: i32,
 }
 
 impl Where {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1089,13 +991,11 @@ impl bebop::BebopEncode for Where {
 
 impl<'buf> bebop::BebopDecode<'buf> for Where {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Where)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Where)
-    ::core::result::Result::Ok(Where { tag })
+    result::Result::Ok(Where { tag })
   }
 }
 
@@ -1103,15 +1003,13 @@ impl Where {
   // @@bebop_insertion_point(struct_scope:Where)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Loop {
   pub tag: i32,
 }
 
 impl Loop {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1132,13 +1030,11 @@ impl bebop::BebopEncode for Loop {
 
 impl<'buf> bebop::BebopDecode<'buf> for Loop {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Loop)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Loop)
-    ::core::result::Result::Ok(Loop { tag })
+    result::Result::Ok(Loop { tag })
   }
 }
 
@@ -1146,15 +1042,13 @@ impl Loop {
   // @@bebop_insertion_point(struct_scope:Loop)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Move {
   pub tag: i32,
 }
 
 impl Move {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1175,13 +1069,11 @@ impl bebop::BebopEncode for Move {
 
 impl<'buf> bebop::BebopDecode<'buf> for Move {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Move)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Move)
-    ::core::result::Result::Ok(Move { tag })
+    result::Result::Ok(Move { tag })
   }
 }
 
@@ -1189,15 +1081,13 @@ impl Move {
   // @@bebop_insertion_point(struct_scope:Move)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Ref {
   pub tag: i32,
 }
 
 impl Ref {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1218,13 +1108,11 @@ impl bebop::BebopEncode for Ref {
 
 impl<'buf> bebop::BebopDecode<'buf> for Ref {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Ref)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Ref)
-    ::core::result::Result::Ok(Ref { tag })
+    result::Result::Ok(Ref { tag })
   }
 }
 
@@ -1232,15 +1120,13 @@ impl Ref {
   // @@bebop_insertion_point(struct_scope:Ref)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Dyn {
   pub tag: i32,
 }
 
 impl Dyn {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1261,13 +1147,11 @@ impl bebop::BebopEncode for Dyn {
 
 impl<'buf> bebop::BebopDecode<'buf> for Dyn {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Dyn)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Dyn)
-    ::core::result::Result::Ok(Dyn { tag })
+    result::Result::Ok(Dyn { tag })
   }
 }
 
@@ -1275,15 +1159,13 @@ impl Dyn {
   // @@bebop_insertion_point(struct_scope:Dyn)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Yield {
   pub tag: i32,
 }
 
 impl Yield {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1304,13 +1186,11 @@ impl bebop::BebopEncode for Yield {
 
 impl<'buf> bebop::BebopDecode<'buf> for Yield {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Yield)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Yield)
-    ::core::result::Result::Ok(Yield { tag })
+    result::Result::Ok(Yield { tag })
   }
 }
 
@@ -1318,15 +1198,13 @@ impl Yield {
   // @@bebop_insertion_point(struct_scope:Yield)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Unsafe {
   pub tag: i32,
 }
 
 impl Unsafe {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1347,13 +1225,11 @@ impl bebop::BebopEncode for Unsafe {
 
 impl<'buf> bebop::BebopDecode<'buf> for Unsafe {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Unsafe)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Unsafe)
-    ::core::result::Result::Ok(Unsafe { tag })
+    result::Result::Ok(Unsafe { tag })
   }
 }
 
@@ -1361,15 +1237,13 @@ impl Unsafe {
   // @@bebop_insertion_point(struct_scope:Unsafe)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Extern {
   pub tag: i32,
 }
 
 impl Extern {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1390,13 +1264,11 @@ impl bebop::BebopEncode for Extern {
 
 impl<'buf> bebop::BebopDecode<'buf> for Extern {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Extern)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Extern)
-    ::core::result::Result::Ok(Extern { tag })
+    result::Result::Ok(Extern { tag })
   }
 }
 
@@ -1404,15 +1276,13 @@ impl Extern {
   // @@bebop_insertion_point(struct_scope:Extern)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Static {
   pub tag: i32,
 }
 
 impl Static {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1433,13 +1303,11 @@ impl bebop::BebopEncode for Static {
 
 impl<'buf> bebop::BebopDecode<'buf> for Static {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Static)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Static)
-    ::core::result::Result::Ok(Static { tag })
+    result::Result::Ok(Static { tag })
   }
 }
 
@@ -1447,15 +1315,13 @@ impl Static {
   // @@bebop_insertion_point(struct_scope:Static)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Virtual {
   pub tag: i32,
 }
 
 impl Virtual {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1476,13 +1342,11 @@ impl bebop::BebopEncode for Virtual {
 
 impl<'buf> bebop::BebopDecode<'buf> for Virtual {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Virtual)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Virtual)
-    ::core::result::Result::Ok(Virtual { tag })
+    result::Result::Ok(Virtual { tag })
   }
 }
 
@@ -1490,15 +1354,13 @@ impl Virtual {
   // @@bebop_insertion_point(struct_scope:Virtual)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Override {
   pub tag: i32,
 }
 
 impl Override {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1519,13 +1381,11 @@ impl bebop::BebopEncode for Override {
 
 impl<'buf> bebop::BebopDecode<'buf> for Override {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Override)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Override)
-    ::core::result::Result::Ok(Override { tag })
+    result::Result::Ok(Override { tag })
   }
 }
 
@@ -1533,15 +1393,13 @@ impl Override {
   // @@bebop_insertion_point(struct_scope:Override)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Final {
   pub tag: i32,
 }
 
 impl Final {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1562,13 +1420,11 @@ impl bebop::BebopEncode for Final {
 
 impl<'buf> bebop::BebopDecode<'buf> for Final {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Final)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Final)
-    ::core::result::Result::Ok(Final { tag })
+    result::Result::Ok(Final { tag })
   }
 }
 
@@ -1576,15 +1432,13 @@ impl Final {
   // @@bebop_insertion_point(struct_scope:Final)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Abstract {
   pub tag: i32,
 }
 
 impl Abstract {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1605,13 +1459,11 @@ impl bebop::BebopEncode for Abstract {
 
 impl<'buf> bebop::BebopDecode<'buf> for Abstract {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Abstract)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Abstract)
-    ::core::result::Result::Ok(Abstract { tag })
+    result::Result::Ok(Abstract { tag })
   }
 }
 
@@ -1619,15 +1471,13 @@ impl Abstract {
   // @@bebop_insertion_point(struct_scope:Abstract)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Self_ {
   pub tag: i32,
 }
 
 impl Self_ {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1648,13 +1498,11 @@ impl bebop::BebopEncode for Self_ {
 
 impl<'buf> bebop::BebopDecode<'buf> for Self_ {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Self_)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Self_)
-    ::core::result::Result::Ok(Self_ { tag })
+    result::Result::Ok(Self_ { tag })
   }
 }
 
@@ -1662,15 +1510,13 @@ impl Self_ {
   // @@bebop_insertion_point(struct_scope:Self_)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Super {
   pub tag: i32,
 }
 
 impl Super {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1691,13 +1537,11 @@ impl bebop::BebopEncode for Super {
 
 impl<'buf> bebop::BebopDecode<'buf> for Super {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Super)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Super)
-    ::core::result::Result::Ok(Super { tag })
+    result::Result::Ok(Super { tag })
   }
 }
 
@@ -1705,15 +1549,13 @@ impl Super {
   // @@bebop_insertion_point(struct_scope:Super)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Type {
   pub tag: i32,
 }
 
 impl Type {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1734,13 +1576,11 @@ impl bebop::BebopEncode for Type {
 
 impl<'buf> bebop::BebopDecode<'buf> for Type {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Type)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Type)
-    ::core::result::Result::Ok(Type { tag })
+    result::Result::Ok(Type { tag })
   }
 }
 
@@ -1748,15 +1588,13 @@ impl Type {
   // @@bebop_insertion_point(struct_scope:Type)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct For {
   pub tag: i32,
 }
 
 impl For {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1777,13 +1615,11 @@ impl bebop::BebopEncode for For {
 
 impl<'buf> bebop::BebopDecode<'buf> for For {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:For)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:For)
-    ::core::result::Result::Ok(For { tag })
+    result::Result::Ok(For { tag })
   }
 }
 
@@ -1791,15 +1627,13 @@ impl For {
   // @@bebop_insertion_point(struct_scope:For)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Interface {
   pub tag: i32,
 }
 
 impl Interface {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1820,13 +1654,11 @@ impl bebop::BebopEncode for Interface {
 
 impl<'buf> bebop::BebopDecode<'buf> for Interface {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Interface)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Interface)
-    ::core::result::Result::Ok(Interface { tag })
+    result::Result::Ok(Interface { tag })
   }
 }
 
@@ -1834,15 +1666,13 @@ impl Interface {
   // @@bebop_insertion_point(struct_scope:Interface)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Namespace {
   pub tag: i32,
 }
 
 impl Namespace {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1863,13 +1693,11 @@ impl bebop::BebopEncode for Namespace {
 
 impl<'buf> bebop::BebopDecode<'buf> for Namespace {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Namespace)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Namespace)
-    ::core::result::Result::Ok(Namespace { tag })
+    result::Result::Ok(Namespace { tag })
   }
 }
 
@@ -1877,15 +1705,13 @@ impl Namespace {
   // @@bebop_insertion_point(struct_scope:Namespace)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Default {
   pub tag: i32,
 }
 
 impl Default {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1906,13 +1732,11 @@ impl bebop::BebopEncode for Default {
 
 impl<'buf> bebop::BebopDecode<'buf> for Default {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Default)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Default)
-    ::core::result::Result::Ok(Default { tag })
+    result::Result::Ok(Default { tag })
   }
 }
 
@@ -1920,15 +1744,13 @@ impl Default {
   // @@bebop_insertion_point(struct_scope:Default)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Switch {
   pub tag: i32,
 }
 
 impl Switch {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1949,13 +1771,11 @@ impl bebop::BebopEncode for Switch {
 
 impl<'buf> bebop::BebopDecode<'buf> for Switch {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Switch)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Switch)
-    ::core::result::Result::Ok(Switch { tag })
+    result::Result::Ok(Switch { tag })
   }
 }
 
@@ -1963,15 +1783,13 @@ impl Switch {
   // @@bebop_insertion_point(struct_scope:Switch)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Case {
   pub tag: i32,
 }
 
 impl Case {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -1992,13 +1810,11 @@ impl bebop::BebopEncode for Case {
 
 impl<'buf> bebop::BebopDecode<'buf> for Case {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Case)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Case)
-    ::core::result::Result::Ok(Case { tag })
+    result::Result::Ok(Case { tag })
   }
 }
 
@@ -2006,15 +1822,13 @@ impl Case {
   // @@bebop_insertion_point(struct_scope:Case)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Goto {
   pub tag: i32,
 }
 
 impl Goto {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2035,13 +1849,11 @@ impl bebop::BebopEncode for Goto {
 
 impl<'buf> bebop::BebopDecode<'buf> for Goto {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Goto)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Goto)
-    ::core::result::Result::Ok(Goto { tag })
+    result::Result::Ok(Goto { tag })
   }
 }
 
@@ -2049,15 +1861,13 @@ impl Goto {
   // @@bebop_insertion_point(struct_scope:Goto)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Volatile {
   pub tag: i32,
 }
 
 impl Volatile {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2078,13 +1888,11 @@ impl bebop::BebopEncode for Volatile {
 
 impl<'buf> bebop::BebopDecode<'buf> for Volatile {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Volatile)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Volatile)
-    ::core::result::Result::Ok(Volatile { tag })
+    result::Result::Ok(Volatile { tag })
   }
 }
 
@@ -2092,15 +1900,13 @@ impl Volatile {
   // @@bebop_insertion_point(struct_scope:Volatile)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Synchronized {
   pub tag: i32,
 }
 
 impl Synchronized {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2121,13 +1927,11 @@ impl bebop::BebopEncode for Synchronized {
 
 impl<'buf> bebop::BebopDecode<'buf> for Synchronized {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Synchronized)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Synchronized)
-    ::core::result::Result::Ok(Synchronized { tag })
+    result::Result::Ok(Synchronized { tag })
   }
 }
 
@@ -2135,15 +1939,13 @@ impl Synchronized {
   // @@bebop_insertion_point(struct_scope:Synchronized)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Transient {
   pub tag: i32,
 }
 
 impl Transient {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2164,13 +1966,11 @@ impl bebop::BebopEncode for Transient {
 
 impl<'buf> bebop::BebopDecode<'buf> for Transient {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Transient)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Transient)
-    ::core::result::Result::Ok(Transient { tag })
+    result::Result::Ok(Transient { tag })
   }
 }
 
@@ -2178,15 +1978,13 @@ impl Transient {
   // @@bebop_insertion_point(struct_scope:Transient)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Native {
   pub tag: i32,
 }
 
 impl Native {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2207,13 +2005,11 @@ impl bebop::BebopEncode for Native {
 
 impl<'buf> bebop::BebopDecode<'buf> for Native {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Native)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Native)
-    ::core::result::Result::Ok(Native { tag })
+    result::Result::Ok(Native { tag })
   }
 }
 
@@ -2221,15 +2017,13 @@ impl Native {
   // @@bebop_insertion_point(struct_scope:Native)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Throws {
   pub tag: i32,
 }
 
 impl Throws {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2250,13 +2044,11 @@ impl bebop::BebopEncode for Throws {
 
 impl<'buf> bebop::BebopDecode<'buf> for Throws {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Throws)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Throws)
-    ::core::result::Result::Ok(Throws { tag })
+    result::Result::Ok(Throws { tag })
   }
 }
 
@@ -2264,15 +2056,13 @@ impl Throws {
   // @@bebop_insertion_point(struct_scope:Throws)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Strictfp {
   pub tag: i32,
 }
 
 impl Strictfp {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2293,13 +2083,11 @@ impl bebop::BebopEncode for Strictfp {
 
 impl<'buf> bebop::BebopDecode<'buf> for Strictfp {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Strictfp)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Strictfp)
-    ::core::result::Result::Ok(Strictfp { tag })
+    result::Result::Ok(Strictfp { tag })
   }
 }
 
@@ -2307,15 +2095,13 @@ impl Strictfp {
   // @@bebop_insertion_point(struct_scope:Strictfp)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Assert {
   pub tag: i32,
 }
 
 impl Assert {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2336,13 +2122,11 @@ impl bebop::BebopEncode for Assert {
 
 impl<'buf> bebop::BebopDecode<'buf> for Assert {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Assert)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Assert)
-    ::core::result::Result::Ok(Assert { tag })
+    result::Result::Ok(Assert { tag })
   }
 }
 
@@ -2350,15 +2134,13 @@ impl Assert {
   // @@bebop_insertion_point(struct_scope:Assert)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Sizeof {
   pub tag: i32,
 }
 
 impl Sizeof {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2379,13 +2161,11 @@ impl bebop::BebopEncode for Sizeof {
 
 impl<'buf> bebop::BebopDecode<'buf> for Sizeof {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Sizeof)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Sizeof)
-    ::core::result::Result::Ok(Sizeof { tag })
+    result::Result::Ok(Sizeof { tag })
   }
 }
 
@@ -2393,15 +2173,13 @@ impl Sizeof {
   // @@bebop_insertion_point(struct_scope:Sizeof)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Typeof {
   pub tag: i32,
 }
 
 impl Typeof {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2422,13 +2200,11 @@ impl bebop::BebopEncode for Typeof {
 
 impl<'buf> bebop::BebopDecode<'buf> for Typeof {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Typeof)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Typeof)
-    ::core::result::Result::Ok(Typeof { tag })
+    result::Result::Ok(Typeof { tag })
   }
 }
 
@@ -2436,15 +2212,13 @@ impl Typeof {
   // @@bebop_insertion_point(struct_scope:Typeof)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Nullptr {
   pub tag: i32,
 }
 
 impl Nullptr {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2465,13 +2239,11 @@ impl bebop::BebopEncode for Nullptr {
 
 impl<'buf> bebop::BebopDecode<'buf> for Nullptr {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Nullptr)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Nullptr)
-    ::core::result::Result::Ok(Nullptr { tag })
+    result::Result::Ok(Nullptr { tag })
   }
 }
 
@@ -2479,15 +2251,13 @@ impl Nullptr {
   // @@bebop_insertion_point(struct_scope:Nullptr)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Decltype {
   pub tag: i32,
 }
 
 impl Decltype {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2508,13 +2278,11 @@ impl bebop::BebopEncode for Decltype {
 
 impl<'buf> bebop::BebopDecode<'buf> for Decltype {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Decltype)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Decltype)
-    ::core::result::Result::Ok(Decltype { tag })
+    result::Result::Ok(Decltype { tag })
   }
 }
 
@@ -2522,15 +2290,13 @@ impl Decltype {
   // @@bebop_insertion_point(struct_scope:Decltype)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Constexpr {
   pub tag: i32,
 }
 
 impl Constexpr {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2551,13 +2317,11 @@ impl bebop::BebopEncode for Constexpr {
 
 impl<'buf> bebop::BebopDecode<'buf> for Constexpr {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Constexpr)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Constexpr)
-    ::core::result::Result::Ok(Constexpr { tag })
+    result::Result::Ok(Constexpr { tag })
   }
 }
 
@@ -2565,15 +2329,13 @@ impl Constexpr {
   // @@bebop_insertion_point(struct_scope:Constexpr)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Noexcept {
   pub tag: i32,
 }
 
 impl Noexcept {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2594,13 +2356,11 @@ impl bebop::BebopEncode for Noexcept {
 
 impl<'buf> bebop::BebopDecode<'buf> for Noexcept {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Noexcept)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Noexcept)
-    ::core::result::Result::Ok(Noexcept { tag })
+    result::Result::Ok(Noexcept { tag })
   }
 }
 
@@ -2608,15 +2368,13 @@ impl Noexcept {
   // @@bebop_insertion_point(struct_scope:Noexcept)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Template {
   pub tag: i32,
 }
 
 impl Template {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2637,13 +2395,11 @@ impl bebop::BebopEncode for Template {
 
 impl<'buf> bebop::BebopDecode<'buf> for Template {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Template)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Template)
-    ::core::result::Result::Ok(Template { tag })
+    result::Result::Ok(Template { tag })
   }
 }
 
@@ -2651,15 +2407,13 @@ impl Template {
   // @@bebop_insertion_point(struct_scope:Template)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Typename {
   pub tag: i32,
 }
 
 impl Typename {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2680,13 +2434,11 @@ impl bebop::BebopEncode for Typename {
 
 impl<'buf> bebop::BebopDecode<'buf> for Typename {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Typename)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Typename)
-    ::core::result::Result::Ok(Typename { tag })
+    result::Result::Ok(Typename { tag })
   }
 }
 
@@ -2694,15 +2446,13 @@ impl Typename {
   // @@bebop_insertion_point(struct_scope:Typename)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Friend {
   pub tag: i32,
 }
 
 impl Friend {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2723,13 +2473,11 @@ impl bebop::BebopEncode for Friend {
 
 impl<'buf> bebop::BebopDecode<'buf> for Friend {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Friend)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Friend)
-    ::core::result::Result::Ok(Friend { tag })
+    result::Result::Ok(Friend { tag })
   }
 }
 
@@ -2737,15 +2485,13 @@ impl Friend {
   // @@bebop_insertion_point(struct_scope:Friend)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Inline {
   pub tag: i32,
 }
 
 impl Inline {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2766,13 +2512,11 @@ impl bebop::BebopEncode for Inline {
 
 impl<'buf> bebop::BebopDecode<'buf> for Inline {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Inline)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Inline)
-    ::core::result::Result::Ok(Inline { tag })
+    result::Result::Ok(Inline { tag })
   }
 }
 
@@ -2780,15 +2524,13 @@ impl Inline {
   // @@bebop_insertion_point(struct_scope:Inline)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Mutable {
   pub tag: i32,
 }
 
 impl Mutable {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2809,13 +2551,11 @@ impl bebop::BebopEncode for Mutable {
 
 impl<'buf> bebop::BebopDecode<'buf> for Mutable {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Mutable)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Mutable)
-    ::core::result::Result::Ok(Mutable { tag })
+    result::Result::Ok(Mutable { tag })
   }
 }
 
@@ -2823,15 +2563,13 @@ impl Mutable {
   // @@bebop_insertion_point(struct_scope:Mutable)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Explicit {
   pub tag: i32,
 }
 
 impl Explicit {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2852,13 +2590,11 @@ impl bebop::BebopEncode for Explicit {
 
 impl<'buf> bebop::BebopDecode<'buf> for Explicit {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Explicit)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Explicit)
-    ::core::result::Result::Ok(Explicit { tag })
+    result::Result::Ok(Explicit { tag })
   }
 }
 
@@ -2866,15 +2602,13 @@ impl Explicit {
   // @@bebop_insertion_point(struct_scope:Explicit)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Implicit {
   pub tag: i32,
 }
 
 impl Implicit {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2895,13 +2629,11 @@ impl bebop::BebopEncode for Implicit {
 
 impl<'buf> bebop::BebopDecode<'buf> for Implicit {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Implicit)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Implicit)
-    ::core::result::Result::Ok(Implicit { tag })
+    result::Result::Ok(Implicit { tag })
   }
 }
 
@@ -2909,15 +2641,13 @@ impl Implicit {
   // @@bebop_insertion_point(struct_scope:Implicit)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Operator {
   pub tag: i32,
 }
 
 impl Operator {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2938,13 +2668,11 @@ impl bebop::BebopEncode for Operator {
 
 impl<'buf> bebop::BebopDecode<'buf> for Operator {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Operator)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Operator)
-    ::core::result::Result::Ok(Operator { tag })
+    result::Result::Ok(Operator { tag })
   }
 }
 
@@ -2952,15 +2680,13 @@ impl Operator {
   // @@bebop_insertion_point(struct_scope:Operator)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Delete {
   pub tag: i32,
 }
 
 impl Delete {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -2981,13 +2707,11 @@ impl bebop::BebopEncode for Delete {
 
 impl<'buf> bebop::BebopDecode<'buf> for Delete {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Delete)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Delete)
-    ::core::result::Result::Ok(Delete { tag })
+    result::Result::Ok(Delete { tag })
   }
 }
 
@@ -2995,15 +2719,13 @@ impl Delete {
   // @@bebop_insertion_point(struct_scope:Delete)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct New {
   pub tag: i32,
 }
 
 impl New {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3024,13 +2746,11 @@ impl bebop::BebopEncode for New {
 
 impl<'buf> bebop::BebopDecode<'buf> for New {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:New)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:New)
-    ::core::result::Result::Ok(New { tag })
+    result::Result::Ok(New { tag })
   }
 }
 
@@ -3038,15 +2758,13 @@ impl New {
   // @@bebop_insertion_point(struct_scope:New)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct This {
   pub tag: i32,
 }
 
 impl This {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3067,13 +2785,11 @@ impl bebop::BebopEncode for This {
 
 impl<'buf> bebop::BebopDecode<'buf> for This {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:This)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:This)
-    ::core::result::Result::Ok(This { tag })
+    result::Result::Ok(This { tag })
   }
 }
 
@@ -3081,15 +2797,13 @@ impl This {
   // @@bebop_insertion_point(struct_scope:This)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Extends {
   pub tag: i32,
 }
 
 impl Extends {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3110,13 +2824,11 @@ impl bebop::BebopEncode for Extends {
 
 impl<'buf> bebop::BebopDecode<'buf> for Extends {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Extends)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Extends)
-    ::core::result::Result::Ok(Extends { tag })
+    result::Result::Ok(Extends { tag })
   }
 }
 
@@ -3124,15 +2836,13 @@ impl Extends {
   // @@bebop_insertion_point(struct_scope:Extends)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Implements {
   pub tag: i32,
 }
 
 impl Implements {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3153,13 +2863,11 @@ impl bebop::BebopEncode for Implements {
 
 impl<'buf> bebop::BebopDecode<'buf> for Implements {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Implements)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Implements)
-    ::core::result::Result::Ok(Implements { tag })
+    result::Result::Ok(Implements { tag })
   }
 }
 
@@ -3167,15 +2875,13 @@ impl Implements {
   // @@bebop_insertion_point(struct_scope:Implements)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Instanceof {
   pub tag: i32,
 }
 
 impl Instanceof {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3196,13 +2902,11 @@ impl bebop::BebopEncode for Instanceof {
 
 impl<'buf> bebop::BebopDecode<'buf> for Instanceof {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Instanceof)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Instanceof)
-    ::core::result::Result::Ok(Instanceof { tag })
+    result::Result::Ok(Instanceof { tag })
   }
 }
 
@@ -3210,15 +2914,13 @@ impl Instanceof {
   // @@bebop_insertion_point(struct_scope:Instanceof)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Boolean {
   pub tag: i32,
 }
 
 impl Boolean {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3239,13 +2941,11 @@ impl bebop::BebopEncode for Boolean {
 
 impl<'buf> bebop::BebopDecode<'buf> for Boolean {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Boolean)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Boolean)
-    ::core::result::Result::Ok(Boolean { tag })
+    result::Result::Ok(Boolean { tag })
   }
 }
 
@@ -3253,15 +2953,13 @@ impl Boolean {
   // @@bebop_insertion_point(struct_scope:Boolean)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Byte {
   pub tag: i32,
 }
 
 impl Byte {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3282,13 +2980,11 @@ impl bebop::BebopEncode for Byte {
 
 impl<'buf> bebop::BebopDecode<'buf> for Byte {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Byte)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Byte)
-    ::core::result::Result::Ok(Byte { tag })
+    result::Result::Ok(Byte { tag })
   }
 }
 
@@ -3296,15 +2992,13 @@ impl Byte {
   // @@bebop_insertion_point(struct_scope:Byte)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Short {
   pub tag: i32,
 }
 
 impl Short {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3325,13 +3019,11 @@ impl bebop::BebopEncode for Short {
 
 impl<'buf> bebop::BebopDecode<'buf> for Short {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Short)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Short)
-    ::core::result::Result::Ok(Short { tag })
+    result::Result::Ok(Short { tag })
   }
 }
 
@@ -3339,15 +3031,13 @@ impl Short {
   // @@bebop_insertion_point(struct_scope:Short)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Long {
   pub tag: i32,
 }
 
 impl Long {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3368,13 +3058,11 @@ impl bebop::BebopEncode for Long {
 
 impl<'buf> bebop::BebopDecode<'buf> for Long {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Long)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Long)
-    ::core::result::Result::Ok(Long { tag })
+    result::Result::Ok(Long { tag })
   }
 }
 
@@ -3382,15 +3070,13 @@ impl Long {
   // @@bebop_insertion_point(struct_scope:Long)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Double {
   pub tag: i32,
 }
 
 impl Double {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3411,13 +3097,11 @@ impl bebop::BebopEncode for Double {
 
 impl<'buf> bebop::BebopDecode<'buf> for Double {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Double)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Double)
-    ::core::result::Result::Ok(Double { tag })
+    result::Result::Ok(Double { tag })
   }
 }
 
@@ -3425,15 +3109,13 @@ impl Double {
   // @@bebop_insertion_point(struct_scope:Double)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Float {
   pub tag: i32,
 }
 
 impl Float {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3454,13 +3136,11 @@ impl bebop::BebopEncode for Float {
 
 impl<'buf> bebop::BebopDecode<'buf> for Float {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Float)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Float)
-    ::core::result::Result::Ok(Float { tag })
+    result::Result::Ok(Float { tag })
   }
 }
 
@@ -3468,15 +3148,13 @@ impl Float {
   // @@bebop_insertion_point(struct_scope:Float)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Char {
   pub tag: i32,
 }
 
 impl Char {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3497,13 +3175,11 @@ impl bebop::BebopEncode for Char {
 
 impl<'buf> bebop::BebopDecode<'buf> for Char {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Char)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Char)
-    ::core::result::Result::Ok(Char { tag })
+    result::Result::Ok(Char { tag })
   }
 }
 
@@ -3511,15 +3187,13 @@ impl Char {
   // @@bebop_insertion_point(struct_scope:Char)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Void {
   pub tag: i32,
 }
 
 impl Void {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3540,13 +3214,11 @@ impl bebop::BebopEncode for Void {
 
 impl<'buf> bebop::BebopDecode<'buf> for Void {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Void)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Void)
-    ::core::result::Result::Ok(Void { tag })
+    result::Result::Ok(Void { tag })
   }
 }
 
@@ -3554,15 +3226,13 @@ impl Void {
   // @@bebop_insertion_point(struct_scope:Void)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Int {
   pub tag: i32,
 }
 
 impl Int {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3583,13 +3253,11 @@ impl bebop::BebopEncode for Int {
 
 impl<'buf> bebop::BebopDecode<'buf> for Int {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Int)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Int)
-    ::core::result::Result::Ok(Int { tag })
+    result::Result::Ok(Int { tag })
   }
 }
 
@@ -3597,15 +3265,13 @@ impl Int {
   // @@bebop_insertion_point(struct_scope:Int)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Var {
   pub tag: i32,
 }
 
 impl Var {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3626,13 +3292,11 @@ impl bebop::BebopEncode for Var {
 
 impl<'buf> bebop::BebopDecode<'buf> for Var {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Var)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Var)
-    ::core::result::Result::Ok(Var { tag })
+    result::Result::Ok(Var { tag })
   }
 }
 
@@ -3640,15 +3304,13 @@ impl Var {
   // @@bebop_insertion_point(struct_scope:Var)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Function {
   pub tag: i32,
 }
 
 impl Function {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3669,13 +3331,11 @@ impl bebop::BebopEncode for Function {
 
 impl<'buf> bebop::BebopDecode<'buf> for Function {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Function)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Function)
-    ::core::result::Result::Ok(Function { tag })
+    result::Result::Ok(Function { tag })
   }
 }
 
@@ -3683,15 +3343,13 @@ impl Function {
   // @@bebop_insertion_point(struct_scope:Function)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Debugger {
   pub tag: i32,
 }
 
 impl Debugger {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3712,13 +3370,11 @@ impl bebop::BebopEncode for Debugger {
 
 impl<'buf> bebop::BebopDecode<'buf> for Debugger {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Debugger)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Debugger)
-    ::core::result::Result::Ok(Debugger { tag })
+    result::Result::Ok(Debugger { tag })
   }
 }
 
@@ -3726,15 +3382,13 @@ impl Debugger {
   // @@bebop_insertion_point(struct_scope:Debugger)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Undefined {
   pub tag: i32,
 }
 
 impl Undefined {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3755,13 +3409,11 @@ impl bebop::BebopEncode for Undefined {
 
 impl<'buf> bebop::BebopDecode<'buf> for Undefined {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Undefined)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Undefined)
-    ::core::result::Result::Ok(Undefined { tag })
+    result::Result::Ok(Undefined { tag })
   }
 }
 
@@ -3769,15 +3421,13 @@ impl Undefined {
   // @@bebop_insertion_point(struct_scope:Undefined)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Declare {
   pub tag: i32,
 }
 
 impl Declare {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3798,13 +3448,11 @@ impl bebop::BebopEncode for Declare {
 
 impl<'buf> bebop::BebopDecode<'buf> for Declare {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Declare)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Declare)
-    ::core::result::Result::Ok(Declare { tag })
+    result::Result::Ok(Declare { tag })
   }
 }
 
@@ -3812,15 +3460,13 @@ impl Declare {
   // @@bebop_insertion_point(struct_scope:Declare)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Require {
   pub tag: i32,
 }
 
 impl Require {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3841,13 +3487,11 @@ impl bebop::BebopEncode for Require {
 
 impl<'buf> bebop::BebopDecode<'buf> for Require {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Require)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Require)
-    ::core::result::Result::Ok(Require { tag })
+    result::Result::Ok(Require { tag })
   }
 }
 
@@ -3855,15 +3499,13 @@ impl Require {
   // @@bebop_insertion_point(struct_scope:Require)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Module {
   pub tag: i32,
 }
 
 impl Module {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3884,13 +3526,11 @@ impl bebop::BebopEncode for Module {
 
 impl<'buf> bebop::BebopDecode<'buf> for Module {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Module)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Module)
-    ::core::result::Result::Ok(Module { tag })
+    result::Result::Ok(Module { tag })
   }
 }
 
@@ -3898,15 +3538,13 @@ impl Module {
   // @@bebop_insertion_point(struct_scope:Module)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Global {
   pub tag: i32,
 }
 
 impl Global {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3927,13 +3565,11 @@ impl bebop::BebopEncode for Global {
 
 impl<'buf> bebop::BebopDecode<'buf> for Global {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Global)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Global)
-    ::core::result::Result::Ok(Global { tag })
+    result::Result::Ok(Global { tag })
   }
 }
 
@@ -3941,15 +3577,13 @@ impl Global {
   // @@bebop_insertion_point(struct_scope:Global)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Internal {
   pub tag: i32,
 }
 
 impl Internal {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -3970,13 +3604,11 @@ impl bebop::BebopEncode for Internal {
 
 impl<'buf> bebop::BebopDecode<'buf> for Internal {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Internal)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Internal)
-    ::core::result::Result::Ok(Internal { tag })
+    result::Result::Ok(Internal { tag })
   }
 }
 
@@ -3984,15 +3616,13 @@ impl Internal {
   // @@bebop_insertion_point(struct_scope:Internal)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Object {
   pub tag: i32,
 }
 
 impl Object {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4013,13 +3643,11 @@ impl bebop::BebopEncode for Object {
 
 impl<'buf> bebop::BebopDecode<'buf> for Object {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Object)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Object)
-    ::core::result::Result::Ok(Object { tag })
+    result::Result::Ok(Object { tag })
   }
 }
 
@@ -4027,15 +3655,13 @@ impl Object {
   // @@bebop_insertion_point(struct_scope:Object)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct String {
   pub tag: i32,
 }
 
 impl String {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4056,13 +3682,11 @@ impl bebop::BebopEncode for String {
 
 impl<'buf> bebop::BebopDecode<'buf> for String {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:String)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:String)
-    ::core::result::Result::Ok(String { tag })
+    result::Result::Ok(String { tag })
   }
 }
 
@@ -4070,15 +3694,13 @@ impl String {
   // @@bebop_insertion_point(struct_scope:String)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Symbol {
   pub tag: i32,
 }
 
 impl Symbol {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4099,13 +3721,11 @@ impl bebop::BebopEncode for Symbol {
 
 impl<'buf> bebop::BebopDecode<'buf> for Symbol {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Symbol)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Symbol)
-    ::core::result::Result::Ok(Symbol { tag })
+    result::Result::Ok(Symbol { tag })
   }
 }
 
@@ -4113,15 +3733,13 @@ impl Symbol {
   // @@bebop_insertion_point(struct_scope:Symbol)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Bigint {
   pub tag: i32,
 }
 
 impl Bigint {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4142,13 +3760,11 @@ impl bebop::BebopEncode for Bigint {
 
 impl<'buf> bebop::BebopDecode<'buf> for Bigint {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Bigint)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Bigint)
-    ::core::result::Result::Ok(Bigint { tag })
+    result::Result::Ok(Bigint { tag })
   }
 }
 
@@ -4156,15 +3772,13 @@ impl Bigint {
   // @@bebop_insertion_point(struct_scope:Bigint)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Never {
   pub tag: i32,
 }
 
 impl Never {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4185,13 +3799,11 @@ impl bebop::BebopEncode for Never {
 
 impl<'buf> bebop::BebopDecode<'buf> for Never {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Never)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Never)
-    ::core::result::Result::Ok(Never { tag })
+    result::Result::Ok(Never { tag })
   }
 }
 
@@ -4199,15 +3811,13 @@ impl Never {
   // @@bebop_insertion_point(struct_scope:Never)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Unknown {
   pub tag: i32,
 }
 
 impl Unknown {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4228,13 +3838,11 @@ impl bebop::BebopEncode for Unknown {
 
 impl<'buf> bebop::BebopDecode<'buf> for Unknown {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Unknown)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Unknown)
-    ::core::result::Result::Ok(Unknown { tag })
+    result::Result::Ok(Unknown { tag })
   }
 }
 
@@ -4242,15 +3850,13 @@ impl Unknown {
   // @@bebop_insertion_point(struct_scope:Unknown)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Keyof {
   pub tag: i32,
 }
 
 impl Keyof {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4271,13 +3877,11 @@ impl bebop::BebopEncode for Keyof {
 
 impl<'buf> bebop::BebopDecode<'buf> for Keyof {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Keyof)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Keyof)
-    ::core::result::Result::Ok(Keyof { tag })
+    result::Result::Ok(Keyof { tag })
   }
 }
 
@@ -4285,15 +3889,13 @@ impl Keyof {
   // @@bebop_insertion_point(struct_scope:Keyof)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Infer {
   pub tag: i32,
 }
 
 impl Infer {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4314,13 +3916,11 @@ impl bebop::BebopEncode for Infer {
 
 impl<'buf> bebop::BebopDecode<'buf> for Infer {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Infer)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Infer)
-    ::core::result::Result::Ok(Infer { tag })
+    result::Result::Ok(Infer { tag })
   }
 }
 
@@ -4328,15 +3928,13 @@ impl Infer {
   // @@bebop_insertion_point(struct_scope:Infer)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Satisfies {
   pub tag: i32,
 }
 
 impl Satisfies {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4357,13 +3955,11 @@ impl bebop::BebopEncode for Satisfies {
 
 impl<'buf> bebop::BebopDecode<'buf> for Satisfies {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Satisfies)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Satisfies)
-    ::core::result::Result::Ok(Satisfies { tag })
+    result::Result::Ok(Satisfies { tag })
   }
 }
 
@@ -4371,15 +3967,13 @@ impl Satisfies {
   // @@bebop_insertion_point(struct_scope:Satisfies)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Out {
   pub tag: i32,
 }
 
 impl Out {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4400,13 +3994,11 @@ impl bebop::BebopEncode for Out {
 
 impl<'buf> bebop::BebopDecode<'buf> for Out {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Out)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Out)
-    ::core::result::Result::Ok(Out { tag })
+    result::Result::Ok(Out { tag })
   }
 }
 
@@ -4414,15 +4006,13 @@ impl Out {
   // @@bebop_insertion_point(struct_scope:Out)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Inout {
   pub tag: i32,
 }
 
 impl Inout {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4443,13 +4033,11 @@ impl bebop::BebopEncode for Inout {
 
 impl<'buf> bebop::BebopDecode<'buf> for Inout {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Inout)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Inout)
-    ::core::result::Result::Ok(Inout { tag })
+    result::Result::Ok(Inout { tag })
   }
 }
 
@@ -4457,15 +4045,13 @@ impl Inout {
   // @@bebop_insertion_point(struct_scope:Inout)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Protocol {
   pub tag: i32,
 }
 
 impl Protocol {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4486,13 +4072,11 @@ impl bebop::BebopEncode for Protocol {
 
 impl<'buf> bebop::BebopDecode<'buf> for Protocol {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Protocol)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Protocol)
-    ::core::result::Result::Ok(Protocol { tag })
+    result::Result::Ok(Protocol { tag })
   }
 }
 
@@ -4500,15 +4084,13 @@ impl Protocol {
   // @@bebop_insertion_point(struct_scope:Protocol)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Subscript {
   pub tag: i32,
 }
 
 impl Subscript {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4529,13 +4111,11 @@ impl bebop::BebopEncode for Subscript {
 
 impl<'buf> bebop::BebopDecode<'buf> for Subscript {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Subscript)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Subscript)
-    ::core::result::Result::Ok(Subscript { tag })
+    result::Result::Ok(Subscript { tag })
   }
 }
 
@@ -4543,15 +4123,13 @@ impl Subscript {
   // @@bebop_insertion_point(struct_scope:Subscript)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Defer {
   pub tag: i32,
 }
 
 impl Defer {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4572,13 +4150,11 @@ impl bebop::BebopEncode for Defer {
 
 impl<'buf> bebop::BebopDecode<'buf> for Defer {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Defer)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Defer)
-    ::core::result::Result::Ok(Defer { tag })
+    result::Result::Ok(Defer { tag })
   }
 }
 
@@ -4586,15 +4162,13 @@ impl Defer {
   // @@bebop_insertion_point(struct_scope:Defer)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Fallthrough {
   pub tag: i32,
 }
 
 impl Fallthrough {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4615,13 +4189,11 @@ impl bebop::BebopEncode for Fallthrough {
 
 impl<'buf> bebop::BebopDecode<'buf> for Fallthrough {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Fallthrough)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Fallthrough)
-    ::core::result::Result::Ok(Fallthrough { tag })
+    result::Result::Ok(Fallthrough { tag })
   }
 }
 
@@ -4629,15 +4201,13 @@ impl Fallthrough {
   // @@bebop_insertion_point(struct_scope:Fallthrough)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Repeat {
   pub tag: i32,
 }
 
 impl Repeat {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4658,13 +4228,11 @@ impl bebop::BebopEncode for Repeat {
 
 impl<'buf> bebop::BebopDecode<'buf> for Repeat {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Repeat)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Repeat)
-    ::core::result::Result::Ok(Repeat { tag })
+    result::Result::Ok(Repeat { tag })
   }
 }
 
@@ -4672,15 +4240,13 @@ impl Repeat {
   // @@bebop_insertion_point(struct_scope:Repeat)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Indirect {
   pub tag: i32,
 }
 
 impl Indirect {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4701,13 +4267,11 @@ impl bebop::BebopEncode for Indirect {
 
 impl<'buf> bebop::BebopDecode<'buf> for Indirect {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Indirect)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Indirect)
-    ::core::result::Result::Ok(Indirect { tag })
+    result::Result::Ok(Indirect { tag })
   }
 }
 
@@ -4715,15 +4279,13 @@ impl Indirect {
   // @@bebop_insertion_point(struct_scope:Indirect)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Nonisolated {
   pub tag: i32,
 }
 
 impl Nonisolated {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4744,13 +4306,11 @@ impl bebop::BebopEncode for Nonisolated {
 
 impl<'buf> bebop::BebopDecode<'buf> for Nonisolated {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Nonisolated)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Nonisolated)
-    ::core::result::Result::Ok(Nonisolated { tag })
+    result::Result::Ok(Nonisolated { tag })
   }
 }
 
@@ -4758,15 +4318,13 @@ impl Nonisolated {
   // @@bebop_insertion_point(struct_scope:Nonisolated)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Lazy {
   pub tag: i32,
 }
 
 impl Lazy {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4787,13 +4345,11 @@ impl bebop::BebopEncode for Lazy {
 
 impl<'buf> bebop::BebopDecode<'buf> for Lazy {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Lazy)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Lazy)
-    ::core::result::Result::Ok(Lazy { tag })
+    result::Result::Ok(Lazy { tag })
   }
 }
 
@@ -4801,15 +4357,13 @@ impl Lazy {
   // @@bebop_insertion_point(struct_scope:Lazy)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Weak {
   pub tag: i32,
 }
 
 impl Weak {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4830,13 +4384,11 @@ impl bebop::BebopEncode for Weak {
 
 impl<'buf> bebop::BebopDecode<'buf> for Weak {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Weak)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Weak)
-    ::core::result::Result::Ok(Weak { tag })
+    result::Result::Ok(Weak { tag })
   }
 }
 
@@ -4844,15 +4396,13 @@ impl Weak {
   // @@bebop_insertion_point(struct_scope:Weak)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Unowned {
   pub tag: i32,
 }
 
 impl Unowned {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4873,13 +4423,11 @@ impl bebop::BebopEncode for Unowned {
 
 impl<'buf> bebop::BebopDecode<'buf> for Unowned {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Unowned)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Unowned)
-    ::core::result::Result::Ok(Unowned { tag })
+    result::Result::Ok(Unowned { tag })
   }
 }
 
@@ -4887,15 +4435,13 @@ impl Unowned {
   // @@bebop_insertion_point(struct_scope:Unowned)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Convenience {
   pub tag: i32,
 }
 
 impl Convenience {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4916,13 +4462,11 @@ impl bebop::BebopEncode for Convenience {
 
 impl<'buf> bebop::BebopDecode<'buf> for Convenience {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Convenience)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Convenience)
-    ::core::result::Result::Ok(Convenience { tag })
+    result::Result::Ok(Convenience { tag })
   }
 }
 
@@ -4930,15 +4474,13 @@ impl Convenience {
   // @@bebop_insertion_point(struct_scope:Convenience)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Required {
   pub tag: i32,
 }
 
 impl Required {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -4959,13 +4501,11 @@ impl bebop::BebopEncode for Required {
 
 impl<'buf> bebop::BebopDecode<'buf> for Required {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Required)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Required)
-    ::core::result::Result::Ok(Required { tag })
+    result::Result::Ok(Required { tag })
   }
 }
 
@@ -4973,15 +4513,13 @@ impl Required {
   // @@bebop_insertion_point(struct_scope:Required)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Optional {
   pub tag: i32,
 }
 
 impl Optional {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5002,13 +4540,11 @@ impl bebop::BebopEncode for Optional {
 
 impl<'buf> bebop::BebopDecode<'buf> for Optional {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Optional)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Optional)
-    ::core::result::Result::Ok(Optional { tag })
+    result::Result::Ok(Optional { tag })
   }
 }
 
@@ -5016,15 +4552,13 @@ impl Optional {
   // @@bebop_insertion_point(struct_scope:Optional)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Rethrows {
   pub tag: i32,
 }
 
 impl Rethrows {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5045,13 +4579,11 @@ impl bebop::BebopEncode for Rethrows {
 
 impl<'buf> bebop::BebopDecode<'buf> for Rethrows {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Rethrows)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Rethrows)
-    ::core::result::Result::Ok(Rethrows { tag })
+    result::Result::Ok(Rethrows { tag })
   }
 }
 
@@ -5059,15 +4591,13 @@ impl Rethrows {
   // @@bebop_insertion_point(struct_scope:Rethrows)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Try {
   pub tag: i32,
 }
 
 impl Try {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5088,13 +4618,11 @@ impl bebop::BebopEncode for Try {
 
 impl<'buf> bebop::BebopDecode<'buf> for Try {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Try)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Try)
-    ::core::result::Result::Ok(Try { tag })
+    result::Result::Ok(Try { tag })
   }
 }
 
@@ -5102,15 +4630,13 @@ impl Try {
   // @@bebop_insertion_point(struct_scope:Try)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Catch {
   pub tag: i32,
 }
 
 impl Catch {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5131,13 +4657,11 @@ impl bebop::BebopEncode for Catch {
 
 impl<'buf> bebop::BebopDecode<'buf> for Catch {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Catch)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Catch)
-    ::core::result::Result::Ok(Catch { tag })
+    result::Result::Ok(Catch { tag })
   }
 }
 
@@ -5145,15 +4669,13 @@ impl Catch {
   // @@bebop_insertion_point(struct_scope:Catch)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Throw {
   pub tag: i32,
 }
 
 impl Throw {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5174,13 +4696,11 @@ impl bebop::BebopEncode for Throw {
 
 impl<'buf> bebop::BebopDecode<'buf> for Throw {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Throw)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Throw)
-    ::core::result::Result::Ok(Throw { tag })
+    result::Result::Ok(Throw { tag })
   }
 }
 
@@ -5188,15 +4708,13 @@ impl Throw {
   // @@bebop_insertion_point(struct_scope:Throw)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Guard {
   pub tag: i32,
 }
 
 impl Guard {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5217,13 +4735,11 @@ impl bebop::BebopEncode for Guard {
 
 impl<'buf> bebop::BebopDecode<'buf> for Guard {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Guard)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Guard)
-    ::core::result::Result::Ok(Guard { tag })
+    result::Result::Ok(Guard { tag })
   }
 }
 
@@ -5231,15 +4747,13 @@ impl Guard {
   // @@bebop_insertion_point(struct_scope:Guard)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct In {
   pub tag: i32,
 }
 
 impl In {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5260,13 +4774,11 @@ impl bebop::BebopEncode for In {
 
 impl<'buf> bebop::BebopDecode<'buf> for In {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:In)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:In)
-    ::core::result::Result::Ok(In { tag })
+    result::Result::Ok(In { tag })
   }
 }
 
@@ -5274,15 +4786,13 @@ impl In {
   // @@bebop_insertion_point(struct_scope:In)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Is {
   pub tag: i32,
 }
 
 impl Is {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5303,13 +4813,11 @@ impl bebop::BebopEncode for Is {
 
 impl<'buf> bebop::BebopDecode<'buf> for Is {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Is)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Is)
-    ::core::result::Result::Ok(Is { tag })
+    result::Result::Ok(Is { tag })
   }
 }
 
@@ -5317,15 +4825,13 @@ impl Is {
   // @@bebop_insertion_point(struct_scope:Is)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct As {
   pub tag: i32,
 }
 
 impl As {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5346,13 +4852,11 @@ impl bebop::BebopEncode for As {
 
 impl<'buf> bebop::BebopDecode<'buf> for As {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:As)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:As)
-    ::core::result::Result::Ok(As { tag })
+    result::Result::Ok(As { tag })
   }
 }
 
@@ -5360,15 +4864,13 @@ impl As {
   // @@bebop_insertion_point(struct_scope:As)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Select {
   pub tag: i32,
 }
 
 impl Select {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5389,13 +4891,11 @@ impl bebop::BebopEncode for Select {
 
 impl<'buf> bebop::BebopDecode<'buf> for Select {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Select)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Select)
-    ::core::result::Result::Ok(Select { tag })
+    result::Result::Ok(Select { tag })
   }
 }
 
@@ -5403,15 +4903,13 @@ impl Select {
   // @@bebop_insertion_point(struct_scope:Select)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Event {
   pub tag: i32,
 }
 
 impl Event {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5432,13 +4930,11 @@ impl bebop::BebopEncode for Event {
 
 impl<'buf> bebop::BebopDecode<'buf> for Event {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Event)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Event)
-    ::core::result::Result::Ok(Event { tag })
+    result::Result::Ok(Event { tag })
   }
 }
 
@@ -5446,15 +4942,13 @@ impl Event {
   // @@bebop_insertion_point(struct_scope:Event)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Delegate {
   pub tag: i32,
 }
 
 impl Delegate {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5475,13 +4969,11 @@ impl bebop::BebopEncode for Delegate {
 
 impl<'buf> bebop::BebopDecode<'buf> for Delegate {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Delegate)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Delegate)
-    ::core::result::Result::Ok(Delegate { tag })
+    result::Result::Ok(Delegate { tag })
   }
 }
 
@@ -5489,15 +4981,13 @@ impl Delegate {
   // @@bebop_insertion_point(struct_scope:Delegate)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Checked {
   pub tag: i32,
 }
 
 impl Checked {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5518,13 +5008,11 @@ impl bebop::BebopEncode for Checked {
 
 impl<'buf> bebop::BebopDecode<'buf> for Checked {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Checked)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Checked)
-    ::core::result::Result::Ok(Checked { tag })
+    result::Result::Ok(Checked { tag })
   }
 }
 
@@ -5532,15 +5020,13 @@ impl Checked {
   // @@bebop_insertion_point(struct_scope:Checked)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Unchecked {
   pub tag: i32,
 }
 
 impl Unchecked {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5561,13 +5047,11 @@ impl bebop::BebopEncode for Unchecked {
 
 impl<'buf> bebop::BebopDecode<'buf> for Unchecked {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Unchecked)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Unchecked)
-    ::core::result::Result::Ok(Unchecked { tag })
+    result::Result::Ok(Unchecked { tag })
   }
 }
 
@@ -5575,15 +5059,13 @@ impl Unchecked {
   // @@bebop_insertion_point(struct_scope:Unchecked)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Stackalloc {
   pub tag: i32,
 }
 
 impl Stackalloc {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5604,13 +5086,11 @@ impl bebop::BebopEncode for Stackalloc {
 
 impl<'buf> bebop::BebopDecode<'buf> for Stackalloc {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Stackalloc)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Stackalloc)
-    ::core::result::Result::Ok(Stackalloc { tag })
+    result::Result::Ok(Stackalloc { tag })
   }
 }
 
@@ -5618,15 +5098,13 @@ impl Stackalloc {
   // @@bebop_insertion_point(struct_scope:Stackalloc)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Params {
   pub tag: i32,
 }
 
 impl Params {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5647,13 +5125,11 @@ impl bebop::BebopEncode for Params {
 
 impl<'buf> bebop::BebopDecode<'buf> for Params {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Params)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Params)
-    ::core::result::Result::Ok(Params { tag })
+    result::Result::Ok(Params { tag })
   }
 }
 
@@ -5661,15 +5137,13 @@ impl Params {
   // @@bebop_insertion_point(struct_scope:Params)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Lock {
   pub tag: i32,
 }
 
 impl Lock {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5690,13 +5164,11 @@ impl bebop::BebopEncode for Lock {
 
 impl<'buf> bebop::BebopDecode<'buf> for Lock {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Lock)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Lock)
-    ::core::result::Result::Ok(Lock { tag })
+    result::Result::Ok(Lock { tag })
   }
 }
 
@@ -5704,15 +5176,13 @@ impl Lock {
   // @@bebop_insertion_point(struct_scope:Lock)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Nameof {
   pub tag: i32,
 }
 
 impl Nameof {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5733,13 +5203,11 @@ impl bebop::BebopEncode for Nameof {
 
 impl<'buf> bebop::BebopDecode<'buf> for Nameof {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Nameof)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Nameof)
-    ::core::result::Result::Ok(Nameof { tag })
+    result::Result::Ok(Nameof { tag })
   }
 }
 
@@ -5747,15 +5215,13 @@ impl Nameof {
   // @@bebop_insertion_point(struct_scope:Nameof)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Sbyte {
   pub tag: i32,
 }
 
 impl Sbyte {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5776,13 +5242,11 @@ impl bebop::BebopEncode for Sbyte {
 
 impl<'buf> bebop::BebopDecode<'buf> for Sbyte {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Sbyte)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Sbyte)
-    ::core::result::Result::Ok(Sbyte { tag })
+    result::Result::Ok(Sbyte { tag })
   }
 }
 
@@ -5790,15 +5254,13 @@ impl Sbyte {
   // @@bebop_insertion_point(struct_scope:Sbyte)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Ushort {
   pub tag: i32,
 }
 
 impl Ushort {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5819,13 +5281,11 @@ impl bebop::BebopEncode for Ushort {
 
 impl<'buf> bebop::BebopDecode<'buf> for Ushort {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Ushort)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Ushort)
-    ::core::result::Result::Ok(Ushort { tag })
+    result::Result::Ok(Ushort { tag })
   }
 }
 
@@ -5833,15 +5293,13 @@ impl Ushort {
   // @@bebop_insertion_point(struct_scope:Ushort)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Uint {
   pub tag: i32,
 }
 
 impl Uint {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5862,13 +5320,11 @@ impl bebop::BebopEncode for Uint {
 
 impl<'buf> bebop::BebopDecode<'buf> for Uint {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Uint)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Uint)
-    ::core::result::Result::Ok(Uint { tag })
+    result::Result::Ok(Uint { tag })
   }
 }
 
@@ -5876,15 +5332,13 @@ impl Uint {
   // @@bebop_insertion_point(struct_scope:Uint)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Ulong {
   pub tag: i32,
 }
 
 impl Ulong {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5905,13 +5359,11 @@ impl bebop::BebopEncode for Ulong {
 
 impl<'buf> bebop::BebopDecode<'buf> for Ulong {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Ulong)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Ulong)
-    ::core::result::Result::Ok(Ulong { tag })
+    result::Result::Ok(Ulong { tag })
   }
 }
 
@@ -5919,15 +5371,13 @@ impl Ulong {
   // @@bebop_insertion_point(struct_scope:Ulong)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct When {
   pub tag: i32,
 }
 
 impl When {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5948,13 +5398,11 @@ impl bebop::BebopEncode for When {
 
 impl<'buf> bebop::BebopDecode<'buf> for When {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:When)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:When)
-    ::core::result::Result::Ok(When { tag })
+    result::Result::Ok(When { tag })
   }
 }
 
@@ -5962,15 +5410,13 @@ impl When {
   // @@bebop_insertion_point(struct_scope:When)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Init {
   pub tag: i32,
 }
 
 impl Init {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -5991,13 +5437,11 @@ impl bebop::BebopEncode for Init {
 
 impl<'buf> bebop::BebopDecode<'buf> for Init {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Init)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Init)
-    ::core::result::Result::Ok(Init { tag })
+    result::Result::Ok(Init { tag })
   }
 }
 
@@ -6005,15 +5449,13 @@ impl Init {
   // @@bebop_insertion_point(struct_scope:Init)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Deinit {
   pub tag: i32,
 }
 
 impl Deinit {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -6034,13 +5476,11 @@ impl bebop::BebopEncode for Deinit {
 
 impl<'buf> bebop::BebopDecode<'buf> for Deinit {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Deinit)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Deinit)
-    ::core::result::Result::Ok(Deinit { tag })
+    result::Result::Ok(Deinit { tag })
   }
 }
 
@@ -6048,15 +5488,13 @@ impl Deinit {
   // @@bebop_insertion_point(struct_scope:Deinit)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Get {
   pub tag: i32,
 }
 
 impl Get {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -6077,13 +5515,11 @@ impl bebop::BebopEncode for Get {
 
 impl<'buf> bebop::BebopDecode<'buf> for Get {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Get)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Get)
-    ::core::result::Result::Ok(Get { tag })
+    result::Result::Ok(Get { tag })
   }
 }
 
@@ -6091,15 +5527,13 @@ impl Get {
   // @@bebop_insertion_point(struct_scope:Get)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Set {
   pub tag: i32,
 }
 
 impl Set {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -6120,13 +5554,11 @@ impl bebop::BebopEncode for Set {
 
 impl<'buf> bebop::BebopDecode<'buf> for Set {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Set)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Set)
-    ::core::result::Result::Ok(Set { tag })
+    result::Result::Ok(Set { tag })
   }
 }
 
@@ -6134,15 +5566,13 @@ impl Set {
   // @@bebop_insertion_point(struct_scope:Set)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct WillSet {
   pub tag: i32,
 }
 
 impl WillSet {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -6163,13 +5593,11 @@ impl bebop::BebopEncode for WillSet {
 
 impl<'buf> bebop::BebopDecode<'buf> for WillSet {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:WillSet)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:WillSet)
-    ::core::result::Result::Ok(WillSet { tag })
+    result::Result::Ok(WillSet { tag })
   }
 }
 
@@ -6177,15 +5605,13 @@ impl WillSet {
   // @@bebop_insertion_point(struct_scope:WillSet)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DidSet {
   pub tag: i32,
 }
 
 impl DidSet {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -6206,13 +5632,11 @@ impl bebop::BebopEncode for DidSet {
 
 impl<'buf> bebop::BebopDecode<'buf> for DidSet {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:DidSet)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:DidSet)
-    ::core::result::Result::Ok(DidSet { tag })
+    result::Result::Ok(DidSet { tag })
   }
 }
 
@@ -6220,15 +5644,13 @@ impl DidSet {
   // @@bebop_insertion_point(struct_scope:DidSet)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Associatedtype {
   pub tag: i32,
 }
 
 impl Associatedtype {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>();
 
   pub fn new(tag: i32) -> Self {
     Self { tag }
@@ -6249,13 +5671,11 @@ impl bebop::BebopEncode for Associatedtype {
 
 impl<'buf> bebop::BebopDecode<'buf> for Associatedtype {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Associatedtype)
     let tag = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Associatedtype)
-    ::core::result::Result::Ok(Associatedtype { tag })
+    result::Result::Ok(Associatedtype { tag })
   }
 }
 
@@ -6264,9 +5684,7 @@ impl Associatedtype {
 }
 
 /// Many Rust / Swift / C# keywords reused as *field* names (snake_case in Rust).
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RustKeywordFields {
   pub r#type: i32,
   pub r#mod: i32,
@@ -6290,23 +5708,23 @@ pub struct RustKeywordFields {
 }
 
 impl RustKeywordFields {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i32>()
-    + ::core::mem::size_of::<i32>()
-    + ::core::mem::size_of::<i32>()
-    + ::core::mem::size_of::<i32>()
-    + ::core::mem::size_of::<i32>()
-    + ::core::mem::size_of::<i32>()
-    + ::core::mem::size_of::<i32>()
-    + ::core::mem::size_of::<i32>()
-    + ::core::mem::size_of::<i32>()
-    + ::core::mem::size_of::<i32>()
-    + ::core::mem::size_of::<i32>()
-    + ::core::mem::size_of::<i32>()
-    + ::core::mem::size_of::<i32>()
-    + ::core::mem::size_of::<i32>()
-    + ::core::mem::size_of::<i32>()
-    + ::core::mem::size_of::<i32>()
-    + ::core::mem::size_of::<i32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>()
+    + mem::size_of::<i32>()
+    + mem::size_of::<i32>()
+    + mem::size_of::<i32>()
+    + mem::size_of::<i32>()
+    + mem::size_of::<i32>()
+    + mem::size_of::<i32>()
+    + mem::size_of::<i32>()
+    + mem::size_of::<i32>()
+    + mem::size_of::<i32>()
+    + mem::size_of::<i32>()
+    + mem::size_of::<i32>()
+    + mem::size_of::<i32>()
+    + mem::size_of::<i32>()
+    + mem::size_of::<i32>()
+    + mem::size_of::<i32>()
+    + mem::size_of::<i32>();
 
   pub fn new(
     r#type: i32,
@@ -6379,9 +5797,7 @@ impl bebop::BebopEncode for RustKeywordFields {
 
 impl<'buf> bebop::BebopDecode<'buf> for RustKeywordFields {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:RustKeywordFields)
     let r#type = reader.read_i32()?;
     let r#mod = reader.read_i32()?;
@@ -6401,7 +5817,7 @@ impl<'buf> bebop::BebopDecode<'buf> for RustKeywordFields {
     let is = reader.read_i32()?;
     let r#try = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:RustKeywordFields)
-    ::core::result::Result::Ok(RustKeywordFields {
+    result::Result::Ok(RustKeywordFields {
       r#type,
       r#mod,
       self_,
@@ -6436,9 +5852,7 @@ pub const RETURN: u32 = 2u32;
 pub const ELSE: u32 = 3u32;
 
 #[repr(u8)]
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MultiLangKeywordVariant {
   Mod = 0,
   Match = 1,
@@ -6451,20 +5865,20 @@ pub enum MultiLangKeywordVariant {
   Super = 8,
 }
 
-impl ::core::convert::TryFrom<u8> for MultiLangKeywordVariant {
+impl convert::TryFrom<u8> for MultiLangKeywordVariant {
   type Error = bebop::DecodeError;
-  fn try_from(value: u8) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn try_from(value: u8) -> result::Result<Self, bebop::DecodeError> {
     match value {
-      0 => ::core::result::Result::Ok(Self::Mod),
-      1 => ::core::result::Result::Ok(Self::Match),
-      2 => ::core::result::Result::Ok(Self::Type),
-      3 => ::core::result::Result::Ok(Self::Void),
-      4 => ::core::result::Result::Ok(Self::Int),
-      5 => ::core::result::Result::Ok(Self::Await),
-      6 => ::core::result::Result::Ok(Self::Async),
-      7 => ::core::result::Result::Ok(Self::Self_),
-      8 => ::core::result::Result::Ok(Self::Super),
-      _ => ::core::result::Result::Err(bebop::DecodeError::InvalidEnum {
+      0 => result::Result::Ok(Self::Mod),
+      1 => result::Result::Ok(Self::Match),
+      2 => result::Result::Ok(Self::Type),
+      3 => result::Result::Ok(Self::Void),
+      4 => result::Result::Ok(Self::Int),
+      5 => result::Result::Ok(Self::Await),
+      6 => result::Result::Ok(Self::Async),
+      7 => result::Result::Ok(Self::Self_),
+      8 => result::Result::Ok(Self::Super),
+      _ => result::Result::Err(bebop::DecodeError::InvalidEnum {
         type_name: "MultiLangKeywordVariant",
         value: value as u64,
       }),
@@ -6472,7 +5886,7 @@ impl ::core::convert::TryFrom<u8> for MultiLangKeywordVariant {
   }
 }
 
-impl ::core::convert::From<MultiLangKeywordVariant> for u8 {
+impl convert::From<MultiLangKeywordVariant> for u8 {
   fn from(value: MultiLangKeywordVariant) -> u8 {
     value as u8
   }
@@ -6497,19 +5911,15 @@ impl bebop::BebopEncode for MultiLangKeywordVariant {
 
 impl<'buf> bebop::BebopDecode<'buf> for MultiLangKeywordVariant {
   #[inline(always)]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:MultiLangKeywordVariant)
     let value = reader.read_byte()?;
     // @@bebop_insertion_point(decode_end:MultiLangKeywordVariant)
-    ::core::convert::TryFrom::try_from(value)
+    convert::TryFrom::try_from(value)
   }
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RustKeywordFlags(pub u8);
 
 #[allow(non_upper_case_globals)]
@@ -6533,46 +5943,46 @@ impl bebop::BebopFlags for RustKeywordFlags {
   }
 }
 
-impl ::core::ops::BitOr for RustKeywordFlags {
+impl ops::BitOr for RustKeywordFlags {
   type Output = Self;
   fn bitor(self, rhs: Self) -> Self {
     Self(self.0 | rhs.0)
   }
 }
-impl ::core::ops::BitOrAssign for RustKeywordFlags {
+impl ops::BitOrAssign for RustKeywordFlags {
   fn bitor_assign(&mut self, rhs: Self) {
     self.0 |= rhs.0;
   }
 }
-impl ::core::ops::BitAnd for RustKeywordFlags {
+impl ops::BitAnd for RustKeywordFlags {
   type Output = Self;
   fn bitand(self, rhs: Self) -> Self {
     Self(self.0 & rhs.0)
   }
 }
-impl ::core::ops::BitAndAssign for RustKeywordFlags {
+impl ops::BitAndAssign for RustKeywordFlags {
   fn bitand_assign(&mut self, rhs: Self) {
     self.0 &= rhs.0;
   }
 }
-impl ::core::ops::BitXor for RustKeywordFlags {
+impl ops::BitXor for RustKeywordFlags {
   type Output = Self;
   fn bitxor(self, rhs: Self) -> Self {
     Self(self.0 ^ rhs.0)
   }
 }
-impl ::core::ops::BitXorAssign for RustKeywordFlags {
+impl ops::BitXorAssign for RustKeywordFlags {
   fn bitxor_assign(&mut self, rhs: Self) {
     self.0 ^= rhs.0;
   }
 }
-impl ::core::ops::Not for RustKeywordFlags {
+impl ops::Not for RustKeywordFlags {
   type Output = Self;
   fn not(self) -> Self {
     Self(!self.0)
   }
 }
-impl ::core::ops::Sub for RustKeywordFlags {
+impl ops::Sub for RustKeywordFlags {
   type Output = Self;
   fn sub(self, rhs: Self) -> Self {
     Self(self.0 & !rhs.0)
@@ -6581,9 +5991,7 @@ impl ::core::ops::Sub for RustKeywordFlags {
 
 impl<'buf> bebop::BebopDecode<'buf> for RustKeywordFlags {
   #[inline(always)]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     let bits = reader.read_byte()?;
     <Self as bebop::BebopFlags>::from_bits(bits).ok_or(bebop::DecodeError::InvalidFlags {
       type_name: "RustKeywordFlags",
@@ -6592,8 +6000,7 @@ impl<'buf> bebop::BebopDecode<'buf> for RustKeywordFlags {
   }
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
+#[derive(serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type", content = "value")]
 #[derive(Debug, Clone, PartialEq)]
 pub enum KeywordUnion {
@@ -6630,17 +6037,15 @@ impl bebop::BebopEncode for KeywordUnion {
 
 impl<'buf> bebop::BebopDecode<'buf> for KeywordUnion {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:KeywordUnion)
     let length = reader.read_message_length()? as usize;
     let start = reader.position();
     let discriminator = reader.read_byte()?;
     let value = match discriminator {
-      1 => ::core::result::Result::Ok(Self::Mod(Point::decode(reader)?)),
-      2 => ::core::result::Result::Ok(Self::Match(Point::decode(reader)?)),
-      _ => ::core::result::Result::Err(bebop::DecodeError::InvalidUnion {
+      1 => result::Result::Ok(Self::Mod(Point::decode(reader)?)),
+      2 => result::Result::Ok(Self::Match(Point::decode(reader)?)),
+      _ => result::Result::Err(bebop::DecodeError::InvalidUnion {
         type_name: "KeywordUnion",
         discriminator,
       }),
@@ -6654,14 +6059,12 @@ impl KeywordUnion {
   // @@bebop_insertion_point(union_scope:KeywordUnion)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct KeywordFieldMessage<'buf> {
-  pub r#type: ::core::option::Option<i32>,
-  pub r#mod: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  pub r#type: option::Option<i32>,
+  pub r#mod: option::Option<borrow::Cow<'buf, str>>,
   #[serde(rename = "self")]
-  pub self_: ::core::option::Option<bool>,
+  pub self_: option::Option<bool>,
 }
 
 pub type KeywordFieldMessageOwned = KeywordFieldMessage<'static>;
@@ -6670,9 +6073,7 @@ impl<'buf> KeywordFieldMessage<'buf> {
   pub fn into_owned(self) -> KeywordFieldMessageOwned {
     KeywordFieldMessage {
       r#type: self.r#type,
-      r#mod: self
-        .r#mod
-        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      r#mod: self.r#mod.map(|v| borrow::Cow::Owned(v.into_owned())),
       self_: self.self_,
     }
   }
@@ -6687,15 +6088,15 @@ impl<'buf> bebop::BebopEncode for KeywordFieldMessage<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let ::core::option::Option::Some(v) = self.r#type {
+    if let option::Option::Some(v) = self.r#type {
       writer.write_tag(1);
       writer.write_i32(v);
     }
-    if let ::core::option::Option::Some(ref v) = self.r#mod {
+    if let option::Option::Some(ref v) = self.r#mod {
       writer.write_tag(2);
       writer.write_string(&v);
     }
-    if let ::core::option::Option::Some(v) = self.self_ {
+    if let option::Option::Some(v) = self.self_ {
       writer.write_tag(3);
       writer.write_bool(v);
     }
@@ -6706,14 +6107,14 @@ impl<'buf> bebop::BebopEncode for KeywordFieldMessage<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
-    if let ::core::option::Option::Some(v) = self.r#type {
-      size += bebop::wire_size::tagged_size(::core::mem::size_of::<i32>());
+    if let option::Option::Some(v) = self.r#type {
+      size += bebop::wire_size::tagged_size(mem::size_of::<i32>());
     }
-    if let ::core::option::Option::Some(ref v) = self.r#mod {
+    if let option::Option::Some(ref v) = self.r#mod {
       size += bebop::wire_size::tagged_size(bebop::wire_size::string_size(v.len()));
     }
-    if let ::core::option::Option::Some(v) = self.self_ {
-      size += bebop::wire_size::tagged_size(::core::mem::size_of::<bool>());
+    if let option::Option::Some(v) = self.self_ {
+      size += bebop::wire_size::tagged_size(mem::size_of::<bool>());
     }
     size
   }
@@ -6721,13 +6122,11 @@ impl<'buf> bebop::BebopEncode for KeywordFieldMessage<'buf> {
 
 impl<'buf> bebop::BebopDecode<'buf> for KeywordFieldMessage<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:KeywordFieldMessage)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = <Self as ::core::default::Default>::default();
+    let mut msg = <Self as default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -6735,13 +6134,11 @@ impl<'buf> bebop::BebopDecode<'buf> for KeywordFieldMessage<'buf> {
         break;
       }
       match tag {
-        1 => msg.r#type = ::core::option::Option::Some(reader.read_i32()?),
-        2 => {
-          msg.r#mod = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
-        }
-        3 => msg.self_ = ::core::option::Option::Some(reader.read_bool()?),
+        1 => msg.r#type = option::Option::Some(reader.read_i32()?),
+        2 => msg.r#mod = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
+        3 => msg.self_ = option::Option::Some(reader.read_bool()?),
         tag => {
-          return ::core::result::Result::Err(bebop::DecodeError::InvalidField {
+          return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "KeywordFieldMessage",
             tag,
           });
@@ -6749,7 +6146,7 @@ impl<'buf> bebop::BebopDecode<'buf> for KeywordFieldMessage<'buf> {
       }
     }
     // @@bebop_insertion_point(decode_end:KeywordFieldMessage)
-    ::core::result::Result::Ok(msg)
+    result::Result::Ok(msg)
   }
 }
 
@@ -6758,17 +6155,14 @@ impl<'buf> KeywordFieldMessage<'buf> {
 }
 
 /// Holds both a wire `guid` (runtime UUID) and a user-defined `Uuid` struct.
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GuidAndUserUuidCollision {
   pub runtime_guid: bebop::Uuid,
   pub user_uuid: Uuid,
 }
 
 impl GuidAndUserUuidCollision {
-  pub const FIXED_ENCODED_SIZE: usize =
-    ::core::mem::size_of::<bebop::Uuid>() + Uuid::FIXED_ENCODED_SIZE;
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<bebop::Uuid>() + Uuid::FIXED_ENCODED_SIZE;
 
   pub fn new(runtime_guid: bebop::Uuid, user_uuid: Uuid) -> Self {
     Self {
@@ -6793,14 +6187,12 @@ impl bebop::BebopEncode for GuidAndUserUuidCollision {
 
 impl<'buf> bebop::BebopDecode<'buf> for GuidAndUserUuidCollision {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:GuidAndUserUuidCollision)
     let runtime_guid = reader.read_uuid()?;
     let user_uuid = Uuid::decode(reader)?;
     // @@bebop_insertion_point(decode_end:GuidAndUserUuidCollision)
-    ::core::result::Result::Ok(GuidAndUserUuidCollision {
+    result::Result::Ok(GuidAndUserUuidCollision {
       runtime_guid,
       user_uuid,
     })
@@ -6811,11 +6203,9 @@ impl GuidAndUserUuidCollision {
   // @@bebop_insertion_point(struct_scope:GuidAndUserUuidCollision)
 }
 
-#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]
-#[serde(crate = "bebop::serde")]
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq)]
 pub struct MapWithUserHashMapStruct<'buf> {
-  pub items: ::core::option::Option<bebop::HashMap<alloc::borrow::Cow<'buf, str>, HashMap>>,
+  pub items: option::Option<bebop::HashMap<borrow::Cow<'buf, str>, HashMap>>,
 }
 
 pub type MapWithUserHashMapStructOwned = MapWithUserHashMapStruct<'static>;
@@ -6825,7 +6215,7 @@ impl<'buf> MapWithUserHashMapStruct<'buf> {
     MapWithUserHashMapStruct {
       items: self.items.map(|v| {
         v.into_iter()
-          .map(|(_k, _v)| (alloc::borrow::Cow::Owned(_k.into_owned()), _v))
+          .map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), _v))
           .collect()
       }),
     }
@@ -6841,7 +6231,7 @@ impl<'buf> bebop::BebopEncode for MapWithUserHashMapStruct<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let ::core::option::Option::Some(ref v) = self.items {
+    if let option::Option::Some(ref v) = self.items {
       writer.write_tag(1);
       writer.write_map(&v, |_w, _k, _v| {
         _w.write_string(&_k);
@@ -6855,7 +6245,7 @@ impl<'buf> bebop::BebopEncode for MapWithUserHashMapStruct<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
-    if let ::core::option::Option::Some(ref v) = self.items {
+    if let option::Option::Some(ref v) = self.items {
       size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| {
         bebop::wire_size::string_size(_k.len()) + _v.encoded_size()
       }));
@@ -6866,13 +6256,11 @@ impl<'buf> bebop::BebopEncode for MapWithUserHashMapStruct<'buf> {
 
 impl<'buf> bebop::BebopDecode<'buf> for MapWithUserHashMapStruct<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:MapWithUserHashMapStruct)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = <Self as ::core::default::Default>::default();
+    let mut msg = <Self as default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -6881,15 +6269,15 @@ impl<'buf> bebop::BebopDecode<'buf> for MapWithUserHashMapStruct<'buf> {
       }
       match tag {
         1 => {
-          msg.items = ::core::option::Option::Some(reader.read_map(|_r| {
-            ::core::result::Result::Ok((
-              ::core::result::Result::Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))?,
+          msg.items = option::Option::Some(reader.read_map(|_r| {
+            result::Result::Ok((
+              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
               HashMap::decode(_r)?,
             ))
           })?)
         }
         tag => {
-          return ::core::result::Result::Err(bebop::DecodeError::InvalidField {
+          return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "MapWithUserHashMapStruct",
             tag,
           });
@@ -6897,7 +6285,7 @@ impl<'buf> bebop::BebopDecode<'buf> for MapWithUserHashMapStruct<'buf> {
       }
     }
     // @@bebop_insertion_point(decode_end:MapWithUserHashMapStruct)
-    ::core::result::Result::Ok(msg)
+    result::Result::Ok(msg)
   }
 }
 

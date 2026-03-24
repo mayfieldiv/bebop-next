@@ -96,7 +96,7 @@ pub fn generate(
   }
   if is_forward_compatible {
     options.serde.emit_field_attr(output, "skip");
-    output.push_str("  Unknown(u8, alloc::borrow::Cow<'buf, [u8]>),\n");
+    output.push_str("  Unknown(u8, borrow::Cow<'buf, [u8]>),\n");
   }
   output.push_str("}\n\n");
 
@@ -129,7 +129,7 @@ pub fn generate(
     }
     if is_forward_compatible {
       output.push_str(&format!(
-        "      Self::Unknown(disc, data) => {}::Unknown(disc, alloc::borrow::Cow::Owned(data.into_owned())),\n",
+        "      Self::Unknown(disc, data) => {}::Unknown(disc, borrow::Cow::Owned(data.into_owned())),\n",
         name
       ));
     }
@@ -210,7 +210,7 @@ pub fn generate(
   }
   output.push_str("  #[inline]\n");
   output.push_str(
-    "  fn decode(reader: &mut bebop::BebopReader<'buf>) -> ::core::result::Result<Self, bebop::DecodeError> {\n",
+    "  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {\n",
   );
   output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_start:{})\n",
@@ -222,7 +222,7 @@ pub fn generate(
   output.push_str("    let value = match discriminator {\n");
   for b in &branch_infos {
     output.push_str(&format!(
-      "      {} => ::core::result::Result::Ok(Self::{}({}::decode(reader)?)),\n",
+      "      {} => result::Result::Ok(Self::{}({}::decode(reader)?)),\n",
       b.disc, b.variant, b.inner_type
     ));
   }
@@ -235,12 +235,12 @@ pub fn generate(
     output.push_str("        let remaining = length - (reader.position() - start);\n");
     output.push_str("        let data = reader.read_raw_bytes(remaining)?;\n");
     output.push_str(
-      "        ::core::result::Result::Ok(Self::Unknown(discriminator, alloc::borrow::Cow::Borrowed(data)))\n",
+      "        result::Result::Ok(Self::Unknown(discriminator, borrow::Cow::Borrowed(data)))\n",
     );
     output.push_str("      }\n");
   } else {
     output.push_str(&format!(
-      "      _ => ::core::result::Result::Err(bebop::DecodeError::InvalidUnion {{ type_name: \"{}\", discriminator }}),\n",
+      "      _ => result::Result::Err(bebop::DecodeError::InvalidUnion {{ type_name: \"{}\", discriminator }}),\n",
       name
     ));
   }

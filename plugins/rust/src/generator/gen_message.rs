@@ -132,13 +132,13 @@ pub fn generate(
     match meta.wrap {
       FieldWrap::Boxed => {
         output.push_str(&format!(
-          "  {} {}: ::core::option::Option<alloc::boxed::Box<{}>>,\n",
+          "  {} {}: option::Option<boxed::Box<{}>>,\n",
           vis, meta.fname, meta.cow_type
         ));
       }
       _ => {
         output.push_str(&format!(
-          "  {} {}: ::core::option::Option<{}>,\n",
+          "  {} {}: option::Option<{}>,\n",
           vis, meta.fname, meta.cow_type
         ));
       }
@@ -164,7 +164,7 @@ pub fn generate(
         FieldWrap::Boxed => {
           if meta.needs_owned {
             output.push_str(&format!(
-              "      {}: self.{}.map(|v| alloc::boxed::Box::new(v.into_owned())),\n",
+              "      {}: self.{}.map(|v| boxed::Box::new(v.into_owned())),\n",
               meta.fname, meta.fname
             ));
           } else {
@@ -220,7 +220,7 @@ pub fn generate(
   for meta in &field_metas {
     let ref_kw = if meta.needs_ref() { "ref " } else { "" };
     output.push_str(&format!(
-      "    if let ::core::option::Option::Some({}v) = self.{} {{\n",
+      "    if let option::Option::Some({}v) = self.{} {{\n",
       ref_kw, meta.fname
     ));
     output.push_str(&format!("      writer.write_tag({});\n", meta.tag));
@@ -243,7 +243,7 @@ pub fn generate(
   for meta in &field_metas {
     let ref_kw = if meta.needs_ref() { "ref " } else { "" };
     output.push_str(&format!(
-      "    if let ::core::option::Option::Some({}v) = self.{} {{\n",
+      "    if let option::Option::Some({}v) = self.{} {{\n",
       ref_kw, meta.fname
     ));
     let size_expr = type_mapper::encoded_size_expression(meta.td, "v", analysis)?;
@@ -265,7 +265,7 @@ pub fn generate(
   ));
   output.push_str("  #[inline]\n");
   output.push_str(
-    "  fn decode(reader: &mut bebop::BebopReader<'buf>) -> ::core::result::Result<Self, bebop::DecodeError> {\n",
+    "  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {\n",
   );
   output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_start:{})\n",
@@ -273,7 +273,7 @@ pub fn generate(
   ));
   output.push_str("    let length = reader.read_message_length()? as usize;\n");
   output.push_str("    let end = reader.position() + length;\n");
-  output.push_str("    let mut msg = <Self as ::core::default::Default>::default();\n\n");
+  output.push_str("    let mut msg = <Self as default::Default>::default();\n\n");
   output.push_str("    while reader.position() < end {\n");
   output.push_str("      let tag = reader.read_tag()?;\n");
   output.push_str("      if tag == 0 { break; }\n");
@@ -284,20 +284,20 @@ pub fn generate(
       FieldWrap::Boxed => {
         let read_expr = type_mapper::read_expression(meta.td, "reader", analysis)?;
         output.push_str(&format!(
-          "        {} => msg.{} = ::core::option::Option::Some(alloc::boxed::Box::new({}?)),\n",
+          "        {} => msg.{} = option::Option::Some(boxed::Box::new({}?)),\n",
           meta.tag, meta.fname, read_expr
         ));
       }
       _ => {
         if let Some(read_expr) = type_mapper::borrowed_cow_read_expression(meta.td, "reader") {
           output.push_str(&format!(
-            "        {} => msg.{} = ::core::option::Option::Some({}),\n",
+            "        {} => msg.{} = option::Option::Some({}),\n",
             meta.tag, meta.fname, read_expr
           ));
         } else {
           let read_expr = type_mapper::read_expression(meta.td, "reader", analysis)?;
           output.push_str(&format!(
-            "        {} => msg.{} = ::core::option::Option::Some({}?),\n",
+            "        {} => msg.{} = option::Option::Some({}?),\n",
             meta.tag, meta.fname, read_expr
           ));
         }
@@ -309,7 +309,7 @@ pub fn generate(
     output.push_str("        _ => { reader.skip(end - reader.position())?; }\n");
   } else {
     output.push_str(&format!(
-      "        tag => {{ return ::core::result::Result::Err(bebop::DecodeError::InvalidField {{ type_name: \"{}\", tag }}); }}\n",
+      "        tag => {{ return result::Result::Err(bebop::DecodeError::InvalidField {{ type_name: \"{}\", tag }}); }}\n",
       name
     ));
   }
@@ -319,7 +319,7 @@ pub fn generate(
     "    // @@bebop_insertion_point(decode_end:{})\n",
     name
   ));
-  output.push_str("    ::core::result::Result::Ok(msg)\n");
+  output.push_str("    result::Result::Ok(msg)\n");
   output.push_str("  }\n");
 
   output.push_str("}\n\n");

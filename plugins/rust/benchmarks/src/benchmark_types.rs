@@ -15,19 +15,19 @@
 extern crate alloc;
 extern crate bebop_runtime;
 extern crate core;
-use alloc::vec;
+use alloc::{borrow, boxed, string, vec};
 use bebop_runtime as bebop;
 use core::convert::Into as _;
-use core::iter::IntoIterator as _;
-use core::iter::Iterator as _;
+use core::iter::{IntoIterator as _, Iterator as _};
+use core::{convert, default, mem, ops, option, result};
 
 // @@bebop_insertion_point(imports)
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Person<'buf> {
   pub id: i32,
-  pub name: alloc::borrow::Cow<'buf, str>,
-  pub email: alloc::borrow::Cow<'buf, str>,
+  pub name: borrow::Cow<'buf, str>,
+  pub email: borrow::Cow<'buf, str>,
   pub age: i32,
 }
 
@@ -36,12 +36,12 @@ pub type PersonOwned = Person<'static>;
 impl<'buf> Person<'buf> {
   pub fn new(
     id: i32,
-    name: impl ::core::convert::Into<alloc::borrow::Cow<'buf, str>>,
-    email: impl ::core::convert::Into<alloc::borrow::Cow<'buf, str>>,
+    name: impl convert::Into<borrow::Cow<'buf, str>>,
+    email: impl convert::Into<borrow::Cow<'buf, str>>,
     age: i32,
   ) -> Self {
-    let name = ::core::convert::Into::into(name);
-    let email = ::core::convert::Into::into(email);
+    let name = convert::Into::into(name);
+    let email = convert::Into::into(email);
     Self {
       id,
       name,
@@ -55,8 +55,8 @@ impl<'buf> Person<'buf> {
   pub fn into_owned(self) -> PersonOwned {
     Person {
       id: self.id,
-      name: alloc::borrow::Cow::Owned(self.name.into_owned()),
-      email: alloc::borrow::Cow::Owned(self.email.into_owned()),
+      name: borrow::Cow::Owned(self.name.into_owned()),
+      email: borrow::Cow::Owned(self.email.into_owned()),
       age: self.age,
     }
   }
@@ -74,26 +74,24 @@ impl<'buf> bebop::BebopEncode for Person<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += ::core::mem::size_of::<i32>();
+    size += mem::size_of::<i32>();
     size += bebop::wire_size::string_size(self.name.len());
     size += bebop::wire_size::string_size(self.email.len());
-    size += ::core::mem::size_of::<i32>();
+    size += mem::size_of::<i32>();
     size
   }
 }
 
 impl<'buf> bebop::BebopDecode<'buf> for Person<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Person)
     let id = reader.read_i32()?;
-    let name = alloc::borrow::Cow::Borrowed(reader.read_str()?);
-    let email = alloc::borrow::Cow::Borrowed(reader.read_str()?);
+    let name = borrow::Cow::Borrowed(reader.read_str()?);
+    let email = borrow::Cow::Borrowed(reader.read_str()?);
     let age = reader.read_i32()?;
     // @@bebop_insertion_point(decode_end:Person)
-    ::core::result::Result::Ok(Person {
+    result::Result::Ok(Person {
       id,
       name,
       email,
@@ -110,8 +108,8 @@ impl<'buf> Person<'buf> {
 pub struct Order<'buf> {
   pub order_id: i64,
   pub customer_id: i64,
-  pub item_ids: alloc::borrow::Cow<'buf, [i64]>,
-  pub quantities: alloc::borrow::Cow<'buf, [i32]>,
+  pub item_ids: borrow::Cow<'buf, [i64]>,
+  pub quantities: borrow::Cow<'buf, [i32]>,
   pub total: f64,
   pub timestamp: i64,
 }
@@ -122,13 +120,13 @@ impl<'buf> Order<'buf> {
   pub fn new(
     order_id: i64,
     customer_id: i64,
-    item_ids: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [i64]>>,
-    quantities: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [i32]>>,
+    item_ids: impl convert::Into<borrow::Cow<'buf, [i64]>>,
+    quantities: impl convert::Into<borrow::Cow<'buf, [i32]>>,
     total: f64,
     timestamp: i64,
   ) -> Self {
-    let item_ids = ::core::convert::Into::into(item_ids);
-    let quantities = ::core::convert::Into::into(quantities);
+    let item_ids = convert::Into::into(item_ids);
+    let quantities = convert::Into::into(quantities);
     Self {
       order_id,
       customer_id,
@@ -145,8 +143,8 @@ impl<'buf> Order<'buf> {
     Order {
       order_id: self.order_id,
       customer_id: self.customer_id,
-      item_ids: alloc::borrow::Cow::Owned(self.item_ids.into_owned()),
-      quantities: alloc::borrow::Cow::Owned(self.quantities.into_owned()),
+      item_ids: borrow::Cow::Owned(self.item_ids.into_owned()),
+      quantities: borrow::Cow::Owned(self.quantities.into_owned()),
       total: self.total,
       timestamp: self.timestamp,
     }
@@ -167,21 +165,19 @@ impl<'buf> bebop::BebopEncode for Order<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += ::core::mem::size_of::<i64>();
-    size += ::core::mem::size_of::<i64>();
-    size += bebop::wire_size::array_size(&self.item_ids, |_el| (::core::mem::size_of::<i64>()));
-    size += bebop::wire_size::array_size(&self.quantities, |_el| (::core::mem::size_of::<i32>()));
-    size += ::core::mem::size_of::<f64>();
-    size += ::core::mem::size_of::<i64>();
+    size += mem::size_of::<i64>();
+    size += mem::size_of::<i64>();
+    size += bebop::wire_size::array_size(&self.item_ids, |_el| (mem::size_of::<i64>()));
+    size += bebop::wire_size::array_size(&self.quantities, |_el| (mem::size_of::<i32>()));
+    size += mem::size_of::<f64>();
+    size += mem::size_of::<i64>();
     size
   }
 }
 
 impl<'buf> bebop::BebopDecode<'buf> for Order<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Order)
     let order_id = reader.read_i64()?;
     let customer_id = reader.read_i64()?;
@@ -190,7 +186,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Order<'buf> {
     let total = reader.read_f64()?;
     let timestamp = reader.read_i64()?;
     // @@bebop_insertion_point(decode_end:Order)
-    ::core::result::Result::Ok(Order {
+    result::Result::Ok(Order {
       order_id,
       customer_id,
       item_ids,
@@ -208,8 +204,8 @@ impl<'buf> Order<'buf> {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Event<'buf> {
   pub id: i64,
-  pub r#type: alloc::borrow::Cow<'buf, str>,
-  pub source: alloc::borrow::Cow<'buf, str>,
+  pub r#type: borrow::Cow<'buf, str>,
+  pub source: borrow::Cow<'buf, str>,
   pub timestamp: i64,
   pub payload: bebop::BebopBytes<'buf>,
 }
@@ -219,14 +215,14 @@ pub type EventOwned = Event<'static>;
 impl<'buf> Event<'buf> {
   pub fn new(
     id: i64,
-    r#type: impl ::core::convert::Into<alloc::borrow::Cow<'buf, str>>,
-    source: impl ::core::convert::Into<alloc::borrow::Cow<'buf, str>>,
+    r#type: impl convert::Into<borrow::Cow<'buf, str>>,
+    source: impl convert::Into<borrow::Cow<'buf, str>>,
     timestamp: i64,
-    payload: impl ::core::convert::Into<bebop::BebopBytes<'buf>>,
+    payload: impl convert::Into<bebop::BebopBytes<'buf>>,
   ) -> Self {
-    let r#type = ::core::convert::Into::into(r#type);
-    let source = ::core::convert::Into::into(source);
-    let payload = ::core::convert::Into::into(payload);
+    let r#type = convert::Into::into(r#type);
+    let source = convert::Into::into(source);
+    let payload = convert::Into::into(payload);
     Self {
       id,
       r#type,
@@ -241,8 +237,8 @@ impl<'buf> Event<'buf> {
   pub fn into_owned(self) -> EventOwned {
     Event {
       id: self.id,
-      r#type: alloc::borrow::Cow::Owned(self.r#type.into_owned()),
-      source: alloc::borrow::Cow::Owned(self.source.into_owned()),
+      r#type: borrow::Cow::Owned(self.r#type.into_owned()),
+      source: borrow::Cow::Owned(self.source.into_owned()),
       timestamp: self.timestamp,
       payload: self.payload.into_owned(),
     }
@@ -262,10 +258,10 @@ impl<'buf> bebop::BebopEncode for Event<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += ::core::mem::size_of::<i64>();
+    size += mem::size_of::<i64>();
     size += bebop::wire_size::string_size(self.r#type.len());
     size += bebop::wire_size::string_size(self.source.len());
-    size += ::core::mem::size_of::<i64>();
+    size += mem::size_of::<i64>();
     size += bebop::wire_size::byte_array_size(self.payload.len());
     size
   }
@@ -273,17 +269,15 @@ impl<'buf> bebop::BebopEncode for Event<'buf> {
 
 impl<'buf> bebop::BebopDecode<'buf> for Event<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Event)
     let id = reader.read_i64()?;
-    let r#type = alloc::borrow::Cow::Borrowed(reader.read_str()?);
-    let source = alloc::borrow::Cow::Borrowed(reader.read_str()?);
+    let r#type = borrow::Cow::Borrowed(reader.read_str()?);
+    let source = borrow::Cow::Borrowed(reader.read_str()?);
     let timestamp = reader.read_i64()?;
     let payload = bebop::BebopBytes::borrowed(reader.read_byte_slice()?);
     // @@bebop_insertion_point(decode_end:Event)
-    ::core::result::Result::Ok(Event {
+    result::Result::Ok(Event {
       id,
       r#type,
       source,
@@ -299,8 +293,8 @@ impl<'buf> Event<'buf> {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct TreeNode {
-  pub value: ::core::option::Option<i32>,
-  pub children: ::core::option::Option<alloc::vec::Vec<TreeNode>>,
+  pub value: option::Option<i32>,
+  pub children: option::Option<vec::Vec<TreeNode>>,
 }
 
 impl bebop::BebopEncode for TreeNode {
@@ -312,11 +306,11 @@ impl bebop::BebopEncode for TreeNode {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let ::core::option::Option::Some(v) = self.value {
+    if let option::Option::Some(v) = self.value {
       writer.write_tag(1);
       writer.write_i32(v);
     }
-    if let ::core::option::Option::Some(ref v) = self.children {
+    if let option::Option::Some(ref v) = self.children {
       writer.write_tag(2);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
@@ -327,10 +321,10 @@ impl bebop::BebopEncode for TreeNode {
 
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
-    if let ::core::option::Option::Some(v) = self.value {
-      size += bebop::wire_size::tagged_size(::core::mem::size_of::<i32>());
+    if let option::Option::Some(v) = self.value {
+      size += bebop::wire_size::tagged_size(mem::size_of::<i32>());
     }
-    if let ::core::option::Option::Some(ref v) = self.children {
+    if let option::Option::Some(ref v) = self.children {
       size +=
         bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
@@ -340,13 +334,11 @@ impl bebop::BebopEncode for TreeNode {
 
 impl<'buf> bebop::BebopDecode<'buf> for TreeNode {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:TreeNode)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = <Self as ::core::default::Default>::default();
+    let mut msg = <Self as default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -354,12 +346,10 @@ impl<'buf> bebop::BebopDecode<'buf> for TreeNode {
         break;
       }
       match tag {
-        1 => msg.value = ::core::option::Option::Some(reader.read_i32()?),
-        2 => {
-          msg.children = ::core::option::Option::Some(reader.read_array(|_r| TreeNode::decode(_r))?)
-        }
+        1 => msg.value = option::Option::Some(reader.read_i32()?),
+        2 => msg.children = option::Option::Some(reader.read_array(|_r| TreeNode::decode(_r))?),
         tag => {
-          return ::core::result::Result::Err(bebop::DecodeError::InvalidField {
+          return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "TreeNode",
             tag,
           });
@@ -367,7 +357,7 @@ impl<'buf> bebop::BebopDecode<'buf> for TreeNode {
       }
     }
     // @@bebop_insertion_point(decode_end:TreeNode)
-    ::core::result::Result::Ok(msg)
+    result::Result::Ok(msg)
   }
 }
 
@@ -398,12 +388,10 @@ impl bebop::BebopEncode for JsonNull {
 
 impl<'buf> bebop::BebopDecode<'buf> for JsonNull {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:JsonNull)
     // @@bebop_insertion_point(decode_end:JsonNull)
-    ::core::result::Result::Ok(JsonNull {})
+    result::Result::Ok(JsonNull {})
   }
 }
 
@@ -485,21 +473,19 @@ impl<'buf> bebop::BebopEncode for JsonValue<'buf> {
 
 impl<'buf> bebop::BebopDecode<'buf> for JsonValue<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:JsonValue)
     let length = reader.read_message_length()? as usize;
     let start = reader.position();
     let discriminator = reader.read_byte()?;
     let value = match discriminator {
-      1 => ::core::result::Result::Ok(Self::Null(JsonNull::decode(reader)?)),
-      2 => ::core::result::Result::Ok(Self::Bool(Bool::decode(reader)?)),
-      3 => ::core::result::Result::Ok(Self::Number(Number::decode(reader)?)),
-      4 => ::core::result::Result::Ok(Self::String(String::decode(reader)?)),
-      5 => ::core::result::Result::Ok(Self::List(List::decode(reader)?)),
-      6 => ::core::result::Result::Ok(Self::Object(Object::decode(reader)?)),
-      _ => ::core::result::Result::Err(bebop::DecodeError::InvalidUnion {
+      1 => result::Result::Ok(Self::Null(JsonNull::decode(reader)?)),
+      2 => result::Result::Ok(Self::Bool(Bool::decode(reader)?)),
+      3 => result::Result::Ok(Self::Number(Number::decode(reader)?)),
+      4 => result::Result::Ok(Self::String(String::decode(reader)?)),
+      5 => result::Result::Ok(Self::List(List::decode(reader)?)),
+      6 => result::Result::Ok(Self::Object(Object::decode(reader)?)),
+      _ => result::Result::Err(bebop::DecodeError::InvalidUnion {
         type_name: "JsonValue",
         discriminator,
       }),
@@ -515,7 +501,7 @@ impl<'buf> JsonValue<'buf> {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct Bool {
-  pub value: ::core::option::Option<bool>,
+  pub value: option::Option<bool>,
 }
 
 impl bebop::BebopEncode for Bool {
@@ -527,7 +513,7 @@ impl bebop::BebopEncode for Bool {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let ::core::option::Option::Some(v) = self.value {
+    if let option::Option::Some(v) = self.value {
       writer.write_tag(1);
       writer.write_bool(v);
     }
@@ -538,8 +524,8 @@ impl bebop::BebopEncode for Bool {
 
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
-    if let ::core::option::Option::Some(v) = self.value {
-      size += bebop::wire_size::tagged_size(::core::mem::size_of::<bool>());
+    if let option::Option::Some(v) = self.value {
+      size += bebop::wire_size::tagged_size(mem::size_of::<bool>());
     }
     size
   }
@@ -547,13 +533,11 @@ impl bebop::BebopEncode for Bool {
 
 impl<'buf> bebop::BebopDecode<'buf> for Bool {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Bool)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = <Self as ::core::default::Default>::default();
+    let mut msg = <Self as default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -561,9 +545,9 @@ impl<'buf> bebop::BebopDecode<'buf> for Bool {
         break;
       }
       match tag {
-        1 => msg.value = ::core::option::Option::Some(reader.read_bool()?),
+        1 => msg.value = option::Option::Some(reader.read_bool()?),
         tag => {
-          return ::core::result::Result::Err(bebop::DecodeError::InvalidField {
+          return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "Bool",
             tag,
           });
@@ -571,7 +555,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Bool {
       }
     }
     // @@bebop_insertion_point(decode_end:Bool)
-    ::core::result::Result::Ok(msg)
+    result::Result::Ok(msg)
   }
 }
 
@@ -581,7 +565,7 @@ impl Bool {
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Number {
-  pub value: ::core::option::Option<f64>,
+  pub value: option::Option<f64>,
 }
 
 impl bebop::BebopEncode for Number {
@@ -593,7 +577,7 @@ impl bebop::BebopEncode for Number {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let ::core::option::Option::Some(v) = self.value {
+    if let option::Option::Some(v) = self.value {
       writer.write_tag(1);
       writer.write_f64(v);
     }
@@ -604,8 +588,8 @@ impl bebop::BebopEncode for Number {
 
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
-    if let ::core::option::Option::Some(v) = self.value {
-      size += bebop::wire_size::tagged_size(::core::mem::size_of::<f64>());
+    if let option::Option::Some(v) = self.value {
+      size += bebop::wire_size::tagged_size(mem::size_of::<f64>());
     }
     size
   }
@@ -613,13 +597,11 @@ impl bebop::BebopEncode for Number {
 
 impl<'buf> bebop::BebopDecode<'buf> for Number {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Number)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = <Self as ::core::default::Default>::default();
+    let mut msg = <Self as default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -627,9 +609,9 @@ impl<'buf> bebop::BebopDecode<'buf> for Number {
         break;
       }
       match tag {
-        1 => msg.value = ::core::option::Option::Some(reader.read_f64()?),
+        1 => msg.value = option::Option::Some(reader.read_f64()?),
         tag => {
-          return ::core::result::Result::Err(bebop::DecodeError::InvalidField {
+          return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "Number",
             tag,
           });
@@ -637,7 +619,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Number {
       }
     }
     // @@bebop_insertion_point(decode_end:Number)
-    ::core::result::Result::Ok(msg)
+    result::Result::Ok(msg)
   }
 }
 
@@ -647,7 +629,7 @@ impl Number {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct String<'buf> {
-  pub value: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
+  pub value: option::Option<borrow::Cow<'buf, str>>,
 }
 
 pub type StringOwned = String<'static>;
@@ -655,9 +637,7 @@ pub type StringOwned = String<'static>;
 impl<'buf> String<'buf> {
   pub fn into_owned(self) -> StringOwned {
     String {
-      value: self
-        .value
-        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      value: self.value.map(|v| borrow::Cow::Owned(v.into_owned())),
     }
   }
 }
@@ -671,7 +651,7 @@ impl<'buf> bebop::BebopEncode for String<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let ::core::option::Option::Some(ref v) = self.value {
+    if let option::Option::Some(ref v) = self.value {
       writer.write_tag(1);
       writer.write_string(&v);
     }
@@ -682,7 +662,7 @@ impl<'buf> bebop::BebopEncode for String<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
-    if let ::core::option::Option::Some(ref v) = self.value {
+    if let option::Option::Some(ref v) = self.value {
       size += bebop::wire_size::tagged_size(bebop::wire_size::string_size(v.len()));
     }
     size
@@ -691,13 +671,11 @@ impl<'buf> bebop::BebopEncode for String<'buf> {
 
 impl<'buf> bebop::BebopDecode<'buf> for String<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:String)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = <Self as ::core::default::Default>::default();
+    let mut msg = <Self as default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -705,11 +683,9 @@ impl<'buf> bebop::BebopDecode<'buf> for String<'buf> {
         break;
       }
       match tag {
-        1 => {
-          msg.value = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
-        }
+        1 => msg.value = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
         tag => {
-          return ::core::result::Result::Err(bebop::DecodeError::InvalidField {
+          return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "String",
             tag,
           });
@@ -717,7 +693,7 @@ impl<'buf> bebop::BebopDecode<'buf> for String<'buf> {
       }
     }
     // @@bebop_insertion_point(decode_end:String)
-    ::core::result::Result::Ok(msg)
+    result::Result::Ok(msg)
   }
 }
 
@@ -727,7 +703,7 @@ impl<'buf> String<'buf> {
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct List<'buf> {
-  pub values: ::core::option::Option<alloc::vec::Vec<JsonValue<'buf>>>,
+  pub values: option::Option<vec::Vec<JsonValue<'buf>>>,
 }
 
 pub type ListOwned = List<'static>;
@@ -751,7 +727,7 @@ impl<'buf> bebop::BebopEncode for List<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let ::core::option::Option::Some(ref v) = self.values {
+    if let option::Option::Some(ref v) = self.values {
       writer.write_tag(1);
       writer.write_array(&v, |_w, _el| _el.encode(_w));
     }
@@ -762,7 +738,7 @@ impl<'buf> bebop::BebopEncode for List<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
-    if let ::core::option::Option::Some(ref v) = self.values {
+    if let option::Option::Some(ref v) = self.values {
       size +=
         bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
@@ -772,13 +748,11 @@ impl<'buf> bebop::BebopEncode for List<'buf> {
 
 impl<'buf> bebop::BebopDecode<'buf> for List<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:List)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = <Self as ::core::default::Default>::default();
+    let mut msg = <Self as default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -786,11 +760,9 @@ impl<'buf> bebop::BebopDecode<'buf> for List<'buf> {
         break;
       }
       match tag {
-        1 => {
-          msg.values = ::core::option::Option::Some(reader.read_array(|_r| JsonValue::decode(_r))?)
-        }
+        1 => msg.values = option::Option::Some(reader.read_array(|_r| JsonValue::decode(_r))?),
         tag => {
-          return ::core::result::Result::Err(bebop::DecodeError::InvalidField {
+          return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "List",
             tag,
           });
@@ -798,7 +770,7 @@ impl<'buf> bebop::BebopDecode<'buf> for List<'buf> {
       }
     }
     // @@bebop_insertion_point(decode_end:List)
-    ::core::result::Result::Ok(msg)
+    result::Result::Ok(msg)
   }
 }
 
@@ -808,8 +780,7 @@ impl<'buf> List<'buf> {
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Object<'buf> {
-  pub fields:
-    ::core::option::Option<bebop::HashMap<alloc::borrow::Cow<'buf, str>, JsonValue<'buf>>>,
+  pub fields: option::Option<bebop::HashMap<borrow::Cow<'buf, str>, JsonValue<'buf>>>,
 }
 
 pub type ObjectOwned = Object<'static>;
@@ -819,7 +790,7 @@ impl<'buf> Object<'buf> {
     Object {
       fields: self.fields.map(|v| {
         v.into_iter()
-          .map(|(_k, _v)| (alloc::borrow::Cow::Owned(_k.into_owned()), _v.into_owned()))
+          .map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), _v.into_owned()))
           .collect()
       }),
     }
@@ -835,7 +806,7 @@ impl<'buf> bebop::BebopEncode for Object<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let ::core::option::Option::Some(ref v) = self.fields {
+    if let option::Option::Some(ref v) = self.fields {
       writer.write_tag(1);
       writer.write_map(&v, |_w, _k, _v| {
         _w.write_string(&_k);
@@ -849,7 +820,7 @@ impl<'buf> bebop::BebopEncode for Object<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
-    if let ::core::option::Option::Some(ref v) = self.fields {
+    if let option::Option::Some(ref v) = self.fields {
       size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| {
         bebop::wire_size::string_size(_k.len()) + _v.encoded_size()
       }));
@@ -860,13 +831,11 @@ impl<'buf> bebop::BebopEncode for Object<'buf> {
 
 impl<'buf> bebop::BebopDecode<'buf> for Object<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Object)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = <Self as ::core::default::Default>::default();
+    let mut msg = <Self as default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -875,15 +844,15 @@ impl<'buf> bebop::BebopDecode<'buf> for Object<'buf> {
       }
       match tag {
         1 => {
-          msg.fields = ::core::option::Option::Some(reader.read_map(|_r| {
-            ::core::result::Result::Ok((
-              ::core::result::Result::Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))?,
+          msg.fields = option::Option::Some(reader.read_map(|_r| {
+            result::Result::Ok((
+              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
               JsonValue::decode(_r)?,
             ))
           })?)
         }
         tag => {
-          return ::core::result::Result::Err(bebop::DecodeError::InvalidField {
+          return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "Object",
             tag,
           });
@@ -891,7 +860,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Object<'buf> {
       }
     }
     // @@bebop_insertion_point(decode_end:Object)
-    ::core::result::Result::Ok(msg)
+    result::Result::Ok(msg)
   }
 }
 
@@ -901,10 +870,9 @@ impl<'buf> Object<'buf> {
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Document<'buf> {
-  pub title: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
-  pub body: ::core::option::Option<alloc::borrow::Cow<'buf, str>>,
-  pub metadata:
-    ::core::option::Option<bebop::HashMap<alloc::borrow::Cow<'buf, str>, JsonValue<'buf>>>,
+  pub title: option::Option<borrow::Cow<'buf, str>>,
+  pub body: option::Option<borrow::Cow<'buf, str>>,
+  pub metadata: option::Option<bebop::HashMap<borrow::Cow<'buf, str>, JsonValue<'buf>>>,
 }
 
 pub type DocumentOwned = Document<'static>;
@@ -912,13 +880,11 @@ pub type DocumentOwned = Document<'static>;
 impl<'buf> Document<'buf> {
   pub fn into_owned(self) -> DocumentOwned {
     Document {
-      title: self
-        .title
-        .map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
-      body: self.body.map(|v| alloc::borrow::Cow::Owned(v.into_owned())),
+      title: self.title.map(|v| borrow::Cow::Owned(v.into_owned())),
+      body: self.body.map(|v| borrow::Cow::Owned(v.into_owned())),
       metadata: self.metadata.map(|v| {
         v.into_iter()
-          .map(|(_k, _v)| (alloc::borrow::Cow::Owned(_k.into_owned()), _v.into_owned()))
+          .map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), _v.into_owned()))
           .collect()
       }),
     }
@@ -934,15 +900,15 @@ impl<'buf> bebop::BebopEncode for Document<'buf> {
     // encoding and decoding. The C plugin (plugins/c/src/generator.c:3446) skips
     // them on encode/size but still decodes them. The Swift plugin encodes them
     // normally. This behavior should be revisited once the spec intent is clarified.
-    if let ::core::option::Option::Some(ref v) = self.title {
+    if let option::Option::Some(ref v) = self.title {
       writer.write_tag(1);
       writer.write_string(&v);
     }
-    if let ::core::option::Option::Some(ref v) = self.body {
+    if let option::Option::Some(ref v) = self.body {
       writer.write_tag(2);
       writer.write_string(&v);
     }
-    if let ::core::option::Option::Some(ref v) = self.metadata {
+    if let option::Option::Some(ref v) = self.metadata {
       writer.write_tag(3);
       writer.write_map(&v, |_w, _k, _v| {
         _w.write_string(&_k);
@@ -956,13 +922,13 @@ impl<'buf> bebop::BebopEncode for Document<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
-    if let ::core::option::Option::Some(ref v) = self.title {
+    if let option::Option::Some(ref v) = self.title {
       size += bebop::wire_size::tagged_size(bebop::wire_size::string_size(v.len()));
     }
-    if let ::core::option::Option::Some(ref v) = self.body {
+    if let option::Option::Some(ref v) = self.body {
       size += bebop::wire_size::tagged_size(bebop::wire_size::string_size(v.len()));
     }
-    if let ::core::option::Option::Some(ref v) = self.metadata {
+    if let option::Option::Some(ref v) = self.metadata {
       size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| {
         bebop::wire_size::string_size(_k.len()) + _v.encoded_size()
       }));
@@ -973,13 +939,11 @@ impl<'buf> bebop::BebopEncode for Document<'buf> {
 
 impl<'buf> bebop::BebopDecode<'buf> for Document<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Document)
     let length = reader.read_message_length()? as usize;
     let end = reader.position() + length;
-    let mut msg = <Self as ::core::default::Default>::default();
+    let mut msg = <Self as default::Default>::default();
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
@@ -987,22 +951,18 @@ impl<'buf> bebop::BebopDecode<'buf> for Document<'buf> {
         break;
       }
       match tag {
-        1 => {
-          msg.title = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
-        }
-        2 => {
-          msg.body = ::core::option::Option::Some(alloc::borrow::Cow::Borrowed(reader.read_str()?))
-        }
+        1 => msg.title = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
+        2 => msg.body = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
         3 => {
-          msg.metadata = ::core::option::Option::Some(reader.read_map(|_r| {
-            ::core::result::Result::Ok((
-              ::core::result::Result::Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?))?,
+          msg.metadata = option::Option::Some(reader.read_map(|_r| {
+            result::Result::Ok((
+              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
               JsonValue::decode(_r)?,
             ))
           })?)
         }
         tag => {
-          return ::core::result::Result::Err(bebop::DecodeError::InvalidField {
+          return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "Document",
             tag,
           });
@@ -1010,7 +970,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Document<'buf> {
       }
     }
     // @@bebop_insertion_point(decode_end:Document)
-    ::core::result::Result::Ok(msg)
+    result::Result::Ok(msg)
   }
 }
 
@@ -1027,15 +987,15 @@ pub enum ChunkKind {
   Heading = 3,
 }
 
-impl ::core::convert::TryFrom<u8> for ChunkKind {
+impl convert::TryFrom<u8> for ChunkKind {
   type Error = bebop::DecodeError;
-  fn try_from(value: u8) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn try_from(value: u8) -> result::Result<Self, bebop::DecodeError> {
     match value {
-      0 => ::core::result::Result::Ok(Self::Unknown),
-      1 => ::core::result::Result::Ok(Self::Paragraph),
-      2 => ::core::result::Result::Ok(Self::Chapter),
-      3 => ::core::result::Result::Ok(Self::Heading),
-      _ => ::core::result::Result::Err(bebop::DecodeError::InvalidEnum {
+      0 => result::Result::Ok(Self::Unknown),
+      1 => result::Result::Ok(Self::Paragraph),
+      2 => result::Result::Ok(Self::Chapter),
+      3 => result::Result::Ok(Self::Heading),
+      _ => result::Result::Err(bebop::DecodeError::InvalidEnum {
         type_name: "ChunkKind",
         value: value as u64,
       }),
@@ -1043,7 +1003,7 @@ impl ::core::convert::TryFrom<u8> for ChunkKind {
   }
 }
 
-impl ::core::convert::From<ChunkKind> for u8 {
+impl convert::From<ChunkKind> for u8 {
   fn from(value: ChunkKind) -> u8 {
     value as u8
   }
@@ -1068,13 +1028,11 @@ impl bebop::BebopEncode for ChunkKind {
 
 impl<'buf> bebop::BebopDecode<'buf> for ChunkKind {
   #[inline(always)]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:ChunkKind)
     let value = reader.read_byte()?;
     // @@bebop_insertion_point(decode_end:ChunkKind)
-    ::core::convert::TryFrom::try_from(value)
+    convert::TryFrom::try_from(value)
   }
 }
 
@@ -1087,7 +1045,7 @@ pub struct TextSpan {
 
 impl TextSpan {
   pub const FIXED_ENCODED_SIZE: usize =
-    ::core::mem::size_of::<u32>() + ::core::mem::size_of::<u32>() + ChunkKind::FIXED_ENCODED_SIZE;
+    mem::size_of::<u32>() + mem::size_of::<u32>() + ChunkKind::FIXED_ENCODED_SIZE;
 
   pub fn new(start: u32, len: u32, kind: ChunkKind) -> Self {
     Self { start, len, kind }
@@ -1110,15 +1068,13 @@ impl bebop::BebopEncode for TextSpan {
 
 impl<'buf> bebop::BebopDecode<'buf> for TextSpan {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:TextSpan)
     let start = reader.read_u32()?;
     let len = reader.read_u32()?;
     let kind = ChunkKind::decode(reader)?;
     // @@bebop_insertion_point(decode_end:TextSpan)
-    ::core::result::Result::Ok(TextSpan { start, len, kind })
+    result::Result::Ok(TextSpan { start, len, kind })
   }
 }
 
@@ -1128,18 +1084,18 @@ impl TextSpan {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ChunkedText<'buf> {
-  pub source: alloc::borrow::Cow<'buf, str>,
-  pub spans: alloc::vec::Vec<TextSpan>,
+  pub source: borrow::Cow<'buf, str>,
+  pub spans: vec::Vec<TextSpan>,
 }
 
 pub type ChunkedTextOwned = ChunkedText<'static>;
 
 impl<'buf> ChunkedText<'buf> {
   pub fn new(
-    source: impl ::core::convert::Into<alloc::borrow::Cow<'buf, str>>,
-    spans: alloc::vec::Vec<TextSpan>,
+    source: impl convert::Into<borrow::Cow<'buf, str>>,
+    spans: vec::Vec<TextSpan>,
   ) -> Self {
-    let source = ::core::convert::Into::into(source);
+    let source = convert::Into::into(source);
     Self { source, spans }
   }
 }
@@ -1147,7 +1103,7 @@ impl<'buf> ChunkedText<'buf> {
 impl<'buf> ChunkedText<'buf> {
   pub fn into_owned(self) -> ChunkedTextOwned {
     ChunkedText {
-      source: alloc::borrow::Cow::Owned(self.source.into_owned()),
+      source: borrow::Cow::Owned(self.source.into_owned()),
       spans: self.spans,
     }
   }
@@ -1171,14 +1127,12 @@ impl<'buf> bebop::BebopEncode for ChunkedText<'buf> {
 
 impl<'buf> bebop::BebopDecode<'buf> for ChunkedText<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:ChunkedText)
-    let source = alloc::borrow::Cow::Borrowed(reader.read_str()?);
+    let source = borrow::Cow::Borrowed(reader.read_str()?);
     let spans = reader.read_array(|_r| TextSpan::decode(_r))?;
     // @@bebop_insertion_point(decode_end:ChunkedText)
-    ::core::result::Result::Ok(ChunkedText { source, spans })
+    result::Result::Ok(ChunkedText { source, spans })
   }
 }
 
@@ -1189,7 +1143,7 @@ impl<'buf> ChunkedText<'buf> {
 #[derive(Debug, Clone, PartialEq)]
 pub struct EmbeddingBf16<'buf> {
   pub id: bebop::Uuid,
-  pub vector: alloc::borrow::Cow<'buf, [bebop::bf16]>,
+  pub vector: borrow::Cow<'buf, [bebop::bf16]>,
 }
 
 pub type EmbeddingBf16Owned = EmbeddingBf16<'static>;
@@ -1197,9 +1151,9 @@ pub type EmbeddingBf16Owned = EmbeddingBf16<'static>;
 impl<'buf> EmbeddingBf16<'buf> {
   pub fn new(
     id: bebop::Uuid,
-    vector: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [bebop::bf16]>>,
+    vector: impl convert::Into<borrow::Cow<'buf, [bebop::bf16]>>,
   ) -> Self {
-    let vector = ::core::convert::Into::into(vector);
+    let vector = convert::Into::into(vector);
     Self { id, vector }
   }
 }
@@ -1208,7 +1162,7 @@ impl<'buf> EmbeddingBf16<'buf> {
   pub fn into_owned(self) -> EmbeddingBf16Owned {
     EmbeddingBf16 {
       id: self.id,
-      vector: alloc::borrow::Cow::Owned(self.vector.into_owned()),
+      vector: borrow::Cow::Owned(self.vector.into_owned()),
     }
   }
 }
@@ -1223,23 +1177,20 @@ impl<'buf> bebop::BebopEncode for EmbeddingBf16<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += ::core::mem::size_of::<bebop::Uuid>();
-    size +=
-      bebop::wire_size::array_size(&self.vector, |_el| (::core::mem::size_of::<bebop::bf16>()));
+    size += mem::size_of::<bebop::Uuid>();
+    size += bebop::wire_size::array_size(&self.vector, |_el| (mem::size_of::<bebop::bf16>()));
     size
   }
 }
 
 impl<'buf> bebop::BebopDecode<'buf> for EmbeddingBf16<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:EmbeddingBf16)
     let id = reader.read_uuid()?;
     let vector = reader.read_scalar_array::<bebop::bf16>()?;
     // @@bebop_insertion_point(decode_end:EmbeddingBf16)
-    ::core::result::Result::Ok(EmbeddingBf16 { id, vector })
+    result::Result::Ok(EmbeddingBf16 { id, vector })
   }
 }
 
@@ -1250,17 +1201,14 @@ impl<'buf> EmbeddingBf16<'buf> {
 #[derive(Debug, Clone, PartialEq)]
 pub struct EmbeddingF32<'buf> {
   pub id: bebop::Uuid,
-  pub vector: alloc::borrow::Cow<'buf, [f32]>,
+  pub vector: borrow::Cow<'buf, [f32]>,
 }
 
 pub type EmbeddingF32Owned = EmbeddingF32<'static>;
 
 impl<'buf> EmbeddingF32<'buf> {
-  pub fn new(
-    id: bebop::Uuid,
-    vector: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [f32]>>,
-  ) -> Self {
-    let vector = ::core::convert::Into::into(vector);
+  pub fn new(id: bebop::Uuid, vector: impl convert::Into<borrow::Cow<'buf, [f32]>>) -> Self {
+    let vector = convert::Into::into(vector);
     Self { id, vector }
   }
 }
@@ -1269,7 +1217,7 @@ impl<'buf> EmbeddingF32<'buf> {
   pub fn into_owned(self) -> EmbeddingF32Owned {
     EmbeddingF32 {
       id: self.id,
-      vector: alloc::borrow::Cow::Owned(self.vector.into_owned()),
+      vector: borrow::Cow::Owned(self.vector.into_owned()),
     }
   }
 }
@@ -1284,22 +1232,20 @@ impl<'buf> bebop::BebopEncode for EmbeddingF32<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += ::core::mem::size_of::<bebop::Uuid>();
-    size += bebop::wire_size::array_size(&self.vector, |_el| (::core::mem::size_of::<f32>()));
+    size += mem::size_of::<bebop::Uuid>();
+    size += bebop::wire_size::array_size(&self.vector, |_el| (mem::size_of::<f32>()));
     size
   }
 }
 
 impl<'buf> bebop::BebopDecode<'buf> for EmbeddingF32<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:EmbeddingF32)
     let id = reader.read_uuid()?;
     let vector = reader.read_scalar_array::<f32>()?;
     // @@bebop_insertion_point(decode_end:EmbeddingF32)
-    ::core::result::Result::Ok(EmbeddingF32 { id, vector })
+    result::Result::Ok(EmbeddingF32 { id, vector })
   }
 }
 
@@ -1309,8 +1255,8 @@ impl<'buf> EmbeddingF32<'buf> {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct EmbeddingBatch<'buf> {
-  pub model: alloc::borrow::Cow<'buf, str>,
-  pub embeddings: alloc::vec::Vec<EmbeddingBf16<'buf>>,
+  pub model: borrow::Cow<'buf, str>,
+  pub embeddings: vec::Vec<EmbeddingBf16<'buf>>,
   pub usage_tokens: u32,
 }
 
@@ -1318,11 +1264,11 @@ pub type EmbeddingBatchOwned = EmbeddingBatch<'static>;
 
 impl<'buf> EmbeddingBatch<'buf> {
   pub fn new(
-    model: impl ::core::convert::Into<alloc::borrow::Cow<'buf, str>>,
-    embeddings: alloc::vec::Vec<EmbeddingBf16<'static>>,
+    model: impl convert::Into<borrow::Cow<'buf, str>>,
+    embeddings: vec::Vec<EmbeddingBf16<'static>>,
     usage_tokens: u32,
   ) -> Self {
-    let model = ::core::convert::Into::into(model);
+    let model = convert::Into::into(model);
     Self {
       model,
       embeddings,
@@ -1334,7 +1280,7 @@ impl<'buf> EmbeddingBatch<'buf> {
 impl<'buf> EmbeddingBatch<'buf> {
   pub fn into_owned(self) -> EmbeddingBatchOwned {
     EmbeddingBatch {
-      model: alloc::borrow::Cow::Owned(self.model.into_owned()),
+      model: borrow::Cow::Owned(self.model.into_owned()),
       embeddings: self
         .embeddings
         .into_iter()
@@ -1358,22 +1304,20 @@ impl<'buf> bebop::BebopEncode for EmbeddingBatch<'buf> {
     let mut size = 0;
     size += bebop::wire_size::string_size(self.model.len());
     size += bebop::wire_size::array_size(&self.embeddings, |_el| _el.encoded_size());
-    size += ::core::mem::size_of::<u32>();
+    size += mem::size_of::<u32>();
     size
   }
 }
 
 impl<'buf> bebop::BebopDecode<'buf> for EmbeddingBatch<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:EmbeddingBatch)
-    let model = alloc::borrow::Cow::Borrowed(reader.read_str()?);
+    let model = borrow::Cow::Borrowed(reader.read_str()?);
     let embeddings = reader.read_array(|_r| EmbeddingBf16::decode(_r))?;
     let usage_tokens = reader.read_u32()?;
     // @@bebop_insertion_point(decode_end:EmbeddingBatch)
-    ::core::result::Result::Ok(EmbeddingBatch {
+    result::Result::Ok(EmbeddingBatch {
       model,
       embeddings,
       usage_tokens,
@@ -1387,7 +1331,7 @@ impl<'buf> EmbeddingBatch<'buf> {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TokenLogprob<'buf> {
-  pub token: alloc::borrow::Cow<'buf, str>,
+  pub token: borrow::Cow<'buf, str>,
   pub token_id: u32,
   pub logprob: f32,
 }
@@ -1396,11 +1340,11 @@ pub type TokenLogprobOwned = TokenLogprob<'static>;
 
 impl<'buf> TokenLogprob<'buf> {
   pub fn new(
-    token: impl ::core::convert::Into<alloc::borrow::Cow<'buf, str>>,
+    token: impl convert::Into<borrow::Cow<'buf, str>>,
     token_id: u32,
     logprob: f32,
   ) -> Self {
-    let token = ::core::convert::Into::into(token);
+    let token = convert::Into::into(token);
     Self {
       token,
       token_id,
@@ -1412,7 +1356,7 @@ impl<'buf> TokenLogprob<'buf> {
 impl<'buf> TokenLogprob<'buf> {
   pub fn into_owned(self) -> TokenLogprobOwned {
     TokenLogprob {
-      token: alloc::borrow::Cow::Owned(self.token.into_owned()),
+      token: borrow::Cow::Owned(self.token.into_owned()),
       token_id: self.token_id,
       logprob: self.logprob,
     }
@@ -1431,23 +1375,21 @@ impl<'buf> bebop::BebopEncode for TokenLogprob<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = 0;
     size += bebop::wire_size::string_size(self.token.len());
-    size += ::core::mem::size_of::<u32>();
-    size += ::core::mem::size_of::<f32>();
+    size += mem::size_of::<u32>();
+    size += mem::size_of::<f32>();
     size
   }
 }
 
 impl<'buf> bebop::BebopDecode<'buf> for TokenLogprob<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:TokenLogprob)
-    let token = alloc::borrow::Cow::Borrowed(reader.read_str()?);
+    let token = borrow::Cow::Borrowed(reader.read_str()?);
     let token_id = reader.read_u32()?;
     let logprob = reader.read_f32()?;
     // @@bebop_insertion_point(decode_end:TokenLogprob)
-    ::core::result::Result::Ok(TokenLogprob {
+    result::Result::Ok(TokenLogprob {
       token,
       token_id,
       logprob,
@@ -1461,13 +1403,13 @@ impl<'buf> TokenLogprob<'buf> {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TokenAlternatives<'buf> {
-  pub top_tokens: alloc::vec::Vec<TokenLogprob<'buf>>,
+  pub top_tokens: vec::Vec<TokenLogprob<'buf>>,
 }
 
 pub type TokenAlternativesOwned = TokenAlternatives<'static>;
 
 impl<'buf> TokenAlternatives<'buf> {
-  pub fn new(top_tokens: alloc::vec::Vec<TokenLogprob<'static>>) -> Self {
+  pub fn new(top_tokens: vec::Vec<TokenLogprob<'static>>) -> Self {
     Self { top_tokens }
   }
 }
@@ -1500,13 +1442,11 @@ impl<'buf> bebop::BebopEncode for TokenAlternatives<'buf> {
 
 impl<'buf> bebop::BebopDecode<'buf> for TokenAlternatives<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:TokenAlternatives)
     let top_tokens = reader.read_array(|_r| TokenLogprob::decode(_r))?;
     // @@bebop_insertion_point(decode_end:TokenAlternatives)
-    ::core::result::Result::Ok(TokenAlternatives { top_tokens })
+    result::Result::Ok(TokenAlternatives { top_tokens })
   }
 }
 
@@ -1517,9 +1457,9 @@ impl<'buf> TokenAlternatives<'buf> {
 #[derive(Debug, Clone, PartialEq)]
 pub struct LlmStreamChunk<'buf> {
   pub chunk_id: u32,
-  pub tokens: alloc::vec::Vec<alloc::borrow::Cow<'buf, str>>,
-  pub logprobs: alloc::vec::Vec<TokenAlternatives<'buf>>,
-  pub finish_reason: alloc::borrow::Cow<'buf, str>,
+  pub tokens: vec::Vec<borrow::Cow<'buf, str>>,
+  pub logprobs: vec::Vec<TokenAlternatives<'buf>>,
+  pub finish_reason: borrow::Cow<'buf, str>,
 }
 
 pub type LlmStreamChunkOwned = LlmStreamChunk<'static>;
@@ -1527,15 +1467,15 @@ pub type LlmStreamChunkOwned = LlmStreamChunk<'static>;
 impl<'buf> LlmStreamChunk<'buf> {
   pub fn new(
     chunk_id: u32,
-    tokens: alloc::vec::Vec<alloc::string::String>,
-    logprobs: alloc::vec::Vec<TokenAlternatives<'static>>,
-    finish_reason: impl ::core::convert::Into<alloc::borrow::Cow<'buf, str>>,
+    tokens: vec::Vec<string::String>,
+    logprobs: vec::Vec<TokenAlternatives<'static>>,
+    finish_reason: impl convert::Into<borrow::Cow<'buf, str>>,
   ) -> Self {
     let tokens = tokens
       .into_iter()
-      .map(|_e| alloc::borrow::Cow::Owned(_e))
+      .map(|_e| borrow::Cow::Owned(_e))
       .collect();
-    let finish_reason = ::core::convert::Into::into(finish_reason);
+    let finish_reason = convert::Into::into(finish_reason);
     Self {
       chunk_id,
       tokens,
@@ -1552,14 +1492,14 @@ impl<'buf> LlmStreamChunk<'buf> {
       tokens: self
         .tokens
         .into_iter()
-        .map(|_e| alloc::borrow::Cow::Owned(_e.into_owned()))
+        .map(|_e| borrow::Cow::Owned(_e.into_owned()))
         .collect(),
       logprobs: self
         .logprobs
         .into_iter()
         .map(|_e| _e.into_owned())
         .collect(),
-      finish_reason: alloc::borrow::Cow::Owned(self.finish_reason.into_owned()),
+      finish_reason: borrow::Cow::Owned(self.finish_reason.into_owned()),
     }
   }
 }
@@ -1576,7 +1516,7 @@ impl<'buf> bebop::BebopEncode for LlmStreamChunk<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += ::core::mem::size_of::<u32>();
+    size += mem::size_of::<u32>();
     size +=
       bebop::wire_size::array_size(&self.tokens, |_el| bebop::wire_size::string_size(_el.len()));
     size += bebop::wire_size::array_size(&self.logprobs, |_el| _el.encoded_size());
@@ -1587,17 +1527,15 @@ impl<'buf> bebop::BebopEncode for LlmStreamChunk<'buf> {
 
 impl<'buf> bebop::BebopDecode<'buf> for LlmStreamChunk<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:LlmStreamChunk)
     let chunk_id = reader.read_u32()?;
-    let tokens = reader
-      .read_array(|_r| ::core::result::Result::Ok(alloc::borrow::Cow::Borrowed(_r.read_str()?)))?;
+    let tokens =
+      reader.read_array(|_r| result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?)))?;
     let logprobs = reader.read_array(|_r| TokenAlternatives::decode(_r))?;
-    let finish_reason = alloc::borrow::Cow::Borrowed(reader.read_str()?);
+    let finish_reason = borrow::Cow::Borrowed(reader.read_str()?);
     // @@bebop_insertion_point(decode_end:LlmStreamChunk)
-    ::core::result::Result::Ok(LlmStreamChunk {
+    result::Result::Ok(LlmStreamChunk {
       chunk_id,
       tokens,
       logprobs,
@@ -1612,10 +1550,10 @@ impl<'buf> LlmStreamChunk<'buf> {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TensorShard<'buf> {
-  pub name: alloc::borrow::Cow<'buf, str>,
-  pub shape: alloc::borrow::Cow<'buf, [u32]>,
-  pub dtype: alloc::borrow::Cow<'buf, str>,
-  pub data: alloc::borrow::Cow<'buf, [bebop::bf16]>,
+  pub name: borrow::Cow<'buf, str>,
+  pub shape: borrow::Cow<'buf, [u32]>,
+  pub dtype: borrow::Cow<'buf, str>,
+  pub data: borrow::Cow<'buf, [bebop::bf16]>,
   pub offset: u64,
   pub total_elements: u64,
 }
@@ -1624,17 +1562,17 @@ pub type TensorShardOwned = TensorShard<'static>;
 
 impl<'buf> TensorShard<'buf> {
   pub fn new(
-    name: impl ::core::convert::Into<alloc::borrow::Cow<'buf, str>>,
-    shape: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [u32]>>,
-    dtype: impl ::core::convert::Into<alloc::borrow::Cow<'buf, str>>,
-    data: impl ::core::convert::Into<alloc::borrow::Cow<'buf, [bebop::bf16]>>,
+    name: impl convert::Into<borrow::Cow<'buf, str>>,
+    shape: impl convert::Into<borrow::Cow<'buf, [u32]>>,
+    dtype: impl convert::Into<borrow::Cow<'buf, str>>,
+    data: impl convert::Into<borrow::Cow<'buf, [bebop::bf16]>>,
     offset: u64,
     total_elements: u64,
   ) -> Self {
-    let name = ::core::convert::Into::into(name);
-    let shape = ::core::convert::Into::into(shape);
-    let dtype = ::core::convert::Into::into(dtype);
-    let data = ::core::convert::Into::into(data);
+    let name = convert::Into::into(name);
+    let shape = convert::Into::into(shape);
+    let dtype = convert::Into::into(dtype);
+    let data = convert::Into::into(data);
     Self {
       name,
       shape,
@@ -1649,10 +1587,10 @@ impl<'buf> TensorShard<'buf> {
 impl<'buf> TensorShard<'buf> {
   pub fn into_owned(self) -> TensorShardOwned {
     TensorShard {
-      name: alloc::borrow::Cow::Owned(self.name.into_owned()),
-      shape: alloc::borrow::Cow::Owned(self.shape.into_owned()),
-      dtype: alloc::borrow::Cow::Owned(self.dtype.into_owned()),
-      data: alloc::borrow::Cow::Owned(self.data.into_owned()),
+      name: borrow::Cow::Owned(self.name.into_owned()),
+      shape: borrow::Cow::Owned(self.shape.into_owned()),
+      dtype: borrow::Cow::Owned(self.dtype.into_owned()),
+      data: borrow::Cow::Owned(self.data.into_owned()),
       offset: self.offset,
       total_elements: self.total_elements,
     }
@@ -1674,29 +1612,27 @@ impl<'buf> bebop::BebopEncode for TensorShard<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = 0;
     size += bebop::wire_size::string_size(self.name.len());
-    size += bebop::wire_size::array_size(&self.shape, |_el| (::core::mem::size_of::<u32>()));
+    size += bebop::wire_size::array_size(&self.shape, |_el| (mem::size_of::<u32>()));
     size += bebop::wire_size::string_size(self.dtype.len());
-    size += bebop::wire_size::array_size(&self.data, |_el| (::core::mem::size_of::<bebop::bf16>()));
-    size += ::core::mem::size_of::<u64>();
-    size += ::core::mem::size_of::<u64>();
+    size += bebop::wire_size::array_size(&self.data, |_el| (mem::size_of::<bebop::bf16>()));
+    size += mem::size_of::<u64>();
+    size += mem::size_of::<u64>();
     size
   }
 }
 
 impl<'buf> bebop::BebopDecode<'buf> for TensorShard<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:TensorShard)
-    let name = alloc::borrow::Cow::Borrowed(reader.read_str()?);
+    let name = borrow::Cow::Borrowed(reader.read_str()?);
     let shape = reader.read_scalar_array::<u32>()?;
-    let dtype = alloc::borrow::Cow::Borrowed(reader.read_str()?);
+    let dtype = borrow::Cow::Borrowed(reader.read_str()?);
     let data = reader.read_scalar_array::<bebop::bf16>()?;
     let offset = reader.read_u64()?;
     let total_elements = reader.read_u64()?;
     // @@bebop_insertion_point(decode_end:TensorShard)
-    ::core::result::Result::Ok(TensorShard {
+    result::Result::Ok(TensorShard {
       name,
       shape,
       dtype,
@@ -1719,11 +1655,11 @@ pub struct InferenceTiming {
 }
 
 impl InferenceTiming {
-  pub const FIXED_ENCODED_SIZE: usize = ::core::mem::size_of::<i64>()
-    + ::core::mem::size_of::<i32>()
-    + ::core::mem::size_of::<i64>()
-    + ::core::mem::size_of::<i32>()
-    + ::core::mem::size_of::<f32>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i64>()
+    + mem::size_of::<i32>()
+    + mem::size_of::<i64>()
+    + mem::size_of::<i32>()
+    + mem::size_of::<f32>();
 
   pub fn new(
     queue_time: bebop::BebopDuration,
@@ -1754,15 +1690,13 @@ impl bebop::BebopEncode for InferenceTiming {
 
 impl<'buf> bebop::BebopDecode<'buf> for InferenceTiming {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:InferenceTiming)
     let queue_time = reader.read_duration()?;
     let inference_time = reader.read_duration()?;
     let tokens_per_second = reader.read_f32()?;
     // @@bebop_insertion_point(decode_end:InferenceTiming)
-    ::core::result::Result::Ok(InferenceTiming {
+    result::Result::Ok(InferenceTiming {
       queue_time,
       inference_time,
       tokens_per_second,
@@ -1777,7 +1711,7 @@ impl InferenceTiming {
 #[derive(Debug, Clone, PartialEq)]
 pub struct InferenceResponse<'buf> {
   pub request_id: bebop::Uuid,
-  pub embeddings: alloc::vec::Vec<EmbeddingBf16<'buf>>,
+  pub embeddings: vec::Vec<EmbeddingBf16<'buf>>,
   pub timing: InferenceTiming,
 }
 
@@ -1786,7 +1720,7 @@ pub type InferenceResponseOwned = InferenceResponse<'static>;
 impl<'buf> InferenceResponse<'buf> {
   pub fn new(
     request_id: bebop::Uuid,
-    embeddings: alloc::vec::Vec<EmbeddingBf16<'static>>,
+    embeddings: vec::Vec<EmbeddingBf16<'static>>,
     timing: InferenceTiming,
   ) -> Self {
     Self {
@@ -1822,7 +1756,7 @@ impl<'buf> bebop::BebopEncode for InferenceResponse<'buf> {
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += ::core::mem::size_of::<bebop::Uuid>();
+    size += mem::size_of::<bebop::Uuid>();
     size += bebop::wire_size::array_size(&self.embeddings, |_el| _el.encoded_size());
     size += self.timing.encoded_size();
     size
@@ -1831,15 +1765,13 @@ impl<'buf> bebop::BebopEncode for InferenceResponse<'buf> {
 
 impl<'buf> bebop::BebopDecode<'buf> for InferenceResponse<'buf> {
   #[inline]
-  fn decode(
-    reader: &mut bebop::BebopReader<'buf>,
-  ) -> ::core::result::Result<Self, bebop::DecodeError> {
+  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:InferenceResponse)
     let request_id = reader.read_uuid()?;
     let embeddings = reader.read_array(|_r| EmbeddingBf16::decode(_r))?;
     let timing = InferenceTiming::decode(reader)?;
     // @@bebop_insertion_point(decode_end:InferenceResponse)
-    ::core::result::Result::Ok(InferenceResponse {
+    result::Result::Ok(InferenceResponse {
       request_id,
       embeddings,
       timing,

@@ -115,16 +115,11 @@ impl SerdeMode {
     match self {
       SerdeMode::Disabled => {}
       SerdeMode::Always => {
-        output.push_str("#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]\n");
-        output.push_str("#[serde(crate = \"bebop::serde\")]\n");
+        output.push_str("#[derive(serde::Serialize, serde::Deserialize)]\n");
       }
       SerdeMode::FeatureGated(feat) => {
         output.push_str(&format!(
-          "#[cfg_attr(feature = \"{}\", derive(bebop::serde::Serialize, bebop::serde::Deserialize))]\n",
-          feat
-        ));
-        output.push_str(&format!(
-          "#[cfg_attr(feature = \"{}\", serde(crate = \"bebop::serde\"))]\n",
+          "#[cfg_attr(feature = \"{}\", derive(serde::Serialize, serde::Deserialize))]\n",
           feat
         ));
       }
@@ -614,13 +609,25 @@ impl RustGenerator {
     output.push_str("extern crate alloc;\n");
     output.push_str("extern crate bebop_runtime;\n");
     output.push_str("extern crate core;\n");
-    output.push_str("use core::convert::Into as _;\n");
-    output.push_str("use core::iter::IntoIterator as _;\n");
-    output.push_str("use core::iter::Iterator as _;\n");
-    output.push_str("use alloc::vec;\n");
-    // Alias the runtime crate so generated identifiers never shadow user-defined Bebop types.
-    // All runtime references go through `bebop::…` (including feature-gated f16/bf16/Uuid).
+    // Import modules (not types) so generated identifiers never shadow user-defined Bebop
+    // types. User types are PascalCase; these are all lowercase module names.
+    output.push_str("use alloc::{borrow, boxed, string, vec};\n");
     output.push_str("use bebop_runtime as bebop;\n");
+    output.push_str("use core::convert::Into as _;\n");
+    output.push_str("use core::iter::{IntoIterator as _, Iterator as _};\n");
+    output.push_str("use core::{convert, default, mem, ops, option, result};\n");
+    match &self.options.serde {
+      SerdeMode::Disabled => {}
+      SerdeMode::Always => {
+        output.push_str("use bebop_runtime::serde;\n");
+      }
+      SerdeMode::FeatureGated(feat) => {
+        output.push_str(&format!(
+          "#[cfg(feature = \"{}\")]\nuse bebop_runtime::serde;\n",
+          feat
+        ));
+      }
+    }
 
     // Cross-module imports for sibling schemas
     for stem in sibling_imports {
@@ -1272,11 +1279,14 @@ mod tests {
       .generate(&schema, &[], &analysis)
       .expect("generator should succeed");
 
-    assert!(output.contains("tokens: alloc::vec::Vec<alloc::string::String>"));
     assert!(
-      output.contains(
-        "let tokens = tokens.into_iter().map(|_e| alloc::borrow::Cow::Owned(_e)).collect();"
-      ),
+      output.contains("tokens: vec::Vec<string::String>"),
+      "expected constructor conversion for Vec<String> -> Vec<Cow<str>>; output:\n{}",
+      output
+    );
+    assert!(
+      output
+        .contains("let tokens = tokens.into_iter().map(|_e| borrow::Cow::Owned(_e)).collect();"),
       "expected constructor conversion for Vec<String> -> Vec<Cow<str>>; output:\n{}",
       output
     );
@@ -1508,7 +1518,7 @@ mod tests {
       "message should use pub(crate)"
     );
     assert!(
-      output.contains("  pub(crate) id: ::core::option::Option<i32>,"),
+      output.contains("  pub(crate) id: option::Option<i32>,"),
       "message field should use pub(crate)"
     );
 
@@ -1777,12 +1787,12 @@ mod tests {
     // Should have is_known() method
     assert!(output.contains("fn is_known("));
     // Should use From, not TryFrom
-    assert!(output.contains("impl ::core::convert::From<u32> for Color"));
+    assert!(output.contains("impl convert::From<u32> for Color"));
     assert!(!output.contains("TryFrom"));
     // Should use discriminator() in encode
     assert!(output.contains("self.discriminator()"));
     // Decode should use From
-    assert!(output.contains("::core::convert::From<_>>::from(value)"));
+    assert!(output.contains("convert::From<_>>::from(value)"));
   }
 
   #[test]
@@ -1887,7 +1897,7 @@ mod tests {
       .expect("generator should succeed");
 
     // Should have Unknown variant with Cow
-    assert!(output.contains("Unknown(u8, alloc::borrow::Cow<'buf, [u8]>)"));
+    assert!(output.contains("Unknown(u8, borrow::Cow<'buf, [u8]>)"));
     // Should have 'buf
     assert!(output.contains("pub enum FcUnion<'buf>"));
     // Should NOT have InvalidUnion
@@ -2000,10 +2010,11 @@ mod tests {
     .expect("generator should succeed");
 
     assert!(
-      output.contains("#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]\n#[serde(crate = \"bebop::serde\")]\n#[derive(Debug"),
-      "should emit unconditional serde derive with crate attr, got:\n{}",
+      output.contains("#[derive(serde::Serialize, serde::Deserialize)]\n#[derive(Debug"),
+      "should emit unconditional serde derive, got:\n{}",
       output
     );
+    assert!(!output.contains("cfg_attr"), "should not contain cfg_attr");
   }
 
   #[test]
@@ -2048,7 +2059,7 @@ mod tests {
   }
 
   #[test]
-  fn serde_always_uses_bebop_alias() {
+  fn serde_always_emits_unconditional_import() {
     let schema = SchemaDescriptor {
       path: Some(Cow::Borrowed("test.bop")),
       definitions: Some(vec![]),
@@ -2065,13 +2076,12 @@ mod tests {
     .generate(&schema, &[], &analysis)
     .expect("generator should succeed");
 
-    // No separate `use bebop_runtime::serde` — serde is accessed via the `bebop` alias.
-    assert!(!output.contains("use bebop_runtime::serde"));
-    assert!(output.contains("use bebop_runtime as bebop;"));
+    assert!(output.contains("use bebop_runtime::serde;\n"));
+    assert!(!output.contains("cfg(feature"));
   }
 
   #[test]
-  fn serde_feature_gated_uses_bebop_alias() {
+  fn serde_feature_gated_emits_cfg_import() {
     let schema = SchemaDescriptor {
       path: Some(Cow::Borrowed("test.bop")),
       definitions: Some(vec![]),
@@ -2088,9 +2098,7 @@ mod tests {
     .generate(&schema, &[], &analysis)
     .expect("generator should succeed");
 
-    // No separate serde import — feature-gated serde uses bebop::serde via alias.
-    assert!(!output.contains("use bebop_runtime::serde"));
-    assert!(output.contains("use bebop_runtime as bebop;"));
+    assert!(output.contains("#[cfg(feature = \"my-serde\")]\nuse bebop_runtime::serde;\n"));
   }
 
   #[test]
@@ -2111,7 +2119,7 @@ mod tests {
     .generate(&schema, &[], &analysis)
     .expect("generator should succeed");
 
-    assert!(!output.contains("bebop::serde"));
+    assert!(!output.contains("bebop_runtime::serde"));
   }
 
   #[test]

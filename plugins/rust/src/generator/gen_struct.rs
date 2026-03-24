@@ -139,7 +139,7 @@ pub fn generate(
     }
     if has_lifetime && type_mapper::is_cow_field(meta.td) {
       output.push_str(&format!(
-        "{}: impl ::core::convert::Into<{}>",
+        "{}: impl convert::Into<{}>",
         meta.fname, meta.cow_type
       ));
     } else {
@@ -151,7 +151,7 @@ pub fn generate(
   for meta in &field_metas {
     if has_lifetime && type_mapper::is_cow_field(meta.td) {
       output.push_str(&format!(
-        "    let {} = ::core::convert::Into::into({});\n",
+        "    let {} = convert::Into::into({});\n",
         meta.fname, meta.fname
       ));
       init_fields.push(meta.fname.clone());
@@ -164,7 +164,7 @@ pub fn generate(
     } else if type_mapper::is_cow_field(meta.td) {
       // Defensive fallback for non-lifetime cases.
       output.push_str(&format!(
-        "    let {} = alloc::borrow::Cow::Owned({});\n",
+        "    let {} = borrow::Cow::Owned({});\n",
         meta.fname, meta.fname
       ));
       init_fields.push(meta.fname.clone());
@@ -240,7 +240,7 @@ pub fn generate(
   ));
   output.push_str("  #[inline]\n");
   output.push_str(
-    "  fn decode(reader: &mut bebop::BebopReader<'buf>) -> ::core::result::Result<Self, bebop::DecodeError> {\n",
+    "  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {\n",
   );
   output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_start:{})\n",
@@ -259,7 +259,7 @@ pub fn generate(
     name
   ));
   if field_metas.is_empty() {
-    output.push_str(&format!("    ::core::result::Result::Ok({} {{}})\n", name));
+    output.push_str(&format!("    result::Result::Ok({} {{}})\n", name));
   } else {
     let init_fields = field_metas
       .iter()
@@ -267,7 +267,7 @@ pub fn generate(
       .collect::<Vec<_>>()
       .join(", ");
     output.push_str(&format!(
-      "    ::core::result::Result::Ok({} {{ {} }})\n",
+      "    result::Result::Ok({} {{ {} }})\n",
       name, init_fields
     ));
   }
