@@ -195,14 +195,14 @@ pub fn generate(
     output.push_str("}\n\n");
   }
 
-  // ── impl ::bebop_runtime::BebopEncode ──────────────────────────────────────────
+  // ── impl bebop::BebopEncode ──────────────────────────────────────────
   output.push_str(&format!(
-    "impl{} ::bebop_runtime::BebopEncode for {}{} {{\n",
+    "impl{} bebop::BebopEncode for {}{} {{\n",
     lt, name, lt
   ));
 
   // encode()
-  output.push_str("  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {\n");
+  output.push_str("  fn encode(&self, writer: &mut bebop::BebopWriter) {\n");
   output.push_str(&format!(
     "    // @@bebop_insertion_point(encode_start:{})\n",
     name
@@ -233,14 +233,14 @@ pub fn generate(
 
   output.push_str("}\n\n");
 
-  // ── impl ::bebop_runtime::BebopDecode ──────────────────────────────────────────
+  // ── impl bebop::BebopDecode ──────────────────────────────────────────
   output.push_str(&format!(
-    "impl<'buf> ::bebop_runtime::BebopDecode<'buf> for {}{} {{\n",
+    "impl<'buf> bebop::BebopDecode<'buf> for {}{} {{\n",
     name, lt
   ));
   output.push_str("  #[inline]\n");
   output.push_str(
-    "  fn decode(reader: &mut ::bebop_runtime::BebopReader<'buf>) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {\n",
+    "  fn decode(reader: &mut bebop::BebopReader<'buf>) -> ::core::result::Result<Self, bebop::DecodeError> {\n",
   );
   output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_start:{})\n",

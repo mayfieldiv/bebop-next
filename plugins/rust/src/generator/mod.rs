@@ -115,11 +115,16 @@ impl SerdeMode {
     match self {
       SerdeMode::Disabled => {}
       SerdeMode::Always => {
-        output.push_str("#[derive(serde::Serialize, serde::Deserialize)]\n");
+        output.push_str("#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]\n");
+        output.push_str("#[serde(crate = \"bebop::serde\")]\n");
       }
       SerdeMode::FeatureGated(feat) => {
         output.push_str(&format!(
-          "#[cfg_attr(feature = \"{}\", derive(serde::Serialize, serde::Deserialize))]\n",
+          "#[cfg_attr(feature = \"{}\", derive(bebop::serde::Serialize, bebop::serde::Deserialize))]\n",
+          feat
+        ));
+        output.push_str(&format!(
+          "#[cfg_attr(feature = \"{}\", serde(crate = \"bebop::serde\"))]\n",
           feat
         ));
       }
@@ -613,22 +618,9 @@ impl RustGenerator {
     output.push_str("use core::iter::IntoIterator as _;\n");
     output.push_str("use core::iter::Iterator as _;\n");
     output.push_str("use alloc::vec;\n");
-    // Do not `use bebop_runtime::…` for traits/types that may share names with user-defined Bebop
-    // types (see collision_types integration schema). All generated code refers to the runtime
-    // via `::bebop_runtime::…` paths (including f16/bf16 and Uuid).
-    output.push_str("use bebop_runtime::wire_size as wire;\n");
-    match &self.options.serde {
-      SerdeMode::Disabled => {}
-      SerdeMode::Always => {
-        output.push_str("use bebop_runtime::serde;\n");
-      }
-      SerdeMode::FeatureGated(feat) => {
-        output.push_str(&format!(
-          "#[cfg(feature = \"{}\")]\nuse bebop_runtime::serde;\n",
-          feat
-        ));
-      }
-    }
+    // Alias the runtime crate so generated identifiers never shadow user-defined Bebop types.
+    // All runtime references go through `bebop::…` (including feature-gated f16/bf16/Uuid).
+    output.push_str("use bebop_runtime as bebop;\n");
 
     // Cross-module imports for sibling schemas
     for stem in sibling_imports {
@@ -2008,11 +2000,10 @@ mod tests {
     .expect("generator should succeed");
 
     assert!(
-      output.contains("#[derive(serde::Serialize, serde::Deserialize)]\n#[derive(Debug"),
-      "should emit unconditional serde derive, got:\n{}",
+      output.contains("#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]\n#[serde(crate = \"bebop::serde\")]\n#[derive(Debug"),
+      "should emit unconditional serde derive with crate attr, got:\n{}",
       output
     );
-    assert!(!output.contains("cfg_attr"), "should not contain cfg_attr");
   }
 
   #[test]
@@ -2057,7 +2048,7 @@ mod tests {
   }
 
   #[test]
-  fn serde_always_emits_unconditional_import() {
+  fn serde_always_uses_bebop_alias() {
     let schema = SchemaDescriptor {
       path: Some(Cow::Borrowed("test.bop")),
       definitions: Some(vec![]),
@@ -2074,12 +2065,13 @@ mod tests {
     .generate(&schema, &[], &analysis)
     .expect("generator should succeed");
 
-    assert!(output.contains("use bebop_runtime::serde;\n"));
-    assert!(!output.contains("cfg(feature"));
+    // No separate `use bebop_runtime::serde` — serde is accessed via the `bebop` alias.
+    assert!(!output.contains("use bebop_runtime::serde"));
+    assert!(output.contains("use bebop_runtime as bebop;"));
   }
 
   #[test]
-  fn serde_feature_gated_emits_cfg_import() {
+  fn serde_feature_gated_uses_bebop_alias() {
     let schema = SchemaDescriptor {
       path: Some(Cow::Borrowed("test.bop")),
       definitions: Some(vec![]),
@@ -2096,7 +2088,9 @@ mod tests {
     .generate(&schema, &[], &analysis)
     .expect("generator should succeed");
 
-    assert!(output.contains("#[cfg(feature = \"my-serde\")]\nuse bebop_runtime::serde;\n"));
+    // No separate serde import — feature-gated serde uses bebop::serde via alias.
+    assert!(!output.contains("use bebop_runtime::serde"));
+    assert!(output.contains("use bebop_runtime as bebop;"));
   }
 
   #[test]
@@ -2117,7 +2111,7 @@ mod tests {
     .generate(&schema, &[], &analysis)
     .expect("generator should succeed");
 
-    assert!(!output.contains("bebop_runtime::serde"));
+    assert!(!output.contains("bebop::serde"));
   }
 
   #[test]

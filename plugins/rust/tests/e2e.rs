@@ -91,13 +91,16 @@ fn e2e_serde_always() {
     .expect("file should have content");
 
   assert!(
-    code.contains("#[derive(serde::Serialize, serde::Deserialize)]"),
-    "should contain unconditional serde derive"
+    code.contains("#[derive(bebop::serde::Serialize, bebop::serde::Deserialize)]"),
+    "should contain unconditional serde derive via bebop alias"
   );
-  assert!(!code.contains("cfg_attr"), "should not contain cfg_attr");
   assert!(
-    code.contains("use bebop_runtime::serde;"),
-    "should contain unconditional serde import"
+    code.contains("#[serde(crate = \"bebop::serde\")]"),
+    "should contain serde crate attr"
+  );
+  assert!(
+    !code.contains("use bebop_runtime::serde;"),
+    "should not have separate serde import (uses bebop alias)"
   );
 }
 
@@ -111,13 +114,16 @@ fn e2e_serde_feature_gated() {
   let code = files[0].content.as_deref().unwrap();
 
   assert!(
-    code
-      .contains("#[cfg_attr(feature = \"my_feat\", derive(serde::Serialize, serde::Deserialize))]"),
-    "should contain feature-gated serde derive"
+    code.contains("#[cfg_attr(feature = \"my_feat\", derive(bebop::serde::Serialize, bebop::serde::Deserialize))]"),
+    "should contain feature-gated serde derive via bebop alias"
   );
   assert!(
-    code.contains("#[cfg(feature = \"my_feat\")]\nuse bebop_runtime::serde;"),
-    "should contain feature-gated serde import"
+    code.contains("#[cfg_attr(feature = \"my_feat\", serde(crate = \"bebop::serde\"))]"),
+    "should contain feature-gated serde crate attr"
+  );
+  assert!(
+    !code.contains("use bebop_runtime::serde;"),
+    "should not have separate serde import (uses bebop alias)"
   );
 }
 

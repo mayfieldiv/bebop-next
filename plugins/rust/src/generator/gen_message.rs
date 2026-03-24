@@ -189,14 +189,14 @@ pub fn generate(
     output.push_str("}\n\n");
   }
 
-  // ── impl ::bebop_runtime::BebopEncode ──────────────────────────────────────────
+  // ── impl bebop::BebopEncode ──────────────────────────────────────────
   output.push_str(&format!(
-    "impl{} ::bebop_runtime::BebopEncode for {}{} {{\n",
+    "impl{} bebop::BebopEncode for {}{} {{\n",
     lt, name, lt
   ));
 
   // encode()
-  output.push_str("  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {\n");
+  output.push_str("  fn encode(&self, writer: &mut bebop::BebopWriter) {\n");
   output.push_str(&format!(
     "    // @@bebop_insertion_point(encode_start:{})\n",
     name
@@ -239,7 +239,7 @@ pub fn generate(
 
   // encoded_size()
   output.push_str("  fn encoded_size(&self) -> usize {\n");
-  output.push_str("    let mut size = ::bebop_runtime::wire_size::WIRE_MESSAGE_BASE_SIZE;\n");
+  output.push_str("    let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;\n");
   for meta in &field_metas {
     let ref_kw = if meta.needs_ref() { "ref " } else { "" };
     output.push_str(&format!(
@@ -248,7 +248,7 @@ pub fn generate(
     ));
     let size_expr = type_mapper::encoded_size_expression(meta.td, "v", analysis)?;
     output.push_str(&format!(
-      "      size += ::bebop_runtime::wire_size::tagged_size({});\n",
+      "      size += bebop::wire_size::tagged_size({});\n",
       size_expr
     ));
     output.push_str("    }\n");
@@ -258,14 +258,14 @@ pub fn generate(
 
   output.push_str("}\n\n");
 
-  // ── impl ::bebop_runtime::BebopDecode ──────────────────────────────────────────
+  // ── impl bebop::BebopDecode ──────────────────────────────────────────
   output.push_str(&format!(
-    "impl<'buf> ::bebop_runtime::BebopDecode<'buf> for {}{} {{\n",
+    "impl<'buf> bebop::BebopDecode<'buf> for {}{} {{\n",
     name, lt
   ));
   output.push_str("  #[inline]\n");
   output.push_str(
-    "  fn decode(reader: &mut ::bebop_runtime::BebopReader<'buf>) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {\n",
+    "  fn decode(reader: &mut bebop::BebopReader<'buf>) -> ::core::result::Result<Self, bebop::DecodeError> {\n",
   );
   output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_start:{})\n",
@@ -309,7 +309,7 @@ pub fn generate(
     output.push_str("        _ => { reader.skip(end - reader.position())?; }\n");
   } else {
     output.push_str(&format!(
-      "        tag => {{ return ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidField {{ type_name: \"{}\", tag }}); }}\n",
+      "        tag => {{ return ::core::result::Result::Err(bebop::DecodeError::InvalidField {{ type_name: \"{}\", tag }}); }}\n",
       name
     ));
   }

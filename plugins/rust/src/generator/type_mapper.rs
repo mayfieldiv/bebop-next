@@ -21,11 +21,11 @@ pub fn scalar_type(kind: TypeKind) -> Option<&'static str> {
     TypeKind::Float32 => Some("f32"),
     TypeKind::Float64 => Some("f64"),
     TypeKind::String => Some("alloc::string::String"),
-    TypeKind::Float16 => Some("::bebop_runtime::f16"),
-    TypeKind::Bfloat16 => Some("::bebop_runtime::bf16"),
-    TypeKind::Uuid => Some("::bebop_runtime::Uuid"),
-    TypeKind::Timestamp => Some("::bebop_runtime::BebopTimestamp"),
-    TypeKind::Duration => Some("::bebop_runtime::BebopDuration"),
+    TypeKind::Float16 => Some("bebop::f16"),
+    TypeKind::Bfloat16 => Some("bebop::bf16"),
+    TypeKind::Uuid => Some("bebop::Uuid"),
+    TypeKind::Timestamp => Some("bebop::BebopTimestamp"),
+    TypeKind::Duration => Some("bebop::BebopDuration"),
     _ => None,
   }
 }
@@ -208,11 +208,11 @@ pub fn fixed_size_expr(kind: TypeKind) -> Option<&'static str> {
     TypeKind::Uint64 => Some("::core::mem::size_of::<u64>()"),
     TypeKind::Int128 => Some("::core::mem::size_of::<i128>()"),
     TypeKind::Uint128 => Some("::core::mem::size_of::<u128>()"),
-    TypeKind::Float16 => Some("::core::mem::size_of::<::bebop_runtime::f16>()"),
-    TypeKind::Bfloat16 => Some("::core::mem::size_of::<::bebop_runtime::bf16>()"),
+    TypeKind::Float16 => Some("::core::mem::size_of::<bebop::f16>()"),
+    TypeKind::Bfloat16 => Some("::core::mem::size_of::<bebop::bf16>()"),
     TypeKind::Float32 => Some("::core::mem::size_of::<f32>()"),
     TypeKind::Float64 => Some("::core::mem::size_of::<f64>()"),
-    TypeKind::Uuid => Some("::core::mem::size_of::<::bebop_runtime::Uuid>()"),
+    TypeKind::Uuid => Some("::core::mem::size_of::<bebop::Uuid>()"),
     TypeKind::Timestamp | TypeKind::Duration => {
       Some("::core::mem::size_of::<i64>() + ::core::mem::size_of::<i32>()")
     }
@@ -331,7 +331,7 @@ pub fn rust_type_owned(
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
       if elem.kind == Some(TypeKind::Byte) {
-        return Ok("::bebop_runtime::BebopBytes<'static>".to_string());
+        return Ok("bebop::BebopBytes<'static>".to_string());
       }
       // Bulk scalar arrays → Vec<T> (owned form of Cow<[T]>)
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
@@ -364,7 +364,7 @@ pub fn rust_type_owned(
         .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
       let k = rust_type_owned(key, analysis)?;
       let v = rust_type_owned(val, analysis)?;
-      Ok(format!("::bebop_runtime::HashMap<{}, {}>", k, v))
+      Ok(format!("bebop::HashMap<{}, {}>", k, v))
     }
     TypeKind::Defined => {
       let fqn = td
@@ -406,7 +406,7 @@ pub fn rust_type(
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
       // Byte arrays → BebopBytes<'buf>
       if elem.kind == Some(TypeKind::Byte) {
-        return Ok("::bebop_runtime::BebopBytes<'buf>".to_string());
+        return Ok("bebop::BebopBytes<'buf>".to_string());
       }
       // Bulk scalar arrays → Cow<'buf, [T]>
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
@@ -439,7 +439,7 @@ pub fn rust_type(
         .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
       let k = rust_type(key, analysis)?;
       let v = rust_type(val, analysis)?;
-      Ok(format!("::bebop_runtime::HashMap<{}, {}>", k, v))
+      Ok(format!("bebop::HashMap<{}, {}>", k, v))
     }
     TypeKind::Defined => {
       let fqn = td
@@ -498,7 +498,7 @@ pub fn read_expression(
       // Byte array → BebopBytes::borrowed
       if elem.kind == Some(TypeKind::Byte) {
         return Ok(format!(
-          "::core::result::Result::Ok(::bebop_runtime::BebopBytes::borrowed({}.read_byte_slice()?))",
+          "::core::result::Result::Ok(bebop::BebopBytes::borrowed({}.read_byte_slice()?))",
           reader
         ));
       }
@@ -586,7 +586,7 @@ pub fn borrowed_cow_read_expression(td: &TypeDescriptor, reader: &str) -> Option
       let elem = td.array_element.as_ref()?;
       if elem.kind == Some(TypeKind::Byte) {
         Some(format!(
-          "::bebop_runtime::BebopBytes::borrowed({}.read_byte_slice()?)",
+          "bebop::BebopBytes::borrowed({}.read_byte_slice()?)",
           reader
         ))
       } else {
@@ -750,10 +750,7 @@ pub fn encoded_size_expression(
   }
 
   match kind {
-    TypeKind::String => Ok(format!(
-      "::bebop_runtime::wire_size::string_size({}.len())",
-      value
-    )),
+    TypeKind::String => Ok(format!("bebop::wire_size::string_size({}.len())", value)),
     TypeKind::Array => {
       let elem = td
         .array_element
@@ -761,7 +758,7 @@ pub fn encoded_size_expression(
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
       if elem.kind == Some(TypeKind::Byte) {
         return Ok(format!(
-          "::bebop_runtime::wire_size::byte_array_size({}.len())",
+          "bebop::wire_size::byte_array_size({}.len())",
           value
         ));
       }
@@ -769,13 +766,13 @@ pub fn encoded_size_expression(
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
       if let Some(sz_expr) = fixed_size_expr(elem_kind) {
         Ok(format!(
-          "::bebop_runtime::wire_size::array_size({}, |_el| ({}))",
+          "bebop::wire_size::array_size({}, |_el| ({}))",
           items_ref, sz_expr
         ))
       } else {
         let inner = encoded_size_expression(elem, "_el", _analysis)?;
         Ok(format!(
-          "::bebop_runtime::wire_size::array_size({}, |_el| {})",
+          "bebop::wire_size::array_size({}, |_el| {})",
           items_ref, inner
         ))
       }
@@ -812,7 +809,7 @@ pub fn encoded_size_expression(
       let v_size = encoded_size_expression(val, "_v", _analysis)?;
       let map_ref = collection_ref(value);
       Ok(format!(
-        "::bebop_runtime::wire_size::map_size({}, |_k, _v| {} + {})",
+        "bebop::wire_size::map_size({}, |_k, _v| {} + {})",
         map_ref, k_size, v_size
       ))
     }
@@ -940,7 +937,7 @@ pub fn into_borrowed_expression(
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
       if elem.kind == Some(TypeKind::Byte) {
         return Ok(format!(
-          "<::bebop_runtime::BebopBytes as ::core::convert::From<_>>::from({})",
+          "<bebop::BebopBytes as ::core::convert::From<_>>::from({})",
           value
         ));
       }

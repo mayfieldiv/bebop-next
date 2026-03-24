@@ -136,11 +136,9 @@ fn generate_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorError> {
     "impl ::core::convert::TryFrom<{}> for {} {{\n",
     ctx.base_type, ctx.name
   ));
-  ctx
-    .output
-    .push_str("  type Error = ::bebop_runtime::DecodeError;\n");
+  ctx.output.push_str("  type Error = bebop::DecodeError;\n");
   ctx.output.push_str(&format!(
-    "  fn try_from(value: {}) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {{\n",
+    "  fn try_from(value: {}) -> ::core::result::Result<Self, bebop::DecodeError> {{\n",
     ctx.base_type
   ));
   ctx.output.push_str("    match value {\n");
@@ -154,7 +152,7 @@ fn generate_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorError> {
     ));
   }
   ctx.output.push_str(&format!(
-    "      _ => ::core::result::Result::Err(::bebop_runtime::DecodeError::InvalidEnum {{ type_name: \"{}\", value: value as u64 }}),\n",
+    "      _ => ::core::result::Result::Err(bebop::DecodeError::InvalidEnum {{ type_name: \"{}\", value: value as u64 }}),\n",
     ctx.name
   ));
   ctx.output.push_str("    }\n");
@@ -175,14 +173,13 @@ fn generate_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorError> {
   // ── FIXED_ENCODED_SIZE ──────────────────────────────────────────
   emit_fixed_encoded_size(ctx);
 
-  // ── impl ::bebop_runtime::BebopEncode ──────────────────────────────────────────
-  ctx.output.push_str(&format!(
-    "impl ::bebop_runtime::BebopEncode for {} {{\n",
-    ctx.name
-  ));
+  // ── impl bebop::BebopEncode ──────────────────────────────────────────
   ctx
     .output
-    .push_str("  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {\n");
+    .push_str(&format!("impl bebop::BebopEncode for {} {{\n", ctx.name));
+  ctx
+    .output
+    .push_str("  fn encode(&self, writer: &mut bebop::BebopWriter) {\n");
   ctx.output.push_str(&format!(
     "    // @@bebop_insertion_point(encode_start:{})\n",
     ctx.name
@@ -201,14 +198,14 @@ fn generate_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorError> {
     .push_str("  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }\n");
   ctx.output.push_str("}\n\n");
 
-  // ── impl ::bebop_runtime::BebopDecode ──────────────────────────────────────────
+  // ── impl bebop::BebopDecode ──────────────────────────────────────────
   ctx.output.push_str(&format!(
-    "impl<'buf> ::bebop_runtime::BebopDecode<'buf> for {} {{\n",
+    "impl<'buf> bebop::BebopDecode<'buf> for {} {{\n",
     ctx.name
   ));
   ctx.output.push_str("  #[inline(always)]\n");
   ctx.output.push_str(
-    "  fn decode(reader: &mut ::bebop_runtime::BebopReader<'buf>) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {\n",
+    "  fn decode(reader: &mut bebop::BebopReader<'buf>) -> ::core::result::Result<Self, bebop::DecodeError> {\n",
   );
   ctx.output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_start:{})\n",
@@ -330,14 +327,13 @@ fn generate_forward_compatible_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorEr
   ));
   ctx.output.push_str("}\n\n");
 
-  // ── ::bebop_runtime::BebopEncode ──
-  ctx.output.push_str(&format!(
-    "impl ::bebop_runtime::BebopEncode for {} {{\n",
-    ctx.name
-  ));
+  // ── bebop::BebopEncode ──
   ctx
     .output
-    .push_str("  fn encode(&self, writer: &mut ::bebop_runtime::BebopWriter) {\n");
+    .push_str(&format!("impl bebop::BebopEncode for {} {{\n", ctx.name));
+  ctx
+    .output
+    .push_str("  fn encode(&self, writer: &mut bebop::BebopWriter) {\n");
   ctx.output.push_str(&format!(
     "    // @@bebop_insertion_point(encode_start:{})\n",
     ctx.name
@@ -356,14 +352,14 @@ fn generate_forward_compatible_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorEr
     .push_str("  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }\n");
   ctx.output.push_str("}\n\n");
 
-  // ── ::bebop_runtime::BebopDecode ──
+  // ── bebop::BebopDecode ──
   ctx.output.push_str(&format!(
-    "impl<'buf> ::bebop_runtime::BebopDecode<'buf> for {} {{\n",
+    "impl<'buf> bebop::BebopDecode<'buf> for {} {{\n",
     ctx.name
   ));
   ctx.output.push_str("  #[inline(always)]\n");
   ctx.output.push_str(
-    "  fn decode(reader: &mut ::bebop_runtime::BebopReader<'buf>) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {\n",
+    "  fn decode(reader: &mut bebop::BebopReader<'buf>) -> ::core::result::Result<Self, bebop::DecodeError> {\n",
   );
   ctx.output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_start:{})\n",
@@ -436,10 +432,9 @@ fn generate_flags(ctx: &mut EnumCtx, is_forward_compatible: bool) -> Result<(), 
   // Flags trait impl
   let all_formatted = ctx.format_value(all_value);
 
-  ctx.output.push_str(&format!(
-    "impl ::bebop_runtime::BebopFlags for {} {{\n",
-    ctx.name
-  ));
+  ctx
+    .output
+    .push_str(&format!("impl bebop::BebopFlags for {} {{\n", ctx.name));
   ctx
     .output
     .push_str(&format!("  type Bits = {};\n", ctx.base_type));
@@ -489,25 +484,25 @@ fn generate_flags(ctx: &mut EnumCtx, is_forward_compatible: bool) -> Result<(), 
     ctx.name
   ));
 
-  // ── ::bebop_runtime::BebopDecode (generated per-type, not blanket) ──
+  // ── bebop::BebopDecode (generated per-type, not blanket) ──
   ctx.output.push_str(&format!(
-    "impl<'buf> ::bebop_runtime::BebopDecode<'buf> for {} {{\n",
+    "impl<'buf> bebop::BebopDecode<'buf> for {} {{\n",
     ctx.name
   ));
   ctx.output.push_str("  #[inline(always)]\n");
   ctx.output.push_str(
-    "  fn decode(reader: &mut ::bebop_runtime::BebopReader<'buf>) -> ::core::result::Result<Self, ::bebop_runtime::DecodeError> {\n",
+    "  fn decode(reader: &mut bebop::BebopReader<'buf>) -> ::core::result::Result<Self, bebop::DecodeError> {\n",
   );
   ctx
     .output
     .push_str(&format!("    let bits = reader.{}()?;\n", ctx.read_method));
   if is_forward_compatible {
-    ctx
-      .output
-      .push_str("    ::core::result::Result::Ok(<Self as ::bebop_runtime::BebopFlags>::from_bits_retain(bits))\n");
+    ctx.output.push_str(
+      "    ::core::result::Result::Ok(<Self as bebop::BebopFlags>::from_bits_retain(bits))\n",
+    );
   } else {
     ctx.output.push_str(&format!(
-      "    <Self as ::bebop_runtime::BebopFlags>::from_bits(bits).ok_or(::bebop_runtime::DecodeError::InvalidFlags {{ type_name: \"{}\", bits: bits as u64 }})\n",
+      "    <Self as bebop::BebopFlags>::from_bits(bits).ok_or(bebop::DecodeError::InvalidFlags {{ type_name: \"{}\", bits: bits as u64 }})\n",
       ctx.name
     ));
   }
