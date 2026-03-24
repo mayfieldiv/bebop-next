@@ -1,0 +1,534 @@
+// collision_types.bop
+//
+// Adversarial name-collision schema for the Rust code generator (Rust keywords,
+// other languages' keywords, and names mirroring bebop_runtime symbols).
+// Kept separate from test_types.bop so regenerating this file does not churn
+// integration-tests/src/test_types.rs.
+
+edition = "2026"
+package test
+
+import "bebop/decorators.bop"
+
+/// Same wire layout as `Point` in test_types.bop; used by `KeywordUnion` only.
+struct Point {
+    x: float32;
+    y: float32;
+}
+
+// ---------------------------------------------------------------------------
+// Name collision torture: Rust keywords, other language keywords, and names
+// that mirror bebop_runtime symbols. The Rust generator must use `::bebop_runtime::…`
+// for runtime types and mapped identifiers (`Self_`, `self_`, …) where raw `r#` is invalid.
+//
+// Bebop reserves some tokens as definition names (struct, enum, union, message,
+// const, mut, pub, package, import, export, readonly, etc.); those are omitted.
+// ---------------------------------------------------------------------------
+
+// --- Same identifiers as bebop_runtime / prelude (must not resolve via imports) ---
+struct Uuid {
+    tag: int32;
+}
+struct HashMap {
+    tag: int32;
+}
+struct DecodeError {
+    tag: int32;
+}
+struct BebopReader {
+    tag: int32;
+}
+struct BebopWriter {
+    tag: int32;
+}
+struct BebopDecode {
+    tag: int32;
+}
+struct BebopEncode {
+    tag: int32;
+}
+struct BebopDuration {
+    tag: int32;
+}
+struct BebopTimestamp {
+    tag: int32;
+}
+struct BebopFlags {
+    tag: int32;
+}
+struct BebopBytes {
+    tag: int32;
+}
+struct serde {
+    tag: int32;
+}
+struct wire {
+    tag: int32;
+}
+
+// --- Rust keywords and reserved words usable as Bebop definition names ---
+struct mod {
+    tag: int32;
+}
+struct trait {
+    tag: int32;
+}
+struct impl {
+    tag: int32;
+}
+struct fn {
+    tag: int32;
+}
+struct let {
+    tag: int32;
+}
+struct use {
+    tag: int32;
+}
+struct crate {
+    tag: int32;
+}
+struct async {
+    tag: int32;
+}
+struct await {
+    tag: int32;
+}
+struct match {
+    tag: int32;
+}
+struct where {
+    tag: int32;
+}
+struct loop {
+    tag: int32;
+}
+struct move {
+    tag: int32;
+}
+struct ref {
+    tag: int32;
+}
+struct dyn {
+    tag: int32;
+}
+struct yield {
+    tag: int32;
+}
+struct unsafe {
+    tag: int32;
+}
+struct extern {
+    tag: int32;
+}
+struct static {
+    tag: int32;
+}
+struct virtual {
+    tag: int32;
+}
+struct override {
+    tag: int32;
+}
+struct final {
+    tag: int32;
+}
+struct abstract {
+    tag: int32;
+}
+struct Self {
+    tag: int32;
+}
+struct super {
+    tag: int32;
+}
+struct type {
+    tag: int32;
+}
+struct for {
+    tag: int32;
+}
+
+// --- C / C++ / C# / Java / TS / Swift / JS keywords and soft words ---
+struct interface {
+    tag: int32;
+}
+struct namespace {
+    tag: int32;
+}
+struct default {
+    tag: int32;
+}
+struct switch {
+    tag: int32;
+}
+struct case {
+    tag: int32;
+}
+struct goto {
+    tag: int32;
+}
+struct volatile {
+    tag: int32;
+}
+struct synchronized {
+    tag: int32;
+}
+struct transient {
+    tag: int32;
+}
+struct native {
+    tag: int32;
+}
+struct throws {
+    tag: int32;
+}
+struct strictfp {
+    tag: int32;
+}
+struct assert {
+    tag: int32;
+}
+struct sizeof {
+    tag: int32;
+}
+struct typeof {
+    tag: int32;
+}
+struct nullptr {
+    tag: int32;
+}
+struct decltype {
+    tag: int32;
+}
+struct constexpr {
+    tag: int32;
+}
+struct noexcept {
+    tag: int32;
+}
+struct template {
+    tag: int32;
+}
+struct typename {
+    tag: int32;
+}
+struct friend {
+    tag: int32;
+}
+struct inline {
+    tag: int32;
+}
+struct mutable {
+    tag: int32;
+}
+struct explicit {
+    tag: int32;
+}
+struct implicit {
+    tag: int32;
+}
+struct operator {
+    tag: int32;
+}
+struct delete {
+    tag: int32;
+}
+struct new {
+    tag: int32;
+}
+struct this {
+    tag: int32;
+}
+struct extends {
+    tag: int32;
+}
+struct implements {
+    tag: int32;
+}
+struct instanceof {
+    tag: int32;
+}
+struct boolean {
+    tag: int32;
+}
+struct byte {
+    tag: int32;
+}
+struct short {
+    tag: int32;
+}
+struct long {
+    tag: int32;
+}
+struct double {
+    tag: int32;
+}
+struct float {
+    tag: int32;
+}
+struct char {
+    tag: int32;
+}
+struct void {
+    tag: int32;
+}
+struct int {
+    tag: int32;
+}
+struct var {
+    tag: int32;
+}
+struct function {
+    tag: int32;
+}
+struct debugger {
+    tag: int32;
+}
+struct undefined {
+    tag: int32;
+}
+struct declare {
+    tag: int32;
+}
+struct require {
+    tag: int32;
+}
+struct module {
+    tag: int32;
+}
+struct global {
+    tag: int32;
+}
+struct internal {
+    tag: int32;
+}
+struct object {
+    tag: int32;
+}
+struct string {
+    tag: int32;
+}
+struct symbol {
+    tag: int32;
+}
+struct bigint {
+    tag: int32;
+}
+struct never {
+    tag: int32;
+}
+struct unknown {
+    tag: int32;
+}
+struct keyof {
+    tag: int32;
+}
+struct infer {
+    tag: int32;
+}
+struct satisfies {
+    tag: int32;
+}
+struct out {
+    tag: int32;
+}
+struct inout {
+    tag: int32;
+}
+struct protocol {
+    tag: int32;
+}
+struct subscript {
+    tag: int32;
+}
+struct defer {
+    tag: int32;
+}
+struct fallthrough {
+    tag: int32;
+}
+struct repeat {
+    tag: int32;
+}
+struct indirect {
+    tag: int32;
+}
+struct nonisolated {
+    tag: int32;
+}
+struct lazy {
+    tag: int32;
+}
+struct weak {
+    tag: int32;
+}
+struct unowned {
+    tag: int32;
+}
+struct convenience {
+    tag: int32;
+}
+struct required {
+    tag: int32;
+}
+struct optional {
+    tag: int32;
+}
+struct rethrows {
+    tag: int32;
+}
+struct try {
+    tag: int32;
+}
+struct catch {
+    tag: int32;
+}
+struct throw {
+    tag: int32;
+}
+struct guard {
+    tag: int32;
+}
+struct in {
+    tag: int32;
+}
+struct is {
+    tag: int32;
+}
+struct as {
+    tag: int32;
+}
+struct select {
+    tag: int32;
+}
+struct event {
+    tag: int32;
+}
+struct delegate {
+    tag: int32;
+}
+struct checked {
+    tag: int32;
+}
+struct unchecked {
+    tag: int32;
+}
+struct stackalloc {
+    tag: int32;
+}
+struct params {
+    tag: int32;
+}
+struct lock {
+    tag: int32;
+}
+struct nameof {
+    tag: int32;
+}
+struct sbyte {
+    tag: int32;
+}
+struct ushort {
+    tag: int32;
+}
+struct uint {
+    tag: int32;
+}
+struct ulong {
+    tag: int32;
+}
+struct when {
+    tag: int32;
+}
+struct init {
+    tag: int32;
+}
+struct deinit {
+    tag: int32;
+}
+struct get {
+    tag: int32;
+}
+struct set {
+    tag: int32;
+}
+struct willSet {
+    tag: int32;
+}
+struct didSet {
+    tag: int32;
+}
+struct associatedtype {
+    tag: int32;
+}
+
+/// Many Rust / Swift / C# keywords reused as *field* names (snake_case in Rust).
+struct RustKeywordFields {
+    type: int32;
+    mod: int32;
+    self: int32;
+    super: int32;
+    crate: int32;
+    match: int32;
+    where: int32;
+    loop: int32;
+    move: int32;
+    ref: int32;
+    dyn: int32;
+    use: int32;
+    let: int32;
+    fn: int32;
+    as: int32;
+    in: int32;
+    is: int32;
+    try: int32;
+}
+
+// Const names that are Rust keywords (must not collide with struct/enum definitions above).
+const uint32 break = 0;
+const uint32 continue = 1;
+const uint32 return = 2;
+const uint32 else = 3;
+
+enum MultiLangKeywordVariant : uint8 {
+    mod = 0;
+    match = 1;
+    type = 2;
+    void = 3;
+    int = 4;
+    await = 5;
+    async = 6;
+    Self = 7;
+    super = 8;
+}
+
+@flags
+enum RustKeywordFlags : uint8 {
+    NONE = 0;
+    type = 1;
+    mod = 2;
+    self = 4;
+}
+
+union KeywordUnion {
+    mod(1): Point;
+    match(2): Point;
+}
+
+message KeywordFieldMessage {
+    type(1): int32;
+    mod(2): string;
+    self(3): bool;
+    crate(4): int32;
+}
+
+/// Holds both a wire `guid` (runtime UUID) and a user-defined `Uuid` struct.
+struct GuidAndUserUuidCollision {
+    runtime_guid: guid;
+    user_uuid: Uuid;
+}
+
+message MapWithUserHashMapStruct {
+    items(1): map[string, HashMap];
+}

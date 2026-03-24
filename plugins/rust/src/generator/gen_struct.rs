@@ -1,7 +1,7 @@
 use crate::error::GeneratorError;
 use crate::generated::{DefinitionDescriptor, TypeDescriptor};
 
-use super::naming::{field_name, type_name};
+use super::naming::{field_name, serde_field_rename, type_name};
 use super::type_mapper;
 use super::{
   emit_deprecated, emit_doc_comment, visibility_keyword, GeneratorOptions, LifetimeAnalysis,
@@ -75,6 +75,11 @@ pub fn generate(
   for (f, meta) in fields.iter().zip(&field_metas) {
     emit_doc_comment(output, &f.documentation);
     emit_deprecated(output, &f.decorators);
+    if let Some(rename) = serde_field_rename(f.name.as_deref().unwrap_or("")) {
+      options
+        .serde
+        .emit_field_attr(output, &format!("rename = \"{}\"", rename));
+    }
     output.push_str(&format!("  {} {}: {},\n", vis, meta.fname, meta.cow_type));
   }
   output.push_str("}\n\n");
@@ -134,7 +139,7 @@ pub fn generate(
     }
     if has_lifetime && type_mapper::is_cow_field(meta.td) {
       output.push_str(&format!(
-        "{}: impl ::core::convert::Into<{}>",
+        "{}: impl convert::Into<{}>",
         meta.fname, meta.cow_type
       ));
     } else {
@@ -146,7 +151,7 @@ pub fn generate(
   for meta in &field_metas {
     if has_lifetime && type_mapper::is_cow_field(meta.td) {
       output.push_str(&format!(
-        "    let {} = ::core::convert::Into::into({});\n",
+        "    let {} = convert::Into::into({});\n",
         meta.fname, meta.fname
       ));
       init_fields.push(meta.fname.clone());
@@ -159,7 +164,7 @@ pub fn generate(
     } else if type_mapper::is_cow_field(meta.td) {
       // Defensive fallback for non-lifetime cases.
       output.push_str(&format!(
-        "    let {} = alloc::borrow::Cow::Owned({});\n",
+        "    let {} = borrow::Cow::Owned({});\n",
         meta.fname, meta.fname
       ));
       init_fields.push(meta.fname.clone());
@@ -190,11 +195,14 @@ pub fn generate(
     output.push_str("}\n\n");
   }
 
-  // ── impl BebopEncode ──────────────────────────────────────────
-  output.push_str(&format!("impl{} BebopEncode for {}{} {{\n", lt, name, lt));
+  // ── impl bebop::BebopEncode ──────────────────────────────────────────
+  output.push_str(&format!(
+    "impl{} bebop::BebopEncode for {}{} {{\n",
+    lt, name, lt
+  ));
 
   // encode()
-  output.push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
+  output.push_str("  fn encode(&self, writer: &mut bebop::BebopWriter) {\n");
   output.push_str(&format!(
     "    // @@bebop_insertion_point(encode_start:{})\n",
     name
@@ -225,14 +233,14 @@ pub fn generate(
 
   output.push_str("}\n\n");
 
-  // ── impl BebopDecode ──────────────────────────────────────────
+  // ── impl bebop::BebopDecode ──────────────────────────────────────────
   output.push_str(&format!(
-    "impl<'buf> BebopDecode<'buf> for {}{} {{\n",
+    "impl<'buf> bebop::BebopDecode<'buf> for {}{} {{\n",
     name, lt
   ));
   output.push_str("  #[inline]\n");
   output.push_str(
-    "  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {\n",
+    "  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {\n",
   );
   output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_start:{})\n",
@@ -251,7 +259,7 @@ pub fn generate(
     name
   ));
   if field_metas.is_empty() {
-    output.push_str(&format!("    ::core::result::Result::Ok({} {{}})\n", name));
+    output.push_str(&format!("    result::Result::Ok({} {{}})\n", name));
   } else {
     let init_fields = field_metas
       .iter()
@@ -259,7 +267,7 @@ pub fn generate(
       .collect::<Vec<_>>()
       .join(", ");
     output.push_str(&format!(
-      "    ::core::result::Result::Ok({} {{ {} }})\n",
+      "    result::Result::Ok({} {{ {} }})\n",
       name, init_fields
     ));
   }

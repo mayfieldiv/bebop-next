@@ -1,11 +1,29 @@
+/// Identifiers that cannot be used as raw identifiers (`r#name` is rejected by rustc).
+/// These need suffix mangling (`name_`) instead of `r#` escaping.
+///
+/// Source: `Symbol::can_be_raw()` + `Symbol::is_path_segment_keyword()` in
+/// `compiler/rustc_span/src/symbol.rs`.
+const RAW_REJECTED: &[&str] = &["self", "Self", "super", "crate"];
+
 /// Rust keywords that must be escaped with `r#` prefix.
+/// Excludes identifiers in `RAW_REJECTED` which need suffix mangling instead.
+///
+/// Source: `Keywords` table in `compiler/rustc_span/src/symbol.rs` —
+/// `is_used_keyword_always`, `is_unused_keyword_always`, and
+/// `is_used_keyword_conditional` / `is_unused_keyword_conditional` sections.
+#[rustfmt::skip]
 const RUST_KEYWORDS: &[&str] = &[
-  "as", "async", "await", "break", "const", "continue", "crate", "dyn", "else", "enum", "extern",
-  "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub",
-  "ref", "return", "self", "Self", "static", "struct", "super", "trait", "true", "type", "unsafe",
-  "use", "where", "while", "yield", // Reserved for future use
-  "abstract", "become", "box", "do", "final", "macro", "override", "priv", "try", "typeof",
-  "unsized", "virtual",
+  // Used keywords (stable)
+  "as", "break", "const", "continue", "else", "enum", "extern", "false", "fn", "for", "if", "impl",
+  "in", "let", "loop", "match", "mod", "move", "mut", "pub", "ref", "return", "static", "struct",
+  "trait", "true", "type", "unsafe", "use", "where", "while",
+  // Unused keywords (reserved for future use)
+  "abstract", "become", "box", "do", "final", "macro", "override", "priv", "typeof", "unsized",
+  "virtual", "yield",
+  // Edition-specific keywords (>= 2018)
+  "async", "await", "dyn",
+  // Edition-specific reserved (>= 2018/2024)
+  "try", "gen",
 ];
 
 /// Escape a Rust keyword with `r#` prefix if necessary.
@@ -93,12 +111,44 @@ pub fn variant_name(name: &str) -> String {
 
 /// Escape and convert a field name to idiomatic Rust.
 pub fn field_name(name: &str) -> String {
-  escape_keyword(&to_snake_case(name))
+  let s = to_snake_case(name);
+  // `r#self`, `r#super`, `r#crate` are rejected by rustc — suffix-mangle instead.
+  if RAW_REJECTED.contains(&s.as_str()) {
+    format!("{}_", s)
+  } else {
+    escape_keyword(&s)
+  }
+}
+
+/// Original Bebop field name for serde `rename` when [field_name] mangles `self` / `super`.
+pub fn serde_field_rename(name: &str) -> Option<String> {
+  let s = to_snake_case(name);
+  if RAW_REJECTED.contains(&s.as_str()) {
+    Some(s)
+  } else {
+    None
+  }
 }
 
 /// Escape and convert a type name to idiomatic Rust.
 pub fn type_name(name: &str) -> String {
-  escape_keyword(&to_pascal_case(name))
+  let p = to_pascal_case(name);
+  // `r#Self` is not a valid raw identifier (rustc rejects it). Bebop string fields are emitted as
+  // `alloc::string::String`, so a user-defined type named `String` does not need `String_`.
+  match p.as_str() {
+    "Self" => "Self_".to_string(),
+    _ => escape_keyword(&p),
+  }
+}
+
+/// Rust enum variant identifier (Bebop member name → PascalCase), avoiding `Self`.
+pub fn enum_variant_name(name: &str) -> String {
+  let v = variant_name(name);
+  if v == "Self" {
+    "Self_".to_string()
+  } else {
+    v
+  }
 }
 
 /// Convert a const name to idiomatic Rust SCREAMING_SNAKE_CASE.

@@ -3,7 +3,8 @@
 // Comprehensive test schema for the Rust code generator.
 // Covers: enums, flags, fixed-size structs, variable-size structs,
 // messages, unions, arrays, maps, byte arrays, fixed arrays,
-// and cross-type references.
+// and cross-type references. Adversarial identifier collisions live in
+// collision_types.bop (separate generated module).
 
 edition = "2026"
 package test
@@ -273,3 +274,4 @@ struct UuidHolder {
     id: guid;
     label: string;
 }
+

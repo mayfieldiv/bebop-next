@@ -91,8 +91,8 @@ fn literal_value(value: &LiteralValue, ty: &TypeDescriptor) -> Result<String, Ge
         .int_value
         .ok_or_else(|| GeneratorError::MalformedDefinition("int literal missing value".into()))?;
       match type_kind {
-        TypeKind::Float16 => Ok(format!("f16::from_f64_const({}f64)", v)),
-        TypeKind::Bfloat16 => Ok(format!("bf16::from_f64_const({}f64)", v)),
+        TypeKind::Float16 => Ok(format!("bebop::f16::from_f64_const({}f64)", v)),
+        TypeKind::Bfloat16 => Ok(format!("bebop::bf16::from_f64_const({}f64)", v)),
         _ => Ok(format!("{}{}", v, int_suffix(type_kind)?)),
       }
     }
@@ -120,7 +120,7 @@ fn literal_value(value: &LiteralValue, ty: &TypeDescriptor) -> Result<String, Ge
       .as_ref()
       .map(|bytes| {
         format!(
-          "::bebop_runtime::Uuid::from_bytes([{}])",
+          "bebop::Uuid::from_bytes([{}])",
           format_hex_bytes(bytes.as_bytes())
         )
       })
@@ -134,7 +134,7 @@ fn literal_value(value: &LiteralValue, ty: &TypeDescriptor) -> Result<String, Ge
       .timestamp_value
       .map(|v| {
         format!(
-          "BebopTimestamp {{ seconds: {}i64, nanos: {}i32 }}",
+          "bebop::BebopTimestamp {{ seconds: {}i64, nanos: {}i32 }}",
           v.seconds, v.nanos
         )
       })
@@ -143,7 +143,7 @@ fn literal_value(value: &LiteralValue, ty: &TypeDescriptor) -> Result<String, Ge
       .duration_value
       .map(|v| {
         format!(
-          "BebopDuration {{ seconds: {}i64, nanos: {}i32 }}",
+          "bebop::BebopDuration {{ seconds: {}i64, nanos: {}i32 }}",
           v.seconds, v.nanos
         )
       })
@@ -186,16 +186,17 @@ fn float_literal(value: f64, suffix: &str) -> String {
 }
 
 fn half_literal(value: f64, half_type: &str) -> String {
+  let t = format!("bebop::{}", half_type);
   if value.is_nan() {
-    return format!("{}::NAN", half_type);
+    return format!("{}::NAN", t);
   }
   if value.is_infinite() {
     if value.is_sign_negative() {
-      return format!("{}::NEG_INFINITY", half_type);
+      return format!("{}::NEG_INFINITY", t);
     }
-    return format!("{}::INFINITY", half_type);
+    return format!("{}::INFINITY", t);
   }
-  format!("{}::from_f64_const({:?}f64)", half_type, value)
+  format!("{}::from_f64_const({:?}f64)", t, value)
 }
 
 fn escape_rust_string(value: &str) -> String {

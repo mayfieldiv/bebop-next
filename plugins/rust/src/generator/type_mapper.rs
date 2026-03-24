@@ -20,12 +20,12 @@ pub fn scalar_type(kind: TypeKind) -> Option<&'static str> {
     TypeKind::Uint128 => Some("u128"),
     TypeKind::Float32 => Some("f32"),
     TypeKind::Float64 => Some("f64"),
-    TypeKind::String => Some("alloc::string::String"),
-    TypeKind::Float16 => Some("f16"),
-    TypeKind::Bfloat16 => Some("bf16"),
-    TypeKind::Uuid => Some("::bebop_runtime::Uuid"),
-    TypeKind::Timestamp => Some("BebopTimestamp"),
-    TypeKind::Duration => Some("BebopDuration"),
+    TypeKind::String => Some("string::String"),
+    TypeKind::Float16 => Some("bebop::f16"),
+    TypeKind::Bfloat16 => Some("bebop::bf16"),
+    TypeKind::Uuid => Some("bebop::Uuid"),
+    TypeKind::Timestamp => Some("bebop::BebopTimestamp"),
+    TypeKind::Duration => Some("bebop::BebopDuration"),
     _ => None,
   }
 }
@@ -197,24 +197,24 @@ pub fn fixed_size(kind: TypeKind) -> Option<usize> {
 /// This is used in generated `encoded_size()` expressions to avoid magic numbers.
 pub fn fixed_size_expr(kind: TypeKind) -> Option<&'static str> {
   match kind {
-    TypeKind::Bool => Some("::core::mem::size_of::<bool>()"),
-    TypeKind::Byte => Some("::core::mem::size_of::<u8>()"),
-    TypeKind::Int8 => Some("::core::mem::size_of::<i8>()"),
-    TypeKind::Int16 => Some("::core::mem::size_of::<i16>()"),
-    TypeKind::Uint16 => Some("::core::mem::size_of::<u16>()"),
-    TypeKind::Int32 => Some("::core::mem::size_of::<i32>()"),
-    TypeKind::Uint32 => Some("::core::mem::size_of::<u32>()"),
-    TypeKind::Int64 => Some("::core::mem::size_of::<i64>()"),
-    TypeKind::Uint64 => Some("::core::mem::size_of::<u64>()"),
-    TypeKind::Int128 => Some("::core::mem::size_of::<i128>()"),
-    TypeKind::Uint128 => Some("::core::mem::size_of::<u128>()"),
-    TypeKind::Float16 => Some("::core::mem::size_of::<f16>()"),
-    TypeKind::Bfloat16 => Some("::core::mem::size_of::<bf16>()"),
-    TypeKind::Float32 => Some("::core::mem::size_of::<f32>()"),
-    TypeKind::Float64 => Some("::core::mem::size_of::<f64>()"),
-    TypeKind::Uuid => Some("::core::mem::size_of::<::bebop_runtime::Uuid>()"),
+    TypeKind::Bool => Some("mem::size_of::<bool>()"),
+    TypeKind::Byte => Some("mem::size_of::<u8>()"),
+    TypeKind::Int8 => Some("mem::size_of::<i8>()"),
+    TypeKind::Int16 => Some("mem::size_of::<i16>()"),
+    TypeKind::Uint16 => Some("mem::size_of::<u16>()"),
+    TypeKind::Int32 => Some("mem::size_of::<i32>()"),
+    TypeKind::Uint32 => Some("mem::size_of::<u32>()"),
+    TypeKind::Int64 => Some("mem::size_of::<i64>()"),
+    TypeKind::Uint64 => Some("mem::size_of::<u64>()"),
+    TypeKind::Int128 => Some("mem::size_of::<i128>()"),
+    TypeKind::Uint128 => Some("mem::size_of::<u128>()"),
+    TypeKind::Float16 => Some("mem::size_of::<bebop::f16>()"),
+    TypeKind::Bfloat16 => Some("mem::size_of::<bebop::bf16>()"),
+    TypeKind::Float32 => Some("mem::size_of::<f32>()"),
+    TypeKind::Float64 => Some("mem::size_of::<f64>()"),
+    TypeKind::Uuid => Some("mem::size_of::<bebop::Uuid>()"),
     TypeKind::Timestamp | TypeKind::Duration => {
-      Some("::core::mem::size_of::<i64>() + ::core::mem::size_of::<i32>()")
+      Some("mem::size_of::<i64>() + mem::size_of::<i32>()")
     }
     _ => None,
   }
@@ -272,7 +272,7 @@ pub fn fixed_encoded_size_expression(
 /// String → `Cow<'buf, str>`, others unchanged.
 fn scalar_type_cow(kind: TypeKind) -> Option<&'static str> {
   match kind {
-    TypeKind::String => Some("alloc::borrow::Cow<'buf, str>"),
+    TypeKind::String => Some("borrow::Cow<'buf, str>"),
     _ => scalar_type(kind),
   }
 }
@@ -331,16 +331,16 @@ pub fn rust_type_owned(
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
       if elem.kind == Some(TypeKind::Byte) {
-        return Ok("::bebop_runtime::BebopBytes<'static>".to_string());
+        return Ok("bebop::BebopBytes<'static>".to_string());
       }
       // Bulk scalar arrays → Vec<T> (owned form of Cow<[T]>)
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
       if is_bulk_scalar(elem_kind) {
         let ty = scalar_type(elem_kind).unwrap();
-        return Ok(format!("alloc::vec::Vec<{}>", ty));
+        return Ok(format!("vec::Vec<{}>", ty));
       }
       let inner = rust_type_owned(elem, analysis)?;
-      Ok(format!("alloc::vec::Vec<{}>", inner))
+      Ok(format!("vec::Vec<{}>", inner))
     }
     TypeKind::FixedArray => {
       let elem = td
@@ -364,7 +364,7 @@ pub fn rust_type_owned(
         .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
       let k = rust_type_owned(key, analysis)?;
       let v = rust_type_owned(val, analysis)?;
-      Ok(format!("::bebop_runtime::HashMap<{}, {}>", k, v))
+      Ok(format!("bebop::HashMap<{}, {}>", k, v))
     }
     TypeKind::Defined => {
       let fqn = td
@@ -406,16 +406,16 @@ pub fn rust_type(
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
       // Byte arrays → BebopBytes<'buf>
       if elem.kind == Some(TypeKind::Byte) {
-        return Ok("::bebop_runtime::BebopBytes<'buf>".to_string());
+        return Ok("bebop::BebopBytes<'buf>".to_string());
       }
       // Bulk scalar arrays → Cow<'buf, [T]>
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
       if is_bulk_scalar(elem_kind) {
         let ty = scalar_type(elem_kind).unwrap();
-        return Ok(format!("alloc::borrow::Cow<'buf, [{}]>", ty));
+        return Ok(format!("borrow::Cow<'buf, [{}]>", ty));
       }
       let inner = rust_type(elem, analysis)?;
-      Ok(format!("alloc::vec::Vec<{}>", inner))
+      Ok(format!("vec::Vec<{}>", inner))
     }
     TypeKind::FixedArray => {
       let elem = td
@@ -439,7 +439,7 @@ pub fn rust_type(
         .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
       let k = rust_type(key, analysis)?;
       let v = rust_type(val, analysis)?;
-      Ok(format!("::bebop_runtime::HashMap<{}, {}>", k, v))
+      Ok(format!("bebop::HashMap<{}, {}>", k, v))
     }
     TypeKind::Defined => {
       let fqn = td
@@ -478,7 +478,7 @@ pub fn read_expression(
   match kind {
     TypeKind::String => {
       return Ok(format!(
-        "::core::result::Result::Ok(alloc::borrow::Cow::Borrowed({}.read_str()?))",
+        "result::Result::Ok(borrow::Cow::Borrowed({}.read_str()?))",
         reader
       ));
     }
@@ -498,7 +498,7 @@ pub fn read_expression(
       // Byte array → BebopBytes::borrowed
       if elem.kind == Some(TypeKind::Byte) {
         return Ok(format!(
-          "::core::result::Result::Ok(::bebop_runtime::BebopBytes::borrowed({}.read_byte_slice()?))",
+          "result::Result::Ok(bebop::BebopBytes::borrowed({}.read_byte_slice()?))",
           reader
         ));
       }
@@ -535,7 +535,7 @@ pub fn read_expression(
       } else {
         let inner = read_expression(elem, reader, _analysis)?;
         Ok(format!(
-          "{{ let mut _arr = [::core::default::Default::default(); {}]; for _i in 0..{} {{ _arr[_i] = {}?; }} ::core::result::Result::Ok(_arr) }}",
+          "{{ let mut _arr = [default::Default::default(); {}]; for _i in 0..{} {{ _arr[_i] = {}?; }} result::Result::Ok(_arr) }}",
           size, size, inner
         ))
       }
@@ -552,7 +552,7 @@ pub fn read_expression(
       let k_expr = read_expression(key, "_r", _analysis)?;
       let v_expr = read_expression(val, "_r", _analysis)?;
       Ok(format!(
-        "{}.read_map(|_r| ::core::result::Result::Ok(({}?, {}?)))",
+        "{}.read_map(|_r| result::Result::Ok(({}?, {}?)))",
         reader, k_expr, v_expr
       ))
     }
@@ -578,15 +578,12 @@ pub fn read_expression(
 /// `let name = Cow::Borrowed(reader.read_str()?);`
 pub fn borrowed_cow_read_expression(td: &TypeDescriptor, reader: &str) -> Option<String> {
   match td.kind? {
-    TypeKind::String => Some(format!(
-      "alloc::borrow::Cow::Borrowed({}.read_str()?)",
-      reader
-    )),
+    TypeKind::String => Some(format!("borrow::Cow::Borrowed({}.read_str()?)", reader)),
     TypeKind::Array => {
       let elem = td.array_element.as_ref()?;
       if elem.kind == Some(TypeKind::Byte) {
         Some(format!(
-          "::bebop_runtime::BebopBytes::borrowed({}.read_byte_slice()?)",
+          "bebop::BebopBytes::borrowed({}.read_byte_slice()?)",
           reader
         ))
       } else {
@@ -750,25 +747,31 @@ pub fn encoded_size_expression(
   }
 
   match kind {
-    TypeKind::String => Ok(format!("wire::string_size({}.len())", value)),
+    TypeKind::String => Ok(format!("bebop::wire_size::string_size({}.len())", value)),
     TypeKind::Array => {
       let elem = td
         .array_element
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
       if elem.kind == Some(TypeKind::Byte) {
-        return Ok(format!("wire::byte_array_size({}.len())", value));
+        return Ok(format!(
+          "bebop::wire_size::byte_array_size({}.len())",
+          value
+        ));
       }
       let items_ref = collection_ref(value);
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
       if let Some(sz_expr) = fixed_size_expr(elem_kind) {
         Ok(format!(
-          "wire::array_size({}, |_el| ({}))",
+          "bebop::wire_size::array_size({}, |_el| ({}))",
           items_ref, sz_expr
         ))
       } else {
         let inner = encoded_size_expression(elem, "_el", _analysis)?;
-        Ok(format!("wire::array_size({}, |_el| {})", items_ref, inner))
+        Ok(format!(
+          "bebop::wire_size::array_size({}, |_el| {})",
+          items_ref, inner
+        ))
       }
     }
     TypeKind::FixedArray => {
@@ -803,7 +806,7 @@ pub fn encoded_size_expression(
       let v_size = encoded_size_expression(val, "_v", _analysis)?;
       let map_ref = collection_ref(value);
       Ok(format!(
-        "wire::map_size({}, |_k, _v| {} + {})",
+        "bebop::wire_size::map_size({}, |_k, _v| {} + {})",
         map_ref, k_size, v_size
       ))
     }
@@ -827,7 +830,7 @@ pub fn into_owned_expression(
 
   match kind {
     // Cow<str> → Cow::Owned(v.into_owned())
-    TypeKind::String => Ok(format!("alloc::borrow::Cow::Owned({}.into_owned())", value)),
+    TypeKind::String => Ok(format!("borrow::Cow::Owned({}.into_owned())", value)),
     TypeKind::Array => {
       let elem = td
         .array_element
@@ -839,7 +842,7 @@ pub fn into_owned_expression(
       }
       // Cow<[T]> for bulk scalars → Cow::Owned(v.into_owned())
       if elem.kind.is_some_and(is_bulk_scalar) {
-        return Ok(format!("alloc::borrow::Cow::Owned({}.into_owned())", value));
+        return Ok(format!("borrow::Cow::Owned({}.into_owned())", value));
       }
       // Vec of lifetime types → map into_owned
       if analysis.type_needs_lifetime(elem) {
@@ -923,7 +926,7 @@ pub fn into_borrowed_expression(
     .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
 
   match kind {
-    TypeKind::String => Ok(format!("alloc::borrow::Cow::Owned({})", value)),
+    TypeKind::String => Ok(format!("borrow::Cow::Owned({})", value)),
     TypeKind::Array => {
       let elem = td
         .array_element
@@ -931,13 +934,13 @@ pub fn into_borrowed_expression(
         .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
       if elem.kind == Some(TypeKind::Byte) {
         return Ok(format!(
-          "<::bebop_runtime::BebopBytes as ::core::convert::From<_>>::from({})",
+          "<bebop::BebopBytes as convert::From<_>>::from({})",
           value
         ));
       }
       // Cow<[T]> for bulk scalars: Vec<T> → Cow::from(Vec)
       if elem.kind.is_some_and(is_bulk_scalar) {
-        return Ok(format!("alloc::borrow::Cow::from({})", value));
+        return Ok(format!("borrow::Cow::from({})", value));
       }
       if analysis.type_needs_lifetime(elem) {
         let inner = into_borrowed_expression(elem, "_e", analysis)?;

@@ -1,7 +1,7 @@
 use crate::error::GeneratorError;
 use crate::generated::{DefinitionDescriptor, EnumMemberDescriptor, TypeKind};
 
-use super::naming::{type_name, variant_name};
+use super::naming::{const_name, enum_variant_name, type_name};
 use super::type_mapper::{enum_base_rust_type, enum_read_method, enum_write_method, fixed_size};
 use super::{
   emit_deprecated, emit_doc_comment, has_decorator, visibility_keyword, GeneratorOptions,
@@ -118,7 +118,7 @@ fn generate_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorError> {
     .push_str(&format!("{} enum {} {{\n", ctx.vis, ctx.name));
 
   for m in ctx.members {
-    let mname = variant_name(m.name.as_deref().unwrap_or("Unknown"));
+    let mname = enum_variant_name(m.name.as_deref().unwrap_or("Unknown"));
     let mvalue = m.value.unwrap_or(0);
 
     emit_doc_comment(ctx.output, &m.documentation);
@@ -133,26 +133,26 @@ fn generate_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorError> {
 
   // TryFrom<base_type> for Name
   ctx.output.push_str(&format!(
-    "impl ::core::convert::TryFrom<{}> for {} {{\n",
+    "impl convert::TryFrom<{}> for {} {{\n",
     ctx.base_type, ctx.name
   ));
-  ctx.output.push_str("  type Error = DecodeError;\n");
+  ctx.output.push_str("  type Error = bebop::DecodeError;\n");
   ctx.output.push_str(&format!(
-    "  fn try_from(value: {}) -> ::core::result::Result<Self, DecodeError> {{\n",
+    "  fn try_from(value: {}) -> result::Result<Self, bebop::DecodeError> {{\n",
     ctx.base_type
   ));
   ctx.output.push_str("    match value {\n");
   for m in ctx.members {
-    let mname = variant_name(m.name.as_deref().unwrap_or("Unknown"));
+    let mname = enum_variant_name(m.name.as_deref().unwrap_or("Unknown"));
     let mvalue = m.value.unwrap_or(0);
     let formatted_value = ctx.format_value(mvalue);
     ctx.output.push_str(&format!(
-      "      {} => ::core::result::Result::Ok(Self::{}),\n",
+      "      {} => result::Result::Ok(Self::{}),\n",
       formatted_value, mname
     ));
   }
   ctx.output.push_str(&format!(
-    "      _ => ::core::result::Result::Err(DecodeError::InvalidEnum {{ type_name: \"{}\", value: value as u64 }}),\n",
+    "      _ => result::Result::Err(bebop::DecodeError::InvalidEnum {{ type_name: \"{}\", value: value as u64 }}),\n",
     ctx.name
   ));
   ctx.output.push_str("    }\n");
@@ -161,7 +161,7 @@ fn generate_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorError> {
 
   // From<Name> for base_type
   ctx.output.push_str(&format!(
-    "impl ::core::convert::From<{}> for {} {{\n",
+    "impl convert::From<{}> for {} {{\n",
     ctx.name, ctx.base_type
   ));
   ctx.output.push_str(&format!(
@@ -173,13 +173,13 @@ fn generate_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorError> {
   // ── FIXED_ENCODED_SIZE ──────────────────────────────────────────
   emit_fixed_encoded_size(ctx);
 
-  // ── impl BebopEncode ──────────────────────────────────────────
+  // ── impl bebop::BebopEncode ──────────────────────────────────────────
   ctx
     .output
-    .push_str(&format!("impl BebopEncode for {} {{\n", ctx.name));
+    .push_str(&format!("impl bebop::BebopEncode for {} {{\n", ctx.name));
   ctx
     .output
-    .push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
+    .push_str("  fn encode(&self, writer: &mut bebop::BebopWriter) {\n");
   ctx.output.push_str(&format!(
     "    // @@bebop_insertion_point(encode_start:{})\n",
     ctx.name
@@ -198,14 +198,14 @@ fn generate_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorError> {
     .push_str("  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }\n");
   ctx.output.push_str("}\n\n");
 
-  // ── impl BebopDecode ──────────────────────────────────────────
+  // ── impl bebop::BebopDecode ──────────────────────────────────────────
   ctx.output.push_str(&format!(
-    "impl<'buf> BebopDecode<'buf> for {} {{\n",
+    "impl<'buf> bebop::BebopDecode<'buf> for {} {{\n",
     ctx.name
   ));
   ctx.output.push_str("  #[inline(always)]\n");
   ctx.output.push_str(
-    "  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {\n",
+    "  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {\n",
   );
   ctx.output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_start:{})\n",
@@ -220,7 +220,7 @@ fn generate_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorError> {
   ));
   ctx
     .output
-    .push_str("    ::core::convert::TryFrom::try_from(value)\n");
+    .push_str("    convert::TryFrom::try_from(value)\n");
   ctx.output.push_str("  }\n");
   ctx.output.push_str("}\n\n");
 
@@ -244,7 +244,7 @@ fn generate_forward_compatible_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorEr
     .push_str(&format!("{} enum {} {{\n", ctx.vis, ctx.name));
 
   for m in ctx.members {
-    let mname = variant_name(m.name.as_deref().unwrap_or("Unknown"));
+    let mname = enum_variant_name(m.name.as_deref().unwrap_or("Unknown"));
     emit_doc_comment(ctx.output, &m.documentation);
     emit_deprecated(ctx.output, &m.decorators);
     ctx.output.push_str(&format!("  {},\n", mname));
@@ -270,7 +270,7 @@ fn generate_forward_compatible_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorEr
     ctx.base_type
   ));
   for m in ctx.members {
-    let mname = variant_name(m.name.as_deref().unwrap_or("Unknown"));
+    let mname = enum_variant_name(m.name.as_deref().unwrap_or("Unknown"));
     let mvalue = m.value.unwrap_or(0);
     let formatted_value = ctx.format_value(mvalue);
     ctx
@@ -287,7 +287,7 @@ fn generate_forward_compatible_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorEr
   ctx.output.push_str("  pub fn is_known(&self) -> bool {\n");
   ctx
     .output
-    .push_str("    !::core::matches!(self, Self::Unknown(_))\n");
+    .push_str("    !core::matches!(self, Self::Unknown(_))\n");
   ctx.output.push_str("  }\n");
 
   ctx.output.push_str(&format!(
@@ -298,7 +298,7 @@ fn generate_forward_compatible_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorEr
 
   // ── From<base_type> for Name (infallible) ──
   ctx.output.push_str(&format!(
-    "impl ::core::convert::From<{}> for {} {{\n",
+    "impl convert::From<{}> for {} {{\n",
     ctx.base_type, ctx.name
   ));
   ctx.output.push_str(&format!(
@@ -306,7 +306,7 @@ fn generate_forward_compatible_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorEr
     ctx.base_type
   ));
   for m in ctx.members {
-    let mname = variant_name(m.name.as_deref().unwrap_or("Unknown"));
+    let mname = enum_variant_name(m.name.as_deref().unwrap_or("Unknown"));
     let mvalue = m.value.unwrap_or(0);
     let formatted_value = ctx.format_value(mvalue);
     ctx
@@ -318,7 +318,7 @@ fn generate_forward_compatible_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorEr
 
   // ── From<Name> for base_type ──
   ctx.output.push_str(&format!(
-    "impl ::core::convert::From<{}> for {} {{\n",
+    "impl convert::From<{}> for {} {{\n",
     ctx.name, ctx.base_type
   ));
   ctx.output.push_str(&format!(
@@ -327,13 +327,13 @@ fn generate_forward_compatible_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorEr
   ));
   ctx.output.push_str("}\n\n");
 
-  // ── BebopEncode ──
+  // ── bebop::BebopEncode ──
   ctx
     .output
-    .push_str(&format!("impl BebopEncode for {} {{\n", ctx.name));
+    .push_str(&format!("impl bebop::BebopEncode for {} {{\n", ctx.name));
   ctx
     .output
-    .push_str("  fn encode(&self, writer: &mut BebopWriter) {\n");
+    .push_str("  fn encode(&self, writer: &mut bebop::BebopWriter) {\n");
   ctx.output.push_str(&format!(
     "    // @@bebop_insertion_point(encode_start:{})\n",
     ctx.name
@@ -352,14 +352,14 @@ fn generate_forward_compatible_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorEr
     .push_str("  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }\n");
   ctx.output.push_str("}\n\n");
 
-  // ── BebopDecode ──
+  // ── bebop::BebopDecode ──
   ctx.output.push_str(&format!(
-    "impl<'buf> BebopDecode<'buf> for {} {{\n",
+    "impl<'buf> bebop::BebopDecode<'buf> for {} {{\n",
     ctx.name
   ));
   ctx.output.push_str("  #[inline(always)]\n");
   ctx.output.push_str(
-    "  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {\n",
+    "  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {\n",
   );
   ctx.output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_start:{})\n",
@@ -374,7 +374,7 @@ fn generate_forward_compatible_enum(ctx: &mut EnumCtx) -> Result<(), GeneratorEr
   ));
   ctx
     .output
-    .push_str("    ::core::result::Result::Ok(<Self as ::core::convert::From<_>>::from(value))\n");
+    .push_str("    result::Result::Ok(<Self as convert::From<_>>::from(value))\n");
   ctx.output.push_str("  }\n");
   ctx.output.push_str("}\n\n");
 
@@ -409,7 +409,7 @@ fn generate_flags(ctx: &mut EnumCtx, is_forward_compatible: bool) -> Result<(), 
   // Compute ALL value for all() method
   let mut all_value: u64 = 0;
   for m in ctx.members {
-    let mname = m.name.as_deref().unwrap_or("UNKNOWN");
+    let mname = const_name(m.name.as_deref().unwrap_or("UNKNOWN"));
     let mvalue = m.value.unwrap_or(0);
 
     emit_doc_comment(ctx.output, &m.documentation);
@@ -434,7 +434,7 @@ fn generate_flags(ctx: &mut EnumCtx, is_forward_compatible: bool) -> Result<(), 
 
   ctx
     .output
-    .push_str(&format!("impl BebopFlags for {} {{\n", ctx.name));
+    .push_str(&format!("impl bebop::BebopFlags for {} {{\n", ctx.name));
   ctx
     .output
     .push_str(&format!("  type Bits = {};\n", ctx.base_type));
@@ -452,46 +452,46 @@ fn generate_flags(ctx: &mut EnumCtx, is_forward_compatible: bool) -> Result<(), 
 
   // Bitwise operator impls in compact single-line style.
   ctx.output.push_str(&format!(
-    "impl ::core::ops::BitOr for {} {{ type Output = Self; fn bitor(self, rhs: Self) -> Self {{ Self(self.0 | rhs.0) }} }}\n",
+    "impl ops::BitOr for {} {{ type Output = Self; fn bitor(self, rhs: Self) -> Self {{ Self(self.0 | rhs.0) }} }}\n",
     ctx.name
   ));
   ctx.output.push_str(&format!(
-    "impl ::core::ops::BitOrAssign for {} {{ fn bitor_assign(&mut self, rhs: Self) {{ self.0 |= rhs.0; }} }}\n",
+    "impl ops::BitOrAssign for {} {{ fn bitor_assign(&mut self, rhs: Self) {{ self.0 |= rhs.0; }} }}\n",
     ctx.name
   ));
   ctx.output.push_str(&format!(
-    "impl ::core::ops::BitAnd for {} {{ type Output = Self; fn bitand(self, rhs: Self) -> Self {{ Self(self.0 & rhs.0) }} }}\n",
+    "impl ops::BitAnd for {} {{ type Output = Self; fn bitand(self, rhs: Self) -> Self {{ Self(self.0 & rhs.0) }} }}\n",
     ctx.name
   ));
   ctx.output.push_str(&format!(
-    "impl ::core::ops::BitAndAssign for {} {{ fn bitand_assign(&mut self, rhs: Self) {{ self.0 &= rhs.0; }} }}\n",
+    "impl ops::BitAndAssign for {} {{ fn bitand_assign(&mut self, rhs: Self) {{ self.0 &= rhs.0; }} }}\n",
     ctx.name
   ));
   ctx.output.push_str(&format!(
-    "impl ::core::ops::BitXor for {} {{ type Output = Self; fn bitxor(self, rhs: Self) -> Self {{ Self(self.0 ^ rhs.0) }} }}\n",
+    "impl ops::BitXor for {} {{ type Output = Self; fn bitxor(self, rhs: Self) -> Self {{ Self(self.0 ^ rhs.0) }} }}\n",
     ctx.name
   ));
   ctx.output.push_str(&format!(
-    "impl ::core::ops::BitXorAssign for {} {{ fn bitxor_assign(&mut self, rhs: Self) {{ self.0 ^= rhs.0; }} }}\n",
+    "impl ops::BitXorAssign for {} {{ fn bitxor_assign(&mut self, rhs: Self) {{ self.0 ^= rhs.0; }} }}\n",
     ctx.name
   ));
   ctx.output.push_str(&format!(
-    "impl ::core::ops::Not for {} {{ type Output = Self; fn not(self) -> Self {{ Self(!self.0) }} }}\n",
+    "impl ops::Not for {} {{ type Output = Self; fn not(self) -> Self {{ Self(!self.0) }} }}\n",
     ctx.name
   ));
   ctx.output.push_str(&format!(
-    "impl ::core::ops::Sub for {} {{ type Output = Self; fn sub(self, rhs: Self) -> Self {{ Self(self.0 & !rhs.0) }} }}\n\n",
+    "impl ops::Sub for {} {{ type Output = Self; fn sub(self, rhs: Self) -> Self {{ Self(self.0 & !rhs.0) }} }}\n\n",
     ctx.name
   ));
 
-  // ── BebopDecode (generated per-type, not blanket) ──
+  // ── bebop::BebopDecode (generated per-type, not blanket) ──
   ctx.output.push_str(&format!(
-    "impl<'buf> BebopDecode<'buf> for {} {{\n",
+    "impl<'buf> bebop::BebopDecode<'buf> for {} {{\n",
     ctx.name
   ));
   ctx.output.push_str("  #[inline(always)]\n");
   ctx.output.push_str(
-    "  fn decode(reader: &mut BebopReader<'buf>) -> ::core::result::Result<Self, DecodeError> {\n",
+    "  fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {\n",
   );
   ctx
     .output
@@ -499,10 +499,10 @@ fn generate_flags(ctx: &mut EnumCtx, is_forward_compatible: bool) -> Result<(), 
   if is_forward_compatible {
     ctx
       .output
-      .push_str("    ::core::result::Result::Ok(Self::from_bits_retain(bits))\n");
+      .push_str("    result::Result::Ok(<Self as bebop::BebopFlags>::from_bits_retain(bits))\n");
   } else {
     ctx.output.push_str(&format!(
-      "    Self::from_bits(bits).ok_or(DecodeError::InvalidFlags {{ type_name: \"{}\", bits: bits as u64 }})\n",
+      "    <Self as bebop::BebopFlags>::from_bits(bits).ok_or(bebop::DecodeError::InvalidFlags {{ type_name: \"{}\", bits: bits as u64 }})\n",
       ctx.name
     ));
   }
