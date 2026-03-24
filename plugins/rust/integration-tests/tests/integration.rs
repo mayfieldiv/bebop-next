@@ -454,7 +454,7 @@ fn byte_array_struct_encoded_size_matches() {
 
 #[test]
 fn byte_matrix_struct_round_trip() {
-  let bm = ByteMatrix::new(vec![vec![1u8, 2, 3].into(), vec![4u8, 5].into()]);
+  let bm = ByteMatrix::new([vec![1u8, 2, 3], vec![4, 5]]);
   let bytes = bm.to_bytes();
   let bm2 = ByteMatrix::from_bytes(&bytes).unwrap();
   assert_eq!(bm2.rows.len(), 2);
@@ -464,16 +464,13 @@ fn byte_matrix_struct_round_trip() {
 
 #[test]
 fn byte_matrix_struct_encoded_size_matches() {
-  let bm = ByteMatrix::new(vec![vec![1u8, 2].into(), vec![3u8, 4, 5, 6].into()]);
+  let bm = ByteMatrix::new([vec![1u8, 2], vec![3, 4, 5, 6]]);
   assert_eq!(bm.encoded_size(), bm.to_bytes().len());
 }
 
 #[test]
 fn byte_tag_map_struct_round_trip() {
-  let mut entries = HashMap::new();
-  entries.insert("key1".to_string(), vec![10u8, 20].into());
-  entries.insert("key2".to_string(), vec![30u8, 40, 50].into());
-  let btm = ByteTagMap::new(entries);
+  let btm = ByteTagMap::new([("key1", vec![10u8, 20]), ("key2", vec![30u8, 40, 50])]);
   let bytes = btm.to_bytes();
   let btm2 = ByteTagMap::from_bytes(&bytes).unwrap();
   assert_eq!(btm2.entries["key1"].as_ref(), &[10, 20]);
@@ -482,9 +479,7 @@ fn byte_tag_map_struct_round_trip() {
 
 #[test]
 fn byte_tag_map_struct_encoded_size_matches() {
-  let mut entries = HashMap::new();
-  entries.insert("a".to_string(), vec![1u8].into());
-  let btm = ByteTagMap::new(entries);
+  let btm = ByteTagMap::new([("a", vec![1u8])]);
   assert_eq!(btm.encoded_size(), btm.to_bytes().len());
 }
 
@@ -1329,7 +1324,7 @@ fn serde_byte_array_message_round_trip_json() {
 #[cfg(feature = "serde")]
 #[test]
 fn serde_byte_matrix_struct_round_trip_json() {
-  let bm = ByteMatrix::new(vec![vec![1u8, 2, 3].into(), vec![4u8, 5].into()]);
+  let bm = ByteMatrix::new([vec![1u8, 2, 3], vec![4, 5]]);
   let json = serde_json::to_string(&bm).unwrap();
   let decoded: ByteMatrixOwned = serde_json::from_str(&json).unwrap();
   assert_eq!(decoded.rows.len(), 2);
@@ -1340,9 +1335,7 @@ fn serde_byte_matrix_struct_round_trip_json() {
 #[cfg(feature = "serde")]
 #[test]
 fn serde_byte_tag_map_round_trip_json() {
-  let mut entries = HashMap::new();
-  entries.insert("k".to_string(), vec![10u8, 20, 30].into());
-  let btm = ByteTagMap::new(entries);
+  let btm = ByteTagMap::new([("k", vec![10u8, 20, 30])]);
   let json = serde_json::to_string(&btm).unwrap();
   let decoded: ByteTagMapOwned = serde_json::from_str(&json).unwrap();
   assert_eq!(decoded.entries["k"].as_ref(), &[10, 20, 30]);

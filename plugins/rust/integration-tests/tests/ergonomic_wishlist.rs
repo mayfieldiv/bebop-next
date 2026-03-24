@@ -1,9 +1,13 @@
 //! Ergonomic API wishlist — these are the call patterns we WANT to work.
-//! Currently none of these compile. This file drives the design of issue #8.
+//! Currently some of these don't compile. This file drives the design of issue #8.
 //!
 //! Each test shows the "ugly" current code (commented out) and the desired form.
+//!
+//! Gated behind "wishlist" feature so it doesn't break normal builds.
+//! Run with: cargo test --test ergonomic_wishlist --features std,wishlist
 
-#![cfg(feature = "std")]
+#![allow(unexpected_cfgs)]
+#![cfg(feature = "wishlist")]
 
 use bebop_runtime::{BebopBytes, BebopDecode, BebopEncode, BebopFlags, HashMap, Uuid};
 

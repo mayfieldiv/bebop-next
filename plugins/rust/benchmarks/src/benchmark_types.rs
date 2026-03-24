@@ -19,7 +19,7 @@ use alloc::{borrow, boxed, string, vec};
 use bebop_runtime as bebop;
 use core::convert::Into as _;
 use core::iter::{IntoIterator as _, Iterator as _};
-use core::{convert, default, mem, ops, option, result};
+use core::{convert, default, iter, mem, ops, option, result};
 
 // @@bebop_insertion_point(imports)
 
@@ -1093,9 +1093,10 @@ pub type ChunkedTextOwned = ChunkedText<'static>;
 impl<'buf> ChunkedText<'buf> {
   pub fn new(
     source: impl convert::Into<borrow::Cow<'buf, str>>,
-    spans: vec::Vec<TextSpan>,
+    spans: impl iter::IntoIterator<Item = TextSpan>,
   ) -> Self {
     let source = convert::Into::into(source);
+    let spans = spans.into_iter().collect();
     Self { source, spans }
   }
 }
@@ -1265,10 +1266,11 @@ pub type EmbeddingBatchOwned = EmbeddingBatch<'static>;
 impl<'buf> EmbeddingBatch<'buf> {
   pub fn new(
     model: impl convert::Into<borrow::Cow<'buf, str>>,
-    embeddings: vec::Vec<EmbeddingBf16<'static>>,
+    embeddings: impl iter::IntoIterator<Item = EmbeddingBf16<'buf>>,
     usage_tokens: u32,
   ) -> Self {
     let model = convert::Into::into(model);
+    let embeddings = embeddings.into_iter().collect();
     Self {
       model,
       embeddings,
@@ -1409,7 +1411,8 @@ pub struct TokenAlternatives<'buf> {
 pub type TokenAlternativesOwned = TokenAlternatives<'static>;
 
 impl<'buf> TokenAlternatives<'buf> {
-  pub fn new(top_tokens: vec::Vec<TokenLogprob<'static>>) -> Self {
+  pub fn new(top_tokens: impl iter::IntoIterator<Item = TokenLogprob<'buf>>) -> Self {
+    let top_tokens = top_tokens.into_iter().collect();
     Self { top_tokens }
   }
 }
@@ -1467,14 +1470,15 @@ pub type LlmStreamChunkOwned = LlmStreamChunk<'static>;
 impl<'buf> LlmStreamChunk<'buf> {
   pub fn new(
     chunk_id: u32,
-    tokens: vec::Vec<string::String>,
-    logprobs: vec::Vec<TokenAlternatives<'static>>,
+    tokens: impl iter::IntoIterator<Item = impl convert::Into<borrow::Cow<'buf, str>>>,
+    logprobs: impl iter::IntoIterator<Item = TokenAlternatives<'buf>>,
     finish_reason: impl convert::Into<borrow::Cow<'buf, str>>,
   ) -> Self {
     let tokens = tokens
       .into_iter()
-      .map(|_e| borrow::Cow::Owned(_e))
+      .map(|_e| convert::Into::into(_e))
       .collect();
+    let logprobs = logprobs.into_iter().collect();
     let finish_reason = convert::Into::into(finish_reason);
     Self {
       chunk_id,
@@ -1720,9 +1724,10 @@ pub type InferenceResponseOwned = InferenceResponse<'static>;
 impl<'buf> InferenceResponse<'buf> {
   pub fn new(
     request_id: bebop::Uuid,
-    embeddings: vec::Vec<EmbeddingBf16<'static>>,
+    embeddings: impl iter::IntoIterator<Item = EmbeddingBf16<'buf>>,
     timing: InferenceTiming,
   ) -> Self {
+    let embeddings = embeddings.into_iter().collect();
     Self {
       request_id,
       embeddings,

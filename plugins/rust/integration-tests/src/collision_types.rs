@@ -20,7 +20,7 @@ use bebop_runtime as bebop;
 use bebop_runtime::serde;
 use core::convert::Into as _;
 use core::iter::{IntoIterator as _, Iterator as _};
-use core::{convert, default, mem, ops, option, result};
+use core::{convert, default, iter, mem, ops, option, result};
 
 // @@bebop_insertion_point(imports)
 

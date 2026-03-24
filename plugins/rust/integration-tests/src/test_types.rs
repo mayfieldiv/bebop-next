@@ -20,7 +20,7 @@ use bebop_runtime as bebop;
 use bebop_runtime::serde;
 use core::convert::Into as _;
 use core::iter::{IntoIterator as _, Iterator as _};
-use core::{convert, default, mem, ops, option, result};
+use core::{convert, default, iter, mem, ops, option, result};
 
 // @@bebop_insertion_point(imports)
 
@@ -2492,11 +2492,10 @@ pub struct ByteMatrix<'buf> {
 pub type ByteMatrixOwned = ByteMatrix<'static>;
 
 impl<'buf> ByteMatrix<'buf> {
-  pub fn new(rows: vec::Vec<bebop::BebopBytes<'static>>) -> Self {
-    let rows = rows
-      .into_iter()
-      .map(|_e| <bebop::BebopBytes as convert::From<_>>::from(_e))
-      .collect();
+  pub fn new(
+    rows: impl iter::IntoIterator<Item = impl convert::Into<bebop::BebopBytes<'buf>>>,
+  ) -> Self {
+    let rows = rows.into_iter().map(|_e| convert::Into::into(_e)).collect();
     Self { rows }
   }
 }
@@ -2549,15 +2548,17 @@ pub struct ByteTagMap<'buf> {
 pub type ByteTagMapOwned = ByteTagMap<'static>;
 
 impl<'buf> ByteTagMap<'buf> {
-  pub fn new(entries: bebop::HashMap<string::String, bebop::BebopBytes<'static>>) -> Self {
+  pub fn new(
+    entries: impl iter::IntoIterator<
+      Item = (
+        impl convert::Into<borrow::Cow<'buf, str>>,
+        impl convert::Into<bebop::BebopBytes<'buf>>,
+      ),
+    >,
+  ) -> Self {
     let entries = entries
       .into_iter()
-      .map(|(_k, _v)| {
-        (
-          borrow::Cow::Owned(_k),
-          <bebop::BebopBytes as convert::From<_>>::from(_v),
-        )
-      })
+      .map(|(_k, _v)| (convert::Into::into(_k), convert::Into::into(_v)))
       .collect();
     Self { entries }
   }
