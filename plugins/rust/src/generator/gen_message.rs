@@ -60,16 +60,13 @@ impl FieldMeta<'_> {
 /// Return (param_type, body_expression) for a message `with_*` setter.
 fn setter_signature(
   meta: &FieldMeta<'_>,
-  has_lifetime: bool,
   analysis: &LifetimeAnalysis,
 ) -> Result<(String, String), GeneratorError> {
   let kind = meta.kind;
 
   // 1. Collection fields — use IntoIterator (same logic as struct new())
-  if has_lifetime {
-    if let Some((param, body)) = type_mapper::collection_into_iter(meta.td, "value", analysis)? {
-      return Ok((param, body));
-    }
+  if let Some((param, body)) = type_mapper::collection_into_iter(meta.td, "value", analysis)? {
+    return Ok((param, body));
   }
 
   // 2. Direct Cow fields (string, bytes, bulk scalar arrays) — use impl Into
@@ -362,7 +359,7 @@ pub fn generate(
   output.push_str(&format!("impl{} {}{} {{\n", lt, name, lt));
   for meta in &field_metas {
     // Determine param type and body expression for this field
-    let (param_type, body_expr) = setter_signature(meta, has_lifetime, analysis)?;
+    let (param_type, body_expr) = setter_signature(meta, analysis)?;
     // Strip r# prefix for method name — "with_type" is not a keyword
     let method_name = meta.fname.strip_prefix("r#").unwrap_or(&meta.fname);
     output.push_str(&format!(

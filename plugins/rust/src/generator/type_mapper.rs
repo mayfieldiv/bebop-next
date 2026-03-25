@@ -1039,8 +1039,9 @@ fn element_into_info(
       }
       // Bulk scalar arrays → Cow<'buf, [T]>, needs Into
       if let Some(elem) = td.array_element.as_ref() {
-        if elem.kind.is_some_and(is_bulk_scalar) {
-          let ty = scalar_type(elem.kind.unwrap()).unwrap();
+        if let Some(ek) = elem.kind.filter(|k| is_bulk_scalar(*k)) {
+          // is_bulk_scalar guarantees scalar_type returns Some
+          let ty = scalar_type(ek).unwrap();
           return Ok((format!("borrow::Cow<'buf, [{}]>", ty), true));
         }
       }

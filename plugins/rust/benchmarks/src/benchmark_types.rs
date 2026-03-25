@@ -366,8 +366,8 @@ impl TreeNode {
     self.value = option::Option::Some(value);
     self
   }
-  pub fn with_children(mut self, value: vec::Vec<TreeNode>) -> Self {
-    self.children = option::Option::Some(value);
+  pub fn with_children(mut self, value: impl iter::IntoIterator<Item = TreeNode>) -> Self {
+    self.children = option::Option::Some(value.into_iter().collect());
     self
   }
   // @@bebop_insertion_point(message_scope:TreeNode)

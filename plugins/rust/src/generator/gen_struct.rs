@@ -136,13 +136,7 @@ pub fn generate(
   // Pre-compute IntoIterator info for collection fields
   let collection_infos: Vec<Option<(String, String)>> = field_metas
     .iter()
-    .map(|meta| {
-      if has_lifetime {
-        type_mapper::collection_into_iter(meta.td, &meta.fname, analysis)
-      } else {
-        Ok(None)
-      }
-    })
+    .map(|meta| type_mapper::collection_into_iter(meta.td, &meta.fname, analysis))
     .collect::<Result<Vec<_>, GeneratorError>>()?;
 
   for (i, meta) in field_metas.iter().enumerate() {
