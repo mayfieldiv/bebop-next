@@ -1946,15 +1946,22 @@ fn decode_error_message_field_reports_type_and_field() {
   let mut bytes = profile.to_bytes();
 
   // Find the email field bytes and corrupt them.
-  // Tag 2 = email. Find `\x02` followed by the encoded string.
-  // The display_name tag (1) comes first. We need to locate tag 2.
-  let pos = bytes
-    .iter()
-    .position(|&b| b == 2)
-    .expect("email tag byte (0x02) not found in encoded message");
-  // pos points to the tag byte for field 2 (email).
-  // The string length is at pos+1 (u32 le), string bytes start at pos+5.
-  let str_start = pos + 1 + 4; // skip tag + u32 length
+  // Message layout: [u32 body_len][body...]
+  // Body for this specific message (only display_name and email set):
+  //   [tag1=0x01][u32 display_name_len]["Alice"][NUL]
+  //   [tag2=0x02][u32 email_len]["alice@example.com"][NUL]
+  //   [0x00 terminator]
+  // Compute the email string's start offset directly rather than scanning for
+  // a 0x02 byte that could appear in unrelated parts of the encoding.
+  let display_name_bytes = b"Alice";
+  // 4 bytes body_len + 1 byte tag1 + 4 bytes u32 len + display_name + NUL
+  let email_tag_pos = 4 + 1 + 4 + display_name_bytes.len() + 1;
+  assert_eq!(
+    bytes[email_tag_pos], 2,
+    "expected email tag (0x02) at computed offset {email_tag_pos}"
+  );
+  // skip tag2 + u32 email_len to reach the first byte of email string data
+  let str_start = email_tag_pos + 1 + 4;
   assert!(
     str_start < bytes.len(),
     "str_start {str_start} out of bounds (len={})",

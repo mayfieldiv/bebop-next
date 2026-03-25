@@ -49,6 +49,10 @@ impl DecodeError {
   /// through nested decode calls. Outer decode frames calling `.for_field()` provide
   /// a fallback in case no inner context was set.
   pub fn with_context(self, type_name: &'static str, field_name: &'static str) -> Self {
+    debug_assert!(
+      !type_name.is_empty() && !field_name.is_empty(),
+      "with_context: both type_name and field_name must be non-empty"
+    );
     match self {
       DecodeError::UnexpectedEof {
         needed,
@@ -109,7 +113,7 @@ impl fmt::Display for DecodeError {
         type_name,
         field_name,
       } => {
-        if type_name.is_empty() {
+        if type_name.is_empty() || field_name.is_empty() {
           write!(
             f,
             "unexpected eof: needed {} bytes, {} available",
@@ -127,7 +131,7 @@ impl fmt::Display for DecodeError {
         type_name,
         field_name,
       } => {
-        if type_name.is_empty() {
+        if type_name.is_empty() || field_name.is_empty() {
           write!(f, "invalid utf-8 in string")
         } else {
           write!(f, "invalid utf-8 in {}.{}", type_name, field_name)
