@@ -500,22 +500,22 @@ impl<'buf> bebop::BebopDecode<'buf> for JsonValue<'buf> {
     let discriminator = reader.read_byte()?;
     let value = match discriminator {
       1 => result::Result::Ok(Self::Null(
-        JsonNull::decode(reader).for_field("JsonValue", "null")?,
+        JsonNull::decode(reader).for_field("JsonValue", "Null")?,
       )),
       2 => result::Result::Ok(Self::Bool(
-        Bool::decode(reader).for_field("JsonValue", "bool")?,
+        Bool::decode(reader).for_field("JsonValue", "Bool")?,
       )),
       3 => result::Result::Ok(Self::Number(
-        Number::decode(reader).for_field("JsonValue", "number")?,
+        Number::decode(reader).for_field("JsonValue", "Number")?,
       )),
       4 => result::Result::Ok(Self::String(
-        String::decode(reader).for_field("JsonValue", "string")?,
+        String::decode(reader).for_field("JsonValue", "String")?,
       )),
       5 => result::Result::Ok(Self::List(
-        List::decode(reader).for_field("JsonValue", "list")?,
+        List::decode(reader).for_field("JsonValue", "List")?,
       )),
       6 => result::Result::Ok(Self::Object(
-        Object::decode(reader).for_field("JsonValue", "object")?,
+        Object::decode(reader).for_field("JsonValue", "Object")?,
       )),
       _ => result::Result::Err(bebop::DecodeError::InvalidUnion {
         type_name: "JsonValue",
