@@ -585,6 +585,50 @@ impl<'buf> bebop::BebopDecode<'buf> for UserProfile<'buf> {
 }
 
 impl<'buf> UserProfile<'buf> {
+  pub fn with_display_name(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.display_name = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_email(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.email = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_age(mut self, value: u32) -> Self {
+    self.age = option::Option::Some(value);
+    self
+  }
+  pub fn with_active(mut self, value: bool) -> Self {
+    self.active = option::Option::Some(value);
+    self
+  }
+  pub fn with_tags(
+    mut self,
+    value: impl iter::IntoIterator<Item = impl convert::Into<borrow::Cow<'buf, str>>>,
+  ) -> Self {
+    self.tags = option::Option::Some(value.into_iter().map(|_e| _e.into()).collect());
+    self
+  }
+  pub fn with_metadata(
+    mut self,
+    value: impl iter::IntoIterator<
+      Item = (
+        impl convert::Into<borrow::Cow<'buf, str>>,
+        impl convert::Into<borrow::Cow<'buf, str>>,
+      ),
+    >,
+  ) -> Self {
+    self.metadata = option::Option::Some(
+      value
+        .into_iter()
+        .map(|(_k, _v)| (_k.into(), _v.into()))
+        .collect(),
+    );
+    self
+  }
+  pub fn with_permissions(mut self, value: Permissions) -> Self {
+    self.permissions = option::Option::Some(value);
+    self
+  }
   // @@bebop_insertion_point(message_scope:UserProfile)
 }
 
@@ -690,6 +734,22 @@ impl<'buf> bebop::BebopDecode<'buf> for DrawCommand<'buf> {
 }
 
 impl<'buf> DrawCommand<'buf> {
+  pub fn with_target(mut self, value: Point) -> Self {
+    self.target = option::Option::Some(value);
+    self
+  }
+  pub fn with_color(mut self, value: Color) -> Self {
+    self.color = option::Option::Some(value);
+    self
+  }
+  pub fn with_label(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.label = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_thickness(mut self, value: f32) -> Self {
+    self.thickness = option::Option::Some(value);
+    self
+  }
   // @@bebop_insertion_point(message_scope:DrawCommand)
 }
 
@@ -1051,6 +1111,14 @@ impl<'buf> bebop::BebopDecode<'buf> for StrictConfig<'buf> {
 }
 
 impl<'buf> StrictConfig<'buf> {
+  pub fn with_name(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.name = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_value(mut self, value: u32) -> Self {
+    self.value = option::Option::Some(value);
+    self
+  }
   // @@bebop_insertion_point(message_scope:StrictConfig)
 }
 
@@ -1132,6 +1200,14 @@ impl<'buf> bebop::BebopDecode<'buf> for FlexConfig<'buf> {
 }
 
 impl<'buf> FlexConfig<'buf> {
+  pub fn with_name(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.name = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_value(mut self, value: u32) -> Self {
+    self.value = option::Option::Some(value);
+    self
+  }
   // @@bebop_insertion_point(message_scope:FlexConfig)
 }
 
@@ -1482,6 +1558,28 @@ impl<'buf> bebop::BebopDecode<'buf> for HalfPrecisionMessage<'buf> {
 }
 
 impl<'buf> HalfPrecisionMessage<'buf> {
+  pub fn with_f16_val(mut self, value: bebop::f16) -> Self {
+    self.f16_val = option::Option::Some(value);
+    self
+  }
+  pub fn with_bf16_val(mut self, value: bebop::bf16) -> Self {
+    self.bf16_val = option::Option::Some(value);
+    self
+  }
+  pub fn with_f16_arr(
+    mut self,
+    value: impl convert::Into<borrow::Cow<'buf, [bebop::f16]>>,
+  ) -> Self {
+    self.f16_arr = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_bf16_arr(
+    mut self,
+    value: impl convert::Into<borrow::Cow<'buf, [bebop::bf16]>>,
+  ) -> Self {
+    self.bf16_arr = option::Option::Some(value.into());
+    self
+  }
   // @@bebop_insertion_point(message_scope:HalfPrecisionMessage)
 }
 
@@ -1664,6 +1762,18 @@ impl<'buf> bebop::BebopDecode<'buf> for Scene<'buf> {
 }
 
 impl<'buf> Scene<'buf> {
+  pub fn with_shapes(mut self, value: impl iter::IntoIterator<Item = Shape<'buf>>) -> Self {
+    self.shapes = option::Option::Some(value.into_iter().collect());
+    self
+  }
+  pub fn with_background(mut self, value: Color) -> Self {
+    self.background = option::Option::Some(value);
+    self
+  }
+  pub fn with_title(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.title = option::Option::Some(value.into());
+    self
+  }
   // @@bebop_insertion_point(message_scope:Scene)
 }
 
@@ -1765,6 +1875,17 @@ impl<'buf> bebop::BebopDecode<'buf> for Inventory<'buf> {
 }
 
 impl<'buf> Inventory<'buf> {
+  pub fn with_items(
+    mut self,
+    value: impl iter::IntoIterator<Item = (impl convert::Into<borrow::Cow<'buf, str>>, u32)>,
+  ) -> Self {
+    self.items = option::Option::Some(value.into_iter().map(|(_k, _v)| (_k.into(), _v)).collect());
+    self
+  }
+  pub fn with_label(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.label = option::Option::Some(value.into());
+    self
+  }
   // @@bebop_insertion_point(message_scope:Inventory)
 }
 
@@ -1842,6 +1963,10 @@ impl<'buf> bebop::BebopDecode<'buf> for EmptyMessage<'buf> {
 }
 
 impl<'buf> EmptyMessage<'buf> {
+  pub fn with_unused_field(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.unused_field = option::Option::Some(value.into());
+    self
+  }
   // @@bebop_insertion_point(message_scope:EmptyMessage)
 }
 
@@ -1996,6 +2121,18 @@ impl<'buf> bebop::BebopDecode<'buf> for ScheduleEntry<'buf> {
 }
 
 impl<'buf> ScheduleEntry<'buf> {
+  pub fn with_start(mut self, value: bebop::BebopTimestamp) -> Self {
+    self.start = option::Option::Some(value);
+    self
+  }
+  pub fn with_duration(mut self, value: bebop::BebopDuration) -> Self {
+    self.duration = option::Option::Some(value);
+    self
+  }
+  pub fn with_label(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.label = option::Option::Some(value.into());
+    self
+  }
   // @@bebop_insertion_point(message_scope:ScheduleEntry)
 }
 
@@ -2195,6 +2332,18 @@ impl<'buf> bebop::BebopDecode<'buf> for DeprecatedFieldsMessage<'buf> {
 }
 
 impl<'buf> DeprecatedFieldsMessage<'buf> {
+  pub fn with_current_name(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.current_name = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_legacy_name(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.legacy_name = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_legacy_enabled(mut self, value: bool) -> Self {
+    self.legacy_enabled = option::Option::Some(value);
+    self
+  }
   // @@bebop_insertion_point(message_scope:DeprecatedFieldsMessage)
 }
 
@@ -2305,6 +2454,18 @@ impl<'buf> bebop::BebopDecode<'buf> for IntegerKeyMaps<'buf> {
 }
 
 impl<'buf> IntegerKeyMaps<'buf> {
+  pub fn with_labels_by_id(
+    mut self,
+    value: impl iter::IntoIterator<Item = (u32, impl convert::Into<borrow::Cow<'buf, str>>)>,
+  ) -> Self {
+    self.labels_by_id =
+      option::Option::Some(value.into_iter().map(|(_k, _v)| (_k, _v.into())).collect());
+    self
+  }
+  pub fn with_flags_by_id(mut self, value: impl iter::IntoIterator<Item = (i64, bool)>) -> Self {
+    self.flags_by_id = option::Option::Some(value.into_iter().collect());
+    self
+  }
   // @@bebop_insertion_point(message_scope:IntegerKeyMaps)
 }
 
@@ -2480,6 +2641,18 @@ impl<'buf> bebop::BebopDecode<'buf> for DeepNestedCollections<'buf> {
 }
 
 impl<'buf> DeepNestedCollections<'buf> {
+  pub fn with_nested(
+    mut self,
+    value: impl iter::IntoIterator<
+      Item = (
+        impl convert::Into<borrow::Cow<'buf, str>>,
+        vec::Vec<bebop::HashMap<borrow::Cow<'buf, str>, NestedLeaf<'buf>>>,
+      ),
+    >,
+  ) -> Self {
+    self.nested = option::Option::Some(value.into_iter().map(|(_k, _v)| (_k.into(), _v)).collect());
+    self
+  }
   // @@bebop_insertion_point(message_scope:DeepNestedCollections)
 }
 
@@ -2698,6 +2871,14 @@ impl<'buf> bebop::BebopDecode<'buf> for ByteArrayMessage<'buf> {
 }
 
 impl<'buf> ByteArrayMessage<'buf> {
+  pub fn with_label(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.label = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_payload(mut self, value: impl convert::Into<bebop::BebopBytes<'buf>>) -> Self {
+    self.payload = option::Option::Some(value.into());
+    self
+  }
   // @@bebop_insertion_point(message_scope:ByteArrayMessage)
 }
 
@@ -2807,6 +2988,30 @@ impl<'buf> bebop::BebopDecode<'buf> for ByteCollectionMessage<'buf> {
 }
 
 impl<'buf> ByteCollectionMessage<'buf> {
+  pub fn with_matrix(
+    mut self,
+    value: impl iter::IntoIterator<Item = impl convert::Into<bebop::BebopBytes<'buf>>>,
+  ) -> Self {
+    self.matrix = option::Option::Some(value.into_iter().map(|_e| _e.into()).collect());
+    self
+  }
+  pub fn with_tagged(
+    mut self,
+    value: impl iter::IntoIterator<
+      Item = (
+        impl convert::Into<borrow::Cow<'buf, str>>,
+        impl convert::Into<bebop::BebopBytes<'buf>>,
+      ),
+    >,
+  ) -> Self {
+    self.tagged = option::Option::Some(
+      value
+        .into_iter()
+        .map(|(_k, _v)| (_k.into(), _v.into()))
+        .collect(),
+    );
+    self
+  }
   // @@bebop_insertion_point(message_scope:ByteCollectionMessage)
 }
 

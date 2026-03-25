@@ -272,6 +272,45 @@ impl<'buf> bebop::BebopDecode<'buf> for CodeGeneratorRequest<'buf> {
 }
 
 impl<'buf> CodeGeneratorRequest<'buf> {
+  pub fn with_files_to_generate(
+    mut self,
+    value: impl iter::IntoIterator<Item = impl convert::Into<borrow::Cow<'buf, str>>>,
+  ) -> Self {
+    self.files_to_generate = option::Option::Some(value.into_iter().map(|_e| _e.into()).collect());
+    self
+  }
+  pub fn with_parameter(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.parameter = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_compiler_version(mut self, value: Version<'buf>) -> Self {
+    self.compiler_version = option::Option::Some(value);
+    self
+  }
+  pub fn with_schemas(
+    mut self,
+    value: impl iter::IntoIterator<Item = SchemaDescriptor<'buf>>,
+  ) -> Self {
+    self.schemas = option::Option::Some(value.into_iter().collect());
+    self
+  }
+  pub fn with_host_options(
+    mut self,
+    value: impl iter::IntoIterator<
+      Item = (
+        impl convert::Into<borrow::Cow<'buf, str>>,
+        impl convert::Into<borrow::Cow<'buf, str>>,
+      ),
+    >,
+  ) -> Self {
+    self.host_options = option::Option::Some(
+      value
+        .into_iter()
+        .map(|(_k, _v)| (_k.into(), _v.into()))
+        .collect(),
+    );
+    self
+  }
   // @@bebop_insertion_point(message_scope:CodeGeneratorRequest)
 }
 
@@ -453,6 +492,26 @@ impl<'buf> bebop::BebopDecode<'buf> for Diagnostic<'buf> {
 }
 
 impl<'buf> Diagnostic<'buf> {
+  pub fn with_severity(mut self, value: DiagnosticSeverity) -> Self {
+    self.severity = option::Option::Some(value);
+    self
+  }
+  pub fn with_text(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.text = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_hint(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.hint = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_file(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.file = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_span(mut self, value: [i32; 4]) -> Self {
+    self.span = option::Option::Some(value);
+    self
+  }
   // @@bebop_insertion_point(message_scope:Diagnostic)
 }
 
@@ -580,6 +639,22 @@ impl<'buf> bebop::BebopDecode<'buf> for GeneratedFile<'buf> {
 }
 
 impl<'buf> GeneratedFile<'buf> {
+  pub fn with_name(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.name = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_insertion_point(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.insertion_point = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_content(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.content = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_generated_code_info(mut self, value: SourceCodeInfo<'buf>) -> Self {
+    self.generated_code_info = option::Option::Some(value);
+    self
+  }
   // @@bebop_insertion_point(message_scope:GeneratedFile)
 }
 
@@ -701,6 +776,21 @@ impl<'buf> bebop::BebopDecode<'buf> for CodeGeneratorResponse<'buf> {
 }
 
 impl<'buf> CodeGeneratorResponse<'buf> {
+  pub fn with_error(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.error = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_files(mut self, value: impl iter::IntoIterator<Item = GeneratedFile<'buf>>) -> Self {
+    self.files = option::Option::Some(value.into_iter().collect());
+    self
+  }
+  pub fn with_diagnostics(
+    mut self,
+    value: impl iter::IntoIterator<Item = Diagnostic<'buf>>,
+  ) -> Self {
+    self.diagnostics = option::Option::Some(value.into_iter().collect());
+    self
+  }
   // @@bebop_insertion_point(message_scope:CodeGeneratorResponse)
 }
 

@@ -362,6 +362,14 @@ impl<'buf> bebop::BebopDecode<'buf> for TreeNode {
 }
 
 impl TreeNode {
+  pub fn with_value(mut self, value: i32) -> Self {
+    self.value = option::Option::Some(value);
+    self
+  }
+  pub fn with_children(mut self, value: vec::Vec<TreeNode>) -> Self {
+    self.children = option::Option::Some(value);
+    self
+  }
   // @@bebop_insertion_point(message_scope:TreeNode)
 }
 
@@ -560,6 +568,10 @@ impl<'buf> bebop::BebopDecode<'buf> for Bool {
 }
 
 impl Bool {
+  pub fn with_value(mut self, value: bool) -> Self {
+    self.value = option::Option::Some(value);
+    self
+  }
   // @@bebop_insertion_point(message_scope:Bool)
 }
 
@@ -624,6 +636,10 @@ impl<'buf> bebop::BebopDecode<'buf> for Number {
 }
 
 impl Number {
+  pub fn with_value(mut self, value: f64) -> Self {
+    self.value = option::Option::Some(value);
+    self
+  }
   // @@bebop_insertion_point(message_scope:Number)
 }
 
@@ -698,6 +714,10 @@ impl<'buf> bebop::BebopDecode<'buf> for String<'buf> {
 }
 
 impl<'buf> String<'buf> {
+  pub fn with_value(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.value = option::Option::Some(value.into());
+    self
+  }
   // @@bebop_insertion_point(message_scope:String)
 }
 
@@ -775,6 +795,10 @@ impl<'buf> bebop::BebopDecode<'buf> for List<'buf> {
 }
 
 impl<'buf> List<'buf> {
+  pub fn with_values(mut self, value: impl iter::IntoIterator<Item = JsonValue<'buf>>) -> Self {
+    self.values = option::Option::Some(value.into_iter().collect());
+    self
+  }
   // @@bebop_insertion_point(message_scope:List)
 }
 
@@ -865,6 +889,13 @@ impl<'buf> bebop::BebopDecode<'buf> for Object<'buf> {
 }
 
 impl<'buf> Object<'buf> {
+  pub fn with_fields(
+    mut self,
+    value: impl iter::IntoIterator<Item = (impl convert::Into<borrow::Cow<'buf, str>>, JsonValue<'buf>)>,
+  ) -> Self {
+    self.fields = option::Option::Some(value.into_iter().map(|(_k, _v)| (_k.into(), _v)).collect());
+    self
+  }
   // @@bebop_insertion_point(message_scope:Object)
 }
 
@@ -975,6 +1006,22 @@ impl<'buf> bebop::BebopDecode<'buf> for Document<'buf> {
 }
 
 impl<'buf> Document<'buf> {
+  pub fn with_title(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.title = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_body(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.body = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_metadata(
+    mut self,
+    value: impl iter::IntoIterator<Item = (impl convert::Into<borrow::Cow<'buf, str>>, JsonValue<'buf>)>,
+  ) -> Self {
+    self.metadata =
+      option::Option::Some(value.into_iter().map(|(_k, _v)| (_k.into(), _v)).collect());
+    self
+  }
   // @@bebop_insertion_point(message_scope:Document)
 }
 

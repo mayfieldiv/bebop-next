@@ -9,7 +9,7 @@
 #![allow(unexpected_cfgs)]
 #![cfg(feature = "wishlist")]
 
-use bebop_runtime::{BebopBytes, BebopDecode, BebopEncode, BebopFlags, HashMap, Uuid};
+use bebop_runtime::{BebopDecode, BebopEncode, HashMap};
 
 use bebop_integration_tests::test_types::*;
 

@@ -8,6 +8,7 @@ publish = false
 default = ["std", "serde"]
 std = ["bebop-runtime/std"]
 serde = []
+wishlist = ["std"]
 
 [dependencies]
 bebop-runtime = { path = "../runtime", features = ["serde", "uuid", "half"], default-features = false }

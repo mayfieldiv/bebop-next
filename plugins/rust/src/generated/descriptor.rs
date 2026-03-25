@@ -709,6 +709,34 @@ impl<'buf> bebop::BebopDecode<'buf> for TypeDescriptor<'buf> {
 }
 
 impl<'buf> TypeDescriptor<'buf> {
+  pub fn with_kind(mut self, value: TypeKind) -> Self {
+    self.kind = option::Option::Some(value);
+    self
+  }
+  pub fn with_array_element(mut self, value: TypeDescriptor<'buf>) -> Self {
+    self.array_element = option::Option::Some(boxed::Box::new(value));
+    self
+  }
+  pub fn with_fixed_array_element(mut self, value: TypeDescriptor<'buf>) -> Self {
+    self.fixed_array_element = option::Option::Some(boxed::Box::new(value));
+    self
+  }
+  pub fn with_fixed_array_size(mut self, value: u32) -> Self {
+    self.fixed_array_size = option::Option::Some(value);
+    self
+  }
+  pub fn with_map_key(mut self, value: TypeDescriptor<'buf>) -> Self {
+    self.map_key = option::Option::Some(boxed::Box::new(value));
+    self
+  }
+  pub fn with_map_value(mut self, value: TypeDescriptor<'buf>) -> Self {
+    self.map_value = option::Option::Some(boxed::Box::new(value));
+    self
+  }
+  pub fn with_defined_fqn(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.defined_fqn = option::Option::Some(value.into());
+    self
+  }
   // @@bebop_insertion_point(message_scope:TypeDescriptor)
 }
 
@@ -888,6 +916,46 @@ impl<'buf> bebop::BebopDecode<'buf> for LiteralValue<'buf> {
 }
 
 impl<'buf> LiteralValue<'buf> {
+  pub fn with_kind(mut self, value: LiteralKind) -> Self {
+    self.kind = option::Option::Some(value);
+    self
+  }
+  pub fn with_bool_value(mut self, value: bool) -> Self {
+    self.bool_value = option::Option::Some(value);
+    self
+  }
+  pub fn with_int_value(mut self, value: i64) -> Self {
+    self.int_value = option::Option::Some(value);
+    self
+  }
+  pub fn with_float_value(mut self, value: f64) -> Self {
+    self.float_value = option::Option::Some(value);
+    self
+  }
+  pub fn with_string_value(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.string_value = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_uuid_value(mut self, value: bebop::Uuid) -> Self {
+    self.uuid_value = option::Option::Some(value);
+    self
+  }
+  pub fn with_raw_value(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.raw_value = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_bytes_value(mut self, value: impl convert::Into<bebop::BebopBytes<'buf>>) -> Self {
+    self.bytes_value = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_timestamp_value(mut self, value: bebop::BebopTimestamp) -> Self {
+    self.timestamp_value = option::Option::Some(value);
+    self
+  }
+  pub fn with_duration_value(mut self, value: bebop::BebopDuration) -> Self {
+    self.duration_value = option::Option::Some(value);
+    self
+  }
   // @@bebop_insertion_point(message_scope:LiteralValue)
 }
 
@@ -1070,6 +1138,27 @@ impl<'buf> bebop::BebopDecode<'buf> for DecoratorUsage<'buf> {
 }
 
 impl<'buf> DecoratorUsage<'buf> {
+  pub fn with_fqn(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.fqn = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_args(mut self, value: impl iter::IntoIterator<Item = DecoratorArg<'buf>>) -> Self {
+    self.args = option::Option::Some(value.into_iter().collect());
+    self
+  }
+  pub fn with_export_data(
+    mut self,
+    value: impl iter::IntoIterator<
+      Item = (
+        impl convert::Into<borrow::Cow<'buf, str>>,
+        LiteralValue<'buf>,
+      ),
+    >,
+  ) -> Self {
+    self.export_data =
+      option::Option::Some(value.into_iter().map(|(_k, _v)| (_k.into(), _v)).collect());
+    self
+  }
   // @@bebop_insertion_point(message_scope:DecoratorUsage)
 }
 
@@ -1199,6 +1288,29 @@ impl<'buf> bebop::BebopDecode<'buf> for FieldDescriptor<'buf> {
 }
 
 impl<'buf> FieldDescriptor<'buf> {
+  pub fn with_name(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.name = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_documentation(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.documentation = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_type(mut self, value: TypeDescriptor<'buf>) -> Self {
+    self.r#type = option::Option::Some(value);
+    self
+  }
+  pub fn with_index(mut self, value: u32) -> Self {
+    self.index = option::Option::Some(value);
+    self
+  }
+  pub fn with_decorators(
+    mut self,
+    value: impl iter::IntoIterator<Item = DecoratorUsage<'buf>>,
+  ) -> Self {
+    self.decorators = option::Option::Some(value.into_iter().collect());
+    self
+  }
   // @@bebop_insertion_point(message_scope:FieldDescriptor)
 }
 
@@ -1326,6 +1438,29 @@ impl<'buf> bebop::BebopDecode<'buf> for EnumMemberDescriptor<'buf> {
 }
 
 impl<'buf> EnumMemberDescriptor<'buf> {
+  pub fn with_name(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.name = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_documentation(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.documentation = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_value(mut self, value: u64) -> Self {
+    self.value = option::Option::Some(value);
+    self
+  }
+  pub fn with_decorators(
+    mut self,
+    value: impl iter::IntoIterator<Item = DecoratorUsage<'buf>>,
+  ) -> Self {
+    self.decorators = option::Option::Some(value.into_iter().collect());
+    self
+  }
+  pub fn with_value_expr(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.value_expr = option::Option::Some(value.into());
+    self
+  }
   // @@bebop_insertion_point(message_scope:EnumMemberDescriptor)
 }
 
@@ -1477,6 +1612,33 @@ impl<'buf> bebop::BebopDecode<'buf> for UnionBranchDescriptor<'buf> {
 }
 
 impl<'buf> UnionBranchDescriptor<'buf> {
+  pub fn with_discriminator(mut self, value: u8) -> Self {
+    self.discriminator = option::Option::Some(value);
+    self
+  }
+  pub fn with_documentation(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.documentation = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_inline_fqn(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.inline_fqn = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_type_ref_fqn(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.type_ref_fqn = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_name(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.name = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_decorators(
+    mut self,
+    value: impl iter::IntoIterator<Item = DecoratorUsage<'buf>>,
+  ) -> Self {
+    self.decorators = option::Option::Some(value.into_iter().collect());
+    self
+  }
   // @@bebop_insertion_point(message_scope:UnionBranchDescriptor)
 }
 
@@ -1622,6 +1784,37 @@ impl<'buf> bebop::BebopDecode<'buf> for MethodDescriptor<'buf> {
 }
 
 impl<'buf> MethodDescriptor<'buf> {
+  pub fn with_name(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.name = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_documentation(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.documentation = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_request_type(mut self, value: TypeDescriptor<'buf>) -> Self {
+    self.request_type = option::Option::Some(value);
+    self
+  }
+  pub fn with_response_type(mut self, value: TypeDescriptor<'buf>) -> Self {
+    self.response_type = option::Option::Some(value);
+    self
+  }
+  pub fn with_method_type(mut self, value: MethodType) -> Self {
+    self.method_type = option::Option::Some(value);
+    self
+  }
+  pub fn with_id(mut self, value: u32) -> Self {
+    self.id = option::Option::Some(value);
+    self
+  }
+  pub fn with_decorators(
+    mut self,
+    value: impl iter::IntoIterator<Item = DecoratorUsage<'buf>>,
+  ) -> Self {
+    self.decorators = option::Option::Some(value.into_iter().collect());
+    self
+  }
   // @@bebop_insertion_point(message_scope:MethodDescriptor)
 }
 
@@ -1728,6 +1921,21 @@ impl<'buf> bebop::BebopDecode<'buf> for EnumDef<'buf> {
 }
 
 impl<'buf> EnumDef<'buf> {
+  pub fn with_base_type(mut self, value: TypeKind) -> Self {
+    self.base_type = option::Option::Some(value);
+    self
+  }
+  pub fn with_members(
+    mut self,
+    value: impl iter::IntoIterator<Item = EnumMemberDescriptor<'buf>>,
+  ) -> Self {
+    self.members = option::Option::Some(value.into_iter().collect());
+    self
+  }
+  pub fn with_is_flags(mut self, value: bool) -> Self {
+    self.is_flags = option::Option::Some(value);
+    self
+  }
   // @@bebop_insertion_point(message_scope:EnumDef)
 }
 
@@ -1834,6 +2042,21 @@ impl<'buf> bebop::BebopDecode<'buf> for StructDef<'buf> {
 }
 
 impl<'buf> StructDef<'buf> {
+  pub fn with_fields(
+    mut self,
+    value: impl iter::IntoIterator<Item = FieldDescriptor<'buf>>,
+  ) -> Self {
+    self.fields = option::Option::Some(value.into_iter().collect());
+    self
+  }
+  pub fn with_is_mutable(mut self, value: bool) -> Self {
+    self.is_mutable = option::Option::Some(value);
+    self
+  }
+  pub fn with_fixed_size(mut self, value: u32) -> Self {
+    self.fixed_size = option::Option::Some(value);
+    self
+  }
   // @@bebop_insertion_point(message_scope:StructDef)
 }
 
@@ -1916,6 +2139,13 @@ impl<'buf> bebop::BebopDecode<'buf> for MessageDef<'buf> {
 }
 
 impl<'buf> MessageDef<'buf> {
+  pub fn with_fields(
+    mut self,
+    value: impl iter::IntoIterator<Item = FieldDescriptor<'buf>>,
+  ) -> Self {
+    self.fields = option::Option::Some(value.into_iter().collect());
+    self
+  }
   // @@bebop_insertion_point(message_scope:MessageDef)
 }
 
@@ -1999,6 +2229,13 @@ impl<'buf> bebop::BebopDecode<'buf> for UnionDef<'buf> {
 }
 
 impl<'buf> UnionDef<'buf> {
+  pub fn with_branches(
+    mut self,
+    value: impl iter::IntoIterator<Item = UnionBranchDescriptor<'buf>>,
+  ) -> Self {
+    self.branches = option::Option::Some(value.into_iter().collect());
+    self
+  }
   // @@bebop_insertion_point(message_scope:UnionDef)
 }
 
@@ -2079,6 +2316,13 @@ impl<'buf> bebop::BebopDecode<'buf> for ServiceDef<'buf> {
 }
 
 impl<'buf> ServiceDef<'buf> {
+  pub fn with_methods(
+    mut self,
+    value: impl iter::IntoIterator<Item = MethodDescriptor<'buf>>,
+  ) -> Self {
+    self.methods = option::Option::Some(value.into_iter().collect());
+    self
+  }
   // @@bebop_insertion_point(message_scope:ServiceDef)
 }
 
@@ -2171,6 +2415,14 @@ impl<'buf> bebop::BebopDecode<'buf> for ConstDef<'buf> {
 }
 
 impl<'buf> ConstDef<'buf> {
+  pub fn with_type(mut self, value: TypeDescriptor<'buf>) -> Self {
+    self.r#type = option::Option::Some(value);
+    self
+  }
+  pub fn with_value(mut self, value: LiteralValue<'buf>) -> Self {
+    self.value = option::Option::Some(value);
+    self
+  }
   // @@bebop_insertion_point(message_scope:ConstDef)
 }
 
@@ -2316,6 +2568,33 @@ impl<'buf> bebop::BebopDecode<'buf> for DecoratorParamDef<'buf> {
 }
 
 impl<'buf> DecoratorParamDef<'buf> {
+  pub fn with_name(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.name = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_description(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.description = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_type(mut self, value: TypeKind) -> Self {
+    self.r#type = option::Option::Some(value);
+    self
+  }
+  pub fn with_required(mut self, value: bool) -> Self {
+    self.required = option::Option::Some(value);
+    self
+  }
+  pub fn with_default_value(mut self, value: LiteralValue<'buf>) -> Self {
+    self.default_value = option::Option::Some(value);
+    self
+  }
+  pub fn with_allowed_values(
+    mut self,
+    value: impl iter::IntoIterator<Item = LiteralValue<'buf>>,
+  ) -> Self {
+    self.allowed_values = option::Option::Some(value.into_iter().collect());
+    self
+  }
   // @@bebop_insertion_point(message_scope:DecoratorParamDef)
 }
 
@@ -2448,6 +2727,29 @@ impl<'buf> bebop::BebopDecode<'buf> for DecoratorDef<'buf> {
 }
 
 impl<'buf> DecoratorDef<'buf> {
+  pub fn with_targets(mut self, value: DecoratorTarget) -> Self {
+    self.targets = option::Option::Some(value);
+    self
+  }
+  pub fn with_allow_multiple(mut self, value: bool) -> Self {
+    self.allow_multiple = option::Option::Some(value);
+    self
+  }
+  pub fn with_params(
+    mut self,
+    value: impl iter::IntoIterator<Item = DecoratorParamDef<'buf>>,
+  ) -> Self {
+    self.params = option::Option::Some(value.into_iter().collect());
+    self
+  }
+  pub fn with_validate_source(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.validate_source = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_export_source(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.export_source = option::Option::Some(value.into());
+    self
+  }
   // @@bebop_insertion_point(message_scope:DecoratorDef)
 }
 
@@ -2677,6 +2979,68 @@ impl<'buf> bebop::BebopDecode<'buf> for DefinitionDescriptor<'buf> {
 }
 
 impl<'buf> DefinitionDescriptor<'buf> {
+  pub fn with_kind(mut self, value: DefinitionKind) -> Self {
+    self.kind = option::Option::Some(value);
+    self
+  }
+  pub fn with_name(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.name = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_fqn(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.fqn = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_documentation(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.documentation = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_visibility(mut self, value: Visibility) -> Self {
+    self.visibility = option::Option::Some(value);
+    self
+  }
+  pub fn with_decorators(
+    mut self,
+    value: impl iter::IntoIterator<Item = DecoratorUsage<'buf>>,
+  ) -> Self {
+    self.decorators = option::Option::Some(value.into_iter().collect());
+    self
+  }
+  pub fn with_nested(
+    mut self,
+    value: impl iter::IntoIterator<Item = DefinitionDescriptor<'buf>>,
+  ) -> Self {
+    self.nested = option::Option::Some(value.into_iter().collect());
+    self
+  }
+  pub fn with_enum_def(mut self, value: EnumDef<'buf>) -> Self {
+    self.enum_def = option::Option::Some(value);
+    self
+  }
+  pub fn with_struct_def(mut self, value: StructDef<'buf>) -> Self {
+    self.struct_def = option::Option::Some(value);
+    self
+  }
+  pub fn with_message_def(mut self, value: MessageDef<'buf>) -> Self {
+    self.message_def = option::Option::Some(value);
+    self
+  }
+  pub fn with_union_def(mut self, value: UnionDef<'buf>) -> Self {
+    self.union_def = option::Option::Some(value);
+    self
+  }
+  pub fn with_service_def(mut self, value: ServiceDef<'buf>) -> Self {
+    self.service_def = option::Option::Some(value);
+    self
+  }
+  pub fn with_const_def(mut self, value: ConstDef<'buf>) -> Self {
+    self.const_def = option::Option::Some(value);
+    self
+  }
+  pub fn with_decorator_def(mut self, value: DecoratorDef<'buf>) -> Self {
+    self.decorator_def = option::Option::Some(value);
+    self
+  }
   // @@bebop_insertion_point(message_scope:DefinitionDescriptor)
 }
 
@@ -2826,6 +3190,35 @@ impl<'buf> bebop::BebopDecode<'buf> for Location<'buf> {
 }
 
 impl<'buf> Location<'buf> {
+  pub fn with_path(mut self, value: impl convert::Into<borrow::Cow<'buf, [i32]>>) -> Self {
+    self.path = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_span(mut self, value: [i32; 4]) -> Self {
+    self.span = option::Option::Some(value);
+    self
+  }
+  pub fn with_leading_comments(
+    mut self,
+    value: impl convert::Into<borrow::Cow<'buf, str>>,
+  ) -> Self {
+    self.leading_comments = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_trailing_comments(
+    mut self,
+    value: impl convert::Into<borrow::Cow<'buf, str>>,
+  ) -> Self {
+    self.trailing_comments = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_detached_comments(
+    mut self,
+    value: impl iter::IntoIterator<Item = impl convert::Into<borrow::Cow<'buf, str>>>,
+  ) -> Self {
+    self.detached_comments = option::Option::Some(value.into_iter().map(|_e| _e.into()).collect());
+    self
+  }
   // @@bebop_insertion_point(message_scope:Location)
 }
 
@@ -2907,6 +3300,10 @@ impl<'buf> bebop::BebopDecode<'buf> for SourceCodeInfo<'buf> {
 }
 
 impl<'buf> SourceCodeInfo<'buf> {
+  pub fn with_locations(mut self, value: impl iter::IntoIterator<Item = Location<'buf>>) -> Self {
+    self.locations = option::Option::Some(value.into_iter().collect());
+    self
+  }
   // @@bebop_insertion_point(message_scope:SourceCodeInfo)
 }
 
@@ -3056,6 +3453,36 @@ impl<'buf> bebop::BebopDecode<'buf> for SchemaDescriptor<'buf> {
 }
 
 impl<'buf> SchemaDescriptor<'buf> {
+  pub fn with_path(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.path = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_package(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.package = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_edition(mut self, value: Edition) -> Self {
+    self.edition = option::Option::Some(value);
+    self
+  }
+  pub fn with_imports(
+    mut self,
+    value: impl iter::IntoIterator<Item = impl convert::Into<borrow::Cow<'buf, str>>>,
+  ) -> Self {
+    self.imports = option::Option::Some(value.into_iter().map(|_e| _e.into()).collect());
+    self
+  }
+  pub fn with_definitions(
+    mut self,
+    value: impl iter::IntoIterator<Item = DefinitionDescriptor<'buf>>,
+  ) -> Self {
+    self.definitions = option::Option::Some(value.into_iter().collect());
+    self
+  }
+  pub fn with_source_code_info(mut self, value: SourceCodeInfo<'buf>) -> Self {
+    self.source_code_info = option::Option::Some(value);
+    self
+  }
   // @@bebop_insertion_point(message_scope:SchemaDescriptor)
 }
 
@@ -3140,6 +3567,13 @@ impl<'buf> bebop::BebopDecode<'buf> for DescriptorSet<'buf> {
 }
 
 impl<'buf> DescriptorSet<'buf> {
+  pub fn with_schemas(
+    mut self,
+    value: impl iter::IntoIterator<Item = SchemaDescriptor<'buf>>,
+  ) -> Self {
+    self.schemas = option::Option::Some(value.into_iter().collect());
+    self
+  }
   // @@bebop_insertion_point(message_scope:DescriptorSet)
 }
 
