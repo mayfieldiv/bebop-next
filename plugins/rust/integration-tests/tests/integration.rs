@@ -403,7 +403,7 @@ fn string_struct_empty_string() {
 
 #[test]
 fn byte_array_struct_round_trip() {
-  let bp = BinaryPayload::new(42, vec![0xDE, 0xAD, 0xBE, 0xEF]);
+  let bp = BinaryPayload::new(42, &[0xDE, 0xAD, 0xBE, 0xEF]);
   let bytes = bp.to_bytes();
   let bp2 = BinaryPayload::from_bytes(&bytes).unwrap();
   assert_eq!(bp2.tag, 42);
@@ -412,7 +412,7 @@ fn byte_array_struct_round_trip() {
 
 #[test]
 fn byte_array_struct_zero_copy() {
-  let bp = BinaryPayload::new(1, vec![1, 2, 3]);
+  let bp = BinaryPayload::new(1, &[1, 2, 3]);
   let bytes = bp.to_bytes();
   let decoded = BinaryPayload::from_bytes(&bytes).unwrap();
   match &decoded.data.0 {
@@ -423,7 +423,7 @@ fn byte_array_struct_zero_copy() {
 
 #[test]
 fn byte_array_struct_into_owned() {
-  let bp = BinaryPayload::new(1, vec![9, 8, 7]);
+  let bp = BinaryPayload::new(1, &[9, 8, 7]);
   let bytes = bp.to_bytes();
   let decoded = BinaryPayload::from_bytes(&bytes).unwrap();
   let owned: BinaryPayloadOwned = decoded.into_owned();
@@ -436,7 +436,7 @@ fn byte_array_struct_into_owned() {
 
 #[test]
 fn byte_array_struct_empty_data() {
-  let bp = BinaryPayload::new(0, vec![]);
+  let bp = BinaryPayload::new(0, &[]);
   let bytes = bp.to_bytes();
   let bp2 = BinaryPayload::from_bytes(&bytes).unwrap();
   assert!(bp2.data.is_empty());
@@ -444,7 +444,7 @@ fn byte_array_struct_empty_data() {
 
 #[test]
 fn byte_array_struct_encoded_size_matches() {
-  let bp = BinaryPayload::new(42, vec![1, 2, 3, 4, 5]);
+  let bp = BinaryPayload::new(42, &[1, 2, 3, 4, 5]);
   assert_eq!(bp.encoded_size(), bp.to_bytes().len());
 }
 
@@ -470,7 +470,7 @@ fn byte_matrix_struct_encoded_size_matches() {
 
 #[test]
 fn byte_tag_map_struct_round_trip() {
-  let btm = ByteTagMap::new([("key1", vec![10u8, 20]), ("key2", vec![30u8, 40, 50])]);
+  let btm = ByteTagMap::new([("key1", vec![10u8, 20]), ("key2", vec![30, 40, 50])]);
   let bytes = btm.to_bytes();
   let btm2 = ByteTagMap::from_bytes(&bytes).unwrap();
   assert_eq!(btm2.entries["key1"].as_ref(), &[10, 20]);
@@ -479,7 +479,7 @@ fn byte_tag_map_struct_round_trip() {
 
 #[test]
 fn byte_tag_map_struct_encoded_size_matches() {
-  let btm = ByteTagMap::new([("a", vec![1u8])]);
+  let btm = ByteTagMap::new([("a", &[1u8])]);
   assert_eq!(btm.encoded_size(), btm.to_bytes().len());
 }
 
@@ -487,7 +487,7 @@ fn byte_tag_map_struct_encoded_size_matches() {
 fn byte_array_message_round_trip() {
   let msg = ByteArrayMessage::default()
     .with_label("test")
-    .with_payload(vec![0xDEu8, 0xAD]);
+    .with_payload(&[0xDEu8, 0xAD]);
   let bytes = msg.to_bytes();
   let msg2 = ByteArrayMessage::from_bytes(&bytes).unwrap();
   assert_eq!(msg2.label.as_deref(), Some("test"));
@@ -496,7 +496,7 @@ fn byte_array_message_round_trip() {
 
 #[test]
 fn byte_array_message_encoded_size_matches() {
-  let msg = ByteArrayMessage::default().with_payload(vec![1u8, 2, 3]);
+  let msg = ByteArrayMessage::default().with_payload(&[1u8, 2, 3]);
   assert_eq!(msg.encoded_size(), msg.to_bytes().len());
 }
 
@@ -519,7 +519,7 @@ fn byte_collection_message_round_trip() {
 
 #[test]
 fn byte_collection_message_encoded_size_matches() {
-  let msg = ByteCollectionMessage::default().with_matrix([vec![1u8, 2, 3]]);
+  let msg = ByteCollectionMessage::default().with_matrix([&[1u8, 2, 3]]);
   assert_eq!(msg.encoded_size(), msg.to_bytes().len());
 }
 
@@ -863,7 +863,7 @@ fn union_into_owned_fixed_branch() {
 
 #[test]
 fn union_encoded_size_matches() {
-  let shapes: Vec<Shape> = vec![
+  let shapes: [Shape; 3] = [
     Shape::Point(Point::new(1.0, 2.0)),
     Shape::Pixel(Pixel::new(Point::new(0.0, 0.0), Color::Red, 128)),
     Shape::Label(TextLabel::new(Point::new(0.0, 0.0), "test")),
@@ -915,7 +915,7 @@ fn union_unknown_zero_copy() {
 #[test]
 fn scene_round_trip() {
   let scene = Scene::default()
-    .with_shapes(vec![
+    .with_shapes([
       Shape::Point(Point::new(1.0, 2.0)),
       Shape::Label(TextLabel::new(Point::new(3.0, 4.0), "label")),
     ])
@@ -941,10 +941,7 @@ fn scene_round_trip() {
 #[test]
 fn scene_into_owned() {
   let scene = Scene::default()
-    .with_shapes(vec![Shape::Label(TextLabel::new(
-      Point::new(0.0, 0.0),
-      "x",
-    ))])
+    .with_shapes([Shape::Label(TextLabel::new(Point::new(0.0, 0.0), "x"))])
     .with_title("y");
 
   let bytes = scene.to_bytes();
@@ -960,7 +957,7 @@ fn scene_into_owned() {
 #[test]
 fn scene_encoded_size_matches() {
   let scene = Scene::default()
-    .with_shapes(vec![
+    .with_shapes([
       Shape::Point(Point::new(1.0, 2.0)),
       Shape::Pixel(Pixel::new(Point::new(0.0, 0.0), Color::Red, 255)),
     ])
@@ -1265,7 +1262,7 @@ fn serde_struct_round_trip_json() {
 #[cfg(feature = "serde")]
 #[test]
 fn serde_byte_array_struct_round_trip_json() {
-  let payload = BinaryPayload::new(7, vec![1, 2, 3, 4]);
+  let payload = BinaryPayload::new(7, &[1, 2, 3, 4]);
   let json = serde_json::to_string(&payload).unwrap();
   let decoded: BinaryPayload = serde_json::from_str(&json).unwrap();
   assert_eq!(decoded.tag, 7);
@@ -1277,7 +1274,7 @@ fn serde_byte_array_struct_round_trip_json() {
 fn serde_byte_array_message_round_trip_json() {
   let msg = ByteArrayMessage::default()
     .with_label("test")
-    .with_payload(vec![0xCAu8, 0xFE]);
+    .with_payload(&[0xCAu8, 0xFE]);
   let json = serde_json::to_string(&msg).unwrap();
   let decoded: ByteArrayMessageOwned = serde_json::from_str(&json).unwrap();
   assert_eq!(decoded.label.as_deref(), Some("test"));
@@ -1298,7 +1295,7 @@ fn serde_byte_matrix_struct_round_trip_json() {
 #[cfg(feature = "serde")]
 #[test]
 fn serde_byte_tag_map_round_trip_json() {
-  let btm = ByteTagMap::new([("k", vec![10u8, 20, 30])]);
+  let btm = ByteTagMap::new([("k", &[10u8, 20, 30])]);
   let json = serde_json::to_string(&btm).unwrap();
   let decoded: ByteTagMapOwned = serde_json::from_str(&json).unwrap();
   assert_eq!(decoded.entries["k"].as_ref(), &[10, 20, 30]);
@@ -1309,7 +1306,7 @@ fn serde_byte_tag_map_round_trip_json() {
 fn serde_byte_collection_message_round_trip_json() {
   let msg = ByteCollectionMessage::default()
     .with_matrix([vec![0xAAu8, 0xBB], vec![0xCC]])
-    .with_tagged([("x", vec![0xFFu8])]);
+    .with_tagged([("x", &[0xFFu8])]);
 
   let json = serde_json::to_string(&msg).unwrap();
   let decoded: ByteCollectionMessageOwned = serde_json::from_str(&json).unwrap();
