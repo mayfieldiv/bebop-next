@@ -1013,6 +1013,207 @@ fn constructing_cow_fields_directly() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// Decode → re-encode ergonomics
+// ═══════════════════════════════════════════════════════════════
+
+#[test]
+fn decoded_string_field_passes_to_builder() {
+  // Decode a Person, pass its Cow<str> name field into a new DrawCommand label
+  let p = Person::new("Alice", 30);
+  let bytes = p.to_bytes();
+  let decoded = Person::from_bytes(&bytes).unwrap();
+
+  // decoded.name is Cow::Borrowed(&str) — should work as impl Into<Cow<str>>
+  let cmd = DrawCommand::default().with_label(decoded.name);
+  assert_eq!(cmd.label.as_deref(), Some("Alice"));
+}
+
+#[test]
+fn decoded_string_field_passes_to_struct_new() {
+  let p = Person::new("Bob", 25);
+  let bytes = p.to_bytes();
+  let decoded = Person::from_bytes(&bytes).unwrap();
+
+  // Cow<str> from decoded message → struct new() accepting impl Into<Cow<str>>
+  let label = TextLabel::new(Point::new(0.0, 0.0), decoded.name);
+  assert_eq!(label.text, "Bob");
+}
+
+#[test]
+fn decoded_option_string_field_passes_to_builder() {
+  // Decode a message, unwrap an Option<Cow<str>>, pass to another builder
+  let profile = UserProfile::default()
+    .with_display_name("Charlie")
+    .with_email("charlie@test.com");
+  let bytes = profile.to_bytes();
+  let decoded = UserProfile::from_bytes(&bytes).unwrap();
+
+  // Extract the Option<Cow<str>> and pass the inner value to a new message
+  let cmd = DrawCommand::default().with_label(decoded.display_name.unwrap());
+  assert_eq!(cmd.label.as_deref(), Some("Charlie"));
+}
+
+#[test]
+fn decoded_scalar_fields_pass_to_builder() {
+  let cmd = DrawCommand::default()
+    .with_target(Point::new(1.0, 2.0))
+    .with_color(Color::Red)
+    .with_thickness(2.5);
+  let bytes = cmd.to_bytes();
+  let decoded = DrawCommand::from_bytes(&bytes).unwrap();
+
+  // Scalars and defined types from decoded message → new builder
+  let cmd2 = DrawCommand::default()
+    .with_target(decoded.target.unwrap())
+    .with_color(decoded.color.unwrap())
+    .with_thickness(decoded.thickness.unwrap());
+  assert_eq!(cmd2.target.unwrap().x, 1.0);
+  assert_eq!(cmd2.color, Some(Color::Red));
+  assert_eq!(cmd2.thickness, Some(2.5));
+}
+
+#[test]
+fn decoded_tags_pass_to_builder() {
+  // Decode a profile with tags, pass the Vec<Cow<str>> to a new profile
+  let profile = UserProfile::default().with_tags(["rust", "bebop"]);
+  let bytes = profile.to_bytes();
+  let decoded = UserProfile::from_bytes(&bytes).unwrap();
+
+  // Vec<Cow<str>> is IntoIterator<Item = Cow<str>>, and Cow<str>: Into<Cow<str>>
+  let profile2 = UserProfile::default().with_tags(decoded.tags.unwrap());
+  let tags = profile2.tags.as_ref().unwrap();
+  assert_eq!(tags.len(), 2);
+  assert_eq!(tags[0], "rust");
+  assert_eq!(tags[1], "bebop");
+}
+
+#[test]
+fn decoded_map_passes_to_builder() {
+  // Decode a profile with metadata, pass the HashMap to a new profile
+  let profile = UserProfile::default().with_metadata([("theme", "dark")]);
+  let bytes = profile.to_bytes();
+  let decoded = UserProfile::from_bytes(&bytes).unwrap();
+
+  // HashMap<Cow<str>, Cow<str>> is IntoIterator<Item = (Cow<str>, Cow<str>)>
+  let profile2 = UserProfile::default().with_metadata(decoded.metadata.unwrap());
+  let meta = profile2.metadata.as_ref().unwrap();
+  assert_eq!(meta["theme"], "dark");
+}
+
+#[test]
+fn decoded_byte_payload_passes_to_builder() {
+  let msg = ByteArrayMessage::default().with_payload(&[0xCA, 0xFE]);
+  let bytes = msg.to_bytes();
+  let decoded = ByteArrayMessage::from_bytes(&bytes).unwrap();
+
+  // BebopBytes from decoded → with_payload accepting impl Into<BebopBytes>
+  let msg2 = ByteArrayMessage::default().with_payload(decoded.payload.unwrap());
+  assert_eq!(msg2.payload.as_deref(), Some(&[0xCA, 0xFE][..]));
+}
+
+#[test]
+fn decoded_struct_field_passes_to_struct_new() {
+  // Decode a Pixel, extract its Point, use it to construct a new Pixel
+  let px = Pixel::new(Point::new(3.0, 4.0), Color::Green, 200);
+  let bytes = px.to_bytes();
+  let decoded = Pixel::from_bytes(&bytes).unwrap();
+
+  let px2 = Pixel::new(decoded.position, Color::Blue, 128);
+  assert_eq!(px2.position.x, 3.0);
+  assert_eq!(px2.color, Color::Blue);
+}
+
+#[test]
+fn decoded_scene_shapes_pass_to_new_scene() {
+  let scene = Scene::default()
+    .with_shapes([
+      Shape::Point(Point::new(1.0, 2.0)),
+      Shape::Label(TextLabel::new(Point::new(0.0, 0.0), "hi")),
+    ])
+    .with_title("original");
+  let bytes = scene.to_bytes();
+  let decoded = Scene::from_bytes(&bytes).unwrap();
+
+  // Vec<Shape> from decoded → with_shapes accepting IntoIterator<Item = Shape>
+  let scene2 = Scene::default()
+    .with_shapes(decoded.shapes.unwrap())
+    .with_title("copy");
+  let shapes = scene2.shapes.as_ref().unwrap();
+  assert_eq!(shapes.len(), 2);
+  assert_eq!(scene2.title.as_deref(), Some("copy"));
+}
+
+#[test]
+fn decoded_inventory_map_passes_to_builder() {
+  // map[string, uint32] — decoded HashMap<Cow<str>, u32> → with_items
+  let inv = Inventory::default()
+    .with_items([("sword", 1u32), ("shield", 2)])
+    .with_label("bag");
+  let bytes = inv.to_bytes();
+  let decoded = Inventory::from_bytes(&bytes).unwrap();
+
+  let inv2 = Inventory::default()
+    .with_items(decoded.items.unwrap())
+    .with_label("bag copy");
+  let items = inv2.items.as_ref().unwrap();
+  assert_eq!(items["sword"], 1);
+  assert_eq!(items["shield"], 2);
+}
+
+#[test]
+fn decoded_into_owned_fields_pass_to_builder() {
+  // Decode, into_owned(), then use the 'static fields in a new message
+  let profile = UserProfile::default()
+    .with_display_name("Dana")
+    .with_tags(["admin", "user"]);
+  let bytes = profile.to_bytes();
+  let decoded = UserProfile::from_bytes(&bytes).unwrap();
+  let owned: UserProfileOwned = decoded.into_owned();
+
+  // Owned Cow<'static, str> and Vec<Cow<'static, str>> pass through fine
+  let profile2 = UserProfile::default()
+    .with_display_name(owned.display_name.unwrap())
+    .with_tags(owned.tags.unwrap());
+  assert_eq!(profile2.display_name.as_deref(), Some("Dana"));
+  assert_eq!(profile2.tags.as_ref().unwrap().len(), 2);
+}
+
+#[test]
+fn full_decode_transform_reencode() {
+  // Real-world pattern: receive a message, modify some fields, re-send
+  let original = UserProfile::default()
+    .with_display_name("Eve")
+    .with_email("eve@old.com")
+    .with_age(28)
+    .with_tags(["user"])
+    .with_metadata([("role", "viewer")]);
+  let wire = original.to_bytes();
+  let decoded = UserProfile::from_bytes(&wire).unwrap();
+
+  // "Update" the profile: keep most fields, change email and add a tag
+  let mut new_tags: Vec<_> = decoded.tags.unwrap();
+  new_tags.push("verified".into());
+
+  let updated = UserProfile::default()
+    .with_display_name(decoded.display_name.unwrap())
+    .with_email("eve@new.com")
+    .with_age(decoded.age.unwrap())
+    .with_tags(new_tags)
+    .with_metadata(decoded.metadata.unwrap());
+
+  let wire2 = updated.to_bytes();
+  let final_msg = UserProfile::from_bytes(&wire2).unwrap();
+  assert_eq!(final_msg.display_name.as_deref(), Some("Eve"));
+  assert_eq!(final_msg.email.as_deref(), Some("eve@new.com"));
+  assert_eq!(final_msg.age, Some(28));
+  let tags = final_msg.tags.as_ref().unwrap();
+  assert_eq!(tags.len(), 2);
+  assert_eq!(tags[0], "user");
+  assert_eq!(tags[1], "verified");
+  assert_eq!(final_msg.metadata.as_ref().unwrap()["role"], "viewer");
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Edge cases
 // ═══════════════════════════════════════════════════════════════
 
