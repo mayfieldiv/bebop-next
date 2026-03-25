@@ -9,6 +9,8 @@ use super::{
 
 struct StructFieldMeta<'a> {
   fname: String,
+  /// Bebop schema field name for decode error context (e.g. `"self"`, not `"self_"`).
+  schema_name: String,
   cow_type: String,
   owned_type: String,
   td: &'a TypeDescriptor<'a>,
@@ -48,8 +50,17 @@ pub fn generate(
         .r#type
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedDefinition("struct field missing type".into()))?;
+      let raw = f.name.as_deref().unwrap_or("unknown");
+      let fname = field_name(raw);
+      // Recover the Bebop schema name for decode error context:
+      // - RAW_REJECTED fields (e.g. `self`) are suffix-mangled to `self_`; use serde rename.
+      // - Keyword fields (e.g. `type`) are prefixed with `r#`; strip the prefix.
+      // - Regular fields are unchanged.
+      let schema_name = serde_field_rename(raw)
+        .unwrap_or_else(|| fname.strip_prefix("r#").unwrap_or(&fname).to_string());
       Ok(StructFieldMeta {
-        fname: field_name(f.name.as_deref().unwrap_or("unknown")),
+        fname,
+        schema_name,
         cow_type: type_mapper::rust_type(td, analysis)?,
         owned_type: type_mapper::rust_type_owned(td, analysis)?,
         td,
@@ -260,7 +271,7 @@ pub fn generate(
     name
   ));
   for meta in &field_metas {
-    let fname_ctx = meta.fname.strip_prefix("r#").unwrap_or(&meta.fname);
+    let fname_ctx = &meta.schema_name;
     let kind = meta.td.kind.unwrap_or(TypeKind::Unknown);
     if kind == TypeKind::String {
       // Zero-copy string: apply for_field on read_str(), then wrap in Cow.

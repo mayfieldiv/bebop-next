@@ -42,6 +42,8 @@ fn field_wrap(field_type: &TypeDescriptor<'_>, own_fqn: &str) -> FieldWrap {
 /// Pre-computed metadata for a single message field.
 struct FieldMeta<'a> {
   fname: String,
+  /// Bebop schema field name for decode error context (e.g. `"self"`, not `"self_"`).
+  schema_name: String,
   cow_type: String,
   tag: u32,
   wrap: FieldWrap,
@@ -115,7 +117,14 @@ pub fn generate(
   let field_metas: Vec<FieldMeta<'_>> = fields
     .iter()
     .map(|f| {
-      let fname = field_name(f.name.as_deref().unwrap_or("unknown"));
+      let raw = f.name.as_deref().unwrap_or("unknown");
+      let fname = field_name(raw);
+      // Recover the Bebop schema name for decode error context:
+      // - RAW_REJECTED fields (e.g. `self`) are suffix-mangled to `self_`; use serde rename.
+      // - Keyword fields (e.g. `type`) are prefixed with `r#`; strip the prefix.
+      // - Regular fields are unchanged.
+      let schema_name = serde_field_rename(raw)
+        .unwrap_or_else(|| fname.strip_prefix("r#").unwrap_or(&fname).to_string());
       let td = f
         .r#type
         .as_ref()
@@ -127,6 +136,7 @@ pub fn generate(
       let wrap = field_wrap(td, own_fqn);
       Ok(FieldMeta {
         fname,
+        schema_name,
         cow_type,
         tag,
         wrap,
@@ -311,7 +321,7 @@ pub fn generate(
   output.push_str("      match tag {\n");
 
   for meta in &field_metas {
-    let fname_ctx = meta.fname.strip_prefix("r#").unwrap_or(&meta.fname);
+    let fname_ctx = &meta.schema_name;
     let kind = meta.td.kind.unwrap_or(TypeKind::Unknown);
     match meta.wrap {
       FieldWrap::Boxed => {

@@ -1948,22 +1948,27 @@ fn decode_error_message_field_reports_type_and_field() {
   // Find the email field bytes and corrupt them.
   // Tag 2 = email. Find `\x02` followed by the encoded string.
   // The display_name tag (1) comes first. We need to locate tag 2.
-  if let Some(pos) = bytes.windows(1).position(|w| w[0] == 2) {
-    // pos points to the tag byte for field 2 (email).
-    // The string length is at pos+1 (u32 le), string bytes start at pos+5.
-    let str_start = pos + 1 + 4; // skip tag + u32 length
-    if str_start < bytes.len() {
-      bytes[str_start] = 0xFF; // corrupt first byte of email string
-    }
-    let err = UserProfile::from_bytes(&bytes).unwrap_err();
-    let msg = err.to_string();
-    assert!(
-      msg.contains("UserProfile"),
-      "expected 'UserProfile' in error: {msg}"
-    );
-    assert!(msg.contains("email"), "expected 'email' in error: {msg}");
-    assert!(msg.contains("utf-8"), "expected 'utf-8' in error: {msg}");
-  }
+  let pos = bytes
+    .iter()
+    .position(|&b| b == 2)
+    .expect("email tag byte (0x02) not found in encoded message");
+  // pos points to the tag byte for field 2 (email).
+  // The string length is at pos+1 (u32 le), string bytes start at pos+5.
+  let str_start = pos + 1 + 4; // skip tag + u32 length
+  assert!(
+    str_start < bytes.len(),
+    "str_start {str_start} out of bounds (len={})",
+    bytes.len()
+  );
+  bytes[str_start] = 0xFF; // corrupt first byte of email string
+  let err = UserProfile::from_bytes(&bytes).unwrap_err();
+  let msg = err.to_string();
+  assert!(
+    msg.contains("UserProfile"),
+    "expected 'UserProfile' in error: {msg}"
+  );
+  assert!(msg.contains("email"), "expected 'email' in error: {msg}");
+  assert!(msg.contains("utf-8"), "expected 'utf-8' in error: {msg}");
 }
 
 #[test]

@@ -5808,9 +5808,9 @@ impl<'buf> bebop::BebopDecode<'buf> for RustKeywordFields {
     // @@bebop_insertion_point(decode_start:RustKeywordFields)
     let r#type = reader.read_i32().for_field("RustKeywordFields", "type")?;
     let r#mod = reader.read_i32().for_field("RustKeywordFields", "mod")?;
-    let self_ = reader.read_i32().for_field("RustKeywordFields", "self_")?;
-    let super_ = reader.read_i32().for_field("RustKeywordFields", "super_")?;
-    let crate_ = reader.read_i32().for_field("RustKeywordFields", "crate_")?;
+    let self_ = reader.read_i32().for_field("RustKeywordFields", "self")?;
+    let super_ = reader.read_i32().for_field("RustKeywordFields", "super")?;
+    let crate_ = reader.read_i32().for_field("RustKeywordFields", "crate")?;
     let r#match = reader.read_i32().for_field("RustKeywordFields", "match")?;
     let r#where = reader.read_i32().for_field("RustKeywordFields", "where")?;
     let r#loop = reader.read_i32().for_field("RustKeywordFields", "loop")?;
@@ -6170,14 +6170,14 @@ impl<'buf> bebop::BebopDecode<'buf> for KeywordFieldMessage<'buf> {
           msg.self_ = option::Option::Some(
             reader
               .read_bool()
-              .for_field("KeywordFieldMessage", "self_")?,
+              .for_field("KeywordFieldMessage", "self")?,
           )
         }
         4 => {
           msg.crate_ = option::Option::Some(
             reader
               .read_i32()
-              .for_field("KeywordFieldMessage", "crate_")?,
+              .for_field("KeywordFieldMessage", "crate")?,
           )
         }
         tag => {
