@@ -17,16 +17,17 @@ extern crate bebop_runtime;
 extern crate core;
 use alloc::{borrow, boxed, string, vec};
 use bebop_runtime as bebop;
-use bebop_runtime::serde;
 use bebop_runtime::DecodeContext as _;
 use core::convert::Into as _;
 use core::iter::{IntoIterator as _, Iterator as _};
 use core::{convert, default, iter, mem, ops, option, result};
+use bebop_runtime::serde;
 
 // @@bebop_insertion_point(imports)
 
 /// Same wire layout as `Point` in test_types.bop; used by `KeywordUnion` only.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Point {
   pub x: f32,
   pub y: f32,
@@ -35,7 +36,10 @@ pub struct Point {
 impl Point {
   pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<f32>() + mem::size_of::<f32>();
 
-  pub fn new(x: f32, y: f32) -> Self {
+  pub fn new(
+    x: f32,
+    y: f32,
+  ) -> Self {
     Self { x, y }
   }
 }
@@ -68,7 +72,8 @@ impl Point {
   // @@bebop_insertion_point(struct_scope:Point)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Uuid {
   pub tag: i32,
 }
@@ -107,7 +112,8 @@ impl Uuid {
   // @@bebop_insertion_point(struct_scope:Uuid)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct HashMap {
   pub tag: i32,
 }
@@ -146,7 +152,8 @@ impl HashMap {
   // @@bebop_insertion_point(struct_scope:HashMap)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DecodeError {
   pub tag: i32,
 }
@@ -185,7 +192,8 @@ impl DecodeError {
   // @@bebop_insertion_point(struct_scope:DecodeError)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopReader {
   pub tag: i32,
 }
@@ -224,7 +232,8 @@ impl BebopReader {
   // @@bebop_insertion_point(struct_scope:BebopReader)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopWriter {
   pub tag: i32,
 }
@@ -263,7 +272,8 @@ impl BebopWriter {
   // @@bebop_insertion_point(struct_scope:BebopWriter)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopDecode {
   pub tag: i32,
 }
@@ -302,7 +312,8 @@ impl BebopDecode {
   // @@bebop_insertion_point(struct_scope:BebopDecode)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopEncode {
   pub tag: i32,
 }
@@ -341,7 +352,8 @@ impl BebopEncode {
   // @@bebop_insertion_point(struct_scope:BebopEncode)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopDuration {
   pub tag: i32,
 }
@@ -380,7 +392,8 @@ impl BebopDuration {
   // @@bebop_insertion_point(struct_scope:BebopDuration)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopTimestamp {
   pub tag: i32,
 }
@@ -419,7 +432,8 @@ impl BebopTimestamp {
   // @@bebop_insertion_point(struct_scope:BebopTimestamp)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopFlags {
   pub tag: i32,
 }
@@ -458,7 +472,8 @@ impl BebopFlags {
   // @@bebop_insertion_point(struct_scope:BebopFlags)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopBytes {
   pub tag: i32,
 }
@@ -497,7 +512,8 @@ impl BebopBytes {
   // @@bebop_insertion_point(struct_scope:BebopBytes)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Serde {
   pub tag: i32,
 }
@@ -536,7 +552,8 @@ impl Serde {
   // @@bebop_insertion_point(struct_scope:Serde)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Wire {
   pub tag: i32,
 }
@@ -575,7 +592,8 @@ impl Wire {
   // @@bebop_insertion_point(struct_scope:Wire)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Mod {
   pub tag: i32,
 }
@@ -614,7 +632,8 @@ impl Mod {
   // @@bebop_insertion_point(struct_scope:Mod)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Trait {
   pub tag: i32,
 }
@@ -653,7 +672,8 @@ impl Trait {
   // @@bebop_insertion_point(struct_scope:Trait)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Impl {
   pub tag: i32,
 }
@@ -692,7 +712,8 @@ impl Impl {
   // @@bebop_insertion_point(struct_scope:Impl)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Fn {
   pub tag: i32,
 }
@@ -731,7 +752,8 @@ impl Fn {
   // @@bebop_insertion_point(struct_scope:Fn)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Let {
   pub tag: i32,
 }
@@ -770,7 +792,8 @@ impl Let {
   // @@bebop_insertion_point(struct_scope:Let)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Use {
   pub tag: i32,
 }
@@ -809,7 +832,8 @@ impl Use {
   // @@bebop_insertion_point(struct_scope:Use)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Crate {
   pub tag: i32,
 }
@@ -848,7 +872,8 @@ impl Crate {
   // @@bebop_insertion_point(struct_scope:Crate)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Async {
   pub tag: i32,
 }
@@ -887,7 +912,8 @@ impl Async {
   // @@bebop_insertion_point(struct_scope:Async)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Await {
   pub tag: i32,
 }
@@ -926,7 +952,8 @@ impl Await {
   // @@bebop_insertion_point(struct_scope:Await)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Match {
   pub tag: i32,
 }
@@ -965,7 +992,8 @@ impl Match {
   // @@bebop_insertion_point(struct_scope:Match)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Where {
   pub tag: i32,
 }
@@ -1004,7 +1032,8 @@ impl Where {
   // @@bebop_insertion_point(struct_scope:Where)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Loop {
   pub tag: i32,
 }
@@ -1043,7 +1072,8 @@ impl Loop {
   // @@bebop_insertion_point(struct_scope:Loop)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Move {
   pub tag: i32,
 }
@@ -1082,7 +1112,8 @@ impl Move {
   // @@bebop_insertion_point(struct_scope:Move)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Ref {
   pub tag: i32,
 }
@@ -1121,7 +1152,8 @@ impl Ref {
   // @@bebop_insertion_point(struct_scope:Ref)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Dyn {
   pub tag: i32,
 }
@@ -1160,7 +1192,8 @@ impl Dyn {
   // @@bebop_insertion_point(struct_scope:Dyn)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Yield {
   pub tag: i32,
 }
@@ -1199,7 +1232,8 @@ impl Yield {
   // @@bebop_insertion_point(struct_scope:Yield)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Unsafe {
   pub tag: i32,
 }
@@ -1238,7 +1272,8 @@ impl Unsafe {
   // @@bebop_insertion_point(struct_scope:Unsafe)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Extern {
   pub tag: i32,
 }
@@ -1277,7 +1312,8 @@ impl Extern {
   // @@bebop_insertion_point(struct_scope:Extern)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Static {
   pub tag: i32,
 }
@@ -1316,7 +1352,8 @@ impl Static {
   // @@bebop_insertion_point(struct_scope:Static)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Virtual {
   pub tag: i32,
 }
@@ -1355,7 +1392,8 @@ impl Virtual {
   // @@bebop_insertion_point(struct_scope:Virtual)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Override {
   pub tag: i32,
 }
@@ -1394,7 +1432,8 @@ impl Override {
   // @@bebop_insertion_point(struct_scope:Override)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Final {
   pub tag: i32,
 }
@@ -1433,7 +1472,8 @@ impl Final {
   // @@bebop_insertion_point(struct_scope:Final)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Abstract {
   pub tag: i32,
 }
@@ -1472,7 +1512,8 @@ impl Abstract {
   // @@bebop_insertion_point(struct_scope:Abstract)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Self_ {
   pub tag: i32,
 }
@@ -1511,7 +1552,8 @@ impl Self_ {
   // @@bebop_insertion_point(struct_scope:Self_)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Super {
   pub tag: i32,
 }
@@ -1550,7 +1592,8 @@ impl Super {
   // @@bebop_insertion_point(struct_scope:Super)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Type {
   pub tag: i32,
 }
@@ -1589,7 +1632,8 @@ impl Type {
   // @@bebop_insertion_point(struct_scope:Type)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct For {
   pub tag: i32,
 }
@@ -1628,7 +1672,8 @@ impl For {
   // @@bebop_insertion_point(struct_scope:For)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Interface {
   pub tag: i32,
 }
@@ -1667,7 +1712,8 @@ impl Interface {
   // @@bebop_insertion_point(struct_scope:Interface)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Namespace {
   pub tag: i32,
 }
@@ -1706,7 +1752,8 @@ impl Namespace {
   // @@bebop_insertion_point(struct_scope:Namespace)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Default {
   pub tag: i32,
 }
@@ -1745,7 +1792,8 @@ impl Default {
   // @@bebop_insertion_point(struct_scope:Default)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Switch {
   pub tag: i32,
 }
@@ -1784,7 +1832,8 @@ impl Switch {
   // @@bebop_insertion_point(struct_scope:Switch)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Case {
   pub tag: i32,
 }
@@ -1823,7 +1872,8 @@ impl Case {
   // @@bebop_insertion_point(struct_scope:Case)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Goto {
   pub tag: i32,
 }
@@ -1862,7 +1912,8 @@ impl Goto {
   // @@bebop_insertion_point(struct_scope:Goto)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Volatile {
   pub tag: i32,
 }
@@ -1901,7 +1952,8 @@ impl Volatile {
   // @@bebop_insertion_point(struct_scope:Volatile)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Synchronized {
   pub tag: i32,
 }
@@ -1940,7 +1992,8 @@ impl Synchronized {
   // @@bebop_insertion_point(struct_scope:Synchronized)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Transient {
   pub tag: i32,
 }
@@ -1979,7 +2032,8 @@ impl Transient {
   // @@bebop_insertion_point(struct_scope:Transient)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Native {
   pub tag: i32,
 }
@@ -2018,7 +2072,8 @@ impl Native {
   // @@bebop_insertion_point(struct_scope:Native)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Throws {
   pub tag: i32,
 }
@@ -2057,7 +2112,8 @@ impl Throws {
   // @@bebop_insertion_point(struct_scope:Throws)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Strictfp {
   pub tag: i32,
 }
@@ -2096,7 +2152,8 @@ impl Strictfp {
   // @@bebop_insertion_point(struct_scope:Strictfp)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Assert {
   pub tag: i32,
 }
@@ -2135,7 +2192,8 @@ impl Assert {
   // @@bebop_insertion_point(struct_scope:Assert)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Sizeof {
   pub tag: i32,
 }
@@ -2174,7 +2232,8 @@ impl Sizeof {
   // @@bebop_insertion_point(struct_scope:Sizeof)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Typeof {
   pub tag: i32,
 }
@@ -2213,7 +2272,8 @@ impl Typeof {
   // @@bebop_insertion_point(struct_scope:Typeof)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Nullptr {
   pub tag: i32,
 }
@@ -2252,7 +2312,8 @@ impl Nullptr {
   // @@bebop_insertion_point(struct_scope:Nullptr)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Decltype {
   pub tag: i32,
 }
@@ -2291,7 +2352,8 @@ impl Decltype {
   // @@bebop_insertion_point(struct_scope:Decltype)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Constexpr {
   pub tag: i32,
 }
@@ -2330,7 +2392,8 @@ impl Constexpr {
   // @@bebop_insertion_point(struct_scope:Constexpr)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Noexcept {
   pub tag: i32,
 }
@@ -2369,7 +2432,8 @@ impl Noexcept {
   // @@bebop_insertion_point(struct_scope:Noexcept)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Template {
   pub tag: i32,
 }
@@ -2408,7 +2472,8 @@ impl Template {
   // @@bebop_insertion_point(struct_scope:Template)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Typename {
   pub tag: i32,
 }
@@ -2447,7 +2512,8 @@ impl Typename {
   // @@bebop_insertion_point(struct_scope:Typename)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Friend {
   pub tag: i32,
 }
@@ -2486,7 +2552,8 @@ impl Friend {
   // @@bebop_insertion_point(struct_scope:Friend)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Inline {
   pub tag: i32,
 }
@@ -2525,7 +2592,8 @@ impl Inline {
   // @@bebop_insertion_point(struct_scope:Inline)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Mutable {
   pub tag: i32,
 }
@@ -2564,7 +2632,8 @@ impl Mutable {
   // @@bebop_insertion_point(struct_scope:Mutable)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Explicit {
   pub tag: i32,
 }
@@ -2603,7 +2672,8 @@ impl Explicit {
   // @@bebop_insertion_point(struct_scope:Explicit)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Implicit {
   pub tag: i32,
 }
@@ -2642,7 +2712,8 @@ impl Implicit {
   // @@bebop_insertion_point(struct_scope:Implicit)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Operator {
   pub tag: i32,
 }
@@ -2681,7 +2752,8 @@ impl Operator {
   // @@bebop_insertion_point(struct_scope:Operator)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Delete {
   pub tag: i32,
 }
@@ -2720,7 +2792,8 @@ impl Delete {
   // @@bebop_insertion_point(struct_scope:Delete)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct New {
   pub tag: i32,
 }
@@ -2759,7 +2832,8 @@ impl New {
   // @@bebop_insertion_point(struct_scope:New)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct This {
   pub tag: i32,
 }
@@ -2798,7 +2872,8 @@ impl This {
   // @@bebop_insertion_point(struct_scope:This)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Extends {
   pub tag: i32,
 }
@@ -2837,7 +2912,8 @@ impl Extends {
   // @@bebop_insertion_point(struct_scope:Extends)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Implements {
   pub tag: i32,
 }
@@ -2876,7 +2952,8 @@ impl Implements {
   // @@bebop_insertion_point(struct_scope:Implements)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Instanceof {
   pub tag: i32,
 }
@@ -2915,7 +2992,8 @@ impl Instanceof {
   // @@bebop_insertion_point(struct_scope:Instanceof)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Boolean {
   pub tag: i32,
 }
@@ -2954,7 +3032,8 @@ impl Boolean {
   // @@bebop_insertion_point(struct_scope:Boolean)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Byte {
   pub tag: i32,
 }
@@ -2993,7 +3072,8 @@ impl Byte {
   // @@bebop_insertion_point(struct_scope:Byte)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Short {
   pub tag: i32,
 }
@@ -3032,7 +3112,8 @@ impl Short {
   // @@bebop_insertion_point(struct_scope:Short)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Long {
   pub tag: i32,
 }
@@ -3071,7 +3152,8 @@ impl Long {
   // @@bebop_insertion_point(struct_scope:Long)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Double {
   pub tag: i32,
 }
@@ -3110,7 +3192,8 @@ impl Double {
   // @@bebop_insertion_point(struct_scope:Double)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Float {
   pub tag: i32,
 }
@@ -3149,7 +3232,8 @@ impl Float {
   // @@bebop_insertion_point(struct_scope:Float)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Char {
   pub tag: i32,
 }
@@ -3188,7 +3272,8 @@ impl Char {
   // @@bebop_insertion_point(struct_scope:Char)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Void {
   pub tag: i32,
 }
@@ -3227,7 +3312,8 @@ impl Void {
   // @@bebop_insertion_point(struct_scope:Void)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Int {
   pub tag: i32,
 }
@@ -3266,7 +3352,8 @@ impl Int {
   // @@bebop_insertion_point(struct_scope:Int)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Var {
   pub tag: i32,
 }
@@ -3305,7 +3392,8 @@ impl Var {
   // @@bebop_insertion_point(struct_scope:Var)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Function {
   pub tag: i32,
 }
@@ -3344,7 +3432,8 @@ impl Function {
   // @@bebop_insertion_point(struct_scope:Function)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Debugger {
   pub tag: i32,
 }
@@ -3383,7 +3472,8 @@ impl Debugger {
   // @@bebop_insertion_point(struct_scope:Debugger)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Undefined {
   pub tag: i32,
 }
@@ -3422,7 +3512,8 @@ impl Undefined {
   // @@bebop_insertion_point(struct_scope:Undefined)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Declare {
   pub tag: i32,
 }
@@ -3461,7 +3552,8 @@ impl Declare {
   // @@bebop_insertion_point(struct_scope:Declare)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Require {
   pub tag: i32,
 }
@@ -3500,7 +3592,8 @@ impl Require {
   // @@bebop_insertion_point(struct_scope:Require)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Module {
   pub tag: i32,
 }
@@ -3539,7 +3632,8 @@ impl Module {
   // @@bebop_insertion_point(struct_scope:Module)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Global {
   pub tag: i32,
 }
@@ -3578,7 +3672,8 @@ impl Global {
   // @@bebop_insertion_point(struct_scope:Global)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Internal {
   pub tag: i32,
 }
@@ -3617,7 +3712,8 @@ impl Internal {
   // @@bebop_insertion_point(struct_scope:Internal)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Object {
   pub tag: i32,
 }
@@ -3656,7 +3752,8 @@ impl Object {
   // @@bebop_insertion_point(struct_scope:Object)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct String {
   pub tag: i32,
 }
@@ -3695,7 +3792,8 @@ impl String {
   // @@bebop_insertion_point(struct_scope:String)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Symbol {
   pub tag: i32,
 }
@@ -3734,7 +3832,8 @@ impl Symbol {
   // @@bebop_insertion_point(struct_scope:Symbol)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Bigint {
   pub tag: i32,
 }
@@ -3773,7 +3872,8 @@ impl Bigint {
   // @@bebop_insertion_point(struct_scope:Bigint)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Never {
   pub tag: i32,
 }
@@ -3812,7 +3912,8 @@ impl Never {
   // @@bebop_insertion_point(struct_scope:Never)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Unknown {
   pub tag: i32,
 }
@@ -3851,7 +3952,8 @@ impl Unknown {
   // @@bebop_insertion_point(struct_scope:Unknown)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Keyof {
   pub tag: i32,
 }
@@ -3890,7 +3992,8 @@ impl Keyof {
   // @@bebop_insertion_point(struct_scope:Keyof)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Infer {
   pub tag: i32,
 }
@@ -3929,7 +4032,8 @@ impl Infer {
   // @@bebop_insertion_point(struct_scope:Infer)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Satisfies {
   pub tag: i32,
 }
@@ -3968,7 +4072,8 @@ impl Satisfies {
   // @@bebop_insertion_point(struct_scope:Satisfies)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Out {
   pub tag: i32,
 }
@@ -4007,7 +4112,8 @@ impl Out {
   // @@bebop_insertion_point(struct_scope:Out)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Inout {
   pub tag: i32,
 }
@@ -4046,7 +4152,8 @@ impl Inout {
   // @@bebop_insertion_point(struct_scope:Inout)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Protocol {
   pub tag: i32,
 }
@@ -4085,7 +4192,8 @@ impl Protocol {
   // @@bebop_insertion_point(struct_scope:Protocol)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Subscript {
   pub tag: i32,
 }
@@ -4124,7 +4232,8 @@ impl Subscript {
   // @@bebop_insertion_point(struct_scope:Subscript)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Defer {
   pub tag: i32,
 }
@@ -4163,7 +4272,8 @@ impl Defer {
   // @@bebop_insertion_point(struct_scope:Defer)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Fallthrough {
   pub tag: i32,
 }
@@ -4202,7 +4312,8 @@ impl Fallthrough {
   // @@bebop_insertion_point(struct_scope:Fallthrough)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Repeat {
   pub tag: i32,
 }
@@ -4241,7 +4352,8 @@ impl Repeat {
   // @@bebop_insertion_point(struct_scope:Repeat)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Indirect {
   pub tag: i32,
 }
@@ -4280,7 +4392,8 @@ impl Indirect {
   // @@bebop_insertion_point(struct_scope:Indirect)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Nonisolated {
   pub tag: i32,
 }
@@ -4319,7 +4432,8 @@ impl Nonisolated {
   // @@bebop_insertion_point(struct_scope:Nonisolated)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Lazy {
   pub tag: i32,
 }
@@ -4358,7 +4472,8 @@ impl Lazy {
   // @@bebop_insertion_point(struct_scope:Lazy)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Weak {
   pub tag: i32,
 }
@@ -4397,7 +4512,8 @@ impl Weak {
   // @@bebop_insertion_point(struct_scope:Weak)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Unowned {
   pub tag: i32,
 }
@@ -4436,7 +4552,8 @@ impl Unowned {
   // @@bebop_insertion_point(struct_scope:Unowned)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Convenience {
   pub tag: i32,
 }
@@ -4475,7 +4592,8 @@ impl Convenience {
   // @@bebop_insertion_point(struct_scope:Convenience)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Required {
   pub tag: i32,
 }
@@ -4514,7 +4632,8 @@ impl Required {
   // @@bebop_insertion_point(struct_scope:Required)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Optional {
   pub tag: i32,
 }
@@ -4553,7 +4672,8 @@ impl Optional {
   // @@bebop_insertion_point(struct_scope:Optional)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Rethrows {
   pub tag: i32,
 }
@@ -4592,7 +4712,8 @@ impl Rethrows {
   // @@bebop_insertion_point(struct_scope:Rethrows)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Try {
   pub tag: i32,
 }
@@ -4631,7 +4752,8 @@ impl Try {
   // @@bebop_insertion_point(struct_scope:Try)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Catch {
   pub tag: i32,
 }
@@ -4670,7 +4792,8 @@ impl Catch {
   // @@bebop_insertion_point(struct_scope:Catch)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Throw {
   pub tag: i32,
 }
@@ -4709,7 +4832,8 @@ impl Throw {
   // @@bebop_insertion_point(struct_scope:Throw)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Guard {
   pub tag: i32,
 }
@@ -4748,7 +4872,8 @@ impl Guard {
   // @@bebop_insertion_point(struct_scope:Guard)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct In {
   pub tag: i32,
 }
@@ -4787,7 +4912,8 @@ impl In {
   // @@bebop_insertion_point(struct_scope:In)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Is {
   pub tag: i32,
 }
@@ -4826,7 +4952,8 @@ impl Is {
   // @@bebop_insertion_point(struct_scope:Is)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct As {
   pub tag: i32,
 }
@@ -4865,7 +4992,8 @@ impl As {
   // @@bebop_insertion_point(struct_scope:As)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Select {
   pub tag: i32,
 }
@@ -4904,7 +5032,8 @@ impl Select {
   // @@bebop_insertion_point(struct_scope:Select)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Event {
   pub tag: i32,
 }
@@ -4943,7 +5072,8 @@ impl Event {
   // @@bebop_insertion_point(struct_scope:Event)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Delegate {
   pub tag: i32,
 }
@@ -4982,7 +5112,8 @@ impl Delegate {
   // @@bebop_insertion_point(struct_scope:Delegate)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Checked {
   pub tag: i32,
 }
@@ -5021,7 +5152,8 @@ impl Checked {
   // @@bebop_insertion_point(struct_scope:Checked)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Unchecked {
   pub tag: i32,
 }
@@ -5060,7 +5192,8 @@ impl Unchecked {
   // @@bebop_insertion_point(struct_scope:Unchecked)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Stackalloc {
   pub tag: i32,
 }
@@ -5099,7 +5232,8 @@ impl Stackalloc {
   // @@bebop_insertion_point(struct_scope:Stackalloc)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Params {
   pub tag: i32,
 }
@@ -5138,7 +5272,8 @@ impl Params {
   // @@bebop_insertion_point(struct_scope:Params)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Lock {
   pub tag: i32,
 }
@@ -5177,7 +5312,8 @@ impl Lock {
   // @@bebop_insertion_point(struct_scope:Lock)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Nameof {
   pub tag: i32,
 }
@@ -5216,7 +5352,8 @@ impl Nameof {
   // @@bebop_insertion_point(struct_scope:Nameof)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Sbyte {
   pub tag: i32,
 }
@@ -5255,7 +5392,8 @@ impl Sbyte {
   // @@bebop_insertion_point(struct_scope:Sbyte)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Ushort {
   pub tag: i32,
 }
@@ -5294,7 +5432,8 @@ impl Ushort {
   // @@bebop_insertion_point(struct_scope:Ushort)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Uint {
   pub tag: i32,
 }
@@ -5333,7 +5472,8 @@ impl Uint {
   // @@bebop_insertion_point(struct_scope:Uint)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Ulong {
   pub tag: i32,
 }
@@ -5372,7 +5512,8 @@ impl Ulong {
   // @@bebop_insertion_point(struct_scope:Ulong)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct When {
   pub tag: i32,
 }
@@ -5411,7 +5552,8 @@ impl When {
   // @@bebop_insertion_point(struct_scope:When)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Init {
   pub tag: i32,
 }
@@ -5450,7 +5592,8 @@ impl Init {
   // @@bebop_insertion_point(struct_scope:Init)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Deinit {
   pub tag: i32,
 }
@@ -5489,7 +5632,8 @@ impl Deinit {
   // @@bebop_insertion_point(struct_scope:Deinit)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Get {
   pub tag: i32,
 }
@@ -5528,7 +5672,8 @@ impl Get {
   // @@bebop_insertion_point(struct_scope:Get)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Set {
   pub tag: i32,
 }
@@ -5567,7 +5712,8 @@ impl Set {
   // @@bebop_insertion_point(struct_scope:Set)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct WillSet {
   pub tag: i32,
 }
@@ -5606,7 +5752,8 @@ impl WillSet {
   // @@bebop_insertion_point(struct_scope:WillSet)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DidSet {
   pub tag: i32,
 }
@@ -5645,7 +5792,8 @@ impl DidSet {
   // @@bebop_insertion_point(struct_scope:DidSet)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Associatedtype {
   pub tag: i32,
 }
@@ -5685,7 +5833,8 @@ impl Associatedtype {
 }
 
 /// Many Rust / Swift / C# keywords reused as *field* names (snake_case in Rust).
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RustKeywordFields {
   pub r#type: i32,
   pub r#mod: i32,
@@ -5711,7 +5860,8 @@ pub struct RustKeywordFields {
 }
 
 impl RustKeywordFields {
-  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>()
+  pub const FIXED_ENCODED_SIZE: usize =
+    mem::size_of::<i32>()
     + mem::size_of::<i32>()
     + mem::size_of::<i32>()
     + mem::size_of::<i32>()
@@ -5750,26 +5900,7 @@ impl RustKeywordFields {
     is: i32,
     r#try: i32,
   ) -> Self {
-    Self {
-      r#type,
-      r#mod,
-      self_,
-      super_,
-      crate_,
-      r#match,
-      r#where,
-      r#loop,
-      r#move,
-      r#ref,
-      r#dyn,
-      r#use,
-      r#let,
-      r#fn,
-      r#as,
-      r#in,
-      is,
-      r#try,
-    }
+    Self { r#type, r#mod, self_, super_, crate_, r#match, r#where, r#loop, r#move, r#ref, r#dyn, r#use, r#let, r#fn, r#as, r#in, is, r#try }
   }
 }
 
@@ -5825,26 +5956,7 @@ impl<'buf> bebop::BebopDecode<'buf> for RustKeywordFields {
     let is = reader.read_i32().for_field("RustKeywordFields", "is")?;
     let r#try = reader.read_i32().for_field("RustKeywordFields", "try")?;
     // @@bebop_insertion_point(decode_end:RustKeywordFields)
-    result::Result::Ok(RustKeywordFields {
-      r#type,
-      r#mod,
-      self_,
-      super_,
-      crate_,
-      r#match,
-      r#where,
-      r#loop,
-      r#move,
-      r#ref,
-      r#dyn,
-      r#use,
-      r#let,
-      r#fn,
-      r#as,
-      r#in,
-      is,
-      r#try,
-    })
+    result::Result::Ok(RustKeywordFields { r#type, r#mod, self_, super_, crate_, r#match, r#where, r#loop, r#move, r#ref, r#dyn, r#use, r#let, r#fn, r#as, r#in, is, r#try })
   }
 }
 
@@ -5861,7 +5973,8 @@ pub const RETURN: u32 = 2u32;
 pub const ELSE: u32 = 3u32;
 
 #[repr(u8)]
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MultiLangKeywordVariant {
   Mod = 0,
   Match = 1,
@@ -5887,18 +6000,13 @@ impl convert::TryFrom<u8> for MultiLangKeywordVariant {
       6 => result::Result::Ok(Self::Async),
       7 => result::Result::Ok(Self::Self_),
       8 => result::Result::Ok(Self::Super),
-      _ => result::Result::Err(bebop::DecodeError::InvalidEnum {
-        type_name: "MultiLangKeywordVariant",
-        value: value as u64,
-      }),
+      _ => result::Result::Err(bebop::DecodeError::InvalidEnum { type_name: "MultiLangKeywordVariant", value: value as u64 }),
     }
   }
 }
 
 impl convert::From<MultiLangKeywordVariant> for u8 {
-  fn from(value: MultiLangKeywordVariant) -> u8 {
-    value as u8
-  }
+  fn from(value: MultiLangKeywordVariant) -> u8 { value as u8 }
 }
 
 impl MultiLangKeywordVariant {
@@ -5913,9 +6021,7 @@ impl bebop::BebopEncode for MultiLangKeywordVariant {
     // @@bebop_insertion_point(encode_end:MultiLangKeywordVariant)
   }
 
-  fn encoded_size(&self) -> usize {
-    Self::FIXED_ENCODED_SIZE
-  }
+  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
 }
 
 impl<'buf> bebop::BebopDecode<'buf> for MultiLangKeywordVariant {
@@ -5928,7 +6034,8 @@ impl<'buf> bebop::BebopDecode<'buf> for MultiLangKeywordVariant {
   }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RustKeywordFlags(pub u8);
 
 #[allow(non_upper_case_globals)]
@@ -5944,68 +6051,24 @@ impl RustKeywordFlags {
 impl bebop::BebopFlags for RustKeywordFlags {
   type Bits = u8;
   const ALL_BITS: Self::Bits = 7;
-  fn bits(self) -> Self::Bits {
-    self.0
-  }
-  fn from_bits_retain(bits: Self::Bits) -> Self {
-    Self(bits)
-  }
+  fn bits(self) -> Self::Bits { self.0 }
+  fn from_bits_retain(bits: Self::Bits) -> Self { Self(bits) }
 }
 
-impl ops::BitOr for RustKeywordFlags {
-  type Output = Self;
-  fn bitor(self, rhs: Self) -> Self {
-    Self(self.0 | rhs.0)
-  }
-}
-impl ops::BitOrAssign for RustKeywordFlags {
-  fn bitor_assign(&mut self, rhs: Self) {
-    self.0 |= rhs.0;
-  }
-}
-impl ops::BitAnd for RustKeywordFlags {
-  type Output = Self;
-  fn bitand(self, rhs: Self) -> Self {
-    Self(self.0 & rhs.0)
-  }
-}
-impl ops::BitAndAssign for RustKeywordFlags {
-  fn bitand_assign(&mut self, rhs: Self) {
-    self.0 &= rhs.0;
-  }
-}
-impl ops::BitXor for RustKeywordFlags {
-  type Output = Self;
-  fn bitxor(self, rhs: Self) -> Self {
-    Self(self.0 ^ rhs.0)
-  }
-}
-impl ops::BitXorAssign for RustKeywordFlags {
-  fn bitxor_assign(&mut self, rhs: Self) {
-    self.0 ^= rhs.0;
-  }
-}
-impl ops::Not for RustKeywordFlags {
-  type Output = Self;
-  fn not(self) -> Self {
-    Self(!self.0)
-  }
-}
-impl ops::Sub for RustKeywordFlags {
-  type Output = Self;
-  fn sub(self, rhs: Self) -> Self {
-    Self(self.0 & !rhs.0)
-  }
-}
+impl ops::BitOr for RustKeywordFlags { type Output = Self; fn bitor(self, rhs: Self) -> Self { Self(self.0 | rhs.0) } }
+impl ops::BitOrAssign for RustKeywordFlags { fn bitor_assign(&mut self, rhs: Self) { self.0 |= rhs.0; } }
+impl ops::BitAnd for RustKeywordFlags { type Output = Self; fn bitand(self, rhs: Self) -> Self { Self(self.0 & rhs.0) } }
+impl ops::BitAndAssign for RustKeywordFlags { fn bitand_assign(&mut self, rhs: Self) { self.0 &= rhs.0; } }
+impl ops::BitXor for RustKeywordFlags { type Output = Self; fn bitxor(self, rhs: Self) -> Self { Self(self.0 ^ rhs.0) } }
+impl ops::BitXorAssign for RustKeywordFlags { fn bitxor_assign(&mut self, rhs: Self) { self.0 ^= rhs.0; } }
+impl ops::Not for RustKeywordFlags { type Output = Self; fn not(self) -> Self { Self(!self.0) } }
+impl ops::Sub for RustKeywordFlags { type Output = Self; fn sub(self, rhs: Self) -> Self { Self(self.0 & !rhs.0) } }
 
 impl<'buf> bebop::BebopDecode<'buf> for RustKeywordFlags {
   #[inline(always)]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     let bits = reader.read_byte()?;
-    <Self as bebop::BebopFlags>::from_bits(bits).ok_or(bebop::DecodeError::InvalidFlags {
-      type_name: "RustKeywordFlags",
-      bits: bits as u64,
-    })
+    <Self as bebop::BebopFlags>::from_bits(bits).ok_or(bebop::DecodeError::InvalidFlags { type_name: "RustKeywordFlags", bits: bits as u64 })
   }
 }
 
@@ -6022,25 +6085,18 @@ impl bebop::BebopEncode for KeywordUnion {
     // @@bebop_insertion_point(encode_start:KeywordUnion)
     let pos = writer.reserve_message_length();
     match self {
-      Self::Mod(inner) => {
-        writer.write_byte(1);
-        inner.encode(writer);
-      }
-      Self::Match(inner) => {
-        writer.write_byte(2);
-        inner.encode(writer);
-      }
+      Self::Mod(inner) => { writer.write_byte(1); inner.encode(writer); }
+      Self::Match(inner) => { writer.write_byte(2); inner.encode(writer); }
     }
     writer.fill_message_length(pos);
     // @@bebop_insertion_point(encode_end:KeywordUnion)
   }
 
   fn encoded_size(&self) -> usize {
-    bebop::wire_size::WIRE_LEN_PREFIX_SIZE
-      + match self {
-        Self::Mod(inner) => bebop::wire_size::tagged_size(inner.encoded_size()),
-        Self::Match(inner) => bebop::wire_size::tagged_size(inner.encoded_size()),
-      }
+    bebop::wire_size::WIRE_LEN_PREFIX_SIZE + match self {
+      Self::Mod(inner) => bebop::wire_size::tagged_size(inner.encoded_size()),
+      Self::Match(inner) => bebop::wire_size::tagged_size(inner.encoded_size()),
+    }
   }
 }
 
@@ -6052,16 +6108,9 @@ impl<'buf> bebop::BebopDecode<'buf> for KeywordUnion {
     let start = reader.position();
     let discriminator = reader.read_byte()?;
     let value = match discriminator {
-      1 => result::Result::Ok(Self::Mod(
-        Point::decode(reader).for_field("KeywordUnion", "mod")?,
-      )),
-      2 => result::Result::Ok(Self::Match(
-        Point::decode(reader).for_field("KeywordUnion", "match")?,
-      )),
-      _ => result::Result::Err(bebop::DecodeError::InvalidUnion {
-        type_name: "KeywordUnion",
-        discriminator,
-      }),
+      1 => result::Result::Ok(Self::Mod(Point::decode(reader).for_field("KeywordUnion", "mod")?)),
+      2 => result::Result::Ok(Self::Match(Point::decode(reader).for_field("KeywordUnion", "match")?)),
+      _ => result::Result::Err(bebop::DecodeError::InvalidUnion { type_name: "KeywordUnion", discriminator }),
     };
     // @@bebop_insertion_point(decode_end:KeywordUnion)
     value
@@ -6072,7 +6121,8 @@ impl KeywordUnion {
   // @@bebop_insertion_point(union_scope:KeywordUnion)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct KeywordFieldMessage<'buf> {
   pub r#type: option::Option<i32>,
   pub r#mod: option::Option<borrow::Cow<'buf, str>>,
@@ -6153,39 +6203,13 @@ impl<'buf> bebop::BebopDecode<'buf> for KeywordFieldMessage<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.r#type =
-            option::Option::Some(reader.read_i32().for_field("KeywordFieldMessage", "type")?)
-        }
-        2 => {
-          msg.r#mod = option::Option::Some(borrow::Cow::Borrowed(
-            reader.read_str().for_field("KeywordFieldMessage", "mod")?,
-          ))
-        }
-        3 => {
-          msg.self_ = option::Option::Some(
-            reader
-              .read_bool()
-              .for_field("KeywordFieldMessage", "self")?,
-          )
-        }
-        4 => {
-          msg.crate_ = option::Option::Some(
-            reader
-              .read_i32()
-              .for_field("KeywordFieldMessage", "crate")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "KeywordFieldMessage",
-            tag,
-          });
-        }
+        1 => msg.r#type = option::Option::Some(reader.read_i32().for_field("KeywordFieldMessage", "type")?),
+        2 => msg.r#mod = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("KeywordFieldMessage", "mod")?)),
+        3 => msg.self_ = option::Option::Some(reader.read_bool().for_field("KeywordFieldMessage", "self")?),
+        4 => msg.crate_ = option::Option::Some(reader.read_i32().for_field("KeywordFieldMessage", "crate")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "KeywordFieldMessage", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:KeywordFieldMessage)
@@ -6214,7 +6238,8 @@ impl<'buf> KeywordFieldMessage<'buf> {
 }
 
 /// Holds both a wire `guid` (runtime UUID) and a user-defined `Uuid` struct.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GuidAndUserUuidCollision {
   pub runtime_guid: bebop::Uuid,
   pub user_uuid: Uuid,
@@ -6223,11 +6248,11 @@ pub struct GuidAndUserUuidCollision {
 impl GuidAndUserUuidCollision {
   pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<bebop::Uuid>() + Uuid::FIXED_ENCODED_SIZE;
 
-  pub fn new(runtime_guid: bebop::Uuid, user_uuid: Uuid) -> Self {
-    Self {
-      runtime_guid,
-      user_uuid,
-    }
+  pub fn new(
+    runtime_guid: bebop::Uuid,
+    user_uuid: Uuid,
+  ) -> Self {
+    Self { runtime_guid, user_uuid }
   }
 }
 
@@ -6248,15 +6273,10 @@ impl<'buf> bebop::BebopDecode<'buf> for GuidAndUserUuidCollision {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:GuidAndUserUuidCollision)
-    let runtime_guid = reader
-      .read_uuid()
-      .for_field("GuidAndUserUuidCollision", "runtime_guid")?;
+    let runtime_guid = reader.read_uuid().for_field("GuidAndUserUuidCollision", "runtime_guid")?;
     let user_uuid = Uuid::decode(reader).for_field("GuidAndUserUuidCollision", "user_uuid")?;
     // @@bebop_insertion_point(decode_end:GuidAndUserUuidCollision)
-    result::Result::Ok(GuidAndUserUuidCollision {
-      runtime_guid,
-      user_uuid,
-    })
+    result::Result::Ok(GuidAndUserUuidCollision { runtime_guid, user_uuid })
   }
 }
 
@@ -6264,7 +6284,8 @@ impl GuidAndUserUuidCollision {
   // @@bebop_insertion_point(struct_scope:GuidAndUserUuidCollision)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct MapWithUserHashMapStruct<'buf> {
   pub items: option::Option<bebop::HashMap<borrow::Cow<'buf, str>, HashMap>>,
 }
@@ -6274,11 +6295,7 @@ pub type MapWithUserHashMapStructOwned = MapWithUserHashMapStruct<'static>;
 impl<'buf> MapWithUserHashMapStruct<'buf> {
   pub fn into_owned(self) -> MapWithUserHashMapStructOwned {
     MapWithUserHashMapStruct {
-      items: self.items.map(|v| {
-        v.into_iter()
-          .map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), _v))
-          .collect()
-      }),
+      items: self.items.map(|v| v.into_iter().map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), _v)).collect()),
     }
   }
 }
@@ -6294,10 +6311,7 @@ impl<'buf> bebop::BebopEncode for MapWithUserHashMapStruct<'buf> {
     // normally. This behavior should be revisited once the spec intent is clarified.
     if let option::Option::Some(ref v) = self.items {
       writer.write_tag(1);
-      writer.write_map(&v, |_w, _k, _v| {
-        _w.write_string(&_k);
-        _v.encode(_w);
-      });
+      writer.write_map(&v, |_w, _k, _v| { _w.write_string(&_k); _v.encode(_w); });
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
@@ -6307,9 +6321,7 @@ impl<'buf> bebop::BebopEncode for MapWithUserHashMapStruct<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let option::Option::Some(ref v) = self.items {
-      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| {
-        bebop::wire_size::string_size(_k.len()) + _v.encoded_size()
-      }));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| bebop::wire_size::string_size(_k.len()) + _v.encoded_size()));
     }
     size
   }
@@ -6325,28 +6337,10 @@ impl<'buf> bebop::BebopDecode<'buf> for MapWithUserHashMapStruct<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.items = option::Option::Some(
-            reader
-              .read_map(|_r| {
-                result::Result::Ok((
-                  result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-                  HashMap::decode(_r)?,
-                ))
-              })
-              .for_field("MapWithUserHashMapStruct", "items")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "MapWithUserHashMapStruct",
-            tag,
-          });
-        }
+        1 => msg.items = option::Option::Some(reader.read_map(|_r| result::Result::Ok((result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?, HashMap::decode(_r)?))).for_field("MapWithUserHashMapStruct", "items")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "MapWithUserHashMapStruct", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:MapWithUserHashMapStruct)
@@ -6355,10 +6349,7 @@ impl<'buf> bebop::BebopDecode<'buf> for MapWithUserHashMapStruct<'buf> {
 }
 
 impl<'buf> MapWithUserHashMapStruct<'buf> {
-  pub fn with_items(
-    mut self,
-    value: impl iter::IntoIterator<Item = (impl convert::Into<borrow::Cow<'buf, str>>, HashMap)>,
-  ) -> Self {
+  pub fn with_items(mut self, value: impl iter::IntoIterator<Item = (impl convert::Into<borrow::Cow<'buf, str>>, HashMap)>) -> Self {
     self.items = option::Option::Some(value.into_iter().map(|(_k, _v)| (_k.into(), _v)).collect());
     self
   }

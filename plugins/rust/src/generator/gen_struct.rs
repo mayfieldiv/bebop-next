@@ -142,30 +142,36 @@ pub fn generate(
       }
     }
   }
-  output.push_str("  pub fn new(");
   // Pre-compute IntoIterator info for collection fields
   let collection_infos: Vec<Option<(String, String)>> = field_metas
     .iter()
     .map(|meta| type_mapper::collection_into_iter(meta.td, &meta.fname, analysis))
     .collect::<Result<Vec<_>, GeneratorError>>()?;
 
-  for (i, meta) in field_metas.iter().enumerate() {
-    if i > 0 {
-      output.push_str(", ");
+  let params: Vec<String> = field_metas
+    .iter()
+    .enumerate()
+    .map(|(i, meta)| {
+      let param_type = if let Some((ref pt, _)) = collection_infos[i] {
+        pt.clone()
+      } else if has_lifetime && type_mapper::is_cow_field(meta.td) {
+        format!("impl convert::Into<{}>", meta.cow_type)
+      } else {
+        meta.owned_type.clone()
+      };
+      format!("{}: {}", meta.fname, param_type)
+    })
+    .collect();
+
+  if params.len() >= 2 {
+    output.push_str("  pub fn new(\n");
+    for p in &params {
+      output.push_str(&format!("    {},\n", p));
     }
-    if let Some((ref param_type, _)) = collection_infos[i] {
-      // Collection field with IntoIterator
-      output.push_str(&format!("{}: {}", meta.fname, param_type));
-    } else if has_lifetime && type_mapper::is_cow_field(meta.td) {
-      output.push_str(&format!(
-        "{}: impl convert::Into<{}>",
-        meta.fname, meta.cow_type
-      ));
-    } else {
-      output.push_str(&format!("{}: {}", meta.fname, meta.owned_type));
-    }
+    output.push_str("  ) -> Self {\n");
+  } else {
+    output.push_str(&format!("  pub fn new({}) -> Self {{\n", params.join(", ")));
   }
-  output.push_str(") -> Self {\n");
   let mut init_fields: Vec<String> = Vec::with_capacity(field_metas.len());
   for (i, meta) in field_metas.iter().enumerate() {
     if let Some((_, ref body_expr)) = collection_infos[i] {

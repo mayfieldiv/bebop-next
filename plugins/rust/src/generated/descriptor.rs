@@ -90,18 +90,13 @@ impl convert::TryFrom<u8> for TypeKind {
       21 => result::Result::Ok(Self::FixedArray),
       22 => result::Result::Ok(Self::Map),
       23 => result::Result::Ok(Self::Defined),
-      _ => result::Result::Err(bebop::DecodeError::InvalidEnum {
-        type_name: "TypeKind",
-        value: value as u64,
-      }),
+      _ => result::Result::Err(bebop::DecodeError::InvalidEnum { type_name: "TypeKind", value: value as u64 }),
     }
   }
 }
 
 impl convert::From<TypeKind> for u8 {
-  fn from(value: TypeKind) -> u8 {
-    value as u8
-  }
+  fn from(value: TypeKind) -> u8 { value as u8 }
 }
 
 impl TypeKind {
@@ -116,9 +111,7 @@ impl bebop::BebopEncode for TypeKind {
     // @@bebop_insertion_point(encode_end:TypeKind)
   }
 
-  fn encoded_size(&self) -> usize {
-    Self::FIXED_ENCODED_SIZE
-  }
+  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
 }
 
 impl<'buf> bebop::BebopDecode<'buf> for TypeKind {
@@ -160,18 +153,13 @@ impl convert::TryFrom<u8> for DefinitionKind {
       5 => result::Result::Ok(Self::Service),
       6 => result::Result::Ok(Self::Const),
       7 => result::Result::Ok(Self::Decorator),
-      _ => result::Result::Err(bebop::DecodeError::InvalidEnum {
-        type_name: "DefinitionKind",
-        value: value as u64,
-      }),
+      _ => result::Result::Err(bebop::DecodeError::InvalidEnum { type_name: "DefinitionKind", value: value as u64 }),
     }
   }
 }
 
 impl convert::From<DefinitionKind> for u8 {
-  fn from(value: DefinitionKind) -> u8 {
-    value as u8
-  }
+  fn from(value: DefinitionKind) -> u8 { value as u8 }
 }
 
 impl DefinitionKind {
@@ -186,9 +174,7 @@ impl bebop::BebopEncode for DefinitionKind {
     // @@bebop_insertion_point(encode_end:DefinitionKind)
   }
 
-  fn encoded_size(&self) -> usize {
-    Self::FIXED_ENCODED_SIZE
-  }
+  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
 }
 
 impl<'buf> bebop::BebopDecode<'buf> for DefinitionKind {
@@ -228,18 +214,13 @@ impl convert::TryFrom<u8> for MethodType {
       2 => result::Result::Ok(Self::ServerStream),
       3 => result::Result::Ok(Self::ClientStream),
       4 => result::Result::Ok(Self::DuplexStream),
-      _ => result::Result::Err(bebop::DecodeError::InvalidEnum {
-        type_name: "MethodType",
-        value: value as u64,
-      }),
+      _ => result::Result::Err(bebop::DecodeError::InvalidEnum { type_name: "MethodType", value: value as u64 }),
     }
   }
 }
 
 impl convert::From<MethodType> for u8 {
-  fn from(value: MethodType) -> u8 {
-    value as u8
-  }
+  fn from(value: MethodType) -> u8 { value as u8 }
 }
 
 impl MethodType {
@@ -254,9 +235,7 @@ impl bebop::BebopEncode for MethodType {
     // @@bebop_insertion_point(encode_end:MethodType)
   }
 
-  fn encoded_size(&self) -> usize {
-    Self::FIXED_ENCODED_SIZE
-  }
+  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
 }
 
 impl<'buf> bebop::BebopDecode<'buf> for MethodType {
@@ -291,18 +270,13 @@ impl convert::TryFrom<u8> for Visibility {
       0 => result::Result::Ok(Self::Default),
       1 => result::Result::Ok(Self::Export),
       2 => result::Result::Ok(Self::Local),
-      _ => result::Result::Err(bebop::DecodeError::InvalidEnum {
-        type_name: "Visibility",
-        value: value as u64,
-      }),
+      _ => result::Result::Err(bebop::DecodeError::InvalidEnum { type_name: "Visibility", value: value as u64 }),
     }
   }
 }
 
 impl convert::From<Visibility> for u8 {
-  fn from(value: Visibility) -> u8 {
-    value as u8
-  }
+  fn from(value: Visibility) -> u8 { value as u8 }
 }
 
 impl Visibility {
@@ -317,9 +291,7 @@ impl bebop::BebopEncode for Visibility {
     // @@bebop_insertion_point(encode_end:Visibility)
   }
 
-  fn encoded_size(&self) -> usize {
-    Self::FIXED_ENCODED_SIZE
-  }
+  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
 }
 
 impl<'buf> bebop::BebopDecode<'buf> for Visibility {
@@ -361,18 +333,13 @@ impl convert::TryFrom<u8> for LiteralKind {
       6 => result::Result::Ok(Self::Bytes),
       7 => result::Result::Ok(Self::Timestamp),
       8 => result::Result::Ok(Self::Duration),
-      _ => result::Result::Err(bebop::DecodeError::InvalidEnum {
-        type_name: "LiteralKind",
-        value: value as u64,
-      }),
+      _ => result::Result::Err(bebop::DecodeError::InvalidEnum { type_name: "LiteralKind", value: value as u64 }),
     }
   }
 }
 
 impl convert::From<LiteralKind> for u8 {
-  fn from(value: LiteralKind) -> u8 {
-    value as u8
-  }
+  fn from(value: LiteralKind) -> u8 { value as u8 }
 }
 
 impl LiteralKind {
@@ -387,9 +354,7 @@ impl bebop::BebopEncode for LiteralKind {
     // @@bebop_insertion_point(encode_end:LiteralKind)
   }
 
-  fn encoded_size(&self) -> usize {
-    Self::FIXED_ENCODED_SIZE
-  }
+  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
 }
 
 impl<'buf> bebop::BebopDecode<'buf> for LiteralKind {
@@ -424,68 +389,24 @@ impl DecoratorTarget {
 impl bebop::BebopFlags for DecoratorTarget {
   type Bits = u8;
   const ALL_BITS: Self::Bits = 255;
-  fn bits(self) -> Self::Bits {
-    self.0
-  }
-  fn from_bits_retain(bits: Self::Bits) -> Self {
-    Self(bits)
-  }
+  fn bits(self) -> Self::Bits { self.0 }
+  fn from_bits_retain(bits: Self::Bits) -> Self { Self(bits) }
 }
 
-impl ops::BitOr for DecoratorTarget {
-  type Output = Self;
-  fn bitor(self, rhs: Self) -> Self {
-    Self(self.0 | rhs.0)
-  }
-}
-impl ops::BitOrAssign for DecoratorTarget {
-  fn bitor_assign(&mut self, rhs: Self) {
-    self.0 |= rhs.0;
-  }
-}
-impl ops::BitAnd for DecoratorTarget {
-  type Output = Self;
-  fn bitand(self, rhs: Self) -> Self {
-    Self(self.0 & rhs.0)
-  }
-}
-impl ops::BitAndAssign for DecoratorTarget {
-  fn bitand_assign(&mut self, rhs: Self) {
-    self.0 &= rhs.0;
-  }
-}
-impl ops::BitXor for DecoratorTarget {
-  type Output = Self;
-  fn bitxor(self, rhs: Self) -> Self {
-    Self(self.0 ^ rhs.0)
-  }
-}
-impl ops::BitXorAssign for DecoratorTarget {
-  fn bitxor_assign(&mut self, rhs: Self) {
-    self.0 ^= rhs.0;
-  }
-}
-impl ops::Not for DecoratorTarget {
-  type Output = Self;
-  fn not(self) -> Self {
-    Self(!self.0)
-  }
-}
-impl ops::Sub for DecoratorTarget {
-  type Output = Self;
-  fn sub(self, rhs: Self) -> Self {
-    Self(self.0 & !rhs.0)
-  }
-}
+impl ops::BitOr for DecoratorTarget { type Output = Self; fn bitor(self, rhs: Self) -> Self { Self(self.0 | rhs.0) } }
+impl ops::BitOrAssign for DecoratorTarget { fn bitor_assign(&mut self, rhs: Self) { self.0 |= rhs.0; } }
+impl ops::BitAnd for DecoratorTarget { type Output = Self; fn bitand(self, rhs: Self) -> Self { Self(self.0 & rhs.0) } }
+impl ops::BitAndAssign for DecoratorTarget { fn bitand_assign(&mut self, rhs: Self) { self.0 &= rhs.0; } }
+impl ops::BitXor for DecoratorTarget { type Output = Self; fn bitxor(self, rhs: Self) -> Self { Self(self.0 ^ rhs.0) } }
+impl ops::BitXorAssign for DecoratorTarget { fn bitxor_assign(&mut self, rhs: Self) { self.0 ^= rhs.0; } }
+impl ops::Not for DecoratorTarget { type Output = Self; fn not(self) -> Self { Self(!self.0) } }
+impl ops::Sub for DecoratorTarget { type Output = Self; fn sub(self, rhs: Self) -> Self { Self(self.0 & !rhs.0) } }
 
 impl<'buf> bebop::BebopDecode<'buf> for DecoratorTarget {
   #[inline(always)]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     let bits = reader.read_byte()?;
-    <Self as bebop::BebopFlags>::from_bits(bits).ok_or(bebop::DecodeError::InvalidFlags {
-      type_name: "DecoratorTarget",
-      bits: bits as u64,
-    })
+    <Self as bebop::BebopFlags>::from_bits(bits).ok_or(bebop::DecodeError::InvalidFlags { type_name: "DecoratorTarget", bits: bits as u64 })
   }
 }
 
@@ -507,18 +428,13 @@ impl convert::TryFrom<i32> for Edition {
       0 => result::Result::Ok(Self::Unknown),
       1000 => result::Result::Ok(Self::Edition2026),
       2147483647 => result::Result::Ok(Self::Max),
-      _ => result::Result::Err(bebop::DecodeError::InvalidEnum {
-        type_name: "Edition",
-        value: value as u64,
-      }),
+      _ => result::Result::Err(bebop::DecodeError::InvalidEnum { type_name: "Edition", value: value as u64 }),
     }
   }
 }
 
 impl convert::From<Edition> for i32 {
-  fn from(value: Edition) -> i32 {
-    value as i32
-  }
+  fn from(value: Edition) -> i32 { value as i32 }
 }
 
 impl Edition {
@@ -533,9 +449,7 @@ impl bebop::BebopEncode for Edition {
     // @@bebop_insertion_point(encode_end:Edition)
   }
 
-  fn encoded_size(&self) -> usize {
-    Self::FIXED_ENCODED_SIZE
-  }
+  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
 }
 
 impl<'buf> bebop::BebopDecode<'buf> for Edition {
@@ -567,19 +481,19 @@ impl<'buf> bebop::BebopDecode<'buf> for Edition {
 /// ```
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct TypeDescriptor<'buf> {
-  /// Discriminates which fields below are populated.
+/// Discriminates which fields below are populated.
   pub kind: option::Option<TypeKind>,
-  /// Element type when `kind == ARRAY`.
+/// Element type when `kind == ARRAY`.
   pub array_element: option::Option<boxed::Box<TypeDescriptor<'buf>>>,
-  /// Element type when `kind == FIXED_ARRAY`.
+/// Element type when `kind == FIXED_ARRAY`.
   pub fixed_array_element: option::Option<boxed::Box<TypeDescriptor<'buf>>>,
-  /// Element count when `kind == FIXED_ARRAY`. Range 1-65535.
+/// Element count when `kind == FIXED_ARRAY`. Range 1-65535.
   pub fixed_array_size: option::Option<u32>,
-  /// Key type when `kind == MAP`. Must be hashable (bool, integers, string, uuid).
+/// Key type when `kind == MAP`. Must be hashable (bool, integers, string, uuid).
   pub map_key: option::Option<boxed::Box<TypeDescriptor<'buf>>>,
-  /// Value type when `kind == MAP`.
+/// Value type when `kind == MAP`.
   pub map_value: option::Option<boxed::Box<TypeDescriptor<'buf>>>,
-  /// FQN when `kind == DEFINED`. Always fully qualified after linking.
+/// FQN when `kind == DEFINED`. Always fully qualified after linking.
   pub defined_fqn: option::Option<borrow::Cow<'buf, str>>,
 }
 
@@ -590,9 +504,7 @@ impl<'buf> TypeDescriptor<'buf> {
     TypeDescriptor {
       kind: self.kind,
       array_element: self.array_element.map(|v| boxed::Box::new(v.into_owned())),
-      fixed_array_element: self
-        .fixed_array_element
-        .map(|v| boxed::Box::new(v.into_owned())),
+      fixed_array_element: self.fixed_array_element.map(|v| boxed::Box::new(v.into_owned())),
       fixed_array_size: self.fixed_array_size,
       map_key: self.map_key.map(|v| boxed::Box::new(v.into_owned())),
       map_value: self.map_value.map(|v| boxed::Box::new(v.into_owned())),
@@ -680,54 +592,16 @@ impl<'buf> bebop::BebopDecode<'buf> for TypeDescriptor<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.kind =
-            option::Option::Some(TypeKind::decode(reader).for_field("TypeDescriptor", "kind")?)
-        }
-        2 => {
-          msg.array_element = option::Option::Some(boxed::Box::new(
-            TypeDescriptor::decode(reader).for_field("TypeDescriptor", "array_element")?,
-          ))
-        }
-        3 => {
-          msg.fixed_array_element = option::Option::Some(boxed::Box::new(
-            TypeDescriptor::decode(reader).for_field("TypeDescriptor", "fixed_array_element")?,
-          ))
-        }
-        4 => {
-          msg.fixed_array_size = option::Option::Some(
-            reader
-              .read_u32()
-              .for_field("TypeDescriptor", "fixed_array_size")?,
-          )
-        }
-        5 => {
-          msg.map_key = option::Option::Some(boxed::Box::new(
-            TypeDescriptor::decode(reader).for_field("TypeDescriptor", "map_key")?,
-          ))
-        }
-        6 => {
-          msg.map_value = option::Option::Some(boxed::Box::new(
-            TypeDescriptor::decode(reader).for_field("TypeDescriptor", "map_value")?,
-          ))
-        }
-        7 => {
-          msg.defined_fqn = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("TypeDescriptor", "defined_fqn")?,
-          ))
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "TypeDescriptor",
-            tag,
-          });
-        }
+        1 => msg.kind = option::Option::Some(TypeKind::decode(reader).for_field("TypeDescriptor", "kind")?),
+        2 => msg.array_element = option::Option::Some(boxed::Box::new(TypeDescriptor::decode(reader).for_field("TypeDescriptor", "array_element")?)),
+        3 => msg.fixed_array_element = option::Option::Some(boxed::Box::new(TypeDescriptor::decode(reader).for_field("TypeDescriptor", "fixed_array_element")?)),
+        4 => msg.fixed_array_size = option::Option::Some(reader.read_u32().for_field("TypeDescriptor", "fixed_array_size")?),
+        5 => msg.map_key = option::Option::Some(boxed::Box::new(TypeDescriptor::decode(reader).for_field("TypeDescriptor", "map_key")?)),
+        6 => msg.map_value = option::Option::Some(boxed::Box::new(TypeDescriptor::decode(reader).for_field("TypeDescriptor", "map_value")?)),
+        7 => msg.defined_fqn = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("TypeDescriptor", "defined_fqn")?)),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "TypeDescriptor", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:TypeDescriptor)
@@ -780,14 +654,14 @@ pub struct LiteralValue<'buf> {
   pub float_value: option::Option<f64>,
   pub string_value: option::Option<borrow::Cow<'buf, str>>,
   pub uuid_value: option::Option<bebop::Uuid>,
-  /// Original source text before `$(...)` expansion. Only set for string
-  /// literals that contained environment variable references.
+/// Original source text before `$(...)` expansion. Only set for string
+/// literals that contained environment variable references.
   pub raw_value: option::Option<borrow::Cow<'buf, str>>,
-  /// When `kind == BYTES`.
+/// When `kind == BYTES`.
   pub bytes_value: option::Option<bebop::BebopBytes<'buf>>,
-  /// When `kind == TIMESTAMP`.
+/// When `kind == TIMESTAMP`.
   pub timestamp_value: option::Option<bebop::BebopTimestamp>,
-  /// When `kind == DURATION`.
+/// When `kind == DURATION`.
   pub duration_value: option::Option<bebop::BebopDuration>,
 }
 
@@ -800,9 +674,7 @@ impl<'buf> LiteralValue<'buf> {
       bool_value: self.bool_value,
       int_value: self.int_value,
       float_value: self.float_value,
-      string_value: self
-        .string_value
-        .map(|v| borrow::Cow::Owned(v.into_owned())),
+      string_value: self.string_value.map(|v| borrow::Cow::Owned(v.into_owned())),
       uuid_value: self.uuid_value,
       raw_value: self.raw_value.map(|v| borrow::Cow::Owned(v.into_owned())),
       bytes_value: self.bytes_value.map(|v| v.into_owned()),
@@ -912,69 +784,19 @@ impl<'buf> bebop::BebopDecode<'buf> for LiteralValue<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.kind =
-            option::Option::Some(LiteralKind::decode(reader).for_field("LiteralValue", "kind")?)
-        }
-        2 => {
-          msg.bool_value =
-            option::Option::Some(reader.read_bool().for_field("LiteralValue", "bool_value")?)
-        }
-        3 => {
-          msg.int_value =
-            option::Option::Some(reader.read_i64().for_field("LiteralValue", "int_value")?)
-        }
-        4 => {
-          msg.float_value =
-            option::Option::Some(reader.read_f64().for_field("LiteralValue", "float_value")?)
-        }
-        5 => {
-          msg.string_value = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("LiteralValue", "string_value")?,
-          ))
-        }
-        6 => {
-          msg.uuid_value =
-            option::Option::Some(reader.read_uuid().for_field("LiteralValue", "uuid_value")?)
-        }
-        7 => {
-          msg.raw_value = option::Option::Some(borrow::Cow::Borrowed(
-            reader.read_str().for_field("LiteralValue", "raw_value")?,
-          ))
-        }
-        8 => {
-          msg.bytes_value = option::Option::Some(bebop::BebopBytes::borrowed(
-            reader
-              .read_byte_slice()
-              .for_field("LiteralValue", "bytes_value")?,
-          ))
-        }
-        9 => {
-          msg.timestamp_value = option::Option::Some(
-            reader
-              .read_timestamp()
-              .for_field("LiteralValue", "timestamp_value")?,
-          )
-        }
-        10 => {
-          msg.duration_value = option::Option::Some(
-            reader
-              .read_duration()
-              .for_field("LiteralValue", "duration_value")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "LiteralValue",
-            tag,
-          });
-        }
+        1 => msg.kind = option::Option::Some(LiteralKind::decode(reader).for_field("LiteralValue", "kind")?),
+        2 => msg.bool_value = option::Option::Some(reader.read_bool().for_field("LiteralValue", "bool_value")?),
+        3 => msg.int_value = option::Option::Some(reader.read_i64().for_field("LiteralValue", "int_value")?),
+        4 => msg.float_value = option::Option::Some(reader.read_f64().for_field("LiteralValue", "float_value")?),
+        5 => msg.string_value = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("LiteralValue", "string_value")?)),
+        6 => msg.uuid_value = option::Option::Some(reader.read_uuid().for_field("LiteralValue", "uuid_value")?),
+        7 => msg.raw_value = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("LiteralValue", "raw_value")?)),
+        8 => msg.bytes_value = option::Option::Some(bebop::BebopBytes::borrowed(reader.read_byte_slice().for_field("LiteralValue", "bytes_value")?)),
+        9 => msg.timestamp_value = option::Option::Some(reader.read_timestamp().for_field("LiteralValue", "timestamp_value")?),
+        10 => msg.duration_value = option::Option::Some(reader.read_duration().for_field("LiteralValue", "duration_value")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "LiteralValue", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:LiteralValue)
@@ -1094,11 +916,11 @@ impl<'buf> DecoratorArg<'buf> {
 /// metadata without re-running Lua.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct DecoratorUsage<'buf> {
-  /// FQN of the decorator definition (e.g., `validators.range`).
+/// FQN of the decorator definition (e.g., `validators.range`).
   pub fqn: option::Option<borrow::Cow<'buf, str>>,
-  /// Arguments passed at the usage site, in declaration order.
+/// Arguments passed at the usage site, in declaration order.
   pub args: option::Option<vec::Vec<DecoratorArg<'buf>>>,
-  /// Results from the decorator's export block.
+/// Results from the decorator's export block.
   pub export_data: option::Option<bebop::HashMap<borrow::Cow<'buf, str>, LiteralValue<'buf>>>,
 }
 
@@ -1108,14 +930,8 @@ impl<'buf> DecoratorUsage<'buf> {
   pub fn into_owned(self) -> DecoratorUsageOwned {
     DecoratorUsage {
       fqn: self.fqn.map(|v| borrow::Cow::Owned(v.into_owned())),
-      args: self
-        .args
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
-      export_data: self.export_data.map(|v| {
-        v.into_iter()
-          .map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), _v.into_owned()))
-          .collect()
-      }),
+      args: self.args.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      export_data: self.export_data.map(|v| v.into_iter().map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), _v.into_owned())).collect()),
     }
   }
 }
@@ -1139,10 +955,7 @@ impl<'buf> bebop::BebopEncode for DecoratorUsage<'buf> {
     }
     if let option::Option::Some(ref v) = self.export_data {
       writer.write_tag(3);
-      writer.write_map(&v, |_w, _k, _v| {
-        _w.write_string(&_k);
-        _v.encode(_w);
-      });
+      writer.write_map(&v, |_w, _k, _v| { _w.write_string(&_k); _v.encode(_w); });
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
@@ -1155,13 +968,10 @@ impl<'buf> bebop::BebopEncode for DecoratorUsage<'buf> {
       size += bebop::wire_size::tagged_size(bebop::wire_size::string_size(v.len()));
     }
     if let option::Option::Some(ref v) = self.args {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     if let option::Option::Some(ref v) = self.export_data {
-      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| {
-        bebop::wire_size::string_size(_k.len()) + _v.encoded_size()
-      }));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| bebop::wire_size::string_size(_k.len()) + _v.encoded_size()));
     }
     size
   }
@@ -1177,40 +987,12 @@ impl<'buf> bebop::BebopDecode<'buf> for DecoratorUsage<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.fqn = option::Option::Some(borrow::Cow::Borrowed(
-            reader.read_str().for_field("DecoratorUsage", "fqn")?,
-          ))
-        }
-        2 => {
-          msg.args = option::Option::Some(
-            reader
-              .read_array(|_r| DecoratorArg::decode(_r))
-              .for_field("DecoratorUsage", "args")?,
-          )
-        }
-        3 => {
-          msg.export_data = option::Option::Some(
-            reader
-              .read_map(|_r| {
-                result::Result::Ok((
-                  result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-                  LiteralValue::decode(_r)?,
-                ))
-              })
-              .for_field("DecoratorUsage", "export_data")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "DecoratorUsage",
-            tag,
-          });
-        }
+        1 => msg.fqn = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("DecoratorUsage", "fqn")?)),
+        2 => msg.args = option::Option::Some(reader.read_array(|_r| DecoratorArg::decode(_r)).for_field("DecoratorUsage", "args")?),
+        3 => msg.export_data = option::Option::Some(reader.read_map(|_r| result::Result::Ok((result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?, LiteralValue::decode(_r)?))).for_field("DecoratorUsage", "export_data")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "DecoratorUsage", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:DecoratorUsage)
@@ -1227,17 +1009,8 @@ impl<'buf> DecoratorUsage<'buf> {
     self.args = option::Option::Some(value.into_iter().collect());
     self
   }
-  pub fn with_export_data(
-    mut self,
-    value: impl iter::IntoIterator<
-      Item = (
-        impl convert::Into<borrow::Cow<'buf, str>>,
-        LiteralValue<'buf>,
-      ),
-    >,
-  ) -> Self {
-    self.export_data =
-      option::Option::Some(value.into_iter().map(|(_k, _v)| (_k.into(), _v)).collect());
+  pub fn with_export_data(mut self, value: impl iter::IntoIterator<Item = (impl convert::Into<borrow::Cow<'buf, str>>, LiteralValue<'buf>)>) -> Self {
+    self.export_data = option::Option::Some(value.into_iter().map(|(_k, _v)| (_k.into(), _v)).collect());
     self
   }
   // @@bebop_insertion_point(message_scope:DecoratorUsage)
@@ -1252,10 +1025,10 @@ impl<'buf> DecoratorUsage<'buf> {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct FieldDescriptor<'buf> {
   pub name: option::Option<borrow::Cow<'buf, str>>,
-  /// Text from preceding `///` comments in source.
+/// Text from preceding `///` comments in source.
   pub documentation: option::Option<borrow::Cow<'buf, str>>,
   pub r#type: option::Option<TypeDescriptor<'buf>>,
-  /// Wire tag: 0 for struct fields, 1-255 for message fields.
+/// Wire tag: 0 for struct fields, 1-255 for message fields.
   pub index: option::Option<u32>,
   pub decorators: option::Option<vec::Vec<DecoratorUsage<'buf>>>,
 }
@@ -1266,14 +1039,10 @@ impl<'buf> FieldDescriptor<'buf> {
   pub fn into_owned(self) -> FieldDescriptorOwned {
     FieldDescriptor {
       name: self.name.map(|v| borrow::Cow::Owned(v.into_owned())),
-      documentation: self
-        .documentation
-        .map(|v| borrow::Cow::Owned(v.into_owned())),
+      documentation: self.documentation.map(|v| borrow::Cow::Owned(v.into_owned())),
       r#type: self.r#type.map(|v| v.into_owned()),
       index: self.index,
-      decorators: self
-        .decorators
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      decorators: self.decorators.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
@@ -1327,8 +1096,7 @@ impl<'buf> bebop::BebopEncode for FieldDescriptor<'buf> {
       size += bebop::wire_size::tagged_size(mem::size_of::<u32>());
     }
     if let option::Option::Some(ref v) = self.decorators {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
@@ -1344,43 +1112,14 @@ impl<'buf> bebop::BebopDecode<'buf> for FieldDescriptor<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.name = option::Option::Some(borrow::Cow::Borrowed(
-            reader.read_str().for_field("FieldDescriptor", "name")?,
-          ))
-        }
-        2 => {
-          msg.documentation = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("FieldDescriptor", "documentation")?,
-          ))
-        }
-        3 => {
-          msg.r#type = option::Option::Some(
-            TypeDescriptor::decode(reader).for_field("FieldDescriptor", "type")?,
-          )
-        }
-        4 => {
-          msg.index = option::Option::Some(reader.read_u32().for_field("FieldDescriptor", "index")?)
-        }
-        5 => {
-          msg.decorators = option::Option::Some(
-            reader
-              .read_array(|_r| DecoratorUsage::decode(_r))
-              .for_field("FieldDescriptor", "decorators")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "FieldDescriptor",
-            tag,
-          });
-        }
+        1 => msg.name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("FieldDescriptor", "name")?)),
+        2 => msg.documentation = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("FieldDescriptor", "documentation")?)),
+        3 => msg.r#type = option::Option::Some(TypeDescriptor::decode(reader).for_field("FieldDescriptor", "type")?),
+        4 => msg.index = option::Option::Some(reader.read_u32().for_field("FieldDescriptor", "index")?),
+        5 => msg.decorators = option::Option::Some(reader.read_array(|_r| DecoratorUsage::decode(_r)).for_field("FieldDescriptor", "decorators")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "FieldDescriptor", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:FieldDescriptor)
@@ -1405,10 +1144,7 @@ impl<'buf> FieldDescriptor<'buf> {
     self.index = option::Option::Some(value);
     self
   }
-  pub fn with_decorators(
-    mut self,
-    value: impl iter::IntoIterator<Item = DecoratorUsage<'buf>>,
-  ) -> Self {
+  pub fn with_decorators(mut self, value: impl iter::IntoIterator<Item = DecoratorUsage<'buf>>) -> Self {
     self.decorators = option::Option::Some(value.into_iter().collect());
     self
   }
@@ -1423,10 +1159,10 @@ impl<'buf> FieldDescriptor<'buf> {
 pub struct EnumMemberDescriptor<'buf> {
   pub name: option::Option<borrow::Cow<'buf, str>>,
   pub documentation: option::Option<borrow::Cow<'buf, str>>,
-  /// Stored unsigned. Reinterpret per the parent enum's `base_type`.
+/// Stored unsigned. Reinterpret per the parent enum's `base_type`.
   pub value: option::Option<u64>,
   pub decorators: option::Option<vec::Vec<DecoratorUsage<'buf>>>,
-  /// Original expression text (e.g., `1 << 3`). Absent for simple literals.
+/// Original expression text (e.g., `1 << 3`). Absent for simple literals.
   pub value_expr: option::Option<borrow::Cow<'buf, str>>,
 }
 
@@ -1436,13 +1172,9 @@ impl<'buf> EnumMemberDescriptor<'buf> {
   pub fn into_owned(self) -> EnumMemberDescriptorOwned {
     EnumMemberDescriptor {
       name: self.name.map(|v| borrow::Cow::Owned(v.into_owned())),
-      documentation: self
-        .documentation
-        .map(|v| borrow::Cow::Owned(v.into_owned())),
+      documentation: self.documentation.map(|v| borrow::Cow::Owned(v.into_owned())),
       value: self.value,
-      decorators: self
-        .decorators
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      decorators: self.decorators.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
       value_expr: self.value_expr.map(|v| borrow::Cow::Owned(v.into_owned())),
     }
   }
@@ -1494,8 +1226,7 @@ impl<'buf> bebop::BebopEncode for EnumMemberDescriptor<'buf> {
       size += bebop::wire_size::tagged_size(mem::size_of::<u64>());
     }
     if let option::Option::Some(ref v) = self.decorators {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     if let option::Option::Some(ref v) = self.value_expr {
       size += bebop::wire_size::tagged_size(bebop::wire_size::string_size(v.len()));
@@ -1514,51 +1245,14 @@ impl<'buf> bebop::BebopDecode<'buf> for EnumMemberDescriptor<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.name = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("EnumMemberDescriptor", "name")?,
-          ))
-        }
-        2 => {
-          msg.documentation = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("EnumMemberDescriptor", "documentation")?,
-          ))
-        }
-        3 => {
-          msg.value = option::Option::Some(
-            reader
-              .read_u64()
-              .for_field("EnumMemberDescriptor", "value")?,
-          )
-        }
-        4 => {
-          msg.decorators = option::Option::Some(
-            reader
-              .read_array(|_r| DecoratorUsage::decode(_r))
-              .for_field("EnumMemberDescriptor", "decorators")?,
-          )
-        }
-        5 => {
-          msg.value_expr = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("EnumMemberDescriptor", "value_expr")?,
-          ))
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "EnumMemberDescriptor",
-            tag,
-          });
-        }
+        1 => msg.name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("EnumMemberDescriptor", "name")?)),
+        2 => msg.documentation = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("EnumMemberDescriptor", "documentation")?)),
+        3 => msg.value = option::Option::Some(reader.read_u64().for_field("EnumMemberDescriptor", "value")?),
+        4 => msg.decorators = option::Option::Some(reader.read_array(|_r| DecoratorUsage::decode(_r)).for_field("EnumMemberDescriptor", "decorators")?),
+        5 => msg.value_expr = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("EnumMemberDescriptor", "value_expr")?)),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "EnumMemberDescriptor", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:EnumMemberDescriptor)
@@ -1579,10 +1273,7 @@ impl<'buf> EnumMemberDescriptor<'buf> {
     self.value = option::Option::Some(value);
     self
   }
-  pub fn with_decorators(
-    mut self,
-    value: impl iter::IntoIterator<Item = DecoratorUsage<'buf>>,
-  ) -> Self {
+  pub fn with_decorators(mut self, value: impl iter::IntoIterator<Item = DecoratorUsage<'buf>>) -> Self {
     self.decorators = option::Option::Some(value.into_iter().collect());
     self
   }
@@ -1609,14 +1300,14 @@ impl<'buf> EnumMemberDescriptor<'buf> {
 /// Sets `type_ref_fqn = "mypackage.Rect"` and `name = "rect"`.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct UnionBranchDescriptor<'buf> {
-  /// Wire discriminator byte. Range 1-255.
+/// Wire discriminator byte. Range 1-255.
   pub discriminator: option::Option<u8>,
   pub documentation: option::Option<borrow::Cow<'buf, str>>,
-  /// FQN of inline definition. Mutually exclusive with `type_ref_fqn`.
+/// FQN of inline definition. Mutually exclusive with `type_ref_fqn`.
   pub inline_fqn: option::Option<borrow::Cow<'buf, str>>,
-  /// FQN of referenced type. Mutually exclusive with `inline_fqn`.
+/// FQN of referenced type. Mutually exclusive with `inline_fqn`.
   pub type_ref_fqn: option::Option<borrow::Cow<'buf, str>>,
-  /// Branch name for type-reference branches.
+/// Branch name for type-reference branches.
   pub name: option::Option<borrow::Cow<'buf, str>>,
   pub decorators: option::Option<vec::Vec<DecoratorUsage<'buf>>>,
 }
@@ -1627,17 +1318,11 @@ impl<'buf> UnionBranchDescriptor<'buf> {
   pub fn into_owned(self) -> UnionBranchDescriptorOwned {
     UnionBranchDescriptor {
       discriminator: self.discriminator,
-      documentation: self
-        .documentation
-        .map(|v| borrow::Cow::Owned(v.into_owned())),
+      documentation: self.documentation.map(|v| borrow::Cow::Owned(v.into_owned())),
       inline_fqn: self.inline_fqn.map(|v| borrow::Cow::Owned(v.into_owned())),
-      type_ref_fqn: self
-        .type_ref_fqn
-        .map(|v| borrow::Cow::Owned(v.into_owned())),
+      type_ref_fqn: self.type_ref_fqn.map(|v| borrow::Cow::Owned(v.into_owned())),
       name: self.name.map(|v| borrow::Cow::Owned(v.into_owned())),
-      decorators: self
-        .decorators
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      decorators: self.decorators.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
@@ -1698,8 +1383,7 @@ impl<'buf> bebop::BebopEncode for UnionBranchDescriptor<'buf> {
       size += bebop::wire_size::tagged_size(bebop::wire_size::string_size(v.len()));
     }
     if let option::Option::Some(ref v) = self.decorators {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
@@ -1715,58 +1399,15 @@ impl<'buf> bebop::BebopDecode<'buf> for UnionBranchDescriptor<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.discriminator = option::Option::Some(
-            reader
-              .read_byte()
-              .for_field("UnionBranchDescriptor", "discriminator")?,
-          )
-        }
-        2 => {
-          msg.documentation = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("UnionBranchDescriptor", "documentation")?,
-          ))
-        }
-        3 => {
-          msg.inline_fqn = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("UnionBranchDescriptor", "inline_fqn")?,
-          ))
-        }
-        4 => {
-          msg.type_ref_fqn = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("UnionBranchDescriptor", "type_ref_fqn")?,
-          ))
-        }
-        5 => {
-          msg.name = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("UnionBranchDescriptor", "name")?,
-          ))
-        }
-        6 => {
-          msg.decorators = option::Option::Some(
-            reader
-              .read_array(|_r| DecoratorUsage::decode(_r))
-              .for_field("UnionBranchDescriptor", "decorators")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "UnionBranchDescriptor",
-            tag,
-          });
-        }
+        1 => msg.discriminator = option::Option::Some(reader.read_byte().for_field("UnionBranchDescriptor", "discriminator")?),
+        2 => msg.documentation = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("UnionBranchDescriptor", "documentation")?)),
+        3 => msg.inline_fqn = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("UnionBranchDescriptor", "inline_fqn")?)),
+        4 => msg.type_ref_fqn = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("UnionBranchDescriptor", "type_ref_fqn")?)),
+        5 => msg.name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("UnionBranchDescriptor", "name")?)),
+        6 => msg.decorators = option::Option::Some(reader.read_array(|_r| DecoratorUsage::decode(_r)).for_field("UnionBranchDescriptor", "decorators")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "UnionBranchDescriptor", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:UnionBranchDescriptor)
@@ -1795,10 +1436,7 @@ impl<'buf> UnionBranchDescriptor<'buf> {
     self.name = option::Option::Some(value.into());
     self
   }
-  pub fn with_decorators(
-    mut self,
-    value: impl iter::IntoIterator<Item = DecoratorUsage<'buf>>,
-  ) -> Self {
+  pub fn with_decorators(mut self, value: impl iter::IntoIterator<Item = DecoratorUsage<'buf>>) -> Self {
     self.decorators = option::Option::Some(value.into_iter().collect());
     self
   }
@@ -1815,7 +1453,7 @@ pub struct MethodDescriptor<'buf> {
   pub request_type: option::Option<TypeDescriptor<'buf>>,
   pub response_type: option::Option<TypeDescriptor<'buf>>,
   pub method_type: option::Option<MethodType>,
-  /// MurmurHash3 of `/ServiceName/MethodName`.
+/// MurmurHash3 of `/ServiceName/MethodName`.
   pub id: option::Option<u32>,
   pub decorators: option::Option<vec::Vec<DecoratorUsage<'buf>>>,
 }
@@ -1826,16 +1464,12 @@ impl<'buf> MethodDescriptor<'buf> {
   pub fn into_owned(self) -> MethodDescriptorOwned {
     MethodDescriptor {
       name: self.name.map(|v| borrow::Cow::Owned(v.into_owned())),
-      documentation: self
-        .documentation
-        .map(|v| borrow::Cow::Owned(v.into_owned())),
+      documentation: self.documentation.map(|v| borrow::Cow::Owned(v.into_owned())),
       request_type: self.request_type.map(|v| v.into_owned()),
       response_type: self.response_type.map(|v| v.into_owned()),
       method_type: self.method_type,
       id: self.id,
-      decorators: self
-        .decorators
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      decorators: self.decorators.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
@@ -1903,8 +1537,7 @@ impl<'buf> bebop::BebopEncode for MethodDescriptor<'buf> {
       size += bebop::wire_size::tagged_size(mem::size_of::<u32>());
     }
     if let option::Option::Some(ref v) = self.decorators {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
@@ -1920,51 +1553,16 @@ impl<'buf> bebop::BebopDecode<'buf> for MethodDescriptor<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.name = option::Option::Some(borrow::Cow::Borrowed(
-            reader.read_str().for_field("MethodDescriptor", "name")?,
-          ))
-        }
-        2 => {
-          msg.documentation = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("MethodDescriptor", "documentation")?,
-          ))
-        }
-        3 => {
-          msg.request_type = option::Option::Some(
-            TypeDescriptor::decode(reader).for_field("MethodDescriptor", "request_type")?,
-          )
-        }
-        4 => {
-          msg.response_type = option::Option::Some(
-            TypeDescriptor::decode(reader).for_field("MethodDescriptor", "response_type")?,
-          )
-        }
-        5 => {
-          msg.method_type = option::Option::Some(
-            MethodType::decode(reader).for_field("MethodDescriptor", "method_type")?,
-          )
-        }
+        1 => msg.name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("MethodDescriptor", "name")?)),
+        2 => msg.documentation = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("MethodDescriptor", "documentation")?)),
+        3 => msg.request_type = option::Option::Some(TypeDescriptor::decode(reader).for_field("MethodDescriptor", "request_type")?),
+        4 => msg.response_type = option::Option::Some(TypeDescriptor::decode(reader).for_field("MethodDescriptor", "response_type")?),
+        5 => msg.method_type = option::Option::Some(MethodType::decode(reader).for_field("MethodDescriptor", "method_type")?),
         6 => msg.id = option::Option::Some(reader.read_u32().for_field("MethodDescriptor", "id")?),
-        7 => {
-          msg.decorators = option::Option::Some(
-            reader
-              .read_array(|_r| DecoratorUsage::decode(_r))
-              .for_field("MethodDescriptor", "decorators")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "MethodDescriptor",
-            tag,
-          });
-        }
+        7 => msg.decorators = option::Option::Some(reader.read_array(|_r| DecoratorUsage::decode(_r)).for_field("MethodDescriptor", "decorators")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "MethodDescriptor", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:MethodDescriptor)
@@ -1997,10 +1595,7 @@ impl<'buf> MethodDescriptor<'buf> {
     self.id = option::Option::Some(value);
     self
   }
-  pub fn with_decorators(
-    mut self,
-    value: impl iter::IntoIterator<Item = DecoratorUsage<'buf>>,
-  ) -> Self {
+  pub fn with_decorators(mut self, value: impl iter::IntoIterator<Item = DecoratorUsage<'buf>>) -> Self {
     self.decorators = option::Option::Some(value.into_iter().collect());
     self
   }
@@ -2016,7 +1611,7 @@ impl<'buf> MethodDescriptor<'buf> {
 pub struct EnumDef<'buf> {
   pub base_type: option::Option<TypeKind>,
   pub members: option::Option<vec::Vec<EnumMemberDescriptor<'buf>>>,
-  /// True when `@flags` is applied. Members are bit positions for OR.
+/// True when `@flags` is applied. Members are bit positions for OR.
   pub is_flags: option::Option<bool>,
 }
 
@@ -2026,9 +1621,7 @@ impl<'buf> EnumDef<'buf> {
   pub fn into_owned(self) -> EnumDefOwned {
     EnumDef {
       base_type: self.base_type,
-      members: self
-        .members
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      members: self.members.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
       is_flags: self.is_flags,
     }
   }
@@ -2066,8 +1659,7 @@ impl<'buf> bebop::BebopEncode for EnumDef<'buf> {
       size += bebop::wire_size::tagged_size(v.encoded_size());
     }
     if let option::Option::Some(ref v) = self.members {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     if let option::Option::Some(v) = self.is_flags {
       size += bebop::wire_size::tagged_size(mem::size_of::<bool>());
@@ -2086,30 +1678,12 @@ impl<'buf> bebop::BebopDecode<'buf> for EnumDef<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.base_type =
-            option::Option::Some(TypeKind::decode(reader).for_field("EnumDef", "base_type")?)
-        }
-        2 => {
-          msg.members = option::Option::Some(
-            reader
-              .read_array(|_r| EnumMemberDescriptor::decode(_r))
-              .for_field("EnumDef", "members")?,
-          )
-        }
-        3 => {
-          msg.is_flags = option::Option::Some(reader.read_bool().for_field("EnumDef", "is_flags")?)
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "EnumDef",
-            tag,
-          });
-        }
+        1 => msg.base_type = option::Option::Some(TypeKind::decode(reader).for_field("EnumDef", "base_type")?),
+        2 => msg.members = option::Option::Some(reader.read_array(|_r| EnumMemberDescriptor::decode(_r)).for_field("EnumDef", "members")?),
+        3 => msg.is_flags = option::Option::Some(reader.read_bool().for_field("EnumDef", "is_flags")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "EnumDef", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:EnumDef)
@@ -2122,10 +1696,7 @@ impl<'buf> EnumDef<'buf> {
     self.base_type = option::Option::Some(value);
     self
   }
-  pub fn with_members(
-    mut self,
-    value: impl iter::IntoIterator<Item = EnumMemberDescriptor<'buf>>,
-  ) -> Self {
+  pub fn with_members(mut self, value: impl iter::IntoIterator<Item = EnumMemberDescriptor<'buf>>) -> Self {
     self.members = option::Option::Some(value.into_iter().collect());
     self
   }
@@ -2143,10 +1714,10 @@ impl<'buf> EnumDef<'buf> {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct StructDef<'buf> {
   pub fields: option::Option<vec::Vec<FieldDescriptor<'buf>>>,
-  /// True when declared with `mut`. Mutable structs allow field reassignment.
+/// True when declared with `mut`. Mutable structs allow field reassignment.
   pub is_mutable: option::Option<bool>,
-  /// Total wire bytes when all fields are fixed-size. Zero when any field
-  /// is variable-size. Generators use this to pre-allocate buffers.
+/// Total wire bytes when all fields are fixed-size. Zero when any field
+/// is variable-size. Generators use this to pre-allocate buffers.
   pub fixed_size: option::Option<u32>,
 }
 
@@ -2155,9 +1726,7 @@ pub type StructDefOwned = StructDef<'static>;
 impl<'buf> StructDef<'buf> {
   pub fn into_owned(self) -> StructDefOwned {
     StructDef {
-      fields: self
-        .fields
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      fields: self.fields.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
       is_mutable: self.is_mutable,
       fixed_size: self.fixed_size,
     }
@@ -2193,8 +1762,7 @@ impl<'buf> bebop::BebopEncode for StructDef<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let option::Option::Some(ref v) = self.fields {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     if let option::Option::Some(v) = self.is_mutable {
       size += bebop::wire_size::tagged_size(mem::size_of::<bool>());
@@ -2216,31 +1784,12 @@ impl<'buf> bebop::BebopDecode<'buf> for StructDef<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.fields = option::Option::Some(
-            reader
-              .read_array(|_r| FieldDescriptor::decode(_r))
-              .for_field("StructDef", "fields")?,
-          )
-        }
-        2 => {
-          msg.is_mutable =
-            option::Option::Some(reader.read_bool().for_field("StructDef", "is_mutable")?)
-        }
-        3 => {
-          msg.fixed_size =
-            option::Option::Some(reader.read_u32().for_field("StructDef", "fixed_size")?)
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "StructDef",
-            tag,
-          });
-        }
+        1 => msg.fields = option::Option::Some(reader.read_array(|_r| FieldDescriptor::decode(_r)).for_field("StructDef", "fields")?),
+        2 => msg.is_mutable = option::Option::Some(reader.read_bool().for_field("StructDef", "is_mutable")?),
+        3 => msg.fixed_size = option::Option::Some(reader.read_u32().for_field("StructDef", "fixed_size")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "StructDef", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:StructDef)
@@ -2249,10 +1798,7 @@ impl<'buf> bebop::BebopDecode<'buf> for StructDef<'buf> {
 }
 
 impl<'buf> StructDef<'buf> {
-  pub fn with_fields(
-    mut self,
-    value: impl iter::IntoIterator<Item = FieldDescriptor<'buf>>,
-  ) -> Self {
+  pub fn with_fields(mut self, value: impl iter::IntoIterator<Item = FieldDescriptor<'buf>>) -> Self {
     self.fields = option::Option::Some(value.into_iter().collect());
     self
   }
@@ -2280,9 +1826,7 @@ pub type MessageDefOwned = MessageDef<'static>;
 impl<'buf> MessageDef<'buf> {
   pub fn into_owned(self) -> MessageDefOwned {
     MessageDef {
-      fields: self
-        .fields
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      fields: self.fields.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
@@ -2308,8 +1852,7 @@ impl<'buf> bebop::BebopEncode for MessageDef<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let option::Option::Some(ref v) = self.fields {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
@@ -2325,23 +1868,10 @@ impl<'buf> bebop::BebopDecode<'buf> for MessageDef<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.fields = option::Option::Some(
-            reader
-              .read_array(|_r| FieldDescriptor::decode(_r))
-              .for_field("MessageDef", "fields")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "MessageDef",
-            tag,
-          });
-        }
+        1 => msg.fields = option::Option::Some(reader.read_array(|_r| FieldDescriptor::decode(_r)).for_field("MessageDef", "fields")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "MessageDef", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:MessageDef)
@@ -2350,10 +1880,7 @@ impl<'buf> bebop::BebopDecode<'buf> for MessageDef<'buf> {
 }
 
 impl<'buf> MessageDef<'buf> {
-  pub fn with_fields(
-    mut self,
-    value: impl iter::IntoIterator<Item = FieldDescriptor<'buf>>,
-  ) -> Self {
+  pub fn with_fields(mut self, value: impl iter::IntoIterator<Item = FieldDescriptor<'buf>>) -> Self {
     self.fields = option::Option::Some(value.into_iter().collect());
     self
   }
@@ -2373,9 +1900,7 @@ pub type UnionDefOwned = UnionDef<'static>;
 impl<'buf> UnionDef<'buf> {
   pub fn into_owned(self) -> UnionDefOwned {
     UnionDef {
-      branches: self
-        .branches
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      branches: self.branches.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
@@ -2401,8 +1926,7 @@ impl<'buf> bebop::BebopEncode for UnionDef<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let option::Option::Some(ref v) = self.branches {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
@@ -2418,23 +1942,10 @@ impl<'buf> bebop::BebopDecode<'buf> for UnionDef<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.branches = option::Option::Some(
-            reader
-              .read_array(|_r| UnionBranchDescriptor::decode(_r))
-              .for_field("UnionDef", "branches")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "UnionDef",
-            tag,
-          });
-        }
+        1 => msg.branches = option::Option::Some(reader.read_array(|_r| UnionBranchDescriptor::decode(_r)).for_field("UnionDef", "branches")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "UnionDef", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:UnionDef)
@@ -2443,10 +1954,7 @@ impl<'buf> bebop::BebopDecode<'buf> for UnionDef<'buf> {
 }
 
 impl<'buf> UnionDef<'buf> {
-  pub fn with_branches(
-    mut self,
-    value: impl iter::IntoIterator<Item = UnionBranchDescriptor<'buf>>,
-  ) -> Self {
+  pub fn with_branches(mut self, value: impl iter::IntoIterator<Item = UnionBranchDescriptor<'buf>>) -> Self {
     self.branches = option::Option::Some(value.into_iter().collect());
     self
   }
@@ -2464,9 +1972,7 @@ pub type ServiceDefOwned = ServiceDef<'static>;
 impl<'buf> ServiceDef<'buf> {
   pub fn into_owned(self) -> ServiceDefOwned {
     ServiceDef {
-      methods: self
-        .methods
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      methods: self.methods.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
@@ -2492,8 +1998,7 @@ impl<'buf> bebop::BebopEncode for ServiceDef<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let option::Option::Some(ref v) = self.methods {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
@@ -2509,23 +2014,10 @@ impl<'buf> bebop::BebopDecode<'buf> for ServiceDef<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.methods = option::Option::Some(
-            reader
-              .read_array(|_r| MethodDescriptor::decode(_r))
-              .for_field("ServiceDef", "methods")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "ServiceDef",
-            tag,
-          });
-        }
+        1 => msg.methods = option::Option::Some(reader.read_array(|_r| MethodDescriptor::decode(_r)).for_field("ServiceDef", "methods")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "ServiceDef", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:ServiceDef)
@@ -2534,10 +2026,7 @@ impl<'buf> bebop::BebopDecode<'buf> for ServiceDef<'buf> {
 }
 
 impl<'buf> ServiceDef<'buf> {
-  pub fn with_methods(
-    mut self,
-    value: impl iter::IntoIterator<Item = MethodDescriptor<'buf>>,
-  ) -> Self {
+  pub fn with_methods(mut self, value: impl iter::IntoIterator<Item = MethodDescriptor<'buf>>) -> Self {
     self.methods = option::Option::Some(value.into_iter().collect());
     self
   }
@@ -2613,24 +2102,11 @@ impl<'buf> bebop::BebopDecode<'buf> for ConstDef<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.r#type =
-            option::Option::Some(TypeDescriptor::decode(reader).for_field("ConstDef", "type")?)
-        }
-        2 => {
-          msg.value =
-            option::Option::Some(LiteralValue::decode(reader).for_field("ConstDef", "value")?)
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "ConstDef",
-            tag,
-          });
-        }
+        1 => msg.r#type = option::Option::Some(TypeDescriptor::decode(reader).for_field("ConstDef", "type")?),
+        2 => msg.value = option::Option::Some(LiteralValue::decode(reader).for_field("ConstDef", "value")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "ConstDef", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:ConstDef)
@@ -2662,16 +2138,16 @@ impl<'buf> ConstDef<'buf> {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct DecoratorParamDef<'buf> {
   pub name: option::Option<borrow::Cow<'buf, str>>,
-  /// Description from the `///` comment preceding this param.
+/// Description from the `///` comment preceding this param.
   pub description: option::Option<borrow::Cow<'buf, str>>,
-  /// Must be a scalar TypeKind.
+/// Must be a scalar TypeKind.
   pub r#type: option::Option<TypeKind>,
-  /// True for required (`!`) params, false for optional (`?`).
+/// True for required (`!`) params, false for optional (`?`).
   pub required: option::Option<bool>,
-  /// Default value for optional params. Absent for required params.
+/// Default value for optional params. Absent for required params.
   pub default_value: option::Option<LiteralValue<'buf>>,
-  /// Allowed-value constraint from `in [...]`. When non-empty, arguments
-  /// must match one of these values.
+/// Allowed-value constraint from `in [...]`. When non-empty, arguments
+/// must match one of these values.
   pub allowed_values: option::Option<vec::Vec<LiteralValue<'buf>>>,
 }
 
@@ -2685,9 +2161,7 @@ impl<'buf> DecoratorParamDef<'buf> {
       r#type: self.r#type,
       required: self.required,
       default_value: self.default_value.map(|v| v.into_owned()),
-      allowed_values: self
-        .allowed_values
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      allowed_values: self.allowed_values.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
@@ -2748,8 +2222,7 @@ impl<'buf> bebop::BebopEncode for DecoratorParamDef<'buf> {
       size += bebop::wire_size::tagged_size(v.encoded_size());
     }
     if let option::Option::Some(ref v) = self.allowed_values {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
@@ -2765,51 +2238,15 @@ impl<'buf> bebop::BebopDecode<'buf> for DecoratorParamDef<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.name = option::Option::Some(borrow::Cow::Borrowed(
-            reader.read_str().for_field("DecoratorParamDef", "name")?,
-          ))
-        }
-        2 => {
-          msg.description = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("DecoratorParamDef", "description")?,
-          ))
-        }
-        3 => {
-          msg.r#type =
-            option::Option::Some(TypeKind::decode(reader).for_field("DecoratorParamDef", "type")?)
-        }
-        4 => {
-          msg.required = option::Option::Some(
-            reader
-              .read_bool()
-              .for_field("DecoratorParamDef", "required")?,
-          )
-        }
-        5 => {
-          msg.default_value = option::Option::Some(
-            LiteralValue::decode(reader).for_field("DecoratorParamDef", "default_value")?,
-          )
-        }
-        6 => {
-          msg.allowed_values = option::Option::Some(
-            reader
-              .read_array(|_r| LiteralValue::decode(_r))
-              .for_field("DecoratorParamDef", "allowed_values")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "DecoratorParamDef",
-            tag,
-          });
-        }
+        1 => msg.name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("DecoratorParamDef", "name")?)),
+        2 => msg.description = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("DecoratorParamDef", "description")?)),
+        3 => msg.r#type = option::Option::Some(TypeKind::decode(reader).for_field("DecoratorParamDef", "type")?),
+        4 => msg.required = option::Option::Some(reader.read_bool().for_field("DecoratorParamDef", "required")?),
+        5 => msg.default_value = option::Option::Some(LiteralValue::decode(reader).for_field("DecoratorParamDef", "default_value")?),
+        6 => msg.allowed_values = option::Option::Some(reader.read_array(|_r| LiteralValue::decode(_r)).for_field("DecoratorParamDef", "allowed_values")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "DecoratorParamDef", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:DecoratorParamDef)
@@ -2838,10 +2275,7 @@ impl<'buf> DecoratorParamDef<'buf> {
     self.default_value = option::Option::Some(value);
     self
   }
-  pub fn with_allowed_values(
-    mut self,
-    value: impl iter::IntoIterator<Item = LiteralValue<'buf>>,
-  ) -> Self {
+  pub fn with_allowed_values(mut self, value: impl iter::IntoIterator<Item = LiteralValue<'buf>>) -> Self {
     self.allowed_values = option::Option::Some(value.into_iter().collect());
     self
   }
@@ -2853,16 +2287,16 @@ impl<'buf> DecoratorParamDef<'buf> {
 /// parameters it accepts, and optional Lua source for validate/export.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct DecoratorDef<'buf> {
-  /// Bitmask of DecoratorTarget values this decorator may apply to.
+/// Bitmask of DecoratorTarget values this decorator may apply to.
   pub targets: option::Option<DecoratorTarget>,
-  /// When true, the decorator can appear multiple times on the same target.
+/// When true, the decorator can appear multiple times on the same target.
   pub allow_multiple: option::Option<bool>,
   pub params: option::Option<vec::Vec<DecoratorParamDef<'buf>>>,
-  /// Lua source for validate block. Runs at compile time to reject invalid
-  /// usages. Absent when the decorator has no validate block.
+/// Lua source for validate block. Runs at compile time to reject invalid
+/// usages. Absent when the decorator has no validate block.
   pub validate_source: option::Option<borrow::Cow<'buf, str>>,
-  /// Lua source for export block. Produces key-value metadata stored in
-  /// DecoratorUsage.export_data. Absent when no export block.
+/// Lua source for export block. Produces key-value metadata stored in
+/// DecoratorUsage.export_data. Absent when no export block.
   pub export_source: option::Option<borrow::Cow<'buf, str>>,
 }
 
@@ -2873,15 +2307,9 @@ impl<'buf> DecoratorDef<'buf> {
     DecoratorDef {
       targets: self.targets,
       allow_multiple: self.allow_multiple,
-      params: self
-        .params
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
-      validate_source: self
-        .validate_source
-        .map(|v| borrow::Cow::Owned(v.into_owned())),
-      export_source: self
-        .export_source
-        .map(|v| borrow::Cow::Owned(v.into_owned())),
+      params: self.params.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      validate_source: self.validate_source.map(|v| borrow::Cow::Owned(v.into_owned())),
+      export_source: self.export_source.map(|v| borrow::Cow::Owned(v.into_owned())),
     }
   }
 }
@@ -2929,8 +2357,7 @@ impl<'buf> bebop::BebopEncode for DecoratorDef<'buf> {
       size += bebop::wire_size::tagged_size(mem::size_of::<bool>());
     }
     if let option::Option::Some(ref v) = self.params {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     if let option::Option::Some(ref v) = self.validate_source {
       size += bebop::wire_size::tagged_size(bebop::wire_size::string_size(v.len()));
@@ -2952,49 +2379,14 @@ impl<'buf> bebop::BebopDecode<'buf> for DecoratorDef<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.targets = option::Option::Some(
-            DecoratorTarget::decode(reader).for_field("DecoratorDef", "targets")?,
-          )
-        }
-        2 => {
-          msg.allow_multiple = option::Option::Some(
-            reader
-              .read_bool()
-              .for_field("DecoratorDef", "allow_multiple")?,
-          )
-        }
-        3 => {
-          msg.params = option::Option::Some(
-            reader
-              .read_array(|_r| DecoratorParamDef::decode(_r))
-              .for_field("DecoratorDef", "params")?,
-          )
-        }
-        4 => {
-          msg.validate_source = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("DecoratorDef", "validate_source")?,
-          ))
-        }
-        5 => {
-          msg.export_source = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("DecoratorDef", "export_source")?,
-          ))
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "DecoratorDef",
-            tag,
-          });
-        }
+        1 => msg.targets = option::Option::Some(DecoratorTarget::decode(reader).for_field("DecoratorDef", "targets")?),
+        2 => msg.allow_multiple = option::Option::Some(reader.read_bool().for_field("DecoratorDef", "allow_multiple")?),
+        3 => msg.params = option::Option::Some(reader.read_array(|_r| DecoratorParamDef::decode(_r)).for_field("DecoratorDef", "params")?),
+        4 => msg.validate_source = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("DecoratorDef", "validate_source")?)),
+        5 => msg.export_source = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("DecoratorDef", "export_source")?)),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "DecoratorDef", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:DecoratorDef)
@@ -3011,10 +2403,7 @@ impl<'buf> DecoratorDef<'buf> {
     self.allow_multiple = option::Option::Some(value);
     self
   }
-  pub fn with_params(
-    mut self,
-    value: impl iter::IntoIterator<Item = DecoratorParamDef<'buf>>,
-  ) -> Self {
+  pub fn with_params(mut self, value: impl iter::IntoIterator<Item = DecoratorParamDef<'buf>>) -> Self {
     self.params = option::Option::Some(value.into_iter().collect());
     self
   }
@@ -3040,15 +2429,15 @@ impl<'buf> DecoratorDef<'buf> {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct DefinitionDescriptor<'buf> {
   pub kind: option::Option<DefinitionKind>,
-  /// Simple name as declared in source.
+/// Simple name as declared in source.
   pub name: option::Option<borrow::Cow<'buf, str>>,
-  /// Fully-qualified name including package and parent scopes.
+/// Fully-qualified name including package and parent scopes.
   pub fqn: option::Option<borrow::Cow<'buf, str>>,
-  /// Text from preceding `///` comments in source.
+/// Text from preceding `///` comments in source.
   pub documentation: option::Option<borrow::Cow<'buf, str>>,
   pub visibility: option::Option<Visibility>,
   pub decorators: option::Option<vec::Vec<DecoratorUsage<'buf>>>,
-  /// Types declared inside this definition's body.
+/// Types declared inside this definition's body.
   pub nested: option::Option<vec::Vec<DefinitionDescriptor<'buf>>>,
   pub enum_def: option::Option<EnumDef<'buf>>,
   pub struct_def: option::Option<StructDef<'buf>>,
@@ -3067,16 +2456,10 @@ impl<'buf> DefinitionDescriptor<'buf> {
       kind: self.kind,
       name: self.name.map(|v| borrow::Cow::Owned(v.into_owned())),
       fqn: self.fqn.map(|v| borrow::Cow::Owned(v.into_owned())),
-      documentation: self
-        .documentation
-        .map(|v| borrow::Cow::Owned(v.into_owned())),
+      documentation: self.documentation.map(|v| borrow::Cow::Owned(v.into_owned())),
       visibility: self.visibility,
-      decorators: self
-        .decorators
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
-      nested: self
-        .nested
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      decorators: self.decorators.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      nested: self.nested.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
       enum_def: self.enum_def.map(|v| v.into_owned()),
       struct_def: self.struct_def.map(|v| v.into_owned()),
       message_def: self.message_def.map(|v| v.into_owned()),
@@ -3176,12 +2559,10 @@ impl<'buf> bebop::BebopEncode for DefinitionDescriptor<'buf> {
       size += bebop::wire_size::tagged_size(v.encoded_size());
     }
     if let option::Option::Some(ref v) = self.decorators {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     if let option::Option::Some(ref v) = self.nested {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     if let option::Option::Some(ref v) = self.enum_def {
       size += bebop::wire_size::tagged_size(v.encoded_size());
@@ -3218,94 +2599,23 @@ impl<'buf> bebop::BebopDecode<'buf> for DefinitionDescriptor<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.kind = option::Option::Some(
-            DefinitionKind::decode(reader).for_field("DefinitionDescriptor", "kind")?,
-          )
-        }
-        2 => {
-          msg.name = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("DefinitionDescriptor", "name")?,
-          ))
-        }
-        3 => {
-          msg.fqn = option::Option::Some(borrow::Cow::Borrowed(
-            reader.read_str().for_field("DefinitionDescriptor", "fqn")?,
-          ))
-        }
-        4 => {
-          msg.documentation = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("DefinitionDescriptor", "documentation")?,
-          ))
-        }
-        5 => {
-          msg.visibility = option::Option::Some(
-            Visibility::decode(reader).for_field("DefinitionDescriptor", "visibility")?,
-          )
-        }
-        6 => {
-          msg.decorators = option::Option::Some(
-            reader
-              .read_array(|_r| DecoratorUsage::decode(_r))
-              .for_field("DefinitionDescriptor", "decorators")?,
-          )
-        }
-        7 => {
-          msg.nested = option::Option::Some(
-            reader
-              .read_array(|_r| DefinitionDescriptor::decode(_r))
-              .for_field("DefinitionDescriptor", "nested")?,
-          )
-        }
-        8 => {
-          msg.enum_def = option::Option::Some(
-            EnumDef::decode(reader).for_field("DefinitionDescriptor", "enum_def")?,
-          )
-        }
-        9 => {
-          msg.struct_def = option::Option::Some(
-            StructDef::decode(reader).for_field("DefinitionDescriptor", "struct_def")?,
-          )
-        }
-        10 => {
-          msg.message_def = option::Option::Some(
-            MessageDef::decode(reader).for_field("DefinitionDescriptor", "message_def")?,
-          )
-        }
-        11 => {
-          msg.union_def = option::Option::Some(
-            UnionDef::decode(reader).for_field("DefinitionDescriptor", "union_def")?,
-          )
-        }
-        12 => {
-          msg.service_def = option::Option::Some(
-            ServiceDef::decode(reader).for_field("DefinitionDescriptor", "service_def")?,
-          )
-        }
-        13 => {
-          msg.const_def = option::Option::Some(
-            ConstDef::decode(reader).for_field("DefinitionDescriptor", "const_def")?,
-          )
-        }
-        14 => {
-          msg.decorator_def = option::Option::Some(
-            DecoratorDef::decode(reader).for_field("DefinitionDescriptor", "decorator_def")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "DefinitionDescriptor",
-            tag,
-          });
-        }
+        1 => msg.kind = option::Option::Some(DefinitionKind::decode(reader).for_field("DefinitionDescriptor", "kind")?),
+        2 => msg.name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("DefinitionDescriptor", "name")?)),
+        3 => msg.fqn = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("DefinitionDescriptor", "fqn")?)),
+        4 => msg.documentation = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("DefinitionDescriptor", "documentation")?)),
+        5 => msg.visibility = option::Option::Some(Visibility::decode(reader).for_field("DefinitionDescriptor", "visibility")?),
+        6 => msg.decorators = option::Option::Some(reader.read_array(|_r| DecoratorUsage::decode(_r)).for_field("DefinitionDescriptor", "decorators")?),
+        7 => msg.nested = option::Option::Some(reader.read_array(|_r| DefinitionDescriptor::decode(_r)).for_field("DefinitionDescriptor", "nested")?),
+        8 => msg.enum_def = option::Option::Some(EnumDef::decode(reader).for_field("DefinitionDescriptor", "enum_def")?),
+        9 => msg.struct_def = option::Option::Some(StructDef::decode(reader).for_field("DefinitionDescriptor", "struct_def")?),
+        10 => msg.message_def = option::Option::Some(MessageDef::decode(reader).for_field("DefinitionDescriptor", "message_def")?),
+        11 => msg.union_def = option::Option::Some(UnionDef::decode(reader).for_field("DefinitionDescriptor", "union_def")?),
+        12 => msg.service_def = option::Option::Some(ServiceDef::decode(reader).for_field("DefinitionDescriptor", "service_def")?),
+        13 => msg.const_def = option::Option::Some(ConstDef::decode(reader).for_field("DefinitionDescriptor", "const_def")?),
+        14 => msg.decorator_def = option::Option::Some(DecoratorDef::decode(reader).for_field("DefinitionDescriptor", "decorator_def")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "DefinitionDescriptor", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:DefinitionDescriptor)
@@ -3334,17 +2644,11 @@ impl<'buf> DefinitionDescriptor<'buf> {
     self.visibility = option::Option::Some(value);
     self
   }
-  pub fn with_decorators(
-    mut self,
-    value: impl iter::IntoIterator<Item = DecoratorUsage<'buf>>,
-  ) -> Self {
+  pub fn with_decorators(mut self, value: impl iter::IntoIterator<Item = DecoratorUsage<'buf>>) -> Self {
     self.decorators = option::Option::Some(value.into_iter().collect());
     self
   }
-  pub fn with_nested(
-    mut self,
-    value: impl iter::IntoIterator<Item = DefinitionDescriptor<'buf>>,
-  ) -> Self {
+  pub fn with_nested(mut self, value: impl iter::IntoIterator<Item = DefinitionDescriptor<'buf>>) -> Self {
     self.nested = option::Option::Some(value.into_iter().collect());
     self
   }
@@ -3384,24 +2688,24 @@ impl<'buf> DefinitionDescriptor<'buf> {
 /// error reporting, documentation extraction, and IDE features.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct Location<'buf> {
-  /// Path into the descriptor tree. Encoded as pairs of (field_tag, index):
-  /// ```
-  /// [5, 0]       -> schema.definitions[0]
-  /// [5, 0, 1, 2] -> schema.definitions[0].fields[2]
-  /// [5, 1, 2, 0] -> schema.definitions[1].members[0]
-  /// ```
-  /// Field tags correspond to definition body field indices
-  /// (StructDef.fields = 1, EnumDef.members = 2, etc.).
+/// Path into the descriptor tree. Encoded as pairs of (field_tag, index):
+/// ```
+/// [5, 0]       -> schema.definitions[0]
+/// [5, 0, 1, 2] -> schema.definitions[0].fields[2]
+/// [5, 1, 2, 0] -> schema.definitions[1].members[0]
+/// ```
+/// Field tags correspond to definition body field indices
+/// (StructDef.fields = 1, EnumDef.members = 2, etc.).
   pub path: option::Option<borrow::Cow<'buf, [i32]>>,
-  /// Source span as `[start_line, start_col, end_line, end_col]`.
-  /// All values 1-based. Columns count characters, tabs advance to
-  /// next multiple of 4.
+/// Source span as `[start_line, start_col, end_line, end_col]`.
+/// All values 1-based. Columns count characters, tabs advance to
+/// next multiple of 4.
   pub span: option::Option<[i32; 4]>,
-  /// Comments on adjacent preceding lines with no blank line separation.
+/// Comments on adjacent preceding lines with no blank line separation.
   pub leading_comments: option::Option<borrow::Cow<'buf, str>>,
-  /// Comment on the same line after the element or after an opening brace.
+/// Comment on the same line after the element or after an opening brace.
   pub trailing_comments: option::Option<borrow::Cow<'buf, str>>,
-  /// Comment groups separated from the element by blank lines.
+/// Comment groups separated from the element by blank lines.
   pub detached_comments: option::Option<vec::Vec<borrow::Cow<'buf, str>>>,
 }
 
@@ -3412,17 +2716,9 @@ impl<'buf> Location<'buf> {
     Location {
       path: self.path.map(|v| borrow::Cow::Owned(v.into_owned())),
       span: self.span,
-      leading_comments: self
-        .leading_comments
-        .map(|v| borrow::Cow::Owned(v.into_owned())),
-      trailing_comments: self
-        .trailing_comments
-        .map(|v| borrow::Cow::Owned(v.into_owned())),
-      detached_comments: self.detached_comments.map(|v| {
-        v.into_iter()
-          .map(|_e| borrow::Cow::Owned(_e.into_owned()))
-          .collect()
-      }),
+      leading_comments: self.leading_comments.map(|v| borrow::Cow::Owned(v.into_owned())),
+      trailing_comments: self.trailing_comments.map(|v| borrow::Cow::Owned(v.into_owned())),
+      detached_comments: self.detached_comments.map(|v| v.into_iter().map(|_e| borrow::Cow::Owned(_e.into_owned())).collect()),
     }
   }
 }
@@ -3464,9 +2760,7 @@ impl<'buf> bebop::BebopEncode for Location<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let option::Option::Some(ref v) = self.path {
-      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| {
-        (mem::size_of::<i32>())
-      }));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| (mem::size_of::<i32>())));
     }
     if let option::Option::Some(ref v) = self.span {
       size += bebop::wire_size::tagged_size(4usize * (mem::size_of::<i32>()));
@@ -3478,9 +2772,7 @@ impl<'buf> bebop::BebopEncode for Location<'buf> {
       size += bebop::wire_size::tagged_size(bebop::wire_size::string_size(v.len()));
     }
     if let option::Option::Some(ref v) = self.detached_comments {
-      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| {
-        bebop::wire_size::string_size(_el.len())
-      }));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| bebop::wire_size::string_size(_el.len())));
     }
     size
   }
@@ -3496,51 +2788,14 @@ impl<'buf> bebop::BebopDecode<'buf> for Location<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.path = option::Option::Some(
-            reader
-              .read_scalar_array::<i32>()
-              .for_field("Location", "path")?,
-          )
-        }
-        2 => {
-          msg.span = option::Option::Some(
-            reader
-              .read_fixed_array::<i32, 4>()
-              .for_field("Location", "span")?,
-          )
-        }
-        3 => {
-          msg.leading_comments = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("Location", "leading_comments")?,
-          ))
-        }
-        4 => {
-          msg.trailing_comments = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("Location", "trailing_comments")?,
-          ))
-        }
-        5 => {
-          msg.detached_comments = option::Option::Some(
-            reader
-              .read_array(|_r| result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?)))
-              .for_field("Location", "detached_comments")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "Location",
-            tag,
-          });
-        }
+        1 => msg.path = option::Option::Some(reader.read_scalar_array::<i32>().for_field("Location", "path")?),
+        2 => msg.span = option::Option::Some(reader.read_fixed_array::<i32, 4>().for_field("Location", "span")?),
+        3 => msg.leading_comments = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("Location", "leading_comments")?)),
+        4 => msg.trailing_comments = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("Location", "trailing_comments")?)),
+        5 => msg.detached_comments = option::Option::Some(reader.read_array(|_r| result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))).for_field("Location", "detached_comments")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "Location", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:Location)
@@ -3557,24 +2812,15 @@ impl<'buf> Location<'buf> {
     self.span = option::Option::Some(value);
     self
   }
-  pub fn with_leading_comments(
-    mut self,
-    value: impl convert::Into<borrow::Cow<'buf, str>>,
-  ) -> Self {
+  pub fn with_leading_comments(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
     self.leading_comments = option::Option::Some(value.into());
     self
   }
-  pub fn with_trailing_comments(
-    mut self,
-    value: impl convert::Into<borrow::Cow<'buf, str>>,
-  ) -> Self {
+  pub fn with_trailing_comments(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
     self.trailing_comments = option::Option::Some(value.into());
     self
   }
-  pub fn with_detached_comments(
-    mut self,
-    value: impl iter::IntoIterator<Item = impl convert::Into<borrow::Cow<'buf, str>>>,
-  ) -> Self {
+  pub fn with_detached_comments(mut self, value: impl iter::IntoIterator<Item = impl convert::Into<borrow::Cow<'buf, str>>>) -> Self {
     self.detached_comments = option::Option::Some(value.into_iter().map(|_e| _e.into()).collect());
     self
   }
@@ -3595,9 +2841,7 @@ pub type SourceCodeInfoOwned = SourceCodeInfo<'static>;
 impl<'buf> SourceCodeInfo<'buf> {
   pub fn into_owned(self) -> SourceCodeInfoOwned {
     SourceCodeInfo {
-      locations: self
-        .locations
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      locations: self.locations.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
@@ -3623,8 +2867,7 @@ impl<'buf> bebop::BebopEncode for SourceCodeInfo<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let option::Option::Some(ref v) = self.locations {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
@@ -3640,23 +2883,10 @@ impl<'buf> bebop::BebopDecode<'buf> for SourceCodeInfo<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.locations = option::Option::Some(
-            reader
-              .read_array(|_r| Location::decode(_r))
-              .for_field("SourceCodeInfo", "locations")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "SourceCodeInfo",
-            tag,
-          });
-        }
+        1 => msg.locations = option::Option::Some(reader.read_array(|_r| Location::decode(_r)).for_field("SourceCodeInfo", "locations")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "SourceCodeInfo", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:SourceCodeInfo)
@@ -3678,16 +2908,16 @@ impl<'buf> SourceCodeInfo<'buf> {
 /// Generators can emit types in array order without forward declarations.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct SchemaDescriptor<'buf> {
-  /// File path as provided to the compiler.
+/// File path as provided to the compiler.
   pub path: option::Option<borrow::Cow<'buf, str>>,
-  /// Package declaration from source. Absent when no package is declared.
+/// Package declaration from source. Absent when no package is declared.
   pub package: option::Option<borrow::Cow<'buf, str>>,
   pub edition: option::Option<Edition>,
-  /// Import paths in source declaration order.
+/// Import paths in source declaration order.
   pub imports: option::Option<vec::Vec<borrow::Cow<'buf, str>>>,
-  /// All definitions in topological dependency order.
+/// All definitions in topological dependency order.
   pub definitions: option::Option<vec::Vec<DefinitionDescriptor<'buf>>>,
-  /// Source code info. Only present when requested during compilation.
+/// Source code info. Only present when requested during compilation.
   pub source_code_info: option::Option<SourceCodeInfo<'buf>>,
 }
 
@@ -3699,14 +2929,8 @@ impl<'buf> SchemaDescriptor<'buf> {
       path: self.path.map(|v| borrow::Cow::Owned(v.into_owned())),
       package: self.package.map(|v| borrow::Cow::Owned(v.into_owned())),
       edition: self.edition,
-      imports: self.imports.map(|v| {
-        v.into_iter()
-          .map(|_e| borrow::Cow::Owned(_e.into_owned()))
-          .collect()
-      }),
-      definitions: self
-        .definitions
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      imports: self.imports.map(|v| v.into_iter().map(|_e| borrow::Cow::Owned(_e.into_owned())).collect()),
+      definitions: self.definitions.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
       source_code_info: self.source_code_info.map(|v| v.into_owned()),
     }
   }
@@ -3762,13 +2986,10 @@ impl<'buf> bebop::BebopEncode for SchemaDescriptor<'buf> {
       size += bebop::wire_size::tagged_size(v.encoded_size());
     }
     if let option::Option::Some(ref v) = self.imports {
-      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| {
-        bebop::wire_size::string_size(_el.len())
-      }));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| bebop::wire_size::string_size(_el.len())));
     }
     if let option::Option::Some(ref v) = self.definitions {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     if let option::Option::Some(ref v) = self.source_code_info {
       size += bebop::wire_size::tagged_size(v.encoded_size());
@@ -3787,49 +3008,15 @@ impl<'buf> bebop::BebopDecode<'buf> for SchemaDescriptor<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.path = option::Option::Some(borrow::Cow::Borrowed(
-            reader.read_str().for_field("SchemaDescriptor", "path")?,
-          ))
-        }
-        2 => {
-          msg.package = option::Option::Some(borrow::Cow::Borrowed(
-            reader.read_str().for_field("SchemaDescriptor", "package")?,
-          ))
-        }
-        3 => {
-          msg.edition =
-            option::Option::Some(Edition::decode(reader).for_field("SchemaDescriptor", "edition")?)
-        }
-        4 => {
-          msg.imports = option::Option::Some(
-            reader
-              .read_array(|_r| result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?)))
-              .for_field("SchemaDescriptor", "imports")?,
-          )
-        }
-        5 => {
-          msg.definitions = option::Option::Some(
-            reader
-              .read_array(|_r| DefinitionDescriptor::decode(_r))
-              .for_field("SchemaDescriptor", "definitions")?,
-          )
-        }
-        6 => {
-          msg.source_code_info = option::Option::Some(
-            SourceCodeInfo::decode(reader).for_field("SchemaDescriptor", "source_code_info")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "SchemaDescriptor",
-            tag,
-          });
-        }
+        1 => msg.path = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("SchemaDescriptor", "path")?)),
+        2 => msg.package = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("SchemaDescriptor", "package")?)),
+        3 => msg.edition = option::Option::Some(Edition::decode(reader).for_field("SchemaDescriptor", "edition")?),
+        4 => msg.imports = option::Option::Some(reader.read_array(|_r| result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))).for_field("SchemaDescriptor", "imports")?),
+        5 => msg.definitions = option::Option::Some(reader.read_array(|_r| DefinitionDescriptor::decode(_r)).for_field("SchemaDescriptor", "definitions")?),
+        6 => msg.source_code_info = option::Option::Some(SourceCodeInfo::decode(reader).for_field("SchemaDescriptor", "source_code_info")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "SchemaDescriptor", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:SchemaDescriptor)
@@ -3850,17 +3037,11 @@ impl<'buf> SchemaDescriptor<'buf> {
     self.edition = option::Option::Some(value);
     self
   }
-  pub fn with_imports(
-    mut self,
-    value: impl iter::IntoIterator<Item = impl convert::Into<borrow::Cow<'buf, str>>>,
-  ) -> Self {
+  pub fn with_imports(mut self, value: impl iter::IntoIterator<Item = impl convert::Into<borrow::Cow<'buf, str>>>) -> Self {
     self.imports = option::Option::Some(value.into_iter().map(|_e| _e.into()).collect());
     self
   }
-  pub fn with_definitions(
-    mut self,
-    value: impl iter::IntoIterator<Item = DefinitionDescriptor<'buf>>,
-  ) -> Self {
+  pub fn with_definitions(mut self, value: impl iter::IntoIterator<Item = DefinitionDescriptor<'buf>>) -> Self {
     self.definitions = option::Option::Some(value.into_iter().collect());
     self
   }
@@ -3886,9 +3067,7 @@ pub type DescriptorSetOwned = DescriptorSet<'static>;
 impl<'buf> DescriptorSet<'buf> {
   pub fn into_owned(self) -> DescriptorSetOwned {
     DescriptorSet {
-      schemas: self
-        .schemas
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      schemas: self.schemas.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
@@ -3914,8 +3093,7 @@ impl<'buf> bebop::BebopEncode for DescriptorSet<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let option::Option::Some(ref v) = self.schemas {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
@@ -3931,23 +3109,10 @@ impl<'buf> bebop::BebopDecode<'buf> for DescriptorSet<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.schemas = option::Option::Some(
-            reader
-              .read_array(|_r| SchemaDescriptor::decode(_r))
-              .for_field("DescriptorSet", "schemas")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "DescriptorSet",
-            tag,
-          });
-        }
+        1 => msg.schemas = option::Option::Some(reader.read_array(|_r| SchemaDescriptor::decode(_r)).for_field("DescriptorSet", "schemas")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "DescriptorSet", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:DescriptorSet)
@@ -3956,10 +3121,7 @@ impl<'buf> bebop::BebopDecode<'buf> for DescriptorSet<'buf> {
 }
 
 impl<'buf> DescriptorSet<'buf> {
-  pub fn with_schemas(
-    mut self,
-    value: impl iter::IntoIterator<Item = SchemaDescriptor<'buf>>,
-  ) -> Self {
+  pub fn with_schemas(mut self, value: impl iter::IntoIterator<Item = SchemaDescriptor<'buf>>) -> Self {
     self.schemas = option::Option::Some(value.into_iter().collect());
     self
   }

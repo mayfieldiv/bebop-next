@@ -15,13 +15,13 @@
 extern crate alloc;
 extern crate bebop_runtime;
 extern crate core;
-use super::descriptor::*;
 use alloc::{borrow, boxed, string, vec};
 use bebop_runtime as bebop;
 use bebop_runtime::DecodeContext as _;
 use core::convert::Into as _;
 use core::iter::{IntoIterator as _, Iterator as _};
 use core::{convert, default, iter, mem, ops, option, result};
+use super::descriptor::*;
 
 // @@bebop_insertion_point(imports)
 
@@ -33,7 +33,7 @@ pub struct Version<'buf> {
   pub major: i32,
   pub minor: i32,
   pub patch: i32,
-  /// Pre-release suffix (`alpha.1`, `rc.2`). Empty for stable releases.
+/// Pre-release suffix (`alpha.1`, `rc.2`). Empty for stable releases.
   pub suffix: borrow::Cow<'buf, str>,
 }
 
@@ -47,12 +47,7 @@ impl<'buf> Version<'buf> {
     suffix: impl convert::Into<borrow::Cow<'buf, str>>,
   ) -> Self {
     let suffix = suffix.into();
-    Self {
-      major,
-      minor,
-      patch,
-      suffix,
-    }
+    Self { major, minor, patch, suffix }
   }
 }
 
@@ -96,12 +91,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Version<'buf> {
     let patch = reader.read_i32().for_field("Version", "patch")?;
     let suffix = borrow::Cow::Borrowed(reader.read_str().for_field("Version", "suffix")?);
     // @@bebop_insertion_point(decode_end:Version)
-    result::Result::Ok(Version {
-      major,
-      minor,
-      patch,
-      suffix,
-    })
+    result::Result::Ok(Version { major, minor, patch, suffix })
   }
 }
 
@@ -115,23 +105,23 @@ impl<'buf> Version<'buf> {
 /// `schemas` array for type resolution.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct CodeGeneratorRequest<'buf> {
-  /// The .bop files to generate code for (explicitly listed on command line).
-  /// Each file's descriptor is included in `schemas`.
+/// The .bop files to generate code for (explicitly listed on command line).
+/// Each file's descriptor is included in `schemas`.
   pub files_to_generate: option::Option<vec::Vec<borrow::Cow<'buf, str>>>,
-  /// Generator-specific parameter from `--${NAME}_opt=PARAM` or embedded
-  /// in the output path. Format is plugin-defined (commonly key=value pairs).
+/// Generator-specific parameter from `--${NAME}_opt=PARAM` or embedded
+/// in the output path. Format is plugin-defined (commonly key=value pairs).
   pub parameter: option::Option<borrow::Cow<'buf, str>>,
-  /// Version of the compiler invoking the plugin. Use to detect
-  /// incompatibilities or enable version-specific behavior.
+/// Version of the compiler invoking the plugin. Use to detect
+/// incompatibilities or enable version-specific behavior.
   pub compiler_version: option::Option<Version<'buf>>,
-  /// SchemaDescriptors for all files in `files_to_generate` plus their
-  /// imports. Schemas appear in topological order: dependencies before
-  /// dependents. Type FQNs are fully resolved.
-  /// Iterate schemas, check if `schema.path` is in `files_to_generate`,
-  /// and generate code only for those files. The rest are for type resolution.
+/// SchemaDescriptors for all files in `files_to_generate` plus their
+/// imports. Schemas appear in topological order: dependencies before
+/// dependents. Type FQNs are fully resolved.
+/// Iterate schemas, check if `schema.path` is in `files_to_generate`,
+/// and generate code only for those files. The rest are for type resolution.
   pub schemas: option::Option<vec::Vec<SchemaDescriptor<'buf>>>,
-  /// Host compiler options passed to bebopc. Use to adjust output based
-  /// on global settings.
+/// Host compiler options passed to bebopc. Use to adjust output based
+/// on global settings.
   pub host_options: option::Option<bebop::HashMap<borrow::Cow<'buf, str>, borrow::Cow<'buf, str>>>,
 }
 
@@ -140,26 +130,11 @@ pub type CodeGeneratorRequestOwned = CodeGeneratorRequest<'static>;
 impl<'buf> CodeGeneratorRequest<'buf> {
   pub fn into_owned(self) -> CodeGeneratorRequestOwned {
     CodeGeneratorRequest {
-      files_to_generate: self.files_to_generate.map(|v| {
-        v.into_iter()
-          .map(|_e| borrow::Cow::Owned(_e.into_owned()))
-          .collect()
-      }),
+      files_to_generate: self.files_to_generate.map(|v| v.into_iter().map(|_e| borrow::Cow::Owned(_e.into_owned())).collect()),
       parameter: self.parameter.map(|v| borrow::Cow::Owned(v.into_owned())),
       compiler_version: self.compiler_version.map(|v| v.into_owned()),
-      schemas: self
-        .schemas
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
-      host_options: self.host_options.map(|v| {
-        v.into_iter()
-          .map(|(_k, _v)| {
-            (
-              borrow::Cow::Owned(_k.into_owned()),
-              borrow::Cow::Owned(_v.into_owned()),
-            )
-          })
-          .collect()
-      }),
+      schemas: self.schemas.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      host_options: self.host_options.map(|v| v.into_iter().map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), borrow::Cow::Owned(_v.into_owned()))).collect()),
     }
   }
 }
@@ -191,10 +166,7 @@ impl<'buf> bebop::BebopEncode for CodeGeneratorRequest<'buf> {
     }
     if let option::Option::Some(ref v) = self.host_options {
       writer.write_tag(5);
-      writer.write_map(&v, |_w, _k, _v| {
-        _w.write_string(&_k);
-        _w.write_string(&_v);
-      });
+      writer.write_map(&v, |_w, _k, _v| { _w.write_string(&_k); _w.write_string(&_v); });
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
@@ -204,9 +176,7 @@ impl<'buf> bebop::BebopEncode for CodeGeneratorRequest<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let option::Option::Some(ref v) = self.files_to_generate {
-      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| {
-        bebop::wire_size::string_size(_el.len())
-      }));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| bebop::wire_size::string_size(_el.len())));
     }
     if let option::Option::Some(ref v) = self.parameter {
       size += bebop::wire_size::tagged_size(bebop::wire_size::string_size(v.len()));
@@ -215,13 +185,10 @@ impl<'buf> bebop::BebopEncode for CodeGeneratorRequest<'buf> {
       size += bebop::wire_size::tagged_size(v.encoded_size());
     }
     if let option::Option::Some(ref v) = self.schemas {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     if let option::Option::Some(ref v) = self.host_options {
-      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| {
-        bebop::wire_size::string_size(_k.len()) + bebop::wire_size::string_size(_v.len())
-      }));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| bebop::wire_size::string_size(_k.len()) + bebop::wire_size::string_size(_v.len())));
     }
     size
   }
@@ -237,54 +204,14 @@ impl<'buf> bebop::BebopDecode<'buf> for CodeGeneratorRequest<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.files_to_generate = option::Option::Some(
-            reader
-              .read_array(|_r| result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?)))
-              .for_field("CodeGeneratorRequest", "files_to_generate")?,
-          )
-        }
-        2 => {
-          msg.parameter = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("CodeGeneratorRequest", "parameter")?,
-          ))
-        }
-        3 => {
-          msg.compiler_version = option::Option::Some(
-            Version::decode(reader).for_field("CodeGeneratorRequest", "compiler_version")?,
-          )
-        }
-        4 => {
-          msg.schemas = option::Option::Some(
-            reader
-              .read_array(|_r| SchemaDescriptor::decode(_r))
-              .for_field("CodeGeneratorRequest", "schemas")?,
-          )
-        }
-        5 => {
-          msg.host_options = option::Option::Some(
-            reader
-              .read_map(|_r| {
-                result::Result::Ok((
-                  result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-                  result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-                ))
-              })
-              .for_field("CodeGeneratorRequest", "host_options")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "CodeGeneratorRequest",
-            tag,
-          });
-        }
+        1 => msg.files_to_generate = option::Option::Some(reader.read_array(|_r| result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))).for_field("CodeGeneratorRequest", "files_to_generate")?),
+        2 => msg.parameter = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("CodeGeneratorRequest", "parameter")?)),
+        3 => msg.compiler_version = option::Option::Some(Version::decode(reader).for_field("CodeGeneratorRequest", "compiler_version")?),
+        4 => msg.schemas = option::Option::Some(reader.read_array(|_r| SchemaDescriptor::decode(_r)).for_field("CodeGeneratorRequest", "schemas")?),
+        5 => msg.host_options = option::Option::Some(reader.read_map(|_r| result::Result::Ok((result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?, result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?))).for_field("CodeGeneratorRequest", "host_options")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "CodeGeneratorRequest", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:CodeGeneratorRequest)
@@ -293,10 +220,7 @@ impl<'buf> bebop::BebopDecode<'buf> for CodeGeneratorRequest<'buf> {
 }
 
 impl<'buf> CodeGeneratorRequest<'buf> {
-  pub fn with_files_to_generate(
-    mut self,
-    value: impl iter::IntoIterator<Item = impl convert::Into<borrow::Cow<'buf, str>>>,
-  ) -> Self {
+  pub fn with_files_to_generate(mut self, value: impl iter::IntoIterator<Item = impl convert::Into<borrow::Cow<'buf, str>>>) -> Self {
     self.files_to_generate = option::Option::Some(value.into_iter().map(|_e| _e.into()).collect());
     self
   }
@@ -308,28 +232,12 @@ impl<'buf> CodeGeneratorRequest<'buf> {
     self.compiler_version = option::Option::Some(value);
     self
   }
-  pub fn with_schemas(
-    mut self,
-    value: impl iter::IntoIterator<Item = SchemaDescriptor<'buf>>,
-  ) -> Self {
+  pub fn with_schemas(mut self, value: impl iter::IntoIterator<Item = SchemaDescriptor<'buf>>) -> Self {
     self.schemas = option::Option::Some(value.into_iter().collect());
     self
   }
-  pub fn with_host_options(
-    mut self,
-    value: impl iter::IntoIterator<
-      Item = (
-        impl convert::Into<borrow::Cow<'buf, str>>,
-        impl convert::Into<borrow::Cow<'buf, str>>,
-      ),
-    >,
-  ) -> Self {
-    self.host_options = option::Option::Some(
-      value
-        .into_iter()
-        .map(|(_k, _v)| (_k.into(), _v.into()))
-        .collect(),
-    );
+  pub fn with_host_options(mut self, value: impl iter::IntoIterator<Item = (impl convert::Into<borrow::Cow<'buf, str>>, impl convert::Into<borrow::Cow<'buf, str>>)>) -> Self {
+    self.host_options = option::Option::Some(value.into_iter().map(|(_k, _v)| (_k.into(), _v.into())).collect());
     self
   }
   // @@bebop_insertion_point(message_scope:CodeGeneratorRequest)
@@ -353,18 +261,13 @@ impl convert::TryFrom<u8> for DiagnosticSeverity {
       1 => result::Result::Ok(Self::Warning),
       2 => result::Result::Ok(Self::Info),
       3 => result::Result::Ok(Self::Hint),
-      _ => result::Result::Err(bebop::DecodeError::InvalidEnum {
-        type_name: "DiagnosticSeverity",
-        value: value as u64,
-      }),
+      _ => result::Result::Err(bebop::DecodeError::InvalidEnum { type_name: "DiagnosticSeverity", value: value as u64 }),
     }
   }
 }
 
 impl convert::From<DiagnosticSeverity> for u8 {
-  fn from(value: DiagnosticSeverity) -> u8 {
-    value as u8
-  }
+  fn from(value: DiagnosticSeverity) -> u8 { value as u8 }
 }
 
 impl DiagnosticSeverity {
@@ -379,9 +282,7 @@ impl bebop::BebopEncode for DiagnosticSeverity {
     // @@bebop_insertion_point(encode_end:DiagnosticSeverity)
   }
 
-  fn encoded_size(&self) -> usize {
-    Self::FIXED_ENCODED_SIZE
-  }
+  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
 }
 
 impl<'buf> bebop::BebopDecode<'buf> for DiagnosticSeverity {
@@ -400,14 +301,14 @@ impl<'buf> bebop::BebopDecode<'buf> for DiagnosticSeverity {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct Diagnostic<'buf> {
   pub severity: option::Option<DiagnosticSeverity>,
-  /// Human-readable diagnostic text.
+/// Human-readable diagnostic text.
   pub text: option::Option<borrow::Cow<'buf, str>>,
-  /// Optional hint for fixing the issue.
+/// Optional hint for fixing the issue.
   pub hint: option::Option<borrow::Cow<'buf, str>>,
-  /// Source file path this diagnostic relates to.
+/// Source file path this diagnostic relates to.
   pub file: option::Option<borrow::Cow<'buf, str>>,
-  /// Source location as `[start_line, start_col, end_line, end_col]`.
-  /// 1-based. Absent if not applicable.
+/// Source location as `[start_line, start_col, end_line, end_col]`.
+/// 1-based. Absent if not applicable.
   pub span: option::Option<[i32; 4]>,
 }
 
@@ -490,43 +391,14 @@ impl<'buf> bebop::BebopDecode<'buf> for Diagnostic<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.severity = option::Option::Some(
-            DiagnosticSeverity::decode(reader).for_field("Diagnostic", "severity")?,
-          )
-        }
-        2 => {
-          msg.text = option::Option::Some(borrow::Cow::Borrowed(
-            reader.read_str().for_field("Diagnostic", "text")?,
-          ))
-        }
-        3 => {
-          msg.hint = option::Option::Some(borrow::Cow::Borrowed(
-            reader.read_str().for_field("Diagnostic", "hint")?,
-          ))
-        }
-        4 => {
-          msg.file = option::Option::Some(borrow::Cow::Borrowed(
-            reader.read_str().for_field("Diagnostic", "file")?,
-          ))
-        }
-        5 => {
-          msg.span = option::Option::Some(
-            reader
-              .read_fixed_array::<i32, 4>()
-              .for_field("Diagnostic", "span")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "Diagnostic",
-            tag,
-          });
-        }
+        1 => msg.severity = option::Option::Some(DiagnosticSeverity::decode(reader).for_field("Diagnostic", "severity")?),
+        2 => msg.text = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("Diagnostic", "text")?)),
+        3 => msg.hint = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("Diagnostic", "hint")?)),
+        4 => msg.file = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("Diagnostic", "file")?)),
+        5 => msg.span = option::Option::Some(reader.read_fixed_array::<i32, 4>().for_field("Diagnostic", "span")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "Diagnostic", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:Diagnostic)
@@ -563,27 +435,27 @@ impl<'buf> Diagnostic<'buf> {
 /// marked insertion point.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct GeneratedFile<'buf> {
-  /// Output path relative to output directory. No `..` components or
-  /// leading `/`. Use `/` as separator on all platforms.
-  /// When `insertion_point` is set, names the file to insert into (must
-  /// be generated by a prior plugin in the same invocation).
-  /// When omitted, content appends to the previous file. Allows generators
-  /// to stream large files in chunks.
+/// Output path relative to output directory. No `..` components or
+/// leading `/`. Use `/` as separator on all platforms.
+/// When `insertion_point` is set, names the file to insert into (must
+/// be generated by a prior plugin in the same invocation).
+/// When omitted, content appends to the previous file. Allows generators
+/// to stream large files in chunks.
   pub name: option::Option<borrow::Cow<'buf, str>>,
-  /// Insertion point name for extending another plugin's output.
-  /// Target file must contain:
-  /// ```
-  /// // @@bebopc_insertion_point(NAME)
-  /// ```
-  /// Content inserts above this marker. Multiple insertions to the same
-  /// point appear in plugin execution order.
-  /// When set, `name` must also be set to identify the target file.
+/// Insertion point name for extending another plugin's output.
+/// Target file must contain:
+/// ```
+/// // @@bebopc_insertion_point(NAME)
+/// ```
+/// Content inserts above this marker. Multiple insertions to the same
+/// point appear in plugin execution order.
+/// When set, `name` must also be set to identify the target file.
   pub insertion_point: option::Option<borrow::Cow<'buf, str>>,
-  /// File contents (complete file or insertion fragment).
-  /// For insertions, typically includes a trailing newline.
+/// File contents (complete file or insertion fragment).
+/// For insertions, typically includes a trailing newline.
   pub content: option::Option<borrow::Cow<'buf, str>>,
-  /// Source mapping connecting generated code to source schemas.
-  /// Optional; enables IDE features like go-to-definition.
+/// Source mapping connecting generated code to source schemas.
+/// Optional; enables IDE features like go-to-definition.
   pub generated_code_info: option::Option<SourceCodeInfo<'buf>>,
 }
 
@@ -593,9 +465,7 @@ impl<'buf> GeneratedFile<'buf> {
   pub fn into_owned(self) -> GeneratedFileOwned {
     GeneratedFile {
       name: self.name.map(|v| borrow::Cow::Owned(v.into_owned())),
-      insertion_point: self
-        .insertion_point
-        .map(|v| borrow::Cow::Owned(v.into_owned())),
+      insertion_point: self.insertion_point.map(|v| borrow::Cow::Owned(v.into_owned())),
       content: self.content.map(|v| borrow::Cow::Owned(v.into_owned())),
       generated_code_info: self.generated_code_info.map(|v| v.into_owned()),
     }
@@ -660,38 +530,13 @@ impl<'buf> bebop::BebopDecode<'buf> for GeneratedFile<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.name = option::Option::Some(borrow::Cow::Borrowed(
-            reader.read_str().for_field("GeneratedFile", "name")?,
-          ))
-        }
-        2 => {
-          msg.insertion_point = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("GeneratedFile", "insertion_point")?,
-          ))
-        }
-        3 => {
-          msg.content = option::Option::Some(borrow::Cow::Borrowed(
-            reader.read_str().for_field("GeneratedFile", "content")?,
-          ))
-        }
-        4 => {
-          msg.generated_code_info = option::Option::Some(
-            SourceCodeInfo::decode(reader).for_field("GeneratedFile", "generated_code_info")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "GeneratedFile",
-            tag,
-          });
-        }
+        1 => msg.name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("GeneratedFile", "name")?)),
+        2 => msg.insertion_point = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("GeneratedFile", "insertion_point")?)),
+        3 => msg.content = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("GeneratedFile", "content")?)),
+        4 => msg.generated_code_info = option::Option::Some(SourceCodeInfo::decode(reader).for_field("GeneratedFile", "generated_code_info")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "GeneratedFile", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:GeneratedFile)
@@ -731,17 +576,17 @@ impl<'buf> GeneratedFile<'buf> {
 /// that prevent correct code generation.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct CodeGeneratorResponse<'buf> {
-  /// Error message. If non-empty, code generation failed.
-  /// Set for schema problems that prevent generating correct code. Exit
-  /// with status zero.
-  /// For plugin bugs or environment problems (can't read input, out of
-  /// memory), write to stderr and exit non-zero instead.
+/// Error message. If non-empty, code generation failed.
+/// Set for schema problems that prevent generating correct code. Exit
+/// with status zero.
+/// For plugin bugs or environment problems (can't read input, out of
+/// memory), write to stderr and exit non-zero instead.
   pub error: option::Option<borrow::Cow<'buf, str>>,
-  /// Generated files to write to the output directory.
-  /// Written in array order. Later files with `insertion_point` can
-  /// extend earlier files in the same response.
+/// Generated files to write to the output directory.
+/// Written in array order. Later files with `insertion_point` can
+/// extend earlier files in the same response.
   pub files: option::Option<vec::Vec<GeneratedFile<'buf>>>,
-  /// Diagnostics to report. Displayed even on success (for warnings/info).
+/// Diagnostics to report. Displayed even on success (for warnings/info).
   pub diagnostics: option::Option<vec::Vec<Diagnostic<'buf>>>,
 }
 
@@ -751,12 +596,8 @@ impl<'buf> CodeGeneratorResponse<'buf> {
   pub fn into_owned(self) -> CodeGeneratorResponseOwned {
     CodeGeneratorResponse {
       error: self.error.map(|v| borrow::Cow::Owned(v.into_owned())),
-      files: self
-        .files
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
-      diagnostics: self
-        .diagnostics
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      files: self.files.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      diagnostics: self.diagnostics.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
     }
   }
 }
@@ -793,12 +634,10 @@ impl<'buf> bebop::BebopEncode for CodeGeneratorResponse<'buf> {
       size += bebop::wire_size::tagged_size(bebop::wire_size::string_size(v.len()));
     }
     if let option::Option::Some(ref v) = self.files {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     if let option::Option::Some(ref v) = self.diagnostics {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     size
   }
@@ -814,37 +653,12 @@ impl<'buf> bebop::BebopDecode<'buf> for CodeGeneratorResponse<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.error = option::Option::Some(borrow::Cow::Borrowed(
-            reader
-              .read_str()
-              .for_field("CodeGeneratorResponse", "error")?,
-          ))
-        }
-        2 => {
-          msg.files = option::Option::Some(
-            reader
-              .read_array(|_r| GeneratedFile::decode(_r))
-              .for_field("CodeGeneratorResponse", "files")?,
-          )
-        }
-        3 => {
-          msg.diagnostics = option::Option::Some(
-            reader
-              .read_array(|_r| Diagnostic::decode(_r))
-              .for_field("CodeGeneratorResponse", "diagnostics")?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "CodeGeneratorResponse",
-            tag,
-          });
-        }
+        1 => msg.error = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("CodeGeneratorResponse", "error")?)),
+        2 => msg.files = option::Option::Some(reader.read_array(|_r| GeneratedFile::decode(_r)).for_field("CodeGeneratorResponse", "files")?),
+        3 => msg.diagnostics = option::Option::Some(reader.read_array(|_r| Diagnostic::decode(_r)).for_field("CodeGeneratorResponse", "diagnostics")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "CodeGeneratorResponse", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:CodeGeneratorResponse)
@@ -861,10 +675,7 @@ impl<'buf> CodeGeneratorResponse<'buf> {
     self.files = option::Option::Some(value.into_iter().collect());
     self
   }
-  pub fn with_diagnostics(
-    mut self,
-    value: impl iter::IntoIterator<Item = Diagnostic<'buf>>,
-  ) -> Self {
+  pub fn with_diagnostics(mut self, value: impl iter::IntoIterator<Item = Diagnostic<'buf>>) -> Self {
     self.diagnostics = option::Option::Some(value.into_iter().collect());
     self
   }
