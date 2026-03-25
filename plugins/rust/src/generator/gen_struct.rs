@@ -1,5 +1,5 @@
 use crate::error::GeneratorError;
-use crate::generated::{DefinitionDescriptor, TypeDescriptor, TypeKind};
+use crate::generated::{DefinitionDescriptor, TypeDescriptor};
 
 use super::naming::{field_name, serde_field_rename, type_name};
 use super::type_mapper;
@@ -272,28 +272,9 @@ pub fn generate(
     name
   ));
   for meta in &field_metas {
-    let fname_ctx = &meta.schema_name;
-    let kind = meta.td.kind.unwrap_or(TypeKind::Unknown);
-    if kind == TypeKind::String {
-      // Zero-copy string: apply for_field on read_str(), then wrap in Cow.
-      output.push_str(&format!(
-        "    let {} = borrow::Cow::Borrowed(reader.read_str().for_field(\"{}\", \"{}\")?);\n",
-        meta.fname, name, fname_ctx
-      ));
-    } else if type_mapper::is_byte_array_cow_field(meta.td) {
-      // Zero-copy byte array: apply for_field on read_byte_slice(), then wrap in BebopBytes.
-      output.push_str(&format!(
-        "    let {} = bebop::BebopBytes::borrowed(reader.read_byte_slice().for_field(\"{}\", \"{}\")?);\n",
-        meta.fname, name, fname_ctx
-      ));
-    } else {
-      // Scalars, defined types, arrays, maps: append for_field before ?.
-      let read_expr = type_mapper::read_expression(meta.td, "reader", analysis)?;
-      output.push_str(&format!(
-        "    let {} = {}.for_field(\"{}\", \"{}\")?;\n",
-        meta.fname, read_expr, name, fname_ctx
-      ));
-    }
+    let expr =
+      type_mapper::read_field_expression(meta.td, "reader", analysis, &name, &meta.schema_name)?;
+    output.push_str(&format!("    let {} = {};\n", meta.fname, expr));
   }
   output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_end:{})\n",

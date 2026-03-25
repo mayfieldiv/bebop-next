@@ -316,37 +316,20 @@ pub fn generate(
   output.push_str("      match tag {\n");
 
   for meta in &field_metas {
-    let fname_ctx = &meta.schema_name;
-    let kind = meta.td.kind.unwrap_or(TypeKind::Unknown);
+    let expr =
+      type_mapper::read_field_expression(meta.td, "reader", analysis, &name, &meta.schema_name)?;
     match meta.wrap {
       FieldWrap::Boxed => {
-        let read_expr = type_mapper::read_expression(meta.td, "reader", analysis)?;
         output.push_str(&format!(
-          "        {} => msg.{} = option::Option::Some(boxed::Box::new({}.for_field(\"{}\", \"{}\")?)),\n",
-          meta.tag, meta.fname, read_expr, name, fname_ctx
+          "        {} => msg.{} = option::Option::Some(boxed::Box::new({})),\n",
+          meta.tag, meta.fname, expr
         ));
       }
       _ => {
-        if kind == TypeKind::String {
-          // Zero-copy string: apply for_field on read_str(), then wrap in Cow.
-          output.push_str(&format!(
-            "        {} => msg.{} = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field(\"{}\", \"{}\")?)),\n",
-            meta.tag, meta.fname, name, fname_ctx
-          ));
-        } else if type_mapper::is_byte_array_cow_field(meta.td) {
-          // Zero-copy byte array: apply for_field on read_byte_slice(), then wrap in BebopBytes.
-          output.push_str(&format!(
-            "        {} => msg.{} = option::Option::Some(bebop::BebopBytes::borrowed(reader.read_byte_slice().for_field(\"{}\", \"{}\")?)),\n",
-            meta.tag, meta.fname, name, fname_ctx
-          ));
-        } else {
-          // Scalars, defined types, arrays, maps: append for_field before ?.
-          let read_expr = type_mapper::read_expression(meta.td, "reader", analysis)?;
-          output.push_str(&format!(
-            "        {} => msg.{} = option::Option::Some({}.for_field(\"{}\", \"{}\")?),\n",
-            meta.tag, meta.fname, read_expr, name, fname_ctx
-          ));
-        }
+        output.push_str(&format!(
+          "        {} => msg.{} = option::Option::Some({}),\n",
+          meta.tag, meta.fname, expr
+        ));
       }
     }
   }
