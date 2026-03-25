@@ -6,16 +6,16 @@ pub enum DecodeError {
   UnexpectedEof {
     needed: usize,
     available: usize,
-    /// The type being decoded when the EOF occurred. Empty string if not yet set.
-    type_name: &'static str,
-    /// The field being decoded when the EOF occurred. Empty string if not yet set.
-    field_name: &'static str,
+    /// The type being decoded when the EOF occurred.
+    type_name: Option<&'static str>,
+    /// The field being decoded when the EOF occurred.
+    field_name: Option<&'static str>,
   },
   InvalidUtf8 {
-    /// The type being decoded when the invalid UTF-8 was found. Empty string if not yet set.
-    type_name: &'static str,
-    /// The field being decoded when the invalid UTF-8 was found. Empty string if not yet set.
-    field_name: &'static str,
+    /// The type being decoded when the invalid UTF-8 was found.
+    type_name: Option<&'static str>,
+    /// The field being decoded when the invalid UTF-8 was found.
+    field_name: Option<&'static str>,
   },
   InvalidEnum {
     type_name: &'static str,
@@ -42,12 +42,11 @@ impl DecodeError {
   /// Enrich a contextless error variant with type/field context.
   ///
   /// Only enriches [`DecodeError::UnexpectedEof`] and [`DecodeError::InvalidUtf8`] when
-  /// they have not already been enriched (i.e., `type_name` is empty). All other
+  /// they have not already been enriched (i.e., `type_name` is `None`). All other
   /// variants, and already-enriched contextless variants, pass through unchanged.
   ///
   /// This means the **innermost** `.for_field()` call wins when errors propagate
-  /// through nested decode calls. Outer decode frames calling `.for_field()` provide
-  /// a fallback in case no inner context was set.
+  /// through nested decode calls.
   pub fn with_context(self, type_name: &'static str, field_name: &'static str) -> Self {
     debug_assert!(
       !type_name.is_empty() && !field_name.is_empty(),
@@ -57,17 +56,19 @@ impl DecodeError {
       DecodeError::UnexpectedEof {
         needed,
         available,
-        type_name: "",
+        type_name: None,
         ..
       } => DecodeError::UnexpectedEof {
         needed,
         available,
-        type_name,
-        field_name,
+        type_name: Some(type_name),
+        field_name: Some(field_name),
       },
-      DecodeError::InvalidUtf8 { type_name: "", .. } => DecodeError::InvalidUtf8 {
-        type_name,
-        field_name,
+      DecodeError::InvalidUtf8 {
+        type_name: None, ..
+      } => DecodeError::InvalidUtf8 {
+        type_name: Some(type_name),
+        field_name: Some(field_name),
       },
       other => other,
     }
@@ -82,9 +83,6 @@ impl DecodeError {
 /// errors report exactly where in the schema the failure occurred.
 ///
 /// Inspired by the [`anyhow::Context`](https://docs.rs/anyhow/latest/anyhow/trait.Context.html) pattern.
-/// Only enriches [`DecodeError::UnexpectedEof`] and [`DecodeError::InvalidUtf8`]
-/// (the contextless variants); all others pass through unchanged. The innermost
-/// `.for_field()` call wins — outer callers add context only when none exists.
 pub trait DecodeContext<T> {
   fn for_field(
     self,
@@ -110,33 +108,29 @@ impl fmt::Display for DecodeError {
       Self::UnexpectedEof {
         needed,
         available,
-        type_name,
-        field_name,
+        type_name: Some(t),
+        field_name: Some(fld),
       } => {
-        if type_name.is_empty() || field_name.is_empty() {
-          write!(
-            f,
-            "unexpected eof: needed {} bytes, {} available",
-            needed, available
-          )
-        } else {
-          write!(
-            f,
-            "unexpected eof in {}.{}: needed {} bytes, {} available",
-            type_name, field_name, needed, available
-          )
-        }
+        write!(
+          f,
+          "unexpected eof in {}.{}: needed {} bytes, {} available",
+          t, fld, needed, available
+        )
+      }
+      Self::UnexpectedEof {
+        needed, available, ..
+      } => {
+        write!(
+          f,
+          "unexpected eof: needed {} bytes, {} available",
+          needed, available
+        )
       }
       Self::InvalidUtf8 {
-        type_name,
-        field_name,
-      } => {
-        if type_name.is_empty() || field_name.is_empty() {
-          write!(f, "invalid utf-8 in string")
-        } else {
-          write!(f, "invalid utf-8 in {}.{}", type_name, field_name)
-        }
-      }
+        type_name: Some(t),
+        field_name: Some(fld),
+      } => write!(f, "invalid utf-8 in {}.{}", t, fld),
+      Self::InvalidUtf8 { .. } => write!(f, "invalid utf-8 in string"),
       Self::InvalidEnum { type_name, value } => {
         write!(f, "invalid {} value: {}", type_name, value)
       }

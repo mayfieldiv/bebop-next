@@ -14,8 +14,8 @@ use crate::HashMap;
 #[inline]
 fn validate_utf8(bytes: &[u8]) -> core::result::Result<&str, DecodeError> {
   simdutf8::basic::from_utf8(bytes).map_err(|_| DecodeError::InvalidUtf8 {
-    type_name: "",
-    field_name: "",
+    type_name: None,
+    field_name: None,
   })
 }
 
@@ -64,8 +64,8 @@ impl<'a> BebopReader<'a> {
       Err(DecodeError::UnexpectedEof {
         needed: count,
         available: self.remaining(),
-        type_name: "",
-        field_name: "",
+        type_name: None,
+        field_name: None,
       })
     }
   }
@@ -181,8 +181,8 @@ impl<'a> BebopReader<'a> {
     let total = len.checked_add(1).ok_or(DecodeError::UnexpectedEof {
       needed: usize::MAX,
       available: self.remaining(),
-      type_name: "",
-      field_name: "",
+      type_name: None,
+      field_name: None,
     })?;
     self.ensure(total)?; // string bytes + NUL
     let str_bytes = &self.buf[self.pos..self.pos + len];
@@ -252,8 +252,8 @@ impl<'a> BebopReader<'a> {
       return Err(DecodeError::UnexpectedEof {
         needed: count,
         available: self.remaining(),
-        type_name: "",
-        field_name: "",
+        type_name: None,
+        field_name: None,
       });
     }
     let mut items: Vec<T> = Vec::new();
@@ -307,8 +307,8 @@ impl<'a> BebopReader<'a> {
       .ok_or(DecodeError::UnexpectedEof {
         needed: usize::MAX,
         available: self.remaining(),
-        type_name: "",
-        field_name: "",
+        type_name: None,
+        field_name: None,
       })?;
     self.ensure(byte_len)?;
 
@@ -365,8 +365,8 @@ impl<'a> BebopReader<'a> {
       return Err(DecodeError::UnexpectedEof {
         needed: count.saturating_mul(2),
         available: self.remaining(),
-        type_name: "",
-        field_name: "",
+        type_name: None,
+        field_name: None,
       });
     }
     let mut map = HashMap::new();
@@ -424,8 +424,8 @@ impl<'a> BebopReader<'a> {
     let total = len.checked_add(1).ok_or(DecodeError::UnexpectedEof {
       needed: usize::MAX,
       available: self.remaining(),
-      type_name: "",
-      field_name: "",
+      type_name: None,
+      field_name: None,
     })?;
     self.ensure(total)?; // string bytes + NUL
     let str_bytes = &self.buf[self.pos..self.pos + len];
