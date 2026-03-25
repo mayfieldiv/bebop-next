@@ -123,8 +123,7 @@ pub fn generate(
       // - RAW_REJECTED fields (e.g. `self`) are suffix-mangled to `self_`; use serde rename.
       // - Keyword fields (e.g. `type`) are prefixed with `r#`; strip the prefix.
       // - Regular fields are unchanged.
-      let schema_name = serde_field_rename(raw)
-        .unwrap_or_else(|| fname.strip_prefix("r#").unwrap_or(&fname).to_string());
+      let schema_name = raw.to_string();
       let td = f
         .r#type
         .as_ref()
