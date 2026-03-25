@@ -119,10 +119,6 @@ pub fn generate(
     .map(|f| {
       let raw = f.name.as_deref().unwrap_or("unknown");
       let fname = field_name(raw);
-      // Recover the Bebop schema name for decode error context:
-      // - RAW_REJECTED fields (e.g. `self`) are suffix-mangled to `self_`; use serde rename.
-      // - Keyword fields (e.g. `type`) are prefixed with `r#`; strip the prefix.
-      // - Regular fields are unchanged.
       let schema_name = raw.to_string();
       let td = f
         .r#type
