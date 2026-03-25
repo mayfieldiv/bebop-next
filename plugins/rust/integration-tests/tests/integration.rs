@@ -176,11 +176,11 @@ fn half_precision_arrays_round_trip_preserves_bits() {
 
 #[test]
 fn half_precision_message_some_and_none_round_trip() {
-  let mut msg = HalfPrecisionMessage::default();
-  msg.f16_val = Some(f16::from_bits(0x3555));
-  msg.bf16_val = Some(bf16::from_bits(0x3FC0));
-  msg.f16_arr = Some(vec![f16::from_bits(0x3C00), f16::from_bits(0xBC00)].into());
-  msg.bf16_arr = Some(vec![bf16::from_bits(0x3F80), bf16::from_bits(0xBF80)].into());
+  let msg = HalfPrecisionMessage::default()
+    .with_f16_val(f16::from_bits(0x3555))
+    .with_bf16_val(bf16::from_bits(0x3FC0))
+    .with_f16_arr(vec![f16::from_bits(0x3C00), f16::from_bits(0xBC00)])
+    .with_bf16_arr(vec![bf16::from_bits(0x3F80), bf16::from_bits(0xBF80)]);
 
   let bytes = msg.to_bytes();
   let decoded = HalfPrecisionMessage::from_bytes(&bytes).unwrap();
@@ -485,9 +485,9 @@ fn byte_tag_map_struct_encoded_size_matches() {
 
 #[test]
 fn byte_array_message_round_trip() {
-  let mut msg = ByteArrayMessage::default();
-  msg.label = Some("test".into());
-  msg.payload = Some(vec![0xDEu8, 0xAD].into());
+  let msg = ByteArrayMessage::default()
+    .with_label("test")
+    .with_payload(vec![0xDEu8, 0xAD]);
   let bytes = msg.to_bytes();
   let msg2 = ByteArrayMessage::from_bytes(&bytes).unwrap();
   assert_eq!(msg2.label.as_deref(), Some("test"));
@@ -496,19 +496,15 @@ fn byte_array_message_round_trip() {
 
 #[test]
 fn byte_array_message_encoded_size_matches() {
-  let mut msg = ByteArrayMessage::default();
-  msg.payload = Some(vec![1u8, 2, 3].into());
+  let msg = ByteArrayMessage::default().with_payload(vec![1u8, 2, 3]);
   assert_eq!(msg.encoded_size(), msg.to_bytes().len());
 }
 
 #[test]
 fn byte_collection_message_round_trip() {
-  let mut msg = ByteCollectionMessage::default();
-  msg.matrix = Some(vec![vec![1u8, 2].into(), vec![3u8, 4, 5].into()]);
-  let mut tagged = HashMap::new();
-  tagged.insert("a".into(), vec![10u8].into());
-  tagged.insert("b".into(), vec![20u8, 30].into());
-  msg.tagged = Some(tagged);
+  let msg = ByteCollectionMessage::default()
+    .with_matrix([vec![1u8, 2], vec![3, 4, 5]])
+    .with_tagged([("a", vec![10u8]), ("b", vec![20, 30])]);
 
   let bytes = msg.to_bytes();
   let msg2 = ByteCollectionMessage::from_bytes(&bytes).unwrap();
@@ -523,8 +519,7 @@ fn byte_collection_message_round_trip() {
 
 #[test]
 fn byte_collection_message_encoded_size_matches() {
-  let mut msg = ByteCollectionMessage::default();
-  msg.matrix = Some(vec![vec![1u8, 2, 3].into()]);
+  let msg = ByteCollectionMessage::default().with_matrix([vec![1u8, 2, 3]]);
   assert_eq!(msg.encoded_size(), msg.to_bytes().len());
 }
 
@@ -611,9 +606,9 @@ fn message_default_is_empty() {
 
 #[test]
 fn message_round_trip_partial() {
-  let mut cmd = DrawCommand::default();
-  cmd.target = Some(Point::new(5.0, 10.0));
-  cmd.color = Some(Color::Blue);
+  let cmd = DrawCommand::default()
+    .with_target(Point::new(5.0, 10.0))
+    .with_color(Color::Blue);
   // label and thickness left as None
 
   let bytes = cmd.to_bytes();
@@ -628,11 +623,11 @@ fn message_round_trip_partial() {
 
 #[test]
 fn message_round_trip_full() {
-  let mut cmd = DrawCommand::default();
-  cmd.target = Some(Point::new(1.0, 2.0));
-  cmd.color = Some(Color::Red);
-  cmd.label = Some("test label".into());
-  cmd.thickness = Some(2.5);
+  let cmd = DrawCommand::default()
+    .with_target(Point::new(1.0, 2.0))
+    .with_color(Color::Red)
+    .with_label("test label")
+    .with_thickness(2.5);
 
   let bytes = cmd.to_bytes();
   let cmd2 = DrawCommand::from_bytes(&bytes).unwrap();
@@ -644,8 +639,7 @@ fn message_round_trip_full() {
 
 #[test]
 fn message_zero_copy_string_fields() {
-  let mut cmd = DrawCommand::default();
-  cmd.label = Some("hello".into());
+  let cmd = DrawCommand::default().with_label("hello");
   let bytes = cmd.to_bytes();
   let decoded = DrawCommand::from_bytes(&bytes).unwrap();
   match &decoded.label {
@@ -656,8 +650,7 @@ fn message_zero_copy_string_fields() {
 
 #[test]
 fn message_into_owned() {
-  let mut cmd = DrawCommand::default();
-  cmd.label = Some("owned".into());
+  let cmd = DrawCommand::default().with_label("owned");
   let bytes = cmd.to_bytes();
   let decoded = DrawCommand::from_bytes(&bytes).unwrap();
   let owned: DrawCommandOwned = decoded.into_owned();
@@ -666,9 +659,9 @@ fn message_into_owned() {
 
 #[test]
 fn message_encoded_size_matches() {
-  let mut cmd = DrawCommand::default();
-  cmd.target = Some(Point::new(1.0, 2.0));
-  cmd.label = Some("test".into());
+  let cmd = DrawCommand::default()
+    .with_target(Point::new(1.0, 2.0))
+    .with_label("test");
   assert_eq!(cmd.encoded_size(), cmd.to_bytes().len());
 }
 
@@ -678,8 +671,7 @@ fn message_encoded_size_matches() {
 
 #[test]
 fn message_with_string_array() {
-  let mut profile = UserProfile::default();
-  profile.tags = Some(vec!["rust".into(), "bebop".into()]);
+  let profile = UserProfile::default().with_tags(["rust", "bebop"]);
   let bytes = profile.to_bytes();
   let p2 = UserProfile::from_bytes(&bytes).unwrap();
   let tags = p2.tags.unwrap();
@@ -690,11 +682,7 @@ fn message_with_string_array() {
 
 #[test]
 fn message_with_string_map() {
-  let mut profile = UserProfile::default();
-  let mut meta: HashMap<Cow<str>, Cow<str>> = HashMap::new();
-  meta.insert("theme".into(), "dark".into());
-  meta.insert("lang".into(), "en".into());
-  profile.metadata = Some(meta);
+  let profile = UserProfile::default().with_metadata([("theme", "dark"), ("lang", "en")]);
 
   let bytes = profile.to_bytes();
   let p2 = UserProfile::from_bytes(&bytes).unwrap();
@@ -706,16 +694,14 @@ fn message_with_string_map() {
 
 #[test]
 fn message_with_all_fields() {
-  let mut profile = UserProfile::default();
-  profile.display_name = Some("Alice".into());
-  profile.email = Some("alice@example.com".into());
-  profile.age = Some(30);
-  profile.active = Some(true);
-  profile.tags = Some(vec!["admin".into()]);
-  let mut meta: HashMap<Cow<str>, Cow<str>> = HashMap::new();
-  meta.insert("key".into(), "val".into());
-  profile.metadata = Some(meta);
-  profile.permissions = Some(Permissions::READ | Permissions::WRITE);
+  let profile = UserProfile::default()
+    .with_display_name("Alice")
+    .with_email("alice@example.com")
+    .with_age(30)
+    .with_active(true)
+    .with_tags(["admin"])
+    .with_metadata([("key", "val")])
+    .with_permissions(Permissions::READ | Permissions::WRITE);
 
   let bytes = profile.to_bytes();
   let p2 = UserProfile::from_bytes(&bytes).unwrap();
@@ -730,28 +716,23 @@ fn message_with_all_fields() {
 
 #[test]
 fn message_with_all_fields_encoded_size_matches() {
-  let mut profile = UserProfile::default();
-  profile.display_name = Some("Alice".into());
-  profile.email = Some("alice@example.com".into());
-  profile.age = Some(30);
-  profile.active = Some(true);
-  profile.tags = Some(vec!["a".into(), "bb".into()]);
-  let mut meta: HashMap<Cow<str>, Cow<str>> = HashMap::new();
-  meta.insert("k".into(), "v".into());
-  profile.metadata = Some(meta);
-  profile.permissions = Some(Permissions::ALL);
+  let profile = UserProfile::default()
+    .with_display_name("Alice")
+    .with_email("alice@example.com")
+    .with_age(30)
+    .with_active(true)
+    .with_tags(["a", "bb"])
+    .with_metadata([("k", "v")])
+    .with_permissions(Permissions::ALL);
 
   assert_eq!(profile.encoded_size(), profile.to_bytes().len());
 }
 
 #[test]
 fn message_with_map_string_uint32() {
-  let mut inv = Inventory::default();
-  let mut items: HashMap<Cow<str>, u32> = HashMap::new();
-  items.insert("sword".into(), 1u32);
-  items.insert("potion".into(), 5u32);
-  inv.items = Some(items);
-  inv.label = Some("player inventory".into());
+  let inv = Inventory::default()
+    .with_items([("sword", 1u32), ("potion", 5)])
+    .with_label("player inventory");
 
   let bytes = inv.to_bytes();
   let inv2 = Inventory::from_bytes(&bytes).unwrap();
@@ -764,11 +745,9 @@ fn message_with_map_string_uint32() {
 
 #[test]
 fn message_inventory_encoded_size_matches() {
-  let mut inv = Inventory::default();
-  let mut items: HashMap<Cow<str>, u32> = HashMap::new();
-  items.insert("a".into(), 10u32);
-  inv.items = Some(items);
-  inv.label = Some("x".into());
+  let inv = Inventory::default()
+    .with_items([("a", 10u32)])
+    .with_label("x");
   assert_eq!(inv.encoded_size(), inv.to_bytes().len());
 }
 
@@ -935,13 +914,13 @@ fn union_unknown_zero_copy() {
 
 #[test]
 fn scene_round_trip() {
-  let mut scene = Scene::default();
-  scene.shapes = Some(vec![
-    Shape::Point(Point::new(1.0, 2.0)),
-    Shape::Label(TextLabel::new(Point::new(3.0, 4.0), "label")),
-  ]);
-  scene.background = Some(Color::Blue);
-  scene.title = Some("test scene".into());
+  let scene = Scene::default()
+    .with_shapes(vec![
+      Shape::Point(Point::new(1.0, 2.0)),
+      Shape::Label(TextLabel::new(Point::new(3.0, 4.0), "label")),
+    ])
+    .with_background(Color::Blue)
+    .with_title("test scene");
 
   let bytes = scene.to_bytes();
   let scene2 = Scene::from_bytes(&bytes).unwrap();
@@ -961,12 +940,12 @@ fn scene_round_trip() {
 
 #[test]
 fn scene_into_owned() {
-  let mut scene = Scene::default();
-  scene.shapes = Some(vec![Shape::Label(TextLabel::new(
-    Point::new(0.0, 0.0),
-    "x",
-  ))]);
-  scene.title = Some("y".into());
+  let scene = Scene::default()
+    .with_shapes(vec![Shape::Label(TextLabel::new(
+      Point::new(0.0, 0.0),
+      "x",
+    ))])
+    .with_title("y");
 
   let bytes = scene.to_bytes();
   let decoded = Scene::from_bytes(&bytes).unwrap();
@@ -980,13 +959,13 @@ fn scene_into_owned() {
 
 #[test]
 fn scene_encoded_size_matches() {
-  let mut scene = Scene::default();
-  scene.shapes = Some(vec![
-    Shape::Point(Point::new(1.0, 2.0)),
-    Shape::Pixel(Pixel::new(Point::new(0.0, 0.0), Color::Red, 255)),
-  ]);
-  scene.background = Some(Color::Green);
-  scene.title = Some("scene title".into());
+  let scene = Scene::default()
+    .with_shapes(vec![
+      Shape::Point(Point::new(1.0, 2.0)),
+      Shape::Pixel(Pixel::new(Point::new(0.0, 0.0), Color::Red, 255)),
+    ])
+    .with_background(Color::Green)
+    .with_title("scene title");
   assert_eq!(scene.encoded_size(), scene.to_bytes().len());
 }
 
@@ -1042,8 +1021,7 @@ fn constructing_cow_fields_directly() {
 
 #[test]
 fn message_empty_string_array() {
-  let mut profile = UserProfile::default();
-  profile.tags = Some(vec![]);
+  let profile = UserProfile::default().with_tags(Vec::<&str>::new());
   let bytes = profile.to_bytes();
   let p2 = UserProfile::from_bytes(&bytes).unwrap();
   assert_eq!(p2.tags.unwrap().len(), 0);
@@ -1051,8 +1029,7 @@ fn message_empty_string_array() {
 
 #[test]
 fn message_empty_map() {
-  let mut profile = UserProfile::default();
-  profile.metadata = Some(HashMap::new());
+  let profile = UserProfile::default().with_metadata(Vec::<(&str, &str)>::new());
   let bytes = profile.to_bytes();
   let p2 = UserProfile::from_bytes(&bytes).unwrap();
   assert_eq!(p2.metadata.unwrap().len(), 0);
@@ -1105,10 +1082,10 @@ fn forward_reference_struct_round_trip() {
 #[test]
 #[allow(deprecated)]
 fn deprecated_message_fields_round_trip() {
-  let mut msg = DeprecatedFieldsMessage::default();
-  msg.current_name = Some("current".into());
-  msg.legacy_name = Some("legacy".into());
-  msg.legacy_enabled = Some(true);
+  let msg = DeprecatedFieldsMessage::default()
+    .with_current_name("current")
+    .with_legacy_name("legacy")
+    .with_legacy_enabled(true);
 
   let bytes = msg.to_bytes();
   let decoded = DeprecatedFieldsMessage::from_bytes(&bytes).unwrap();
@@ -1120,15 +1097,9 @@ fn deprecated_message_fields_round_trip() {
 
 #[test]
 fn integer_key_maps_round_trip() {
-  let mut msg = IntegerKeyMaps::default();
-  let mut labels = HashMap::new();
-  labels.insert(7u32, "seven".into());
-  labels.insert(42u32, "forty-two".into());
-  let mut flags = HashMap::new();
-  flags.insert(-1i64, false);
-  flags.insert(1_000_000_000_000i64, true);
-  msg.labels_by_id = Some(labels);
-  msg.flags_by_id = Some(flags);
+  let msg = IntegerKeyMaps::default()
+    .with_labels_by_id([(7u32, "seven"), (42, "forty-two")])
+    .with_flags_by_id([(-1i64, false), (1_000_000_000_000, true)]);
 
   let bytes = msg.to_bytes();
   let decoded = IntegerKeyMaps::from_bytes(&bytes).unwrap();
@@ -1143,9 +1114,9 @@ fn integer_key_maps_round_trip() {
 
 #[test]
 fn integer_key_maps_empty_round_trip() {
-  let mut msg = IntegerKeyMaps::default();
-  msg.labels_by_id = Some(HashMap::new());
-  msg.flags_by_id = Some(HashMap::new());
+  let msg = IntegerKeyMaps::default()
+    .with_labels_by_id(Vec::<(u32, &str)>::new())
+    .with_flags_by_id(Vec::<(i64, bool)>::new());
 
   let bytes = msg.to_bytes();
   let decoded = IntegerKeyMaps::from_bytes(&bytes).unwrap();
@@ -1160,11 +1131,7 @@ fn deep_nested_collections_round_trip() {
   let mut branch_b = HashMap::new();
   branch_b.insert("right".into(), NestedLeaf::new("beta"));
 
-  let mut nested = HashMap::new();
-  nested.insert("bucket".into(), vec![branch_a, branch_b]);
-
-  let mut msg = DeepNestedCollections::default();
-  msg.nested = Some(nested);
+  let msg = DeepNestedCollections::default().with_nested([("bucket", vec![branch_a, branch_b])]);
 
   let bytes = msg.to_bytes();
   let decoded = DeepNestedCollections::from_bytes(&bytes).unwrap();
@@ -1178,10 +1145,7 @@ fn deep_nested_collections_round_trip() {
 
 #[test]
 fn deep_nested_collections_empty_round_trip() {
-  let mut msg = DeepNestedCollections::default();
-  let mut nested = HashMap::new();
-  nested.insert("bucket".into(), Vec::new());
-  msg.nested = Some(nested);
+  let msg = DeepNestedCollections::default().with_nested([("bucket", Vec::new())]);
 
   let bytes = msg.to_bytes();
   let decoded = DeepNestedCollections::from_bytes(&bytes).unwrap();
@@ -1218,16 +1182,16 @@ fn timestamped_event_encoded_size_matches() {
 
 #[test]
 fn schedule_entry_round_trip_full() {
-  let mut entry = ScheduleEntry::default();
-  entry.start = Some(BebopTimestamp {
-    seconds: 1_700_000_000,
-    nanos: 0,
-  });
-  entry.duration = Some(BebopDuration {
-    seconds: 3600,
-    nanos: 0,
-  });
-  entry.label = Some("meeting".into());
+  let entry = ScheduleEntry::default()
+    .with_start(BebopTimestamp {
+      seconds: 1_700_000_000,
+      nanos: 0,
+    })
+    .with_duration(BebopDuration {
+      seconds: 3600,
+      nanos: 0,
+    })
+    .with_label("meeting");
 
   let bytes = entry.to_bytes();
   let entry2 = ScheduleEntry::from_bytes(&bytes).unwrap();
@@ -1250,8 +1214,7 @@ fn schedule_entry_round_trip_full() {
 
 #[test]
 fn schedule_entry_round_trip_partial() {
-  let mut entry = ScheduleEntry::default();
-  entry.start = Some(BebopTimestamp {
+  let entry = ScheduleEntry::default().with_start(BebopTimestamp {
     seconds: 100,
     nanos: 500,
   });
@@ -1272,16 +1235,16 @@ fn schedule_entry_round_trip_partial() {
 
 #[test]
 fn schedule_entry_encoded_size_matches() {
-  let mut entry = ScheduleEntry::default();
-  entry.start = Some(BebopTimestamp {
-    seconds: 42,
-    nanos: 1,
-  });
-  entry.duration = Some(BebopDuration {
-    seconds: 10,
-    nanos: 999,
-  });
-  entry.label = Some("x".into());
+  let entry = ScheduleEntry::default()
+    .with_start(BebopTimestamp {
+      seconds: 42,
+      nanos: 1,
+    })
+    .with_duration(BebopDuration {
+      seconds: 10,
+      nanos: 999,
+    })
+    .with_label("x");
   assert_eq!(entry.encoded_size(), entry.to_bytes().len());
 }
 
@@ -1312,9 +1275,9 @@ fn serde_byte_array_struct_round_trip_json() {
 #[cfg(feature = "serde")]
 #[test]
 fn serde_byte_array_message_round_trip_json() {
-  let mut msg = ByteArrayMessage::default();
-  msg.label = Some("test".into());
-  msg.payload = Some(vec![0xCAu8, 0xFE].into());
+  let msg = ByteArrayMessage::default()
+    .with_label("test")
+    .with_payload(vec![0xCAu8, 0xFE]);
   let json = serde_json::to_string(&msg).unwrap();
   let decoded: ByteArrayMessageOwned = serde_json::from_str(&json).unwrap();
   assert_eq!(decoded.label.as_deref(), Some("test"));
@@ -1344,11 +1307,9 @@ fn serde_byte_tag_map_round_trip_json() {
 #[cfg(feature = "serde")]
 #[test]
 fn serde_byte_collection_message_round_trip_json() {
-  let mut msg = ByteCollectionMessage::default();
-  msg.matrix = Some(vec![vec![0xAAu8, 0xBB].into(), vec![0xCCu8].into()]);
-  let mut tagged = HashMap::new();
-  tagged.insert("x".into(), vec![0xFFu8].into());
-  msg.tagged = Some(tagged);
+  let msg = ByteCollectionMessage::default()
+    .with_matrix([vec![0xAAu8, 0xBB], vec![0xCC]])
+    .with_tagged([("x", vec![0xFFu8])]);
 
   let json = serde_json::to_string(&msg).unwrap();
   let decoded: ByteCollectionMessageOwned = serde_json::from_str(&json).unwrap();
@@ -1362,16 +1323,14 @@ fn serde_byte_collection_message_round_trip_json() {
 #[cfg(feature = "serde")]
 #[test]
 fn serde_message_round_trip_json() {
-  let mut profile = UserProfile::default();
-  profile.display_name = Some("alice".into());
-  profile.email = Some("alice@example.com".into());
-  profile.age = Some(42);
-  profile.active = Some(true);
-  profile.tags = Some(vec!["admin".into()]);
-  let mut meta: HashMap<Cow<str>, Cow<str>> = HashMap::new();
-  meta.insert("language".into(), "rust".into());
-  profile.metadata = Some(meta);
-  profile.permissions = Some(Permissions::READ | Permissions::WRITE);
+  let profile = UserProfile::default()
+    .with_display_name("alice")
+    .with_email("alice@example.com")
+    .with_age(42)
+    .with_active(true)
+    .with_tags(["admin"])
+    .with_metadata([("language", "rust")])
+    .with_permissions(Permissions::READ | Permissions::WRITE);
 
   let json = serde_json::to_string(&profile).unwrap();
   let decoded: UserProfileOwned = serde_json::from_str(&json).unwrap();
@@ -1433,16 +1392,16 @@ fn serde_timestamp_roundtrip() {
 #[cfg(feature = "serde")]
 #[test]
 fn serde_duration_message_roundtrip() {
-  let mut entry = ScheduleEntry::default();
-  entry.start = Some(BebopTimestamp {
-    seconds: 1_000_000,
-    nanos: 0,
-  });
-  entry.duration = Some(BebopDuration {
-    seconds: 3600,
-    nanos: 500_000,
-  });
-  entry.label = Some("daily standup".into());
+  let entry = ScheduleEntry::default()
+    .with_start(BebopTimestamp {
+      seconds: 1_000_000,
+      nanos: 0,
+    })
+    .with_duration(BebopDuration {
+      seconds: 3600,
+      nanos: 500_000,
+    })
+    .with_label("daily standup");
 
   let json = serde_json::to_string(&entry).unwrap();
   let decoded: ScheduleEntryOwned = serde_json::from_str(&json).unwrap();
@@ -1455,12 +1414,12 @@ fn serde_duration_message_roundtrip() {
 #[cfg(feature = "serde")]
 #[test]
 fn serde_duration_message_partial_roundtrip() {
-  let mut entry = ScheduleEntry::default();
-  entry.start = Some(BebopTimestamp {
-    seconds: 2_000_000,
-    nanos: 100,
-  });
-  entry.label = Some("no duration".into());
+  let entry = ScheduleEntry::default()
+    .with_start(BebopTimestamp {
+      seconds: 2_000_000,
+      nanos: 100,
+    })
+    .with_label("no duration");
   // duration intentionally left as None
 
   let json = serde_json::to_string(&entry).unwrap();
@@ -1512,17 +1471,9 @@ fn serde_uuid_roundtrip() {
 #[cfg(feature = "serde")]
 #[test]
 fn serde_integer_key_map_roundtrip() {
-  let mut msg = IntegerKeyMaps::default();
-
-  let mut labels = HashMap::new();
-  labels.insert(42u32, "answer".into());
-  labels.insert(7u32, "lucky".into());
-  msg.labels_by_id = Some(labels);
-
-  let mut flags = HashMap::new();
-  flags.insert(-1i64, true);
-  flags.insert(100i64, false);
-  msg.flags_by_id = Some(flags);
+  let msg = IntegerKeyMaps::default()
+    .with_labels_by_id([(42u32, "answer"), (7, "lucky")])
+    .with_flags_by_id([(-1i64, true), (100, false)]);
 
   let json = serde_json::to_string(&msg).unwrap();
   let decoded: IntegerKeyMapsOwned = serde_json::from_str(&json).unwrap();
@@ -1611,9 +1562,7 @@ fn strict_union_rejects_unknown_discriminator() {
 
 #[test]
 fn strict_message_known_fields_round_trip() {
-  let mut msg = StrictConfig::default();
-  msg.name = Some(Cow::Borrowed("test"));
-  msg.value = Some(42);
+  let msg = StrictConfig::default().with_name("test").with_value(42);
   let bytes = msg.to_bytes();
   let decoded = StrictConfig::from_bytes(&bytes).unwrap();
   assert_eq!(decoded.name.as_deref(), Some("test"));
@@ -1646,9 +1595,7 @@ fn strict_message_rejects_unknown_field() {
 
 #[test]
 fn fc_message_known_fields_round_trip() {
-  let mut msg = FlexConfig::default();
-  msg.name = Some(Cow::Borrowed("flex"));
-  msg.value = Some(7);
+  let msg = FlexConfig::default().with_name("flex").with_value(7);
   let bytes = msg.to_bytes();
   let decoded = FlexConfig::from_bytes(&bytes).unwrap();
   assert_eq!(decoded.name.as_deref(), Some("flex"));
@@ -1659,8 +1606,7 @@ fn fc_message_known_fields_round_trip() {
 fn fc_message_skips_unknown_field() {
   // Encode a FlexConfig with known fields, then inject extra trailing data
   // before the terminator. The fc message should skip it gracefully.
-  let mut msg = FlexConfig::default();
-  msg.name = Some(Cow::Borrowed("ok"));
+  let msg = FlexConfig::default().with_name("ok");
   let bytes = msg.to_bytes();
   // If we decode the valid bytes, it should work fine.
   let decoded = FlexConfig::from_bytes(&bytes).unwrap();
