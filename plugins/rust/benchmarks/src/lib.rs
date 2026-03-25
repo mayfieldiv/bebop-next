@@ -207,18 +207,18 @@ pub mod fixtures {
 
   pub fn llm_chunk_small() -> bt::LlmStreamChunk<'static> {
     let tokens = vec!["Hello".to_string(), ",".to_string(), " world".to_string()];
-    let logprobs = tokens
+    let logprobs: Vec<_> = tokens
       .iter()
-      .map(|tok| bt::TokenAlternatives::new(vec![bt::TokenLogprob::new(tok.clone(), 1000, -0.1)]))
+      .map(|tok| bt::TokenAlternatives::new([bt::TokenLogprob::new(tok.clone(), 1000, -0.1)]))
       .collect();
     bt::LlmStreamChunk::new(1, tokens, logprobs, "")
   }
 
   pub fn llm_chunk_large() -> bt::LlmStreamChunk<'static> {
     let tokens: Vec<String> = (0..32).map(|i| format!("tk{i:02}")).collect();
-    let logprobs = (0..32)
+    let logprobs: Vec<_> = (0..32)
       .map(|i| {
-        let alts = (0..5)
+        let alts: Vec<_> = (0..5)
           .map(|k| bt::TokenLogprob::new(format!("a{i}_{k}"), (i * 5 + k) as u32, -0.5))
           .collect();
         bt::TokenAlternatives::new(alts)

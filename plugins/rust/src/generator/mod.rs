@@ -615,7 +615,7 @@ impl RustGenerator {
     output.push_str("use bebop_runtime as bebop;\n");
     output.push_str("use core::convert::Into as _;\n");
     output.push_str("use core::iter::{IntoIterator as _, Iterator as _};\n");
-    output.push_str("use core::{convert, default, mem, ops, option, result};\n");
+    output.push_str("use core::{convert, default, iter, mem, ops, option, result};\n");
     match &self.options.serde {
       SerdeMode::Disabled => {}
       SerdeMode::Always => {
@@ -1280,14 +1280,13 @@ mod tests {
       .expect("generator should succeed");
 
     assert!(
-      output.contains("tokens: vec::Vec<string::String>"),
-      "expected constructor conversion for Vec<String> -> Vec<Cow<str>>; output:\n{}",
+      output.contains("impl iter::IntoIterator<Item = impl convert::Into<borrow::Cow<'buf, str>>>"),
+      "expected IntoIterator param for string array; output:\n{}",
       output
     );
     assert!(
-      output
-        .contains("let tokens = tokens.into_iter().map(|_e| borrow::Cow::Owned(_e)).collect();"),
-      "expected constructor conversion for Vec<String> -> Vec<Cow<str>>; output:\n{}",
+      output.contains("let tokens = tokens.into_iter().map(|_e| _e.into()).collect();"),
+      "expected IntoIterator collect expression for string array; output:\n{}",
       output
     );
   }

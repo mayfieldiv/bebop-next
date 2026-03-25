@@ -133,11 +133,20 @@ pub fn generate(
     }
   }
   output.push_str("  pub fn new(");
+  // Pre-compute IntoIterator info for collection fields
+  let collection_infos: Vec<Option<(String, String)>> = field_metas
+    .iter()
+    .map(|meta| type_mapper::collection_into_iter(meta.td, &meta.fname, analysis))
+    .collect::<Result<Vec<_>, GeneratorError>>()?;
+
   for (i, meta) in field_metas.iter().enumerate() {
     if i > 0 {
       output.push_str(", ");
     }
-    if has_lifetime && type_mapper::is_cow_field(meta.td) {
+    if let Some((ref param_type, _)) = collection_infos[i] {
+      // Collection field with IntoIterator
+      output.push_str(&format!("{}: {}", meta.fname, param_type));
+    } else if has_lifetime && type_mapper::is_cow_field(meta.td) {
       output.push_str(&format!(
         "{}: impl convert::Into<{}>",
         meta.fname, meta.cow_type
@@ -148,10 +157,14 @@ pub fn generate(
   }
   output.push_str(") -> Self {\n");
   let mut init_fields: Vec<String> = Vec::with_capacity(field_metas.len());
-  for meta in &field_metas {
-    if has_lifetime && type_mapper::is_cow_field(meta.td) {
+  for (i, meta) in field_metas.iter().enumerate() {
+    if let Some((_, ref body_expr)) = collection_infos[i] {
+      // Collection field: use IntoIterator collect expression
+      output.push_str(&format!("    let {} = {};\n", meta.fname, body_expr));
+      init_fields.push(meta.fname.clone());
+    } else if has_lifetime && type_mapper::is_cow_field(meta.td) {
       output.push_str(&format!(
-        "    let {} = convert::Into::into({});\n",
+        "    let {} = {}.into();\n",
         meta.fname, meta.fname
       ));
       init_fields.push(meta.fname.clone());

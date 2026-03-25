@@ -1011,3 +1011,148 @@ pub fn into_borrowed_expression(
     _ => Ok(value.to_string()),
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// IntoIterator constructor helpers
+// ═══════════════════════════════════════════════════════════════════
+
+/// For a single element type, return (param_fragment, needs_into).
+///
+/// `param_fragment` is the type to use in `impl Into<param_fragment>` when
+/// the element needs conversion, or just the raw type when it doesn't.
+/// `needs_into` indicates whether `.into()` is required in the body.
+fn element_into_info(
+  td: &TypeDescriptor,
+  analysis: &LifetimeAnalysis,
+) -> Result<(String, bool), GeneratorError> {
+  let kind = td
+    .kind
+    .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
+
+  match kind {
+    // String → Cow<'buf, str>, needs Into
+    TypeKind::String => Ok(("borrow::Cow<'buf, str>".to_string(), true)),
+    TypeKind::Array => {
+      // byte[] → BebopBytes, needs Into
+      if is_byte_array_cow_field(td) {
+        return Ok(("bebop::BebopBytes<'buf>".to_string(), true));
+      }
+      // Bulk scalar arrays → Cow<'buf, [T]>, needs Into
+      if let Some(elem) = td.array_element.as_ref() {
+        if let Some(ek) = elem.kind.filter(|k| is_bulk_scalar(*k)) {
+          // is_bulk_scalar guarantees scalar_type returns Some
+          let ty = scalar_type(ek).unwrap();
+          return Ok((format!("borrow::Cow<'buf, [{}]>", ty), true));
+        }
+      }
+      // Other arrays (e.g. Vec<DefinedType>) — use cow_type, no Into
+      Ok((rust_type(td, analysis)?, false))
+    }
+    TypeKind::Map => {
+      // Maps are not simple elements — use cow_type, no Into
+      Ok((rust_type(td, analysis)?, false))
+    }
+    TypeKind::Defined => {
+      // Defined types pass through as-is
+      Ok((rust_type(td, analysis)?, false))
+    }
+    _ => {
+      // Scalars — pass through, no Into needed
+      if let Some(s) = scalar_type(kind) {
+        Ok((s.to_string(), false))
+      } else {
+        Ok((rust_type(td, analysis)?, false))
+      }
+    }
+  }
+}
+
+/// Return `IntoIterator`-based parameter type and body expression for a collection
+/// field in a struct `new()` constructor.
+///
+/// Returns `Ok(Some((param_type, body_expr)))` for Array and Map fields that benefit
+/// from `IntoIterator`. Returns `Ok(None)` for non-collection fields or fields already
+/// handled by `is_cow_field` (which uses `impl Into<Cow<...>>`).
+///
+/// `param_name` is the variable name used in the body expression.
+pub fn collection_into_iter(
+  td: &TypeDescriptor,
+  param_name: &str,
+  analysis: &LifetimeAnalysis,
+) -> Result<Option<(String, String)>, GeneratorError> {
+  let kind = td
+    .kind
+    .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
+
+  // Skip types already handled as Cow fields (String, byte[], bulk scalar[])
+  if is_cow_field(td) {
+    return Ok(None);
+  }
+
+  match kind {
+    TypeKind::Array => {
+      let elem = td
+        .array_element
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("array missing element type".into()))?;
+
+      let (elem_type, needs_into) = element_into_info(elem, analysis)?;
+
+      if needs_into {
+        // impl IntoIterator<Item = impl Into<ElemType>>
+        let param = format!(
+          "impl iter::IntoIterator<Item = impl convert::Into<{}>>",
+          elem_type
+        );
+        let body = format!("{}.into_iter().map(|_e| _e.into()).collect()", param_name);
+        Ok(Some((param, body)))
+      } else {
+        // impl IntoIterator<Item = ElemType> — no conversion needed
+        let param = format!("impl iter::IntoIterator<Item = {}>", elem_type);
+        let body = format!("{}.into_iter().collect()", param_name);
+        Ok(Some((param, body)))
+      }
+    }
+    TypeKind::Map => {
+      let key = td
+        .map_key
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("map missing key type".into()))?;
+      let val = td
+        .map_value
+        .as_ref()
+        .ok_or_else(|| GeneratorError::MalformedType("map missing value type".into()))?;
+
+      let (key_type, key_into) = element_into_info(key, analysis)?;
+      let (val_type, val_into) = element_into_info(val, analysis)?;
+
+      // Build item type: (impl Into<K>, impl Into<V>) or (K, V) etc.
+      let k_param = if key_into {
+        format!("impl convert::Into<{}>", key_type)
+      } else {
+        key_type
+      };
+      let v_param = if val_into {
+        format!("impl convert::Into<{}>", val_type)
+      } else {
+        val_type
+      };
+      let param = format!("impl iter::IntoIterator<Item = ({}, {})>", k_param, v_param);
+
+      // Build body expression
+      let k_expr = if key_into { "_k.into()" } else { "_k" };
+      let v_expr = if val_into { "_v.into()" } else { "_v" };
+      let body = if key_into || val_into {
+        format!(
+          "{}.into_iter().map(|(_k, _v)| ({}, {})).collect()",
+          param_name, k_expr, v_expr
+        )
+      } else {
+        format!("{}.into_iter().collect()", param_name)
+      };
+
+      Ok(Some((param, body)))
+    }
+    _ => Ok(None),
+  }
+}

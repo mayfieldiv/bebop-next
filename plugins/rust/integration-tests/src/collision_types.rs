@@ -20,7 +20,7 @@ use bebop_runtime as bebop;
 use bebop_runtime::serde;
 use core::convert::Into as _;
 use core::iter::{IntoIterator as _, Iterator as _};
-use core::{convert, default, mem, ops, option, result};
+use core::{convert, default, iter, mem, ops, option, result};
 
 // @@bebop_insertion_point(imports)
 
@@ -6170,6 +6170,22 @@ impl<'buf> bebop::BebopDecode<'buf> for KeywordFieldMessage<'buf> {
 }
 
 impl<'buf> KeywordFieldMessage<'buf> {
+  pub fn with_type(mut self, value: i32) -> Self {
+    self.r#type = option::Option::Some(value);
+    self
+  }
+  pub fn with_mod(mut self, value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+    self.r#mod = option::Option::Some(value.into());
+    self
+  }
+  pub fn with_self_(mut self, value: bool) -> Self {
+    self.self_ = option::Option::Some(value);
+    self
+  }
+  pub fn with_crate_(mut self, value: i32) -> Self {
+    self.crate_ = option::Option::Some(value);
+    self
+  }
   // @@bebop_insertion_point(message_scope:KeywordFieldMessage)
 }
 
@@ -6309,6 +6325,13 @@ impl<'buf> bebop::BebopDecode<'buf> for MapWithUserHashMapStruct<'buf> {
 }
 
 impl<'buf> MapWithUserHashMapStruct<'buf> {
+  pub fn with_items(
+    mut self,
+    value: impl iter::IntoIterator<Item = (impl convert::Into<borrow::Cow<'buf, str>>, HashMap)>,
+  ) -> Self {
+    self.items = option::Option::Some(value.into_iter().map(|(_k, _v)| (_k.into(), _v)).collect());
+    self
+  }
   // @@bebop_insertion_point(message_scope:MapWithUserHashMapStruct)
 }
 

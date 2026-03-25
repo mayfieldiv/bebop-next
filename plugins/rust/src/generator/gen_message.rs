@@ -39,6 +39,56 @@ fn field_wrap(field_type: &TypeDescriptor<'_>, own_fqn: &str) -> FieldWrap {
   FieldWrap::Plain
 }
 
+/// Pre-computed metadata for a single message field.
+struct FieldMeta<'a> {
+  fname: String,
+  cow_type: String,
+  tag: u32,
+  wrap: FieldWrap,
+  td: &'a TypeDescriptor<'a>,
+  kind: TypeKind,
+  needs_owned: bool,
+}
+
+impl FieldMeta<'_> {
+  /// Whether the `if let` binding needs `ref` (non-Copy types and boxed fields).
+  fn needs_ref(&self) -> bool {
+    matches!(self.wrap, FieldWrap::Boxed) || !self.kind.is_scalar() || self.kind == TypeKind::String
+  }
+}
+
+/// Return (param_type, body_expression) for a message `with_*` setter.
+fn setter_signature(
+  meta: &FieldMeta<'_>,
+  analysis: &LifetimeAnalysis,
+) -> Result<(String, String), GeneratorError> {
+  let kind = meta.kind;
+
+  // 1. Collection fields — use IntoIterator (same logic as struct new())
+  if let Some((param, body)) = type_mapper::collection_into_iter(meta.td, "value", analysis)? {
+    return Ok((param, body));
+  }
+
+  // 2. Direct Cow fields (string, bytes, bulk scalar arrays) — use impl Into
+  if type_mapper::is_cow_field(meta.td) {
+    return Ok((
+      format!("impl convert::Into<{}>", meta.cow_type),
+      "value.into()".to_string(),
+    ));
+  }
+
+  // 3. String without lifetime (shouldn't happen for messages, but defensive)
+  if kind == TypeKind::String {
+    return Ok((
+      format!("impl convert::Into<{}>", meta.cow_type),
+      "value.into()".to_string(),
+    ));
+  }
+
+  // 4. Everything else (scalars, enums, defined types) — pass through
+  Ok((meta.cow_type.clone(), "value".to_string()))
+}
+
 /// Generate Rust code for a message definition.
 pub fn generate(
   def: &DefinitionDescriptor,
@@ -62,25 +112,6 @@ pub fn generate(
   let lt = if has_lifetime { "<'buf>" } else { "" };
 
   // Pre-compute field metadata
-  struct FieldMeta<'a> {
-    fname: String,
-    cow_type: String,
-    tag: u32,
-    wrap: FieldWrap,
-    td: &'a TypeDescriptor<'a>,
-    kind: TypeKind,
-    needs_owned: bool,
-  }
-
-  impl FieldMeta<'_> {
-    /// Whether the `if let` binding needs `ref` (non-Copy types and boxed fields).
-    fn needs_ref(&self) -> bool {
-      matches!(self.wrap, FieldWrap::Boxed)
-        || !self.kind.is_scalar()
-        || self.kind == TypeKind::String
-    }
-  }
-
   let field_metas: Vec<FieldMeta<'_>> = fields
     .iter()
     .map(|f| {
@@ -324,7 +355,34 @@ pub fn generate(
 
   output.push_str("}\n\n");
 
+  // ── with_* builder methods ─────────────────────────────────────────
   output.push_str(&format!("impl{} {}{} {{\n", lt, name, lt));
+  for meta in &field_metas {
+    // Determine param type and body expression for this field
+    let (param_type, body_expr) = setter_signature(meta, analysis)?;
+    // Strip r# prefix for method name — "with_type" is not a keyword
+    let method_name = meta.fname.strip_prefix("r#").unwrap_or(&meta.fname);
+    output.push_str(&format!(
+      "  pub fn with_{}(mut self, value: {}) -> Self {{\n",
+      method_name, param_type
+    ));
+    match meta.wrap {
+      FieldWrap::Boxed => {
+        output.push_str(&format!(
+          "    self.{} = option::Option::Some(boxed::Box::new({}));\n",
+          meta.fname, body_expr
+        ));
+      }
+      _ => {
+        output.push_str(&format!(
+          "    self.{} = option::Option::Some({});\n",
+          meta.fname, body_expr
+        ));
+      }
+    }
+    output.push_str("    self\n");
+    output.push_str("  }\n");
+  }
   output.push_str(&format!(
     "  // @@bebop_insertion_point(message_scope:{})\n",
     name

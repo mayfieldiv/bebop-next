@@ -83,6 +83,13 @@ impl<'buf> From<&'buf [u8]> for BebopBytes<'buf> {
   }
 }
 
+impl<'buf, const N: usize> From<&'buf [u8; N]> for BebopBytes<'buf> {
+  #[inline]
+  fn from(s: &'buf [u8; N]) -> Self {
+    BebopBytes(Cow::Borrowed(s.as_slice()))
+  }
+}
+
 impl<'buf> From<Cow<'buf, [u8]>> for BebopBytes<'buf> {
   #[inline]
   fn from(c: Cow<'buf, [u8]>) -> Self {
