@@ -1285,8 +1285,7 @@ mod tests {
       output
     );
     assert!(
-      output
-        .contains("let tokens = tokens.into_iter().map(|_e| convert::Into::into(_e)).collect();"),
+      output.contains("let tokens = tokens.into_iter().map(|_e| _e.into()).collect();"),
       "expected IntoIterator collect expression for string array; output:\n{}",
       output
     );

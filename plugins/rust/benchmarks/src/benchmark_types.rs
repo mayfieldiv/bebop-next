@@ -40,8 +40,8 @@ impl<'buf> Person<'buf> {
     email: impl convert::Into<borrow::Cow<'buf, str>>,
     age: i32,
   ) -> Self {
-    let name = convert::Into::into(name);
-    let email = convert::Into::into(email);
+    let name = name.into();
+    let email = email.into();
     Self {
       id,
       name,
@@ -125,8 +125,8 @@ impl<'buf> Order<'buf> {
     total: f64,
     timestamp: i64,
   ) -> Self {
-    let item_ids = convert::Into::into(item_ids);
-    let quantities = convert::Into::into(quantities);
+    let item_ids = item_ids.into();
+    let quantities = quantities.into();
     Self {
       order_id,
       customer_id,
@@ -220,9 +220,9 @@ impl<'buf> Event<'buf> {
     timestamp: i64,
     payload: impl convert::Into<bebop::BebopBytes<'buf>>,
   ) -> Self {
-    let r#type = convert::Into::into(r#type);
-    let source = convert::Into::into(source);
-    let payload = convert::Into::into(payload);
+    let r#type = r#type.into();
+    let source = source.into();
+    let payload = payload.into();
     Self {
       id,
       r#type,
@@ -1095,7 +1095,7 @@ impl<'buf> ChunkedText<'buf> {
     source: impl convert::Into<borrow::Cow<'buf, str>>,
     spans: impl iter::IntoIterator<Item = TextSpan>,
   ) -> Self {
-    let source = convert::Into::into(source);
+    let source = source.into();
     let spans = spans.into_iter().collect();
     Self { source, spans }
   }
@@ -1154,7 +1154,7 @@ impl<'buf> EmbeddingBf16<'buf> {
     id: bebop::Uuid,
     vector: impl convert::Into<borrow::Cow<'buf, [bebop::bf16]>>,
   ) -> Self {
-    let vector = convert::Into::into(vector);
+    let vector = vector.into();
     Self { id, vector }
   }
 }
@@ -1209,7 +1209,7 @@ pub type EmbeddingF32Owned = EmbeddingF32<'static>;
 
 impl<'buf> EmbeddingF32<'buf> {
   pub fn new(id: bebop::Uuid, vector: impl convert::Into<borrow::Cow<'buf, [f32]>>) -> Self {
-    let vector = convert::Into::into(vector);
+    let vector = vector.into();
     Self { id, vector }
   }
 }
@@ -1269,7 +1269,7 @@ impl<'buf> EmbeddingBatch<'buf> {
     embeddings: impl iter::IntoIterator<Item = EmbeddingBf16<'buf>>,
     usage_tokens: u32,
   ) -> Self {
-    let model = convert::Into::into(model);
+    let model = model.into();
     let embeddings = embeddings.into_iter().collect();
     Self {
       model,
@@ -1346,7 +1346,7 @@ impl<'buf> TokenLogprob<'buf> {
     token_id: u32,
     logprob: f32,
   ) -> Self {
-    let token = convert::Into::into(token);
+    let token = token.into();
     Self {
       token,
       token_id,
@@ -1474,12 +1474,9 @@ impl<'buf> LlmStreamChunk<'buf> {
     logprobs: impl iter::IntoIterator<Item = TokenAlternatives<'buf>>,
     finish_reason: impl convert::Into<borrow::Cow<'buf, str>>,
   ) -> Self {
-    let tokens = tokens
-      .into_iter()
-      .map(|_e| convert::Into::into(_e))
-      .collect();
+    let tokens = tokens.into_iter().map(|_e| _e.into()).collect();
     let logprobs = logprobs.into_iter().collect();
-    let finish_reason = convert::Into::into(finish_reason);
+    let finish_reason = finish_reason.into();
     Self {
       chunk_id,
       tokens,
@@ -1573,10 +1570,10 @@ impl<'buf> TensorShard<'buf> {
     offset: u64,
     total_elements: u64,
   ) -> Self {
-    let name = convert::Into::into(name);
-    let shape = convert::Into::into(shape);
-    let dtype = convert::Into::into(dtype);
-    let data = convert::Into::into(data);
+    let name = name.into();
+    let shape = shape.into();
+    let dtype = dtype.into();
+    let data = data.into();
     Self {
       name,
       shape,

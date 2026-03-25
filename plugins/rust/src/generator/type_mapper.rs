@@ -1103,10 +1103,7 @@ pub fn collection_into_iter(
           "impl iter::IntoIterator<Item = impl convert::Into<{}>>",
           elem_type
         );
-        let body = format!(
-          "{}.into_iter().map(|_e| convert::Into::into(_e)).collect()",
-          param_name
-        );
+        let body = format!("{}.into_iter().map(|_e| _e.into()).collect()", param_name);
         Ok(Some((param, body)))
       } else {
         // impl IntoIterator<Item = ElemType> — no conversion needed
@@ -1142,16 +1139,8 @@ pub fn collection_into_iter(
       let param = format!("impl iter::IntoIterator<Item = ({}, {})>", k_param, v_param);
 
       // Build body expression
-      let k_expr = if key_into {
-        "convert::Into::into(_k)"
-      } else {
-        "_k"
-      };
-      let v_expr = if val_into {
-        "convert::Into::into(_v)"
-      } else {
-        "_v"
-      };
+      let k_expr = if key_into { "_k.into()" } else { "_k" };
+      let v_expr = if val_into { "_v.into()" } else { "_v" };
       let body = if key_into || val_into {
         format!(
           "{}.into_iter().map(|(_k, _v)| ({}, {})).collect()",

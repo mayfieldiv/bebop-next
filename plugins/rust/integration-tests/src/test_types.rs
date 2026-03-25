@@ -319,7 +319,7 @@ pub type PersonOwned = Person<'static>;
 
 impl<'buf> Person<'buf> {
   pub fn new(name: impl convert::Into<borrow::Cow<'buf, str>>, age: u32) -> Self {
-    let name = convert::Into::into(name);
+    let name = name.into();
     Self { name, age }
   }
 }
@@ -375,7 +375,7 @@ pub type BinaryPayloadOwned = BinaryPayload<'static>;
 
 impl<'buf> BinaryPayload<'buf> {
   pub fn new(tag: u32, data: impl convert::Into<bebop::BebopBytes<'buf>>) -> Self {
-    let data = convert::Into::into(data);
+    let data = data.into();
     Self { tag, data }
   }
 }
@@ -704,7 +704,7 @@ pub type TextLabelOwned = TextLabel<'static>;
 
 impl<'buf> TextLabel<'buf> {
   pub fn new(position: Point, text: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
-    let text = convert::Into::into(text);
+    let text = text.into();
     Self { position, text }
   }
 }
@@ -1313,8 +1313,8 @@ impl<'buf> HalfPrecisionArrays<'buf> {
     f16_fixed: [bebop::f16; 4],
     bf16_fixed: [bebop::bf16; 4],
   ) -> Self {
-    let f16_dynamic = convert::Into::into(f16_dynamic);
-    let bf16_dynamic = convert::Into::into(bf16_dynamic);
+    let f16_dynamic = f16_dynamic.into();
+    let bf16_dynamic = bf16_dynamic.into();
     Self {
       f16_dynamic,
       bf16_dynamic,
@@ -1503,10 +1503,10 @@ impl<'buf> Address<'buf> {
     country: impl convert::Into<borrow::Cow<'buf, str>>,
     zip_code: impl convert::Into<borrow::Cow<'buf, str>>,
   ) -> Self {
-    let street = convert::Into::into(street);
-    let city = convert::Into::into(city);
-    let country = convert::Into::into(country);
-    let zip_code = convert::Into::into(zip_code);
+    let street = street.into();
+    let city = city.into();
+    let country = country.into();
+    let zip_code = zip_code.into();
     Self {
       street,
       city,
@@ -1859,7 +1859,7 @@ impl<'buf> TimestampedEvent<'buf> {
     when: bebop::BebopTimestamp,
     what: impl convert::Into<borrow::Cow<'buf, str>>,
   ) -> Self {
-    let what = convert::Into::into(what);
+    let what = what.into();
     Self { when, what }
   }
 }
@@ -2058,7 +2058,7 @@ pub type ForwardRefBOwned = ForwardRefB<'static>;
 
 impl<'buf> ForwardRefB<'buf> {
   pub fn new(value: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
-    let value = convert::Into::into(value);
+    let value = value.into();
     Self { value }
   }
 }
@@ -2318,7 +2318,7 @@ pub type NestedLeafOwned = NestedLeaf<'static>;
 
 impl<'buf> NestedLeaf<'buf> {
   pub fn new(label: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
-    let label = convert::Into::into(label);
+    let label = label.into();
     Self { label }
   }
 }
@@ -2495,7 +2495,7 @@ impl<'buf> ByteMatrix<'buf> {
   pub fn new(
     rows: impl iter::IntoIterator<Item = impl convert::Into<bebop::BebopBytes<'buf>>>,
   ) -> Self {
-    let rows = rows.into_iter().map(|_e| convert::Into::into(_e)).collect();
+    let rows = rows.into_iter().map(|_e| _e.into()).collect();
     Self { rows }
   }
 }
@@ -2558,7 +2558,7 @@ impl<'buf> ByteTagMap<'buf> {
   ) -> Self {
     let entries = entries
       .into_iter()
-      .map(|(_k, _v)| (convert::Into::into(_k), convert::Into::into(_v)))
+      .map(|(_k, _v)| (_k.into(), _v.into()))
       .collect();
     Self { entries }
   }
@@ -2821,7 +2821,7 @@ pub type UuidHolderOwned = UuidHolder<'static>;
 
 impl<'buf> UuidHolder<'buf> {
   pub fn new(id: bebop::Uuid, label: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
-    let label = convert::Into::into(label);
+    let label = label.into();
     Self { id, label }
   }
 }

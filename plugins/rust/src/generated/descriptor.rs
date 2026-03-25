@@ -906,7 +906,7 @@ impl<'buf> DecoratorArg<'buf> {
     name: impl convert::Into<borrow::Cow<'buf, str>>,
     value: LiteralValue<'static>,
   ) -> Self {
-    let name = convert::Into::into(name);
+    let name = name.into();
     Self { name, value }
   }
 }

@@ -170,7 +170,7 @@ pub fn generate(
       init_fields.push(meta.fname.clone());
     } else if has_lifetime && type_mapper::is_cow_field(meta.td) {
       output.push_str(&format!(
-        "    let {} = convert::Into::into({});\n",
+        "    let {} = {}.into();\n",
         meta.fname, meta.fname
       ));
       init_fields.push(meta.fname.clone());

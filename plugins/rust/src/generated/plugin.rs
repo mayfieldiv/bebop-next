@@ -45,7 +45,7 @@ impl<'buf> Version<'buf> {
     patch: i32,
     suffix: impl convert::Into<borrow::Cow<'buf, str>>,
   ) -> Self {
-    let suffix = convert::Into::into(suffix);
+    let suffix = suffix.into();
     Self {
       major,
       minor,
