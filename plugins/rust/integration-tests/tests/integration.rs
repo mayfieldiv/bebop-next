@@ -1219,7 +1219,7 @@ fn full_decode_transform_reencode() {
 
 #[test]
 fn message_empty_string_array() {
-  let profile = UserProfile::default().with_tags(Vec::<&str>::new());
+  let profile = UserProfile::default().with_tags([] as [&str; 0]);
   let bytes = profile.to_bytes();
   let p2 = UserProfile::from_bytes(&bytes).unwrap();
   assert_eq!(p2.tags.unwrap().len(), 0);
@@ -1227,7 +1227,7 @@ fn message_empty_string_array() {
 
 #[test]
 fn message_empty_map() {
-  let profile = UserProfile::default().with_metadata(Vec::<(&str, &str)>::new());
+  let profile = UserProfile::default().with_metadata([] as [(&str, &str); 0]);
   let bytes = profile.to_bytes();
   let p2 = UserProfile::from_bytes(&bytes).unwrap();
   assert_eq!(p2.metadata.unwrap().len(), 0);
@@ -1313,8 +1313,8 @@ fn integer_key_maps_round_trip() {
 #[test]
 fn integer_key_maps_empty_round_trip() {
   let msg = IntegerKeyMaps::default()
-    .with_labels_by_id(Vec::<(u32, &str)>::new())
-    .with_flags_by_id(Vec::<(i64, bool)>::new());
+    .with_labels_by_id([] as [(u32, &str); 0])
+    .with_flags_by_id([] as [(i64, bool); 0]);
 
   let bytes = msg.to_bytes();
   let decoded = IntegerKeyMaps::from_bytes(&bytes).unwrap();
