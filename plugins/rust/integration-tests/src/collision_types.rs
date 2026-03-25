@@ -17,15 +17,17 @@ extern crate bebop_runtime;
 extern crate core;
 use alloc::{borrow, boxed, string, vec};
 use bebop_runtime as bebop;
-use bebop_runtime::serde;
+use bebop_runtime::DecodeContext as _;
 use core::convert::Into as _;
 use core::iter::{IntoIterator as _, Iterator as _};
 use core::{convert, default, iter, mem, ops, option, result};
+use bebop_runtime::serde;
 
 // @@bebop_insertion_point(imports)
 
 /// Same wire layout as `Point` in test_types.bop; used by `KeywordUnion` only.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Point {
   pub x: f32,
   pub y: f32,
@@ -34,7 +36,10 @@ pub struct Point {
 impl Point {
   pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<f32>() + mem::size_of::<f32>();
 
-  pub fn new(x: f32, y: f32) -> Self {
+  pub fn new(
+    x: f32,
+    y: f32,
+  ) -> Self {
     Self { x, y }
   }
 }
@@ -56,8 +61,8 @@ impl<'buf> bebop::BebopDecode<'buf> for Point {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Point)
-    let x = reader.read_f32()?;
-    let y = reader.read_f32()?;
+    let x = reader.read_f32().for_field("Point", "x")?;
+    let y = reader.read_f32().for_field("Point", "y")?;
     // @@bebop_insertion_point(decode_end:Point)
     result::Result::Ok(Point { x, y })
   }
@@ -67,7 +72,8 @@ impl Point {
   // @@bebop_insertion_point(struct_scope:Point)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Uuid {
   pub tag: i32,
 }
@@ -96,7 +102,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Uuid {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Uuid)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Uuid", "tag")?;
     // @@bebop_insertion_point(decode_end:Uuid)
     result::Result::Ok(Uuid { tag })
   }
@@ -106,7 +112,8 @@ impl Uuid {
   // @@bebop_insertion_point(struct_scope:Uuid)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct HashMap {
   pub tag: i32,
 }
@@ -135,7 +142,7 @@ impl<'buf> bebop::BebopDecode<'buf> for HashMap {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:HashMap)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("HashMap", "tag")?;
     // @@bebop_insertion_point(decode_end:HashMap)
     result::Result::Ok(HashMap { tag })
   }
@@ -145,7 +152,8 @@ impl HashMap {
   // @@bebop_insertion_point(struct_scope:HashMap)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DecodeError {
   pub tag: i32,
 }
@@ -174,7 +182,7 @@ impl<'buf> bebop::BebopDecode<'buf> for DecodeError {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:DecodeError)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("DecodeError", "tag")?;
     // @@bebop_insertion_point(decode_end:DecodeError)
     result::Result::Ok(DecodeError { tag })
   }
@@ -184,7 +192,8 @@ impl DecodeError {
   // @@bebop_insertion_point(struct_scope:DecodeError)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopReader {
   pub tag: i32,
 }
@@ -213,7 +222,7 @@ impl<'buf> bebop::BebopDecode<'buf> for BebopReader {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopReader)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("BebopReader", "tag")?;
     // @@bebop_insertion_point(decode_end:BebopReader)
     result::Result::Ok(BebopReader { tag })
   }
@@ -223,7 +232,8 @@ impl BebopReader {
   // @@bebop_insertion_point(struct_scope:BebopReader)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopWriter {
   pub tag: i32,
 }
@@ -252,7 +262,7 @@ impl<'buf> bebop::BebopDecode<'buf> for BebopWriter {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopWriter)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("BebopWriter", "tag")?;
     // @@bebop_insertion_point(decode_end:BebopWriter)
     result::Result::Ok(BebopWriter { tag })
   }
@@ -262,7 +272,8 @@ impl BebopWriter {
   // @@bebop_insertion_point(struct_scope:BebopWriter)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopDecode {
   pub tag: i32,
 }
@@ -291,7 +302,7 @@ impl<'buf> bebop::BebopDecode<'buf> for BebopDecode {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopDecode)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("BebopDecode", "tag")?;
     // @@bebop_insertion_point(decode_end:BebopDecode)
     result::Result::Ok(BebopDecode { tag })
   }
@@ -301,7 +312,8 @@ impl BebopDecode {
   // @@bebop_insertion_point(struct_scope:BebopDecode)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopEncode {
   pub tag: i32,
 }
@@ -330,7 +342,7 @@ impl<'buf> bebop::BebopDecode<'buf> for BebopEncode {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopEncode)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("BebopEncode", "tag")?;
     // @@bebop_insertion_point(decode_end:BebopEncode)
     result::Result::Ok(BebopEncode { tag })
   }
@@ -340,7 +352,8 @@ impl BebopEncode {
   // @@bebop_insertion_point(struct_scope:BebopEncode)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopDuration {
   pub tag: i32,
 }
@@ -369,7 +382,7 @@ impl<'buf> bebop::BebopDecode<'buf> for BebopDuration {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopDuration)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("BebopDuration", "tag")?;
     // @@bebop_insertion_point(decode_end:BebopDuration)
     result::Result::Ok(BebopDuration { tag })
   }
@@ -379,7 +392,8 @@ impl BebopDuration {
   // @@bebop_insertion_point(struct_scope:BebopDuration)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopTimestamp {
   pub tag: i32,
 }
@@ -408,7 +422,7 @@ impl<'buf> bebop::BebopDecode<'buf> for BebopTimestamp {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopTimestamp)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("BebopTimestamp", "tag")?;
     // @@bebop_insertion_point(decode_end:BebopTimestamp)
     result::Result::Ok(BebopTimestamp { tag })
   }
@@ -418,7 +432,8 @@ impl BebopTimestamp {
   // @@bebop_insertion_point(struct_scope:BebopTimestamp)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopFlags {
   pub tag: i32,
 }
@@ -447,7 +462,7 @@ impl<'buf> bebop::BebopDecode<'buf> for BebopFlags {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopFlags)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("BebopFlags", "tag")?;
     // @@bebop_insertion_point(decode_end:BebopFlags)
     result::Result::Ok(BebopFlags { tag })
   }
@@ -457,7 +472,8 @@ impl BebopFlags {
   // @@bebop_insertion_point(struct_scope:BebopFlags)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BebopBytes {
   pub tag: i32,
 }
@@ -486,7 +502,7 @@ impl<'buf> bebop::BebopDecode<'buf> for BebopBytes {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopBytes)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("BebopBytes", "tag")?;
     // @@bebop_insertion_point(decode_end:BebopBytes)
     result::Result::Ok(BebopBytes { tag })
   }
@@ -496,7 +512,8 @@ impl BebopBytes {
   // @@bebop_insertion_point(struct_scope:BebopBytes)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Serde {
   pub tag: i32,
 }
@@ -525,7 +542,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Serde {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Serde)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Serde", "tag")?;
     // @@bebop_insertion_point(decode_end:Serde)
     result::Result::Ok(Serde { tag })
   }
@@ -535,7 +552,8 @@ impl Serde {
   // @@bebop_insertion_point(struct_scope:Serde)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Wire {
   pub tag: i32,
 }
@@ -564,7 +582,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Wire {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Wire)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Wire", "tag")?;
     // @@bebop_insertion_point(decode_end:Wire)
     result::Result::Ok(Wire { tag })
   }
@@ -574,7 +592,8 @@ impl Wire {
   // @@bebop_insertion_point(struct_scope:Wire)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Mod {
   pub tag: i32,
 }
@@ -603,7 +622,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Mod {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Mod)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Mod", "tag")?;
     // @@bebop_insertion_point(decode_end:Mod)
     result::Result::Ok(Mod { tag })
   }
@@ -613,7 +632,8 @@ impl Mod {
   // @@bebop_insertion_point(struct_scope:Mod)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Trait {
   pub tag: i32,
 }
@@ -642,7 +662,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Trait {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Trait)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Trait", "tag")?;
     // @@bebop_insertion_point(decode_end:Trait)
     result::Result::Ok(Trait { tag })
   }
@@ -652,7 +672,8 @@ impl Trait {
   // @@bebop_insertion_point(struct_scope:Trait)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Impl {
   pub tag: i32,
 }
@@ -681,7 +702,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Impl {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Impl)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Impl", "tag")?;
     // @@bebop_insertion_point(decode_end:Impl)
     result::Result::Ok(Impl { tag })
   }
@@ -691,7 +712,8 @@ impl Impl {
   // @@bebop_insertion_point(struct_scope:Impl)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Fn {
   pub tag: i32,
 }
@@ -720,7 +742,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Fn {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Fn)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Fn", "tag")?;
     // @@bebop_insertion_point(decode_end:Fn)
     result::Result::Ok(Fn { tag })
   }
@@ -730,7 +752,8 @@ impl Fn {
   // @@bebop_insertion_point(struct_scope:Fn)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Let {
   pub tag: i32,
 }
@@ -759,7 +782,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Let {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Let)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Let", "tag")?;
     // @@bebop_insertion_point(decode_end:Let)
     result::Result::Ok(Let { tag })
   }
@@ -769,7 +792,8 @@ impl Let {
   // @@bebop_insertion_point(struct_scope:Let)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Use {
   pub tag: i32,
 }
@@ -798,7 +822,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Use {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Use)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Use", "tag")?;
     // @@bebop_insertion_point(decode_end:Use)
     result::Result::Ok(Use { tag })
   }
@@ -808,7 +832,8 @@ impl Use {
   // @@bebop_insertion_point(struct_scope:Use)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Crate {
   pub tag: i32,
 }
@@ -837,7 +862,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Crate {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Crate)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Crate", "tag")?;
     // @@bebop_insertion_point(decode_end:Crate)
     result::Result::Ok(Crate { tag })
   }
@@ -847,7 +872,8 @@ impl Crate {
   // @@bebop_insertion_point(struct_scope:Crate)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Async {
   pub tag: i32,
 }
@@ -876,7 +902,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Async {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Async)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Async", "tag")?;
     // @@bebop_insertion_point(decode_end:Async)
     result::Result::Ok(Async { tag })
   }
@@ -886,7 +912,8 @@ impl Async {
   // @@bebop_insertion_point(struct_scope:Async)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Await {
   pub tag: i32,
 }
@@ -915,7 +942,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Await {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Await)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Await", "tag")?;
     // @@bebop_insertion_point(decode_end:Await)
     result::Result::Ok(Await { tag })
   }
@@ -925,7 +952,8 @@ impl Await {
   // @@bebop_insertion_point(struct_scope:Await)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Match {
   pub tag: i32,
 }
@@ -954,7 +982,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Match {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Match)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Match", "tag")?;
     // @@bebop_insertion_point(decode_end:Match)
     result::Result::Ok(Match { tag })
   }
@@ -964,7 +992,8 @@ impl Match {
   // @@bebop_insertion_point(struct_scope:Match)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Where {
   pub tag: i32,
 }
@@ -993,7 +1022,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Where {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Where)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Where", "tag")?;
     // @@bebop_insertion_point(decode_end:Where)
     result::Result::Ok(Where { tag })
   }
@@ -1003,7 +1032,8 @@ impl Where {
   // @@bebop_insertion_point(struct_scope:Where)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Loop {
   pub tag: i32,
 }
@@ -1032,7 +1062,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Loop {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Loop)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Loop", "tag")?;
     // @@bebop_insertion_point(decode_end:Loop)
     result::Result::Ok(Loop { tag })
   }
@@ -1042,7 +1072,8 @@ impl Loop {
   // @@bebop_insertion_point(struct_scope:Loop)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Move {
   pub tag: i32,
 }
@@ -1071,7 +1102,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Move {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Move)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Move", "tag")?;
     // @@bebop_insertion_point(decode_end:Move)
     result::Result::Ok(Move { tag })
   }
@@ -1081,7 +1112,8 @@ impl Move {
   // @@bebop_insertion_point(struct_scope:Move)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Ref {
   pub tag: i32,
 }
@@ -1110,7 +1142,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Ref {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Ref)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Ref", "tag")?;
     // @@bebop_insertion_point(decode_end:Ref)
     result::Result::Ok(Ref { tag })
   }
@@ -1120,7 +1152,8 @@ impl Ref {
   // @@bebop_insertion_point(struct_scope:Ref)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Dyn {
   pub tag: i32,
 }
@@ -1149,7 +1182,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Dyn {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Dyn)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Dyn", "tag")?;
     // @@bebop_insertion_point(decode_end:Dyn)
     result::Result::Ok(Dyn { tag })
   }
@@ -1159,7 +1192,8 @@ impl Dyn {
   // @@bebop_insertion_point(struct_scope:Dyn)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Yield {
   pub tag: i32,
 }
@@ -1188,7 +1222,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Yield {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Yield)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Yield", "tag")?;
     // @@bebop_insertion_point(decode_end:Yield)
     result::Result::Ok(Yield { tag })
   }
@@ -1198,7 +1232,8 @@ impl Yield {
   // @@bebop_insertion_point(struct_scope:Yield)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Unsafe {
   pub tag: i32,
 }
@@ -1227,7 +1262,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Unsafe {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Unsafe)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Unsafe", "tag")?;
     // @@bebop_insertion_point(decode_end:Unsafe)
     result::Result::Ok(Unsafe { tag })
   }
@@ -1237,7 +1272,8 @@ impl Unsafe {
   // @@bebop_insertion_point(struct_scope:Unsafe)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Extern {
   pub tag: i32,
 }
@@ -1266,7 +1302,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Extern {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Extern)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Extern", "tag")?;
     // @@bebop_insertion_point(decode_end:Extern)
     result::Result::Ok(Extern { tag })
   }
@@ -1276,7 +1312,8 @@ impl Extern {
   // @@bebop_insertion_point(struct_scope:Extern)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Static {
   pub tag: i32,
 }
@@ -1305,7 +1342,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Static {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Static)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Static", "tag")?;
     // @@bebop_insertion_point(decode_end:Static)
     result::Result::Ok(Static { tag })
   }
@@ -1315,7 +1352,8 @@ impl Static {
   // @@bebop_insertion_point(struct_scope:Static)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Virtual {
   pub tag: i32,
 }
@@ -1344,7 +1382,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Virtual {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Virtual)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Virtual", "tag")?;
     // @@bebop_insertion_point(decode_end:Virtual)
     result::Result::Ok(Virtual { tag })
   }
@@ -1354,7 +1392,8 @@ impl Virtual {
   // @@bebop_insertion_point(struct_scope:Virtual)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Override {
   pub tag: i32,
 }
@@ -1383,7 +1422,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Override {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Override)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Override", "tag")?;
     // @@bebop_insertion_point(decode_end:Override)
     result::Result::Ok(Override { tag })
   }
@@ -1393,7 +1432,8 @@ impl Override {
   // @@bebop_insertion_point(struct_scope:Override)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Final {
   pub tag: i32,
 }
@@ -1422,7 +1462,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Final {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Final)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Final", "tag")?;
     // @@bebop_insertion_point(decode_end:Final)
     result::Result::Ok(Final { tag })
   }
@@ -1432,7 +1472,8 @@ impl Final {
   // @@bebop_insertion_point(struct_scope:Final)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Abstract {
   pub tag: i32,
 }
@@ -1461,7 +1502,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Abstract {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Abstract)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Abstract", "tag")?;
     // @@bebop_insertion_point(decode_end:Abstract)
     result::Result::Ok(Abstract { tag })
   }
@@ -1471,7 +1512,8 @@ impl Abstract {
   // @@bebop_insertion_point(struct_scope:Abstract)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Self_ {
   pub tag: i32,
 }
@@ -1500,7 +1542,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Self_ {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Self_)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Self_", "tag")?;
     // @@bebop_insertion_point(decode_end:Self_)
     result::Result::Ok(Self_ { tag })
   }
@@ -1510,7 +1552,8 @@ impl Self_ {
   // @@bebop_insertion_point(struct_scope:Self_)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Super {
   pub tag: i32,
 }
@@ -1539,7 +1582,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Super {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Super)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Super", "tag")?;
     // @@bebop_insertion_point(decode_end:Super)
     result::Result::Ok(Super { tag })
   }
@@ -1549,7 +1592,8 @@ impl Super {
   // @@bebop_insertion_point(struct_scope:Super)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Type {
   pub tag: i32,
 }
@@ -1578,7 +1622,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Type {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Type)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Type", "tag")?;
     // @@bebop_insertion_point(decode_end:Type)
     result::Result::Ok(Type { tag })
   }
@@ -1588,7 +1632,8 @@ impl Type {
   // @@bebop_insertion_point(struct_scope:Type)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct For {
   pub tag: i32,
 }
@@ -1617,7 +1662,7 @@ impl<'buf> bebop::BebopDecode<'buf> for For {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:For)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("For", "tag")?;
     // @@bebop_insertion_point(decode_end:For)
     result::Result::Ok(For { tag })
   }
@@ -1627,7 +1672,8 @@ impl For {
   // @@bebop_insertion_point(struct_scope:For)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Interface {
   pub tag: i32,
 }
@@ -1656,7 +1702,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Interface {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Interface)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Interface", "tag")?;
     // @@bebop_insertion_point(decode_end:Interface)
     result::Result::Ok(Interface { tag })
   }
@@ -1666,7 +1712,8 @@ impl Interface {
   // @@bebop_insertion_point(struct_scope:Interface)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Namespace {
   pub tag: i32,
 }
@@ -1695,7 +1742,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Namespace {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Namespace)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Namespace", "tag")?;
     // @@bebop_insertion_point(decode_end:Namespace)
     result::Result::Ok(Namespace { tag })
   }
@@ -1705,7 +1752,8 @@ impl Namespace {
   // @@bebop_insertion_point(struct_scope:Namespace)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Default {
   pub tag: i32,
 }
@@ -1734,7 +1782,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Default {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Default)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Default", "tag")?;
     // @@bebop_insertion_point(decode_end:Default)
     result::Result::Ok(Default { tag })
   }
@@ -1744,7 +1792,8 @@ impl Default {
   // @@bebop_insertion_point(struct_scope:Default)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Switch {
   pub tag: i32,
 }
@@ -1773,7 +1822,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Switch {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Switch)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Switch", "tag")?;
     // @@bebop_insertion_point(decode_end:Switch)
     result::Result::Ok(Switch { tag })
   }
@@ -1783,7 +1832,8 @@ impl Switch {
   // @@bebop_insertion_point(struct_scope:Switch)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Case {
   pub tag: i32,
 }
@@ -1812,7 +1862,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Case {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Case)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Case", "tag")?;
     // @@bebop_insertion_point(decode_end:Case)
     result::Result::Ok(Case { tag })
   }
@@ -1822,7 +1872,8 @@ impl Case {
   // @@bebop_insertion_point(struct_scope:Case)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Goto {
   pub tag: i32,
 }
@@ -1851,7 +1902,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Goto {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Goto)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Goto", "tag")?;
     // @@bebop_insertion_point(decode_end:Goto)
     result::Result::Ok(Goto { tag })
   }
@@ -1861,7 +1912,8 @@ impl Goto {
   // @@bebop_insertion_point(struct_scope:Goto)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Volatile {
   pub tag: i32,
 }
@@ -1890,7 +1942,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Volatile {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Volatile)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Volatile", "tag")?;
     // @@bebop_insertion_point(decode_end:Volatile)
     result::Result::Ok(Volatile { tag })
   }
@@ -1900,7 +1952,8 @@ impl Volatile {
   // @@bebop_insertion_point(struct_scope:Volatile)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Synchronized {
   pub tag: i32,
 }
@@ -1929,7 +1982,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Synchronized {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Synchronized)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Synchronized", "tag")?;
     // @@bebop_insertion_point(decode_end:Synchronized)
     result::Result::Ok(Synchronized { tag })
   }
@@ -1939,7 +1992,8 @@ impl Synchronized {
   // @@bebop_insertion_point(struct_scope:Synchronized)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Transient {
   pub tag: i32,
 }
@@ -1968,7 +2022,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Transient {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Transient)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Transient", "tag")?;
     // @@bebop_insertion_point(decode_end:Transient)
     result::Result::Ok(Transient { tag })
   }
@@ -1978,7 +2032,8 @@ impl Transient {
   // @@bebop_insertion_point(struct_scope:Transient)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Native {
   pub tag: i32,
 }
@@ -2007,7 +2062,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Native {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Native)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Native", "tag")?;
     // @@bebop_insertion_point(decode_end:Native)
     result::Result::Ok(Native { tag })
   }
@@ -2017,7 +2072,8 @@ impl Native {
   // @@bebop_insertion_point(struct_scope:Native)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Throws {
   pub tag: i32,
 }
@@ -2046,7 +2102,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Throws {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Throws)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Throws", "tag")?;
     // @@bebop_insertion_point(decode_end:Throws)
     result::Result::Ok(Throws { tag })
   }
@@ -2056,7 +2112,8 @@ impl Throws {
   // @@bebop_insertion_point(struct_scope:Throws)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Strictfp {
   pub tag: i32,
 }
@@ -2085,7 +2142,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Strictfp {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Strictfp)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Strictfp", "tag")?;
     // @@bebop_insertion_point(decode_end:Strictfp)
     result::Result::Ok(Strictfp { tag })
   }
@@ -2095,7 +2152,8 @@ impl Strictfp {
   // @@bebop_insertion_point(struct_scope:Strictfp)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Assert {
   pub tag: i32,
 }
@@ -2124,7 +2182,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Assert {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Assert)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Assert", "tag")?;
     // @@bebop_insertion_point(decode_end:Assert)
     result::Result::Ok(Assert { tag })
   }
@@ -2134,7 +2192,8 @@ impl Assert {
   // @@bebop_insertion_point(struct_scope:Assert)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Sizeof {
   pub tag: i32,
 }
@@ -2163,7 +2222,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Sizeof {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Sizeof)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Sizeof", "tag")?;
     // @@bebop_insertion_point(decode_end:Sizeof)
     result::Result::Ok(Sizeof { tag })
   }
@@ -2173,7 +2232,8 @@ impl Sizeof {
   // @@bebop_insertion_point(struct_scope:Sizeof)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Typeof {
   pub tag: i32,
 }
@@ -2202,7 +2262,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Typeof {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Typeof)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Typeof", "tag")?;
     // @@bebop_insertion_point(decode_end:Typeof)
     result::Result::Ok(Typeof { tag })
   }
@@ -2212,7 +2272,8 @@ impl Typeof {
   // @@bebop_insertion_point(struct_scope:Typeof)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Nullptr {
   pub tag: i32,
 }
@@ -2241,7 +2302,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Nullptr {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Nullptr)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Nullptr", "tag")?;
     // @@bebop_insertion_point(decode_end:Nullptr)
     result::Result::Ok(Nullptr { tag })
   }
@@ -2251,7 +2312,8 @@ impl Nullptr {
   // @@bebop_insertion_point(struct_scope:Nullptr)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Decltype {
   pub tag: i32,
 }
@@ -2280,7 +2342,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Decltype {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Decltype)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Decltype", "tag")?;
     // @@bebop_insertion_point(decode_end:Decltype)
     result::Result::Ok(Decltype { tag })
   }
@@ -2290,7 +2352,8 @@ impl Decltype {
   // @@bebop_insertion_point(struct_scope:Decltype)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Constexpr {
   pub tag: i32,
 }
@@ -2319,7 +2382,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Constexpr {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Constexpr)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Constexpr", "tag")?;
     // @@bebop_insertion_point(decode_end:Constexpr)
     result::Result::Ok(Constexpr { tag })
   }
@@ -2329,7 +2392,8 @@ impl Constexpr {
   // @@bebop_insertion_point(struct_scope:Constexpr)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Noexcept {
   pub tag: i32,
 }
@@ -2358,7 +2422,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Noexcept {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Noexcept)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Noexcept", "tag")?;
     // @@bebop_insertion_point(decode_end:Noexcept)
     result::Result::Ok(Noexcept { tag })
   }
@@ -2368,7 +2432,8 @@ impl Noexcept {
   // @@bebop_insertion_point(struct_scope:Noexcept)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Template {
   pub tag: i32,
 }
@@ -2397,7 +2462,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Template {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Template)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Template", "tag")?;
     // @@bebop_insertion_point(decode_end:Template)
     result::Result::Ok(Template { tag })
   }
@@ -2407,7 +2472,8 @@ impl Template {
   // @@bebop_insertion_point(struct_scope:Template)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Typename {
   pub tag: i32,
 }
@@ -2436,7 +2502,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Typename {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Typename)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Typename", "tag")?;
     // @@bebop_insertion_point(decode_end:Typename)
     result::Result::Ok(Typename { tag })
   }
@@ -2446,7 +2512,8 @@ impl Typename {
   // @@bebop_insertion_point(struct_scope:Typename)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Friend {
   pub tag: i32,
 }
@@ -2475,7 +2542,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Friend {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Friend)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Friend", "tag")?;
     // @@bebop_insertion_point(decode_end:Friend)
     result::Result::Ok(Friend { tag })
   }
@@ -2485,7 +2552,8 @@ impl Friend {
   // @@bebop_insertion_point(struct_scope:Friend)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Inline {
   pub tag: i32,
 }
@@ -2514,7 +2582,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Inline {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Inline)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Inline", "tag")?;
     // @@bebop_insertion_point(decode_end:Inline)
     result::Result::Ok(Inline { tag })
   }
@@ -2524,7 +2592,8 @@ impl Inline {
   // @@bebop_insertion_point(struct_scope:Inline)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Mutable {
   pub tag: i32,
 }
@@ -2553,7 +2622,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Mutable {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Mutable)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Mutable", "tag")?;
     // @@bebop_insertion_point(decode_end:Mutable)
     result::Result::Ok(Mutable { tag })
   }
@@ -2563,7 +2632,8 @@ impl Mutable {
   // @@bebop_insertion_point(struct_scope:Mutable)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Explicit {
   pub tag: i32,
 }
@@ -2592,7 +2662,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Explicit {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Explicit)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Explicit", "tag")?;
     // @@bebop_insertion_point(decode_end:Explicit)
     result::Result::Ok(Explicit { tag })
   }
@@ -2602,7 +2672,8 @@ impl Explicit {
   // @@bebop_insertion_point(struct_scope:Explicit)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Implicit {
   pub tag: i32,
 }
@@ -2631,7 +2702,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Implicit {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Implicit)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Implicit", "tag")?;
     // @@bebop_insertion_point(decode_end:Implicit)
     result::Result::Ok(Implicit { tag })
   }
@@ -2641,7 +2712,8 @@ impl Implicit {
   // @@bebop_insertion_point(struct_scope:Implicit)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Operator {
   pub tag: i32,
 }
@@ -2670,7 +2742,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Operator {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Operator)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Operator", "tag")?;
     // @@bebop_insertion_point(decode_end:Operator)
     result::Result::Ok(Operator { tag })
   }
@@ -2680,7 +2752,8 @@ impl Operator {
   // @@bebop_insertion_point(struct_scope:Operator)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Delete {
   pub tag: i32,
 }
@@ -2709,7 +2782,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Delete {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Delete)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Delete", "tag")?;
     // @@bebop_insertion_point(decode_end:Delete)
     result::Result::Ok(Delete { tag })
   }
@@ -2719,7 +2792,8 @@ impl Delete {
   // @@bebop_insertion_point(struct_scope:Delete)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct New {
   pub tag: i32,
 }
@@ -2748,7 +2822,7 @@ impl<'buf> bebop::BebopDecode<'buf> for New {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:New)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("New", "tag")?;
     // @@bebop_insertion_point(decode_end:New)
     result::Result::Ok(New { tag })
   }
@@ -2758,7 +2832,8 @@ impl New {
   // @@bebop_insertion_point(struct_scope:New)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct This {
   pub tag: i32,
 }
@@ -2787,7 +2862,7 @@ impl<'buf> bebop::BebopDecode<'buf> for This {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:This)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("This", "tag")?;
     // @@bebop_insertion_point(decode_end:This)
     result::Result::Ok(This { tag })
   }
@@ -2797,7 +2872,8 @@ impl This {
   // @@bebop_insertion_point(struct_scope:This)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Extends {
   pub tag: i32,
 }
@@ -2826,7 +2902,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Extends {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Extends)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Extends", "tag")?;
     // @@bebop_insertion_point(decode_end:Extends)
     result::Result::Ok(Extends { tag })
   }
@@ -2836,7 +2912,8 @@ impl Extends {
   // @@bebop_insertion_point(struct_scope:Extends)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Implements {
   pub tag: i32,
 }
@@ -2865,7 +2942,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Implements {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Implements)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Implements", "tag")?;
     // @@bebop_insertion_point(decode_end:Implements)
     result::Result::Ok(Implements { tag })
   }
@@ -2875,7 +2952,8 @@ impl Implements {
   // @@bebop_insertion_point(struct_scope:Implements)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Instanceof {
   pub tag: i32,
 }
@@ -2904,7 +2982,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Instanceof {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Instanceof)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Instanceof", "tag")?;
     // @@bebop_insertion_point(decode_end:Instanceof)
     result::Result::Ok(Instanceof { tag })
   }
@@ -2914,7 +2992,8 @@ impl Instanceof {
   // @@bebop_insertion_point(struct_scope:Instanceof)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Boolean {
   pub tag: i32,
 }
@@ -2943,7 +3022,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Boolean {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Boolean)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Boolean", "tag")?;
     // @@bebop_insertion_point(decode_end:Boolean)
     result::Result::Ok(Boolean { tag })
   }
@@ -2953,7 +3032,8 @@ impl Boolean {
   // @@bebop_insertion_point(struct_scope:Boolean)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Byte {
   pub tag: i32,
 }
@@ -2982,7 +3062,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Byte {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Byte)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Byte", "tag")?;
     // @@bebop_insertion_point(decode_end:Byte)
     result::Result::Ok(Byte { tag })
   }
@@ -2992,7 +3072,8 @@ impl Byte {
   // @@bebop_insertion_point(struct_scope:Byte)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Short {
   pub tag: i32,
 }
@@ -3021,7 +3102,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Short {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Short)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Short", "tag")?;
     // @@bebop_insertion_point(decode_end:Short)
     result::Result::Ok(Short { tag })
   }
@@ -3031,7 +3112,8 @@ impl Short {
   // @@bebop_insertion_point(struct_scope:Short)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Long {
   pub tag: i32,
 }
@@ -3060,7 +3142,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Long {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Long)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Long", "tag")?;
     // @@bebop_insertion_point(decode_end:Long)
     result::Result::Ok(Long { tag })
   }
@@ -3070,7 +3152,8 @@ impl Long {
   // @@bebop_insertion_point(struct_scope:Long)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Double {
   pub tag: i32,
 }
@@ -3099,7 +3182,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Double {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Double)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Double", "tag")?;
     // @@bebop_insertion_point(decode_end:Double)
     result::Result::Ok(Double { tag })
   }
@@ -3109,7 +3192,8 @@ impl Double {
   // @@bebop_insertion_point(struct_scope:Double)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Float {
   pub tag: i32,
 }
@@ -3138,7 +3222,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Float {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Float)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Float", "tag")?;
     // @@bebop_insertion_point(decode_end:Float)
     result::Result::Ok(Float { tag })
   }
@@ -3148,7 +3232,8 @@ impl Float {
   // @@bebop_insertion_point(struct_scope:Float)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Char {
   pub tag: i32,
 }
@@ -3177,7 +3262,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Char {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Char)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Char", "tag")?;
     // @@bebop_insertion_point(decode_end:Char)
     result::Result::Ok(Char { tag })
   }
@@ -3187,7 +3272,8 @@ impl Char {
   // @@bebop_insertion_point(struct_scope:Char)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Void {
   pub tag: i32,
 }
@@ -3216,7 +3302,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Void {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Void)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Void", "tag")?;
     // @@bebop_insertion_point(decode_end:Void)
     result::Result::Ok(Void { tag })
   }
@@ -3226,7 +3312,8 @@ impl Void {
   // @@bebop_insertion_point(struct_scope:Void)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Int {
   pub tag: i32,
 }
@@ -3255,7 +3342,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Int {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Int)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Int", "tag")?;
     // @@bebop_insertion_point(decode_end:Int)
     result::Result::Ok(Int { tag })
   }
@@ -3265,7 +3352,8 @@ impl Int {
   // @@bebop_insertion_point(struct_scope:Int)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Var {
   pub tag: i32,
 }
@@ -3294,7 +3382,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Var {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Var)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Var", "tag")?;
     // @@bebop_insertion_point(decode_end:Var)
     result::Result::Ok(Var { tag })
   }
@@ -3304,7 +3392,8 @@ impl Var {
   // @@bebop_insertion_point(struct_scope:Var)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Function {
   pub tag: i32,
 }
@@ -3333,7 +3422,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Function {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Function)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Function", "tag")?;
     // @@bebop_insertion_point(decode_end:Function)
     result::Result::Ok(Function { tag })
   }
@@ -3343,7 +3432,8 @@ impl Function {
   // @@bebop_insertion_point(struct_scope:Function)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Debugger {
   pub tag: i32,
 }
@@ -3372,7 +3462,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Debugger {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Debugger)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Debugger", "tag")?;
     // @@bebop_insertion_point(decode_end:Debugger)
     result::Result::Ok(Debugger { tag })
   }
@@ -3382,7 +3472,8 @@ impl Debugger {
   // @@bebop_insertion_point(struct_scope:Debugger)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Undefined {
   pub tag: i32,
 }
@@ -3411,7 +3502,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Undefined {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Undefined)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Undefined", "tag")?;
     // @@bebop_insertion_point(decode_end:Undefined)
     result::Result::Ok(Undefined { tag })
   }
@@ -3421,7 +3512,8 @@ impl Undefined {
   // @@bebop_insertion_point(struct_scope:Undefined)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Declare {
   pub tag: i32,
 }
@@ -3450,7 +3542,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Declare {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Declare)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Declare", "tag")?;
     // @@bebop_insertion_point(decode_end:Declare)
     result::Result::Ok(Declare { tag })
   }
@@ -3460,7 +3552,8 @@ impl Declare {
   // @@bebop_insertion_point(struct_scope:Declare)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Require {
   pub tag: i32,
 }
@@ -3489,7 +3582,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Require {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Require)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Require", "tag")?;
     // @@bebop_insertion_point(decode_end:Require)
     result::Result::Ok(Require { tag })
   }
@@ -3499,7 +3592,8 @@ impl Require {
   // @@bebop_insertion_point(struct_scope:Require)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Module {
   pub tag: i32,
 }
@@ -3528,7 +3622,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Module {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Module)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Module", "tag")?;
     // @@bebop_insertion_point(decode_end:Module)
     result::Result::Ok(Module { tag })
   }
@@ -3538,7 +3632,8 @@ impl Module {
   // @@bebop_insertion_point(struct_scope:Module)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Global {
   pub tag: i32,
 }
@@ -3567,7 +3662,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Global {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Global)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Global", "tag")?;
     // @@bebop_insertion_point(decode_end:Global)
     result::Result::Ok(Global { tag })
   }
@@ -3577,7 +3672,8 @@ impl Global {
   // @@bebop_insertion_point(struct_scope:Global)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Internal {
   pub tag: i32,
 }
@@ -3606,7 +3702,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Internal {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Internal)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Internal", "tag")?;
     // @@bebop_insertion_point(decode_end:Internal)
     result::Result::Ok(Internal { tag })
   }
@@ -3616,7 +3712,8 @@ impl Internal {
   // @@bebop_insertion_point(struct_scope:Internal)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Object {
   pub tag: i32,
 }
@@ -3645,7 +3742,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Object {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Object)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Object", "tag")?;
     // @@bebop_insertion_point(decode_end:Object)
     result::Result::Ok(Object { tag })
   }
@@ -3655,7 +3752,8 @@ impl Object {
   // @@bebop_insertion_point(struct_scope:Object)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct String {
   pub tag: i32,
 }
@@ -3684,7 +3782,7 @@ impl<'buf> bebop::BebopDecode<'buf> for String {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:String)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("String", "tag")?;
     // @@bebop_insertion_point(decode_end:String)
     result::Result::Ok(String { tag })
   }
@@ -3694,7 +3792,8 @@ impl String {
   // @@bebop_insertion_point(struct_scope:String)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Symbol {
   pub tag: i32,
 }
@@ -3723,7 +3822,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Symbol {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Symbol)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Symbol", "tag")?;
     // @@bebop_insertion_point(decode_end:Symbol)
     result::Result::Ok(Symbol { tag })
   }
@@ -3733,7 +3832,8 @@ impl Symbol {
   // @@bebop_insertion_point(struct_scope:Symbol)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Bigint {
   pub tag: i32,
 }
@@ -3762,7 +3862,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Bigint {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Bigint)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Bigint", "tag")?;
     // @@bebop_insertion_point(decode_end:Bigint)
     result::Result::Ok(Bigint { tag })
   }
@@ -3772,7 +3872,8 @@ impl Bigint {
   // @@bebop_insertion_point(struct_scope:Bigint)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Never {
   pub tag: i32,
 }
@@ -3801,7 +3902,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Never {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Never)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Never", "tag")?;
     // @@bebop_insertion_point(decode_end:Never)
     result::Result::Ok(Never { tag })
   }
@@ -3811,7 +3912,8 @@ impl Never {
   // @@bebop_insertion_point(struct_scope:Never)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Unknown {
   pub tag: i32,
 }
@@ -3840,7 +3942,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Unknown {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Unknown)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Unknown", "tag")?;
     // @@bebop_insertion_point(decode_end:Unknown)
     result::Result::Ok(Unknown { tag })
   }
@@ -3850,7 +3952,8 @@ impl Unknown {
   // @@bebop_insertion_point(struct_scope:Unknown)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Keyof {
   pub tag: i32,
 }
@@ -3879,7 +3982,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Keyof {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Keyof)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Keyof", "tag")?;
     // @@bebop_insertion_point(decode_end:Keyof)
     result::Result::Ok(Keyof { tag })
   }
@@ -3889,7 +3992,8 @@ impl Keyof {
   // @@bebop_insertion_point(struct_scope:Keyof)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Infer {
   pub tag: i32,
 }
@@ -3918,7 +4022,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Infer {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Infer)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Infer", "tag")?;
     // @@bebop_insertion_point(decode_end:Infer)
     result::Result::Ok(Infer { tag })
   }
@@ -3928,7 +4032,8 @@ impl Infer {
   // @@bebop_insertion_point(struct_scope:Infer)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Satisfies {
   pub tag: i32,
 }
@@ -3957,7 +4062,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Satisfies {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Satisfies)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Satisfies", "tag")?;
     // @@bebop_insertion_point(decode_end:Satisfies)
     result::Result::Ok(Satisfies { tag })
   }
@@ -3967,7 +4072,8 @@ impl Satisfies {
   // @@bebop_insertion_point(struct_scope:Satisfies)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Out {
   pub tag: i32,
 }
@@ -3996,7 +4102,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Out {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Out)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Out", "tag")?;
     // @@bebop_insertion_point(decode_end:Out)
     result::Result::Ok(Out { tag })
   }
@@ -4006,7 +4112,8 @@ impl Out {
   // @@bebop_insertion_point(struct_scope:Out)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Inout {
   pub tag: i32,
 }
@@ -4035,7 +4142,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Inout {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Inout)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Inout", "tag")?;
     // @@bebop_insertion_point(decode_end:Inout)
     result::Result::Ok(Inout { tag })
   }
@@ -4045,7 +4152,8 @@ impl Inout {
   // @@bebop_insertion_point(struct_scope:Inout)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Protocol {
   pub tag: i32,
 }
@@ -4074,7 +4182,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Protocol {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Protocol)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Protocol", "tag")?;
     // @@bebop_insertion_point(decode_end:Protocol)
     result::Result::Ok(Protocol { tag })
   }
@@ -4084,7 +4192,8 @@ impl Protocol {
   // @@bebop_insertion_point(struct_scope:Protocol)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Subscript {
   pub tag: i32,
 }
@@ -4113,7 +4222,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Subscript {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Subscript)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Subscript", "tag")?;
     // @@bebop_insertion_point(decode_end:Subscript)
     result::Result::Ok(Subscript { tag })
   }
@@ -4123,7 +4232,8 @@ impl Subscript {
   // @@bebop_insertion_point(struct_scope:Subscript)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Defer {
   pub tag: i32,
 }
@@ -4152,7 +4262,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Defer {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Defer)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Defer", "tag")?;
     // @@bebop_insertion_point(decode_end:Defer)
     result::Result::Ok(Defer { tag })
   }
@@ -4162,7 +4272,8 @@ impl Defer {
   // @@bebop_insertion_point(struct_scope:Defer)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Fallthrough {
   pub tag: i32,
 }
@@ -4191,7 +4302,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Fallthrough {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Fallthrough)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Fallthrough", "tag")?;
     // @@bebop_insertion_point(decode_end:Fallthrough)
     result::Result::Ok(Fallthrough { tag })
   }
@@ -4201,7 +4312,8 @@ impl Fallthrough {
   // @@bebop_insertion_point(struct_scope:Fallthrough)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Repeat {
   pub tag: i32,
 }
@@ -4230,7 +4342,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Repeat {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Repeat)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Repeat", "tag")?;
     // @@bebop_insertion_point(decode_end:Repeat)
     result::Result::Ok(Repeat { tag })
   }
@@ -4240,7 +4352,8 @@ impl Repeat {
   // @@bebop_insertion_point(struct_scope:Repeat)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Indirect {
   pub tag: i32,
 }
@@ -4269,7 +4382,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Indirect {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Indirect)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Indirect", "tag")?;
     // @@bebop_insertion_point(decode_end:Indirect)
     result::Result::Ok(Indirect { tag })
   }
@@ -4279,7 +4392,8 @@ impl Indirect {
   // @@bebop_insertion_point(struct_scope:Indirect)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Nonisolated {
   pub tag: i32,
 }
@@ -4308,7 +4422,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Nonisolated {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Nonisolated)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Nonisolated", "tag")?;
     // @@bebop_insertion_point(decode_end:Nonisolated)
     result::Result::Ok(Nonisolated { tag })
   }
@@ -4318,7 +4432,8 @@ impl Nonisolated {
   // @@bebop_insertion_point(struct_scope:Nonisolated)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Lazy {
   pub tag: i32,
 }
@@ -4347,7 +4462,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Lazy {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Lazy)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Lazy", "tag")?;
     // @@bebop_insertion_point(decode_end:Lazy)
     result::Result::Ok(Lazy { tag })
   }
@@ -4357,7 +4472,8 @@ impl Lazy {
   // @@bebop_insertion_point(struct_scope:Lazy)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Weak {
   pub tag: i32,
 }
@@ -4386,7 +4502,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Weak {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Weak)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Weak", "tag")?;
     // @@bebop_insertion_point(decode_end:Weak)
     result::Result::Ok(Weak { tag })
   }
@@ -4396,7 +4512,8 @@ impl Weak {
   // @@bebop_insertion_point(struct_scope:Weak)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Unowned {
   pub tag: i32,
 }
@@ -4425,7 +4542,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Unowned {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Unowned)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Unowned", "tag")?;
     // @@bebop_insertion_point(decode_end:Unowned)
     result::Result::Ok(Unowned { tag })
   }
@@ -4435,7 +4552,8 @@ impl Unowned {
   // @@bebop_insertion_point(struct_scope:Unowned)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Convenience {
   pub tag: i32,
 }
@@ -4464,7 +4582,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Convenience {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Convenience)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Convenience", "tag")?;
     // @@bebop_insertion_point(decode_end:Convenience)
     result::Result::Ok(Convenience { tag })
   }
@@ -4474,7 +4592,8 @@ impl Convenience {
   // @@bebop_insertion_point(struct_scope:Convenience)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Required {
   pub tag: i32,
 }
@@ -4503,7 +4622,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Required {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Required)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Required", "tag")?;
     // @@bebop_insertion_point(decode_end:Required)
     result::Result::Ok(Required { tag })
   }
@@ -4513,7 +4632,8 @@ impl Required {
   // @@bebop_insertion_point(struct_scope:Required)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Optional {
   pub tag: i32,
 }
@@ -4542,7 +4662,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Optional {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Optional)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Optional", "tag")?;
     // @@bebop_insertion_point(decode_end:Optional)
     result::Result::Ok(Optional { tag })
   }
@@ -4552,7 +4672,8 @@ impl Optional {
   // @@bebop_insertion_point(struct_scope:Optional)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Rethrows {
   pub tag: i32,
 }
@@ -4581,7 +4702,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Rethrows {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Rethrows)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Rethrows", "tag")?;
     // @@bebop_insertion_point(decode_end:Rethrows)
     result::Result::Ok(Rethrows { tag })
   }
@@ -4591,7 +4712,8 @@ impl Rethrows {
   // @@bebop_insertion_point(struct_scope:Rethrows)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Try {
   pub tag: i32,
 }
@@ -4620,7 +4742,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Try {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Try)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Try", "tag")?;
     // @@bebop_insertion_point(decode_end:Try)
     result::Result::Ok(Try { tag })
   }
@@ -4630,7 +4752,8 @@ impl Try {
   // @@bebop_insertion_point(struct_scope:Try)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Catch {
   pub tag: i32,
 }
@@ -4659,7 +4782,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Catch {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Catch)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Catch", "tag")?;
     // @@bebop_insertion_point(decode_end:Catch)
     result::Result::Ok(Catch { tag })
   }
@@ -4669,7 +4792,8 @@ impl Catch {
   // @@bebop_insertion_point(struct_scope:Catch)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Throw {
   pub tag: i32,
 }
@@ -4698,7 +4822,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Throw {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Throw)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Throw", "tag")?;
     // @@bebop_insertion_point(decode_end:Throw)
     result::Result::Ok(Throw { tag })
   }
@@ -4708,7 +4832,8 @@ impl Throw {
   // @@bebop_insertion_point(struct_scope:Throw)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Guard {
   pub tag: i32,
 }
@@ -4737,7 +4862,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Guard {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Guard)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Guard", "tag")?;
     // @@bebop_insertion_point(decode_end:Guard)
     result::Result::Ok(Guard { tag })
   }
@@ -4747,7 +4872,8 @@ impl Guard {
   // @@bebop_insertion_point(struct_scope:Guard)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct In {
   pub tag: i32,
 }
@@ -4776,7 +4902,7 @@ impl<'buf> bebop::BebopDecode<'buf> for In {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:In)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("In", "tag")?;
     // @@bebop_insertion_point(decode_end:In)
     result::Result::Ok(In { tag })
   }
@@ -4786,7 +4912,8 @@ impl In {
   // @@bebop_insertion_point(struct_scope:In)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Is {
   pub tag: i32,
 }
@@ -4815,7 +4942,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Is {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Is)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Is", "tag")?;
     // @@bebop_insertion_point(decode_end:Is)
     result::Result::Ok(Is { tag })
   }
@@ -4825,7 +4952,8 @@ impl Is {
   // @@bebop_insertion_point(struct_scope:Is)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct As {
   pub tag: i32,
 }
@@ -4854,7 +4982,7 @@ impl<'buf> bebop::BebopDecode<'buf> for As {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:As)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("As", "tag")?;
     // @@bebop_insertion_point(decode_end:As)
     result::Result::Ok(As { tag })
   }
@@ -4864,7 +4992,8 @@ impl As {
   // @@bebop_insertion_point(struct_scope:As)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Select {
   pub tag: i32,
 }
@@ -4893,7 +5022,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Select {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Select)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Select", "tag")?;
     // @@bebop_insertion_point(decode_end:Select)
     result::Result::Ok(Select { tag })
   }
@@ -4903,7 +5032,8 @@ impl Select {
   // @@bebop_insertion_point(struct_scope:Select)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Event {
   pub tag: i32,
 }
@@ -4932,7 +5062,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Event {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Event)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Event", "tag")?;
     // @@bebop_insertion_point(decode_end:Event)
     result::Result::Ok(Event { tag })
   }
@@ -4942,7 +5072,8 @@ impl Event {
   // @@bebop_insertion_point(struct_scope:Event)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Delegate {
   pub tag: i32,
 }
@@ -4971,7 +5102,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Delegate {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Delegate)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Delegate", "tag")?;
     // @@bebop_insertion_point(decode_end:Delegate)
     result::Result::Ok(Delegate { tag })
   }
@@ -4981,7 +5112,8 @@ impl Delegate {
   // @@bebop_insertion_point(struct_scope:Delegate)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Checked {
   pub tag: i32,
 }
@@ -5010,7 +5142,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Checked {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Checked)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Checked", "tag")?;
     // @@bebop_insertion_point(decode_end:Checked)
     result::Result::Ok(Checked { tag })
   }
@@ -5020,7 +5152,8 @@ impl Checked {
   // @@bebop_insertion_point(struct_scope:Checked)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Unchecked {
   pub tag: i32,
 }
@@ -5049,7 +5182,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Unchecked {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Unchecked)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Unchecked", "tag")?;
     // @@bebop_insertion_point(decode_end:Unchecked)
     result::Result::Ok(Unchecked { tag })
   }
@@ -5059,7 +5192,8 @@ impl Unchecked {
   // @@bebop_insertion_point(struct_scope:Unchecked)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Stackalloc {
   pub tag: i32,
 }
@@ -5088,7 +5222,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Stackalloc {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Stackalloc)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Stackalloc", "tag")?;
     // @@bebop_insertion_point(decode_end:Stackalloc)
     result::Result::Ok(Stackalloc { tag })
   }
@@ -5098,7 +5232,8 @@ impl Stackalloc {
   // @@bebop_insertion_point(struct_scope:Stackalloc)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Params {
   pub tag: i32,
 }
@@ -5127,7 +5262,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Params {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Params)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Params", "tag")?;
     // @@bebop_insertion_point(decode_end:Params)
     result::Result::Ok(Params { tag })
   }
@@ -5137,7 +5272,8 @@ impl Params {
   // @@bebop_insertion_point(struct_scope:Params)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Lock {
   pub tag: i32,
 }
@@ -5166,7 +5302,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Lock {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Lock)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Lock", "tag")?;
     // @@bebop_insertion_point(decode_end:Lock)
     result::Result::Ok(Lock { tag })
   }
@@ -5176,7 +5312,8 @@ impl Lock {
   // @@bebop_insertion_point(struct_scope:Lock)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Nameof {
   pub tag: i32,
 }
@@ -5205,7 +5342,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Nameof {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Nameof)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Nameof", "tag")?;
     // @@bebop_insertion_point(decode_end:Nameof)
     result::Result::Ok(Nameof { tag })
   }
@@ -5215,7 +5352,8 @@ impl Nameof {
   // @@bebop_insertion_point(struct_scope:Nameof)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Sbyte {
   pub tag: i32,
 }
@@ -5244,7 +5382,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Sbyte {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Sbyte)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Sbyte", "tag")?;
     // @@bebop_insertion_point(decode_end:Sbyte)
     result::Result::Ok(Sbyte { tag })
   }
@@ -5254,7 +5392,8 @@ impl Sbyte {
   // @@bebop_insertion_point(struct_scope:Sbyte)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Ushort {
   pub tag: i32,
 }
@@ -5283,7 +5422,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Ushort {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Ushort)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Ushort", "tag")?;
     // @@bebop_insertion_point(decode_end:Ushort)
     result::Result::Ok(Ushort { tag })
   }
@@ -5293,7 +5432,8 @@ impl Ushort {
   // @@bebop_insertion_point(struct_scope:Ushort)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Uint {
   pub tag: i32,
 }
@@ -5322,7 +5462,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Uint {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Uint)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Uint", "tag")?;
     // @@bebop_insertion_point(decode_end:Uint)
     result::Result::Ok(Uint { tag })
   }
@@ -5332,7 +5472,8 @@ impl Uint {
   // @@bebop_insertion_point(struct_scope:Uint)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Ulong {
   pub tag: i32,
 }
@@ -5361,7 +5502,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Ulong {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Ulong)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Ulong", "tag")?;
     // @@bebop_insertion_point(decode_end:Ulong)
     result::Result::Ok(Ulong { tag })
   }
@@ -5371,7 +5512,8 @@ impl Ulong {
   // @@bebop_insertion_point(struct_scope:Ulong)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct When {
   pub tag: i32,
 }
@@ -5400,7 +5542,7 @@ impl<'buf> bebop::BebopDecode<'buf> for When {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:When)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("When", "tag")?;
     // @@bebop_insertion_point(decode_end:When)
     result::Result::Ok(When { tag })
   }
@@ -5410,7 +5552,8 @@ impl When {
   // @@bebop_insertion_point(struct_scope:When)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Init {
   pub tag: i32,
 }
@@ -5439,7 +5582,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Init {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Init)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Init", "tag")?;
     // @@bebop_insertion_point(decode_end:Init)
     result::Result::Ok(Init { tag })
   }
@@ -5449,7 +5592,8 @@ impl Init {
   // @@bebop_insertion_point(struct_scope:Init)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Deinit {
   pub tag: i32,
 }
@@ -5478,7 +5622,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Deinit {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Deinit)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Deinit", "tag")?;
     // @@bebop_insertion_point(decode_end:Deinit)
     result::Result::Ok(Deinit { tag })
   }
@@ -5488,7 +5632,8 @@ impl Deinit {
   // @@bebop_insertion_point(struct_scope:Deinit)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Get {
   pub tag: i32,
 }
@@ -5517,7 +5662,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Get {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Get)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Get", "tag")?;
     // @@bebop_insertion_point(decode_end:Get)
     result::Result::Ok(Get { tag })
   }
@@ -5527,7 +5672,8 @@ impl Get {
   // @@bebop_insertion_point(struct_scope:Get)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Set {
   pub tag: i32,
 }
@@ -5556,7 +5702,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Set {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Set)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Set", "tag")?;
     // @@bebop_insertion_point(decode_end:Set)
     result::Result::Ok(Set { tag })
   }
@@ -5566,7 +5712,8 @@ impl Set {
   // @@bebop_insertion_point(struct_scope:Set)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct WillSet {
   pub tag: i32,
 }
@@ -5595,7 +5742,7 @@ impl<'buf> bebop::BebopDecode<'buf> for WillSet {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:WillSet)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("WillSet", "tag")?;
     // @@bebop_insertion_point(decode_end:WillSet)
     result::Result::Ok(WillSet { tag })
   }
@@ -5605,7 +5752,8 @@ impl WillSet {
   // @@bebop_insertion_point(struct_scope:WillSet)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DidSet {
   pub tag: i32,
 }
@@ -5634,7 +5782,7 @@ impl<'buf> bebop::BebopDecode<'buf> for DidSet {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:DidSet)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("DidSet", "tag")?;
     // @@bebop_insertion_point(decode_end:DidSet)
     result::Result::Ok(DidSet { tag })
   }
@@ -5644,7 +5792,8 @@ impl DidSet {
   // @@bebop_insertion_point(struct_scope:DidSet)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Associatedtype {
   pub tag: i32,
 }
@@ -5673,7 +5822,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Associatedtype {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Associatedtype)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Associatedtype", "tag")?;
     // @@bebop_insertion_point(decode_end:Associatedtype)
     result::Result::Ok(Associatedtype { tag })
   }
@@ -5684,7 +5833,8 @@ impl Associatedtype {
 }
 
 /// Many Rust / Swift / C# keywords reused as *field* names (snake_case in Rust).
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RustKeywordFields {
   pub r#type: i32,
   pub r#mod: i32,
@@ -5710,7 +5860,8 @@ pub struct RustKeywordFields {
 }
 
 impl RustKeywordFields {
-  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<i32>()
+  pub const FIXED_ENCODED_SIZE: usize =
+    mem::size_of::<i32>()
     + mem::size_of::<i32>()
     + mem::size_of::<i32>()
     + mem::size_of::<i32>()
@@ -5749,26 +5900,7 @@ impl RustKeywordFields {
     is: i32,
     r#try: i32,
   ) -> Self {
-    Self {
-      r#type,
-      r#mod,
-      self_,
-      super_,
-      crate_,
-      r#match,
-      r#where,
-      r#loop,
-      r#move,
-      r#ref,
-      r#dyn,
-      r#use,
-      r#let,
-      r#fn,
-      r#as,
-      r#in,
-      is,
-      r#try,
-    }
+    Self { r#type, r#mod, self_, super_, crate_, r#match, r#where, r#loop, r#move, r#ref, r#dyn, r#use, r#let, r#fn, r#as, r#in, is, r#try }
   }
 }
 
@@ -5805,45 +5937,26 @@ impl<'buf> bebop::BebopDecode<'buf> for RustKeywordFields {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:RustKeywordFields)
-    let r#type = reader.read_i32()?;
-    let r#mod = reader.read_i32()?;
-    let self_ = reader.read_i32()?;
-    let super_ = reader.read_i32()?;
-    let crate_ = reader.read_i32()?;
-    let r#match = reader.read_i32()?;
-    let r#where = reader.read_i32()?;
-    let r#loop = reader.read_i32()?;
-    let r#move = reader.read_i32()?;
-    let r#ref = reader.read_i32()?;
-    let r#dyn = reader.read_i32()?;
-    let r#use = reader.read_i32()?;
-    let r#let = reader.read_i32()?;
-    let r#fn = reader.read_i32()?;
-    let r#as = reader.read_i32()?;
-    let r#in = reader.read_i32()?;
-    let is = reader.read_i32()?;
-    let r#try = reader.read_i32()?;
+    let r#type = reader.read_i32().for_field("RustKeywordFields", "type")?;
+    let r#mod = reader.read_i32().for_field("RustKeywordFields", "mod")?;
+    let self_ = reader.read_i32().for_field("RustKeywordFields", "self")?;
+    let super_ = reader.read_i32().for_field("RustKeywordFields", "super")?;
+    let crate_ = reader.read_i32().for_field("RustKeywordFields", "crate")?;
+    let r#match = reader.read_i32().for_field("RustKeywordFields", "match")?;
+    let r#where = reader.read_i32().for_field("RustKeywordFields", "where")?;
+    let r#loop = reader.read_i32().for_field("RustKeywordFields", "loop")?;
+    let r#move = reader.read_i32().for_field("RustKeywordFields", "move")?;
+    let r#ref = reader.read_i32().for_field("RustKeywordFields", "ref")?;
+    let r#dyn = reader.read_i32().for_field("RustKeywordFields", "dyn")?;
+    let r#use = reader.read_i32().for_field("RustKeywordFields", "use")?;
+    let r#let = reader.read_i32().for_field("RustKeywordFields", "let")?;
+    let r#fn = reader.read_i32().for_field("RustKeywordFields", "fn")?;
+    let r#as = reader.read_i32().for_field("RustKeywordFields", "as")?;
+    let r#in = reader.read_i32().for_field("RustKeywordFields", "in")?;
+    let is = reader.read_i32().for_field("RustKeywordFields", "is")?;
+    let r#try = reader.read_i32().for_field("RustKeywordFields", "try")?;
     // @@bebop_insertion_point(decode_end:RustKeywordFields)
-    result::Result::Ok(RustKeywordFields {
-      r#type,
-      r#mod,
-      self_,
-      super_,
-      crate_,
-      r#match,
-      r#where,
-      r#loop,
-      r#move,
-      r#ref,
-      r#dyn,
-      r#use,
-      r#let,
-      r#fn,
-      r#as,
-      r#in,
-      is,
-      r#try,
-    })
+    result::Result::Ok(RustKeywordFields { r#type, r#mod, self_, super_, crate_, r#match, r#where, r#loop, r#move, r#ref, r#dyn, r#use, r#let, r#fn, r#as, r#in, is, r#try })
   }
 }
 
@@ -5860,7 +5973,8 @@ pub const RETURN: u32 = 2u32;
 pub const ELSE: u32 = 3u32;
 
 #[repr(u8)]
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MultiLangKeywordVariant {
   Mod = 0,
   Match = 1,
@@ -5886,18 +6000,13 @@ impl convert::TryFrom<u8> for MultiLangKeywordVariant {
       6 => result::Result::Ok(Self::Async),
       7 => result::Result::Ok(Self::Self_),
       8 => result::Result::Ok(Self::Super),
-      _ => result::Result::Err(bebop::DecodeError::InvalidEnum {
-        type_name: "MultiLangKeywordVariant",
-        value: value as u64,
-      }),
+      _ => result::Result::Err(bebop::DecodeError::InvalidEnum { type_name: "MultiLangKeywordVariant", value: value as u64 }),
     }
   }
 }
 
 impl convert::From<MultiLangKeywordVariant> for u8 {
-  fn from(value: MultiLangKeywordVariant) -> u8 {
-    value as u8
-  }
+  fn from(value: MultiLangKeywordVariant) -> u8 { value as u8 }
 }
 
 impl MultiLangKeywordVariant {
@@ -5912,9 +6021,7 @@ impl bebop::BebopEncode for MultiLangKeywordVariant {
     // @@bebop_insertion_point(encode_end:MultiLangKeywordVariant)
   }
 
-  fn encoded_size(&self) -> usize {
-    Self::FIXED_ENCODED_SIZE
-  }
+  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
 }
 
 impl<'buf> bebop::BebopDecode<'buf> for MultiLangKeywordVariant {
@@ -5927,7 +6034,8 @@ impl<'buf> bebop::BebopDecode<'buf> for MultiLangKeywordVariant {
   }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RustKeywordFlags(pub u8);
 
 #[allow(non_upper_case_globals)]
@@ -5943,68 +6051,24 @@ impl RustKeywordFlags {
 impl bebop::BebopFlags for RustKeywordFlags {
   type Bits = u8;
   const ALL_BITS: Self::Bits = 7;
-  fn bits(self) -> Self::Bits {
-    self.0
-  }
-  fn from_bits_retain(bits: Self::Bits) -> Self {
-    Self(bits)
-  }
+  fn bits(self) -> Self::Bits { self.0 }
+  fn from_bits_retain(bits: Self::Bits) -> Self { Self(bits) }
 }
 
-impl ops::BitOr for RustKeywordFlags {
-  type Output = Self;
-  fn bitor(self, rhs: Self) -> Self {
-    Self(self.0 | rhs.0)
-  }
-}
-impl ops::BitOrAssign for RustKeywordFlags {
-  fn bitor_assign(&mut self, rhs: Self) {
-    self.0 |= rhs.0;
-  }
-}
-impl ops::BitAnd for RustKeywordFlags {
-  type Output = Self;
-  fn bitand(self, rhs: Self) -> Self {
-    Self(self.0 & rhs.0)
-  }
-}
-impl ops::BitAndAssign for RustKeywordFlags {
-  fn bitand_assign(&mut self, rhs: Self) {
-    self.0 &= rhs.0;
-  }
-}
-impl ops::BitXor for RustKeywordFlags {
-  type Output = Self;
-  fn bitxor(self, rhs: Self) -> Self {
-    Self(self.0 ^ rhs.0)
-  }
-}
-impl ops::BitXorAssign for RustKeywordFlags {
-  fn bitxor_assign(&mut self, rhs: Self) {
-    self.0 ^= rhs.0;
-  }
-}
-impl ops::Not for RustKeywordFlags {
-  type Output = Self;
-  fn not(self) -> Self {
-    Self(!self.0)
-  }
-}
-impl ops::Sub for RustKeywordFlags {
-  type Output = Self;
-  fn sub(self, rhs: Self) -> Self {
-    Self(self.0 & !rhs.0)
-  }
-}
+impl ops::BitOr for RustKeywordFlags { type Output = Self; fn bitor(self, rhs: Self) -> Self { Self(self.0 | rhs.0) } }
+impl ops::BitOrAssign for RustKeywordFlags { fn bitor_assign(&mut self, rhs: Self) { self.0 |= rhs.0; } }
+impl ops::BitAnd for RustKeywordFlags { type Output = Self; fn bitand(self, rhs: Self) -> Self { Self(self.0 & rhs.0) } }
+impl ops::BitAndAssign for RustKeywordFlags { fn bitand_assign(&mut self, rhs: Self) { self.0 &= rhs.0; } }
+impl ops::BitXor for RustKeywordFlags { type Output = Self; fn bitxor(self, rhs: Self) -> Self { Self(self.0 ^ rhs.0) } }
+impl ops::BitXorAssign for RustKeywordFlags { fn bitxor_assign(&mut self, rhs: Self) { self.0 ^= rhs.0; } }
+impl ops::Not for RustKeywordFlags { type Output = Self; fn not(self) -> Self { Self(!self.0) } }
+impl ops::Sub for RustKeywordFlags { type Output = Self; fn sub(self, rhs: Self) -> Self { Self(self.0 & !rhs.0) } }
 
 impl<'buf> bebop::BebopDecode<'buf> for RustKeywordFlags {
   #[inline(always)]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     let bits = reader.read_byte()?;
-    <Self as bebop::BebopFlags>::from_bits(bits).ok_or(bebop::DecodeError::InvalidFlags {
-      type_name: "RustKeywordFlags",
-      bits: bits as u64,
-    })
+    <Self as bebop::BebopFlags>::from_bits(bits).ok_or(bebop::DecodeError::InvalidFlags { type_name: "RustKeywordFlags", bits: bits as u64 })
   }
 }
 
@@ -6021,25 +6085,18 @@ impl bebop::BebopEncode for KeywordUnion {
     // @@bebop_insertion_point(encode_start:KeywordUnion)
     let pos = writer.reserve_message_length();
     match self {
-      Self::Mod(inner) => {
-        writer.write_byte(1);
-        inner.encode(writer);
-      }
-      Self::Match(inner) => {
-        writer.write_byte(2);
-        inner.encode(writer);
-      }
+      Self::Mod(inner) => { writer.write_byte(1); inner.encode(writer); }
+      Self::Match(inner) => { writer.write_byte(2); inner.encode(writer); }
     }
     writer.fill_message_length(pos);
     // @@bebop_insertion_point(encode_end:KeywordUnion)
   }
 
   fn encoded_size(&self) -> usize {
-    bebop::wire_size::WIRE_LEN_PREFIX_SIZE
-      + match self {
-        Self::Mod(inner) => bebop::wire_size::tagged_size(inner.encoded_size()),
-        Self::Match(inner) => bebop::wire_size::tagged_size(inner.encoded_size()),
-      }
+    bebop::wire_size::WIRE_LEN_PREFIX_SIZE + match self {
+      Self::Mod(inner) => bebop::wire_size::tagged_size(inner.encoded_size()),
+      Self::Match(inner) => bebop::wire_size::tagged_size(inner.encoded_size()),
+    }
   }
 }
 
@@ -6051,12 +6108,9 @@ impl<'buf> bebop::BebopDecode<'buf> for KeywordUnion {
     let start = reader.position();
     let discriminator = reader.read_byte()?;
     let value = match discriminator {
-      1 => result::Result::Ok(Self::Mod(Point::decode(reader)?)),
-      2 => result::Result::Ok(Self::Match(Point::decode(reader)?)),
-      _ => result::Result::Err(bebop::DecodeError::InvalidUnion {
-        type_name: "KeywordUnion",
-        discriminator,
-      }),
+      1 => result::Result::Ok(Self::Mod(Point::decode(reader).for_field("KeywordUnion", "mod")?)),
+      2 => result::Result::Ok(Self::Match(Point::decode(reader).for_field("KeywordUnion", "match")?)),
+      _ => result::Result::Err(bebop::DecodeError::InvalidUnion { type_name: "KeywordUnion", discriminator }),
     };
     // @@bebop_insertion_point(decode_end:KeywordUnion)
     value
@@ -6067,7 +6121,8 @@ impl KeywordUnion {
   // @@bebop_insertion_point(union_scope:KeywordUnion)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct KeywordFieldMessage<'buf> {
   pub r#type: option::Option<i32>,
   pub r#mod: option::Option<borrow::Cow<'buf, str>>,
@@ -6148,20 +6203,13 @@ impl<'buf> bebop::BebopDecode<'buf> for KeywordFieldMessage<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => msg.r#type = option::Option::Some(reader.read_i32()?),
-        2 => msg.r#mod = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        3 => msg.self_ = option::Option::Some(reader.read_bool()?),
-        4 => msg.crate_ = option::Option::Some(reader.read_i32()?),
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "KeywordFieldMessage",
-            tag,
-          });
-        }
+        1 => msg.r#type = option::Option::Some(reader.read_i32().for_field("KeywordFieldMessage", "type")?),
+        2 => msg.r#mod = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("KeywordFieldMessage", "mod")?)),
+        3 => msg.self_ = option::Option::Some(reader.read_bool().for_field("KeywordFieldMessage", "self")?),
+        4 => msg.crate_ = option::Option::Some(reader.read_i32().for_field("KeywordFieldMessage", "crate")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "KeywordFieldMessage", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:KeywordFieldMessage)
@@ -6190,7 +6238,8 @@ impl<'buf> KeywordFieldMessage<'buf> {
 }
 
 /// Holds both a wire `guid` (runtime UUID) and a user-defined `Uuid` struct.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GuidAndUserUuidCollision {
   pub runtime_guid: bebop::Uuid,
   pub user_uuid: Uuid,
@@ -6199,11 +6248,11 @@ pub struct GuidAndUserUuidCollision {
 impl GuidAndUserUuidCollision {
   pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<bebop::Uuid>() + Uuid::FIXED_ENCODED_SIZE;
 
-  pub fn new(runtime_guid: bebop::Uuid, user_uuid: Uuid) -> Self {
-    Self {
-      runtime_guid,
-      user_uuid,
-    }
+  pub fn new(
+    runtime_guid: bebop::Uuid,
+    user_uuid: Uuid,
+  ) -> Self {
+    Self { runtime_guid, user_uuid }
   }
 }
 
@@ -6224,13 +6273,10 @@ impl<'buf> bebop::BebopDecode<'buf> for GuidAndUserUuidCollision {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:GuidAndUserUuidCollision)
-    let runtime_guid = reader.read_uuid()?;
-    let user_uuid = Uuid::decode(reader)?;
+    let runtime_guid = reader.read_uuid().for_field("GuidAndUserUuidCollision", "runtime_guid")?;
+    let user_uuid = Uuid::decode(reader).for_field("GuidAndUserUuidCollision", "user_uuid")?;
     // @@bebop_insertion_point(decode_end:GuidAndUserUuidCollision)
-    result::Result::Ok(GuidAndUserUuidCollision {
-      runtime_guid,
-      user_uuid,
-    })
+    result::Result::Ok(GuidAndUserUuidCollision { runtime_guid, user_uuid })
   }
 }
 
@@ -6238,7 +6284,8 @@ impl GuidAndUserUuidCollision {
   // @@bebop_insertion_point(struct_scope:GuidAndUserUuidCollision)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct MapWithUserHashMapStruct<'buf> {
   pub items: option::Option<bebop::HashMap<borrow::Cow<'buf, str>, HashMap>>,
 }
@@ -6248,11 +6295,7 @@ pub type MapWithUserHashMapStructOwned = MapWithUserHashMapStruct<'static>;
 impl<'buf> MapWithUserHashMapStruct<'buf> {
   pub fn into_owned(self) -> MapWithUserHashMapStructOwned {
     MapWithUserHashMapStruct {
-      items: self.items.map(|v| {
-        v.into_iter()
-          .map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), _v))
-          .collect()
-      }),
+      items: self.items.map(|v| v.into_iter().map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), _v)).collect()),
     }
   }
 }
@@ -6268,10 +6311,7 @@ impl<'buf> bebop::BebopEncode for MapWithUserHashMapStruct<'buf> {
     // normally. This behavior should be revisited once the spec intent is clarified.
     if let option::Option::Some(ref v) = self.items {
       writer.write_tag(1);
-      writer.write_map(&v, |_w, _k, _v| {
-        _w.write_string(&_k);
-        _v.encode(_w);
-      });
+      writer.write_map(&v, |_w, _k, _v| { _w.write_string(&_k); _v.encode(_w); });
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
@@ -6281,9 +6321,7 @@ impl<'buf> bebop::BebopEncode for MapWithUserHashMapStruct<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let option::Option::Some(ref v) = self.items {
-      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| {
-        bebop::wire_size::string_size(_k.len()) + _v.encoded_size()
-      }));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| bebop::wire_size::string_size(_k.len()) + _v.encoded_size()));
     }
     size
   }
@@ -6299,24 +6337,10 @@ impl<'buf> bebop::BebopDecode<'buf> for MapWithUserHashMapStruct<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.items = option::Option::Some(reader.read_map(|_r| {
-            result::Result::Ok((
-              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-              HashMap::decode(_r)?,
-            ))
-          })?)
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "MapWithUserHashMapStruct",
-            tag,
-          });
-        }
+        1 => msg.items = option::Option::Some(reader.read_map(|_r| result::Result::Ok((result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?, HashMap::decode(_r)?))).for_field("MapWithUserHashMapStruct", "items")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "MapWithUserHashMapStruct", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:MapWithUserHashMapStruct)
@@ -6325,10 +6349,7 @@ impl<'buf> bebop::BebopDecode<'buf> for MapWithUserHashMapStruct<'buf> {
 }
 
 impl<'buf> MapWithUserHashMapStruct<'buf> {
-  pub fn with_items(
-    mut self,
-    value: impl iter::IntoIterator<Item = (impl convert::Into<borrow::Cow<'buf, str>>, HashMap)>,
-  ) -> Self {
+  pub fn with_items(mut self, value: impl iter::IntoIterator<Item = (impl convert::Into<borrow::Cow<'buf, str>>, HashMap)>) -> Self {
     self.items = option::Option::Some(value.into_iter().map(|(_k, _v)| (_k.into(), _v)).collect());
     self
   }

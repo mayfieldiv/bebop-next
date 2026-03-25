@@ -9,6 +9,8 @@ use super::{
 
 struct StructFieldMeta<'a> {
   fname: String,
+  /// Bebop schema field name for decode error context (e.g. `"self"`, not `"self_"`).
+  schema_name: String,
   cow_type: String,
   owned_type: String,
   td: &'a TypeDescriptor<'a>,
@@ -48,8 +50,12 @@ pub fn generate(
         .r#type
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedDefinition("struct field missing type".into()))?;
+      let raw = f.name.as_deref().unwrap_or("unknown");
+      let fname = field_name(raw);
+      let schema_name = raw.to_string();
       Ok(StructFieldMeta {
-        fname: field_name(f.name.as_deref().unwrap_or("unknown")),
+        fname,
+        schema_name,
         cow_type: type_mapper::rust_type(td, analysis)?,
         owned_type: type_mapper::rust_type_owned(td, analysis)?,
         td,
@@ -132,30 +138,36 @@ pub fn generate(
       }
     }
   }
-  output.push_str("  pub fn new(");
   // Pre-compute IntoIterator info for collection fields
   let collection_infos: Vec<Option<(String, String)>> = field_metas
     .iter()
     .map(|meta| type_mapper::collection_into_iter(meta.td, &meta.fname, analysis))
     .collect::<Result<Vec<_>, GeneratorError>>()?;
 
-  for (i, meta) in field_metas.iter().enumerate() {
-    if i > 0 {
-      output.push_str(", ");
+  let params: Vec<String> = field_metas
+    .iter()
+    .enumerate()
+    .map(|(i, meta)| {
+      let param_type = if let Some((ref pt, _)) = collection_infos[i] {
+        pt.clone()
+      } else if has_lifetime && type_mapper::is_cow_field(meta.td) {
+        format!("impl convert::Into<{}>", meta.cow_type)
+      } else {
+        meta.owned_type.clone()
+      };
+      format!("{}: {}", meta.fname, param_type)
+    })
+    .collect();
+
+  if params.len() >= 2 {
+    output.push_str("  pub fn new(\n");
+    for p in &params {
+      output.push_str(&format!("    {},\n", p));
     }
-    if let Some((ref param_type, _)) = collection_infos[i] {
-      // Collection field with IntoIterator
-      output.push_str(&format!("{}: {}", meta.fname, param_type));
-    } else if has_lifetime && type_mapper::is_cow_field(meta.td) {
-      output.push_str(&format!(
-        "{}: impl convert::Into<{}>",
-        meta.fname, meta.cow_type
-      ));
-    } else {
-      output.push_str(&format!("{}: {}", meta.fname, meta.owned_type));
-    }
+    output.push_str("  ) -> Self {\n");
+  } else {
+    output.push_str(&format!("  pub fn new({}) -> Self {{\n", params.join(", ")));
   }
-  output.push_str(") -> Self {\n");
   let mut init_fields: Vec<String> = Vec::with_capacity(field_metas.len());
   for (i, meta) in field_metas.iter().enumerate() {
     if let Some((_, ref body_expr)) = collection_infos[i] {
@@ -260,12 +272,9 @@ pub fn generate(
     name
   ));
   for meta in &field_metas {
-    if let Some(read_expr) = type_mapper::borrowed_cow_read_expression(meta.td, "reader") {
-      output.push_str(&format!("    let {} = {};\n", meta.fname, read_expr));
-    } else {
-      let read_expr = type_mapper::read_expression(meta.td, "reader", analysis)?;
-      output.push_str(&format!("    let {} = {}?;\n", meta.fname, read_expr));
-    }
+    let expr =
+      type_mapper::read_field_expression(meta.td, "reader", analysis, &name, &meta.schema_name)?;
+    output.push_str(&format!("    let {} = {};\n", meta.fname, expr));
   }
   output.push_str(&format!(
     "    // @@bebop_insertion_point(decode_end:{})\n",

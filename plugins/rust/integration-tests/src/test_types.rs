@@ -17,16 +17,18 @@ extern crate bebop_runtime;
 extern crate core;
 use alloc::{borrow, boxed, string, vec};
 use bebop_runtime as bebop;
-use bebop_runtime::serde;
+use bebop_runtime::DecodeContext as _;
 use core::convert::Into as _;
 use core::iter::{IntoIterator as _, Iterator as _};
 use core::{convert, default, iter, mem, ops, option, result};
+use bebop_runtime::serde;
 
 // @@bebop_insertion_point(imports)
 
 /// Simple enum with uint8 base type.
 #[repr(u8)]
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Color {
   Unknown = 0,
   Red = 1,
@@ -42,18 +44,13 @@ impl convert::TryFrom<u8> for Color {
       1 => result::Result::Ok(Self::Red),
       2 => result::Result::Ok(Self::Green),
       3 => result::Result::Ok(Self::Blue),
-      _ => result::Result::Err(bebop::DecodeError::InvalidEnum {
-        type_name: "Color",
-        value: value as u64,
-      }),
+      _ => result::Result::Err(bebop::DecodeError::InvalidEnum { type_name: "Color", value: value as u64 }),
     }
   }
 }
 
 impl convert::From<Color> for u8 {
-  fn from(value: Color) -> u8 {
-    value as u8
-  }
+  fn from(value: Color) -> u8 { value as u8 }
 }
 
 impl Color {
@@ -68,9 +65,7 @@ impl bebop::BebopEncode for Color {
     // @@bebop_insertion_point(encode_end:Color)
   }
 
-  fn encoded_size(&self) -> usize {
-    Self::FIXED_ENCODED_SIZE
-  }
+  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
 }
 
 impl<'buf> bebop::BebopDecode<'buf> for Color {
@@ -83,7 +78,8 @@ impl<'buf> bebop::BebopDecode<'buf> for Color {
   }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Permissions(pub u8);
 
 #[allow(non_upper_case_globals)]
@@ -100,68 +96,24 @@ impl Permissions {
 impl bebop::BebopFlags for Permissions {
   type Bits = u8;
   const ALL_BITS: Self::Bits = 7;
-  fn bits(self) -> Self::Bits {
-    self.0
-  }
-  fn from_bits_retain(bits: Self::Bits) -> Self {
-    Self(bits)
-  }
+  fn bits(self) -> Self::Bits { self.0 }
+  fn from_bits_retain(bits: Self::Bits) -> Self { Self(bits) }
 }
 
-impl ops::BitOr for Permissions {
-  type Output = Self;
-  fn bitor(self, rhs: Self) -> Self {
-    Self(self.0 | rhs.0)
-  }
-}
-impl ops::BitOrAssign for Permissions {
-  fn bitor_assign(&mut self, rhs: Self) {
-    self.0 |= rhs.0;
-  }
-}
-impl ops::BitAnd for Permissions {
-  type Output = Self;
-  fn bitand(self, rhs: Self) -> Self {
-    Self(self.0 & rhs.0)
-  }
-}
-impl ops::BitAndAssign for Permissions {
-  fn bitand_assign(&mut self, rhs: Self) {
-    self.0 &= rhs.0;
-  }
-}
-impl ops::BitXor for Permissions {
-  type Output = Self;
-  fn bitxor(self, rhs: Self) -> Self {
-    Self(self.0 ^ rhs.0)
-  }
-}
-impl ops::BitXorAssign for Permissions {
-  fn bitxor_assign(&mut self, rhs: Self) {
-    self.0 ^= rhs.0;
-  }
-}
-impl ops::Not for Permissions {
-  type Output = Self;
-  fn not(self) -> Self {
-    Self(!self.0)
-  }
-}
-impl ops::Sub for Permissions {
-  type Output = Self;
-  fn sub(self, rhs: Self) -> Self {
-    Self(self.0 & !rhs.0)
-  }
-}
+impl ops::BitOr for Permissions { type Output = Self; fn bitor(self, rhs: Self) -> Self { Self(self.0 | rhs.0) } }
+impl ops::BitOrAssign for Permissions { fn bitor_assign(&mut self, rhs: Self) { self.0 |= rhs.0; } }
+impl ops::BitAnd for Permissions { type Output = Self; fn bitand(self, rhs: Self) -> Self { Self(self.0 & rhs.0) } }
+impl ops::BitAndAssign for Permissions { fn bitand_assign(&mut self, rhs: Self) { self.0 &= rhs.0; } }
+impl ops::BitXor for Permissions { type Output = Self; fn bitxor(self, rhs: Self) -> Self { Self(self.0 ^ rhs.0) } }
+impl ops::BitXorAssign for Permissions { fn bitxor_assign(&mut self, rhs: Self) { self.0 ^= rhs.0; } }
+impl ops::Not for Permissions { type Output = Self; fn not(self) -> Self { Self(!self.0) } }
+impl ops::Sub for Permissions { type Output = Self; fn sub(self, rhs: Self) -> Self { Self(self.0 & !rhs.0) } }
 
 impl<'buf> bebop::BebopDecode<'buf> for Permissions {
   #[inline(always)]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     let bits = reader.read_byte()?;
-    <Self as bebop::BebopFlags>::from_bits(bits).ok_or(bebop::DecodeError::InvalidFlags {
-      type_name: "Permissions",
-      bits: bits as u64,
-    })
+    <Self as bebop::BebopFlags>::from_bits(bits).ok_or(bebop::DecodeError::InvalidFlags { type_name: "Permissions", bits: bits as u64 })
   }
 }
 
@@ -190,9 +142,7 @@ pub const FEATURE_FLAG_ENABLED: bool = true;
 
 pub const EXAMPLE_CONST_STRING: &str = "hello \"world\"\nwith newlines";
 
-pub const EXAMPLE_CONST_GUID: bebop::Uuid = bebop::Uuid::from_bytes([
-  0xE2, 0x15, 0xA9, 0x46, 0xB2, 0x6F, 0x45, 0x67, 0xA2, 0x76, 0x13, 0x13, 0x6F, 0x0A, 0x17, 0x08,
-]);
+pub const EXAMPLE_CONST_GUID: bebop::Uuid = bebop::Uuid::from_bytes([0xE2, 0x15, 0xA9, 0x46, 0xB2, 0x6F, 0x45, 0x67, 0xA2, 0x76, 0x13, 0x13, 0x6F, 0x0A, 0x17, 0x08]);
 
 pub const EXAMPLE_CONST_F16: bebop::f16 = bebop::f16::from_f64_const(1.5f64);
 
@@ -211,7 +161,8 @@ pub const EXAMPLE_CONST_F16_FROM_INT: bebop::f16 = bebop::f16::from_f64_const(1f
 pub const EXAMPLE_CONST_BF16_FROM_INT: bebop::bf16 = bebop::bf16::from_f64_const(2f64);
 
 /// Fixed-size struct (all scalar fields).
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Point {
   pub x: f32,
   pub y: f32,
@@ -220,7 +171,10 @@ pub struct Point {
 impl Point {
   pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<f32>() + mem::size_of::<f32>();
 
-  pub fn new(x: f32, y: f32) -> Self {
+  pub fn new(
+    x: f32,
+    y: f32,
+  ) -> Self {
     Self { x, y }
   }
 }
@@ -242,8 +196,8 @@ impl<'buf> bebop::BebopDecode<'buf> for Point {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Point)
-    let x = reader.read_f32()?;
-    let y = reader.read_f32()?;
+    let x = reader.read_f32().for_field("Point", "x")?;
+    let y = reader.read_f32().for_field("Point", "y")?;
     // @@bebop_insertion_point(decode_end:Point)
     result::Result::Ok(Point { x, y })
   }
@@ -254,7 +208,8 @@ impl Point {
 }
 
 /// Fixed-size struct referencing another struct and an enum.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Pixel {
   pub position: Point,
   pub color: Color,
@@ -263,14 +218,16 @@ pub struct Pixel {
 
 impl Pixel {
   pub const FIXED_ENCODED_SIZE: usize =
-    Point::FIXED_ENCODED_SIZE + Color::FIXED_ENCODED_SIZE + mem::size_of::<u8>();
+    Point::FIXED_ENCODED_SIZE
+    + Color::FIXED_ENCODED_SIZE
+    + mem::size_of::<u8>();
 
-  pub fn new(position: Point, color: Color, alpha: u8) -> Self {
-    Self {
-      position,
-      color,
-      alpha,
-    }
+  pub fn new(
+    position: Point,
+    color: Color,
+    alpha: u8,
+  ) -> Self {
+    Self { position, color, alpha }
   }
 }
 
@@ -292,15 +249,11 @@ impl<'buf> bebop::BebopDecode<'buf> for Pixel {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Pixel)
-    let position = Point::decode(reader)?;
-    let color = Color::decode(reader)?;
-    let alpha = reader.read_byte()?;
+    let position = Point::decode(reader).for_field("Pixel", "position")?;
+    let color = Color::decode(reader).for_field("Pixel", "color")?;
+    let alpha = reader.read_byte().for_field("Pixel", "alpha")?;
     // @@bebop_insertion_point(decode_end:Pixel)
-    result::Result::Ok(Pixel {
-      position,
-      color,
-      alpha,
-    })
+    result::Result::Ok(Pixel { position, color, alpha })
   }
 }
 
@@ -309,7 +262,8 @@ impl Pixel {
 }
 
 /// Variable-size struct with a string field (needs lifetime / Cow).
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Person<'buf> {
   pub name: borrow::Cow<'buf, str>,
   pub age: u32,
@@ -318,7 +272,10 @@ pub struct Person<'buf> {
 pub type PersonOwned = Person<'static>;
 
 impl<'buf> Person<'buf> {
-  pub fn new(name: impl convert::Into<borrow::Cow<'buf, str>>, age: u32) -> Self {
+  pub fn new(
+    name: impl convert::Into<borrow::Cow<'buf, str>>,
+    age: u32,
+  ) -> Self {
     let name = name.into();
     Self { name, age }
   }
@@ -353,8 +310,8 @@ impl<'buf> bebop::BebopDecode<'buf> for Person<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Person)
-    let name = borrow::Cow::Borrowed(reader.read_str()?);
-    let age = reader.read_u32()?;
+    let name = borrow::Cow::Borrowed(reader.read_str().for_field("Person", "name")?);
+    let age = reader.read_u32().for_field("Person", "age")?;
     // @@bebop_insertion_point(decode_end:Person)
     result::Result::Ok(Person { name, age })
   }
@@ -365,7 +322,8 @@ impl<'buf> Person<'buf> {
 }
 
 /// Variable-size struct with a byte array field (needs lifetime / Cow).
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BinaryPayload<'buf> {
   pub tag: u32,
   pub data: bebop::BebopBytes<'buf>,
@@ -374,7 +332,10 @@ pub struct BinaryPayload<'buf> {
 pub type BinaryPayloadOwned = BinaryPayload<'static>;
 
 impl<'buf> BinaryPayload<'buf> {
-  pub fn new(tag: u32, data: impl convert::Into<bebop::BebopBytes<'buf>>) -> Self {
+  pub fn new(
+    tag: u32,
+    data: impl convert::Into<bebop::BebopBytes<'buf>>,
+  ) -> Self {
     let data = data.into();
     Self { tag, data }
   }
@@ -409,8 +370,8 @@ impl<'buf> bebop::BebopDecode<'buf> for BinaryPayload<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BinaryPayload)
-    let tag = reader.read_u32()?;
-    let data = bebop::BebopBytes::borrowed(reader.read_byte_slice()?);
+    let tag = reader.read_u32().for_field("BinaryPayload", "tag")?;
+    let data = bebop::BebopBytes::borrowed(reader.read_byte_slice().for_field("BinaryPayload", "data")?);
     // @@bebop_insertion_point(decode_end:BinaryPayload)
     result::Result::Ok(BinaryPayload { tag, data })
   }
@@ -421,7 +382,8 @@ impl<'buf> BinaryPayload<'buf> {
 }
 
 /// Message with various field types: scalars, strings, arrays, maps.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct UserProfile<'buf> {
   pub display_name: option::Option<borrow::Cow<'buf, str>>,
   pub email: option::Option<borrow::Cow<'buf, str>>,
@@ -437,27 +399,12 @@ pub type UserProfileOwned = UserProfile<'static>;
 impl<'buf> UserProfile<'buf> {
   pub fn into_owned(self) -> UserProfileOwned {
     UserProfile {
-      display_name: self
-        .display_name
-        .map(|v| borrow::Cow::Owned(v.into_owned())),
+      display_name: self.display_name.map(|v| borrow::Cow::Owned(v.into_owned())),
       email: self.email.map(|v| borrow::Cow::Owned(v.into_owned())),
       age: self.age,
       active: self.active,
-      tags: self.tags.map(|v| {
-        v.into_iter()
-          .map(|_e| borrow::Cow::Owned(_e.into_owned()))
-          .collect()
-      }),
-      metadata: self.metadata.map(|v| {
-        v.into_iter()
-          .map(|(_k, _v)| {
-            (
-              borrow::Cow::Owned(_k.into_owned()),
-              borrow::Cow::Owned(_v.into_owned()),
-            )
-          })
-          .collect()
-      }),
+      tags: self.tags.map(|v| v.into_iter().map(|_e| borrow::Cow::Owned(_e.into_owned())).collect()),
+      metadata: self.metadata.map(|v| v.into_iter().map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), borrow::Cow::Owned(_v.into_owned()))).collect()),
       permissions: self.permissions,
     }
   }
@@ -494,10 +441,7 @@ impl<'buf> bebop::BebopEncode for UserProfile<'buf> {
     }
     if let option::Option::Some(ref v) = self.metadata {
       writer.write_tag(6);
-      writer.write_map(&v, |_w, _k, _v| {
-        _w.write_string(&_k);
-        _w.write_string(&_v);
-      });
+      writer.write_map(&v, |_w, _k, _v| { _w.write_string(&_k); _w.write_string(&_v); });
     }
     if let option::Option::Some(ref v) = self.permissions {
       writer.write_tag(7);
@@ -523,14 +467,10 @@ impl<'buf> bebop::BebopEncode for UserProfile<'buf> {
       size += bebop::wire_size::tagged_size(mem::size_of::<bool>());
     }
     if let option::Option::Some(ref v) = self.tags {
-      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| {
-        bebop::wire_size::string_size(_el.len())
-      }));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| bebop::wire_size::string_size(_el.len())));
     }
     if let option::Option::Some(ref v) = self.metadata {
-      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| {
-        bebop::wire_size::string_size(_k.len()) + bebop::wire_size::string_size(_v.len())
-      }));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| bebop::wire_size::string_size(_k.len()) + bebop::wire_size::string_size(_v.len())));
     }
     if let option::Option::Some(ref v) = self.permissions {
       size += bebop::wire_size::tagged_size(v.encoded_size());
@@ -549,34 +489,16 @@ impl<'buf> bebop::BebopDecode<'buf> for UserProfile<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => msg.display_name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        2 => msg.email = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        3 => msg.age = option::Option::Some(reader.read_u32()?),
-        4 => msg.active = option::Option::Some(reader.read_bool()?),
-        5 => {
-          msg.tags = option::Option::Some(
-            reader.read_array(|_r| result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?)))?,
-          )
-        }
-        6 => {
-          msg.metadata = option::Option::Some(reader.read_map(|_r| {
-            result::Result::Ok((
-              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-            ))
-          })?)
-        }
-        7 => msg.permissions = option::Option::Some(Permissions::decode(reader)?),
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "UserProfile",
-            tag,
-          });
-        }
+        1 => msg.display_name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("UserProfile", "display_name")?)),
+        2 => msg.email = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("UserProfile", "email")?)),
+        3 => msg.age = option::Option::Some(reader.read_u32().for_field("UserProfile", "age")?),
+        4 => msg.active = option::Option::Some(reader.read_bool().for_field("UserProfile", "active")?),
+        5 => msg.tags = option::Option::Some(reader.read_array(|_r| result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))).for_field("UserProfile", "tags")?),
+        6 => msg.metadata = option::Option::Some(reader.read_map(|_r| result::Result::Ok((result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?, result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?))).for_field("UserProfile", "metadata")?),
+        7 => msg.permissions = option::Option::Some(Permissions::decode(reader).for_field("UserProfile", "permissions")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "UserProfile", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:UserProfile)
@@ -601,28 +523,12 @@ impl<'buf> UserProfile<'buf> {
     self.active = option::Option::Some(value);
     self
   }
-  pub fn with_tags(
-    mut self,
-    value: impl iter::IntoIterator<Item = impl convert::Into<borrow::Cow<'buf, str>>>,
-  ) -> Self {
+  pub fn with_tags(mut self, value: impl iter::IntoIterator<Item = impl convert::Into<borrow::Cow<'buf, str>>>) -> Self {
     self.tags = option::Option::Some(value.into_iter().map(|_e| _e.into()).collect());
     self
   }
-  pub fn with_metadata(
-    mut self,
-    value: impl iter::IntoIterator<
-      Item = (
-        impl convert::Into<borrow::Cow<'buf, str>>,
-        impl convert::Into<borrow::Cow<'buf, str>>,
-      ),
-    >,
-  ) -> Self {
-    self.metadata = option::Option::Some(
-      value
-        .into_iter()
-        .map(|(_k, _v)| (_k.into(), _v.into()))
-        .collect(),
-    );
+  pub fn with_metadata(mut self, value: impl iter::IntoIterator<Item = (impl convert::Into<borrow::Cow<'buf, str>>, impl convert::Into<borrow::Cow<'buf, str>>)>) -> Self {
+    self.metadata = option::Option::Some(value.into_iter().map(|(_k, _v)| (_k.into(), _v.into())).collect());
     self
   }
   pub fn with_permissions(mut self, value: Permissions) -> Self {
@@ -633,7 +539,8 @@ impl<'buf> UserProfile<'buf> {
 }
 
 /// Message referencing fixed-size and enum defined types.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct DrawCommand<'buf> {
   pub target: option::Option<Point>,
   pub color: option::Option<Color>,
@@ -712,20 +619,13 @@ impl<'buf> bebop::BebopDecode<'buf> for DrawCommand<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => msg.target = option::Option::Some(Point::decode(reader)?),
-        2 => msg.color = option::Option::Some(Color::decode(reader)?),
-        3 => msg.label = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        4 => msg.thickness = option::Option::Some(reader.read_f32()?),
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "DrawCommand",
-            tag,
-          });
-        }
+        1 => msg.target = option::Option::Some(Point::decode(reader).for_field("DrawCommand", "target")?),
+        2 => msg.color = option::Option::Some(Color::decode(reader).for_field("DrawCommand", "color")?),
+        3 => msg.label = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("DrawCommand", "label")?)),
+        4 => msg.thickness = option::Option::Some(reader.read_f32().for_field("DrawCommand", "thickness")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "DrawCommand", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:DrawCommand)
@@ -754,7 +654,8 @@ impl<'buf> DrawCommand<'buf> {
 }
 
 /// Struct used as a union branch (variable-size due to string field).
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TextLabel<'buf> {
   pub position: Point,
   pub text: borrow::Cow<'buf, str>,
@@ -763,7 +664,10 @@ pub struct TextLabel<'buf> {
 pub type TextLabelOwned = TextLabel<'static>;
 
 impl<'buf> TextLabel<'buf> {
-  pub fn new(position: Point, text: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+  pub fn new(
+    position: Point,
+    text: impl convert::Into<borrow::Cow<'buf, str>>,
+  ) -> Self {
     let text = text.into();
     Self { position, text }
   }
@@ -798,8 +702,8 @@ impl<'buf> bebop::BebopDecode<'buf> for TextLabel<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:TextLabel)
-    let position = Point::decode(reader)?;
-    let text = borrow::Cow::Borrowed(reader.read_str()?);
+    let position = Point::decode(reader).for_field("TextLabel", "position")?;
+    let text = borrow::Cow::Borrowed(reader.read_str().for_field("TextLabel", "text")?);
     // @@bebop_insertion_point(decode_end:TextLabel)
     result::Result::Ok(TextLabel { position, text })
   }
@@ -838,36 +742,23 @@ impl<'buf> bebop::BebopEncode for Shape<'buf> {
     // @@bebop_insertion_point(encode_start:Shape)
     let pos = writer.reserve_message_length();
     match self {
-      Self::Point(inner) => {
-        writer.write_byte(1);
-        inner.encode(writer);
-      }
-      Self::Pixel(inner) => {
-        writer.write_byte(2);
-        inner.encode(writer);
-      }
-      Self::Label(inner) => {
-        writer.write_byte(3);
-        inner.encode(writer);
-      }
+      Self::Point(inner) => { writer.write_byte(1); inner.encode(writer); }
+      Self::Pixel(inner) => { writer.write_byte(2); inner.encode(writer); }
+      Self::Label(inner) => { writer.write_byte(3); inner.encode(writer); }
       // @@bebop_insertion_point(encode_switch:Shape)
-      Self::Unknown(disc, data) => {
-        writer.write_byte(*disc);
-        writer.write_raw(data);
-      }
+      Self::Unknown(disc, data) => { writer.write_byte(*disc); writer.write_raw(data); }
     }
     writer.fill_message_length(pos);
     // @@bebop_insertion_point(encode_end:Shape)
   }
 
   fn encoded_size(&self) -> usize {
-    bebop::wire_size::WIRE_LEN_PREFIX_SIZE
-      + match self {
-        Self::Point(inner) => bebop::wire_size::tagged_size(inner.encoded_size()),
-        Self::Pixel(inner) => bebop::wire_size::tagged_size(inner.encoded_size()),
-        Self::Label(inner) => bebop::wire_size::tagged_size(inner.encoded_size()),
-        Self::Unknown(_, data) => bebop::wire_size::tagged_size(data.len()),
-      }
+    bebop::wire_size::WIRE_LEN_PREFIX_SIZE + match self {
+      Self::Point(inner) => bebop::wire_size::tagged_size(inner.encoded_size()),
+      Self::Pixel(inner) => bebop::wire_size::tagged_size(inner.encoded_size()),
+      Self::Label(inner) => bebop::wire_size::tagged_size(inner.encoded_size()),
+      Self::Unknown(_, data) => bebop::wire_size::tagged_size(data.len()),
+    }
   }
 }
 
@@ -879,9 +770,9 @@ impl<'buf> bebop::BebopDecode<'buf> for Shape<'buf> {
     let start = reader.position();
     let discriminator = reader.read_byte()?;
     let value = match discriminator {
-      1 => result::Result::Ok(Self::Point(Point::decode(reader)?)),
-      2 => result::Result::Ok(Self::Pixel(Pixel::decode(reader)?)),
-      3 => result::Result::Ok(Self::Label(TextLabel::decode(reader)?)),
+      1 => result::Result::Ok(Self::Point(Point::decode(reader).for_field("Shape", "point")?)),
+      2 => result::Result::Ok(Self::Pixel(Pixel::decode(reader).for_field("Shape", "pixel")?)),
+      3 => result::Result::Ok(Self::Label(TextLabel::decode(reader).for_field("Shape", "label")?)),
       // @@bebop_insertion_point(decode_switch:Shape)
       _ => {
         let remaining = length - (reader.position() - start);
@@ -912,25 +803,18 @@ impl bebop::BebopEncode for StrictShape {
     // @@bebop_insertion_point(encode_start:StrictShape)
     let pos = writer.reserve_message_length();
     match self {
-      Self::Point(inner) => {
-        writer.write_byte(1);
-        inner.encode(writer);
-      }
-      Self::Pixel(inner) => {
-        writer.write_byte(2);
-        inner.encode(writer);
-      }
+      Self::Point(inner) => { writer.write_byte(1); inner.encode(writer); }
+      Self::Pixel(inner) => { writer.write_byte(2); inner.encode(writer); }
     }
     writer.fill_message_length(pos);
     // @@bebop_insertion_point(encode_end:StrictShape)
   }
 
   fn encoded_size(&self) -> usize {
-    bebop::wire_size::WIRE_LEN_PREFIX_SIZE
-      + match self {
-        Self::Point(inner) => bebop::wire_size::tagged_size(inner.encoded_size()),
-        Self::Pixel(inner) => bebop::wire_size::tagged_size(inner.encoded_size()),
-      }
+    bebop::wire_size::WIRE_LEN_PREFIX_SIZE + match self {
+      Self::Point(inner) => bebop::wire_size::tagged_size(inner.encoded_size()),
+      Self::Pixel(inner) => bebop::wire_size::tagged_size(inner.encoded_size()),
+    }
   }
 }
 
@@ -942,12 +826,9 @@ impl<'buf> bebop::BebopDecode<'buf> for StrictShape {
     let start = reader.position();
     let discriminator = reader.read_byte()?;
     let value = match discriminator {
-      1 => result::Result::Ok(Self::Point(Point::decode(reader)?)),
-      2 => result::Result::Ok(Self::Pixel(Pixel::decode(reader)?)),
-      _ => result::Result::Err(bebop::DecodeError::InvalidUnion {
-        type_name: "StrictShape",
-        discriminator,
-      }),
+      1 => result::Result::Ok(Self::Point(Point::decode(reader).for_field("StrictShape", "point")?)),
+      2 => result::Result::Ok(Self::Pixel(Pixel::decode(reader).for_field("StrictShape", "pixel")?)),
+      _ => result::Result::Err(bebop::DecodeError::InvalidUnion { type_name: "StrictShape", discriminator }),
     };
     // @@bebop_insertion_point(decode_end:StrictShape)
     value
@@ -958,7 +839,8 @@ impl StrictShape {
   // @@bebop_insertion_point(union_scope:StrictShape)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Priority {
   Unspecified,
   Low,
@@ -1002,9 +884,7 @@ impl convert::From<u8> for Priority {
 }
 
 impl convert::From<Priority> for u8 {
-  fn from(value: Priority) -> u8 {
-    value.discriminator()
-  }
+  fn from(value: Priority) -> u8 { value.discriminator() }
 }
 
 impl bebop::BebopEncode for Priority {
@@ -1014,9 +894,7 @@ impl bebop::BebopEncode for Priority {
     // @@bebop_insertion_point(encode_end:Priority)
   }
 
-  fn encoded_size(&self) -> usize {
-    Self::FIXED_ENCODED_SIZE
-  }
+  fn encoded_size(&self) -> usize { Self::FIXED_ENCODED_SIZE }
 }
 
 impl<'buf> bebop::BebopDecode<'buf> for Priority {
@@ -1030,7 +908,8 @@ impl<'buf> bebop::BebopDecode<'buf> for Priority {
 }
 
 /// Strict message: unknown field tags are rejected with DecodeError.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct StrictConfig<'buf> {
   pub name: option::Option<borrow::Cow<'buf, str>>,
   pub value: option::Option<u32>,
@@ -1091,18 +970,11 @@ impl<'buf> bebop::BebopDecode<'buf> for StrictConfig<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => msg.name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        2 => msg.value = option::Option::Some(reader.read_u32()?),
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "StrictConfig",
-            tag,
-          });
-        }
+        1 => msg.name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("StrictConfig", "name")?)),
+        2 => msg.value = option::Option::Some(reader.read_u32().for_field("StrictConfig", "value")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "StrictConfig", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:StrictConfig)
@@ -1122,7 +994,8 @@ impl<'buf> StrictConfig<'buf> {
   // @@bebop_insertion_point(message_scope:StrictConfig)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct FlexConfig<'buf> {
   pub name: option::Option<borrow::Cow<'buf, str>>,
   pub value: option::Option<u32>,
@@ -1183,15 +1056,11 @@ impl<'buf> bebop::BebopDecode<'buf> for FlexConfig<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => msg.name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        2 => msg.value = option::Option::Some(reader.read_u32()?),
-        _ => {
-          reader.skip(end - reader.position())?;
-        }
+        1 => msg.name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("FlexConfig", "name")?)),
+        2 => msg.value = option::Option::Some(reader.read_u32().for_field("FlexConfig", "value")?),
+        _ => { reader.skip(end - reader.position())?; }
       }
     }
     // @@bebop_insertion_point(decode_end:FlexConfig)
@@ -1211,7 +1080,8 @@ impl<'buf> FlexConfig<'buf> {
   // @@bebop_insertion_point(message_scope:FlexConfig)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct FlexPermissions(pub u8);
 
 #[allow(non_upper_case_globals)]
@@ -1226,59 +1096,18 @@ impl FlexPermissions {
 impl bebop::BebopFlags for FlexPermissions {
   type Bits = u8;
   const ALL_BITS: Self::Bits = 3;
-  fn bits(self) -> Self::Bits {
-    self.0
-  }
-  fn from_bits_retain(bits: Self::Bits) -> Self {
-    Self(bits)
-  }
+  fn bits(self) -> Self::Bits { self.0 }
+  fn from_bits_retain(bits: Self::Bits) -> Self { Self(bits) }
 }
 
-impl ops::BitOr for FlexPermissions {
-  type Output = Self;
-  fn bitor(self, rhs: Self) -> Self {
-    Self(self.0 | rhs.0)
-  }
-}
-impl ops::BitOrAssign for FlexPermissions {
-  fn bitor_assign(&mut self, rhs: Self) {
-    self.0 |= rhs.0;
-  }
-}
-impl ops::BitAnd for FlexPermissions {
-  type Output = Self;
-  fn bitand(self, rhs: Self) -> Self {
-    Self(self.0 & rhs.0)
-  }
-}
-impl ops::BitAndAssign for FlexPermissions {
-  fn bitand_assign(&mut self, rhs: Self) {
-    self.0 &= rhs.0;
-  }
-}
-impl ops::BitXor for FlexPermissions {
-  type Output = Self;
-  fn bitxor(self, rhs: Self) -> Self {
-    Self(self.0 ^ rhs.0)
-  }
-}
-impl ops::BitXorAssign for FlexPermissions {
-  fn bitxor_assign(&mut self, rhs: Self) {
-    self.0 ^= rhs.0;
-  }
-}
-impl ops::Not for FlexPermissions {
-  type Output = Self;
-  fn not(self) -> Self {
-    Self(!self.0)
-  }
-}
-impl ops::Sub for FlexPermissions {
-  type Output = Self;
-  fn sub(self, rhs: Self) -> Self {
-    Self(self.0 & !rhs.0)
-  }
-}
+impl ops::BitOr for FlexPermissions { type Output = Self; fn bitor(self, rhs: Self) -> Self { Self(self.0 | rhs.0) } }
+impl ops::BitOrAssign for FlexPermissions { fn bitor_assign(&mut self, rhs: Self) { self.0 |= rhs.0; } }
+impl ops::BitAnd for FlexPermissions { type Output = Self; fn bitand(self, rhs: Self) -> Self { Self(self.0 & rhs.0) } }
+impl ops::BitAndAssign for FlexPermissions { fn bitand_assign(&mut self, rhs: Self) { self.0 &= rhs.0; } }
+impl ops::BitXor for FlexPermissions { type Output = Self; fn bitxor(self, rhs: Self) -> Self { Self(self.0 ^ rhs.0) } }
+impl ops::BitXorAssign for FlexPermissions { fn bitxor_assign(&mut self, rhs: Self) { self.0 ^= rhs.0; } }
+impl ops::Not for FlexPermissions { type Output = Self; fn not(self) -> Self { Self(!self.0) } }
+impl ops::Sub for FlexPermissions { type Output = Self; fn sub(self, rhs: Self) -> Self { Self(self.0 & !rhs.0) } }
 
 impl<'buf> bebop::BebopDecode<'buf> for FlexPermissions {
   #[inline(always)]
@@ -1289,7 +1118,8 @@ impl<'buf> bebop::BebopDecode<'buf> for FlexPermissions {
 }
 
 /// Fixed-array struct (compile-time known element count).
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Matrix2x2 {
   pub values: [f32; 4],
 }
@@ -1318,7 +1148,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Matrix2x2 {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Matrix2x2)
-    let values = reader.read_fixed_array::<f32, 4>()?;
+    let values = reader.read_fixed_array::<f32, 4>().for_field("Matrix2x2", "values")?;
     // @@bebop_insertion_point(decode_end:Matrix2x2)
     result::Result::Ok(Matrix2x2 { values })
   }
@@ -1329,17 +1159,20 @@ impl Matrix2x2 {
 }
 
 /// Fixed-size and variable-size half-precision scalar coverage.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct HalfPrecisionScalars {
   pub f16_val: bebop::f16,
   pub bf16_val: bebop::bf16,
 }
 
 impl HalfPrecisionScalars {
-  pub const FIXED_ENCODED_SIZE: usize =
-    mem::size_of::<bebop::f16>() + mem::size_of::<bebop::bf16>();
+  pub const FIXED_ENCODED_SIZE: usize = mem::size_of::<bebop::f16>() + mem::size_of::<bebop::bf16>();
 
-  pub fn new(f16_val: bebop::f16, bf16_val: bebop::bf16) -> Self {
+  pub fn new(
+    f16_val: bebop::f16,
+    bf16_val: bebop::bf16,
+  ) -> Self {
     Self { f16_val, bf16_val }
   }
 }
@@ -1361,8 +1194,8 @@ impl<'buf> bebop::BebopDecode<'buf> for HalfPrecisionScalars {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:HalfPrecisionScalars)
-    let f16_val = reader.read_f16()?;
-    let bf16_val = reader.read_bf16()?;
+    let f16_val = reader.read_f16().for_field("HalfPrecisionScalars", "f16_val")?;
+    let bf16_val = reader.read_bf16().for_field("HalfPrecisionScalars", "bf16_val")?;
     // @@bebop_insertion_point(decode_end:HalfPrecisionScalars)
     result::Result::Ok(HalfPrecisionScalars { f16_val, bf16_val })
   }
@@ -1372,7 +1205,8 @@ impl HalfPrecisionScalars {
   // @@bebop_insertion_point(struct_scope:HalfPrecisionScalars)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct HalfPrecisionArrays<'buf> {
   pub f16_dynamic: borrow::Cow<'buf, [bebop::f16]>,
   pub bf16_dynamic: borrow::Cow<'buf, [bebop::bf16]>,
@@ -1391,12 +1225,7 @@ impl<'buf> HalfPrecisionArrays<'buf> {
   ) -> Self {
     let f16_dynamic = f16_dynamic.into();
     let bf16_dynamic = bf16_dynamic.into();
-    Self {
-      f16_dynamic,
-      bf16_dynamic,
-      f16_fixed,
-      bf16_fixed,
-    }
+    Self { f16_dynamic, bf16_dynamic, f16_fixed, bf16_fixed }
   }
 }
 
@@ -1435,17 +1264,12 @@ impl<'buf> bebop::BebopDecode<'buf> for HalfPrecisionArrays<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:HalfPrecisionArrays)
-    let f16_dynamic = reader.read_scalar_array::<bebop::f16>()?;
-    let bf16_dynamic = reader.read_scalar_array::<bebop::bf16>()?;
-    let f16_fixed = reader.read_fixed_array::<bebop::f16, 4>()?;
-    let bf16_fixed = reader.read_fixed_array::<bebop::bf16, 4>()?;
+    let f16_dynamic = reader.read_scalar_array::<bebop::f16>().for_field("HalfPrecisionArrays", "f16_dynamic")?;
+    let bf16_dynamic = reader.read_scalar_array::<bebop::bf16>().for_field("HalfPrecisionArrays", "bf16_dynamic")?;
+    let f16_fixed = reader.read_fixed_array::<bebop::f16, 4>().for_field("HalfPrecisionArrays", "f16_fixed")?;
+    let bf16_fixed = reader.read_fixed_array::<bebop::bf16, 4>().for_field("HalfPrecisionArrays", "bf16_fixed")?;
     // @@bebop_insertion_point(decode_end:HalfPrecisionArrays)
-    result::Result::Ok(HalfPrecisionArrays {
-      f16_dynamic,
-      bf16_dynamic,
-      f16_fixed,
-      bf16_fixed,
-    })
+    result::Result::Ok(HalfPrecisionArrays { f16_dynamic, bf16_dynamic, f16_fixed, bf16_fixed })
   }
 }
 
@@ -1453,7 +1277,8 @@ impl<'buf> HalfPrecisionArrays<'buf> {
   // @@bebop_insertion_point(struct_scope:HalfPrecisionArrays)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct HalfPrecisionMessage<'buf> {
   pub f16_val: option::Option<bebop::f16>,
   pub bf16_val: option::Option<bebop::bf16>,
@@ -1513,14 +1338,10 @@ impl<'buf> bebop::BebopEncode for HalfPrecisionMessage<'buf> {
       size += bebop::wire_size::tagged_size(mem::size_of::<bebop::bf16>());
     }
     if let option::Option::Some(ref v) = self.f16_arr {
-      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| {
-        (mem::size_of::<bebop::f16>())
-      }));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| (mem::size_of::<bebop::f16>())));
     }
     if let option::Option::Some(ref v) = self.bf16_arr {
-      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| {
-        (mem::size_of::<bebop::bf16>())
-      }));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| (mem::size_of::<bebop::bf16>())));
     }
     size
   }
@@ -1536,20 +1357,13 @@ impl<'buf> bebop::BebopDecode<'buf> for HalfPrecisionMessage<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => msg.f16_val = option::Option::Some(reader.read_f16()?),
-        2 => msg.bf16_val = option::Option::Some(reader.read_bf16()?),
-        3 => msg.f16_arr = option::Option::Some(reader.read_scalar_array::<bebop::f16>()?),
-        4 => msg.bf16_arr = option::Option::Some(reader.read_scalar_array::<bebop::bf16>()?),
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "HalfPrecisionMessage",
-            tag,
-          });
-        }
+        1 => msg.f16_val = option::Option::Some(reader.read_f16().for_field("HalfPrecisionMessage", "f16_val")?),
+        2 => msg.bf16_val = option::Option::Some(reader.read_bf16().for_field("HalfPrecisionMessage", "bf16_val")?),
+        3 => msg.f16_arr = option::Option::Some(reader.read_scalar_array::<bebop::f16>().for_field("HalfPrecisionMessage", "f16_arr")?),
+        4 => msg.bf16_arr = option::Option::Some(reader.read_scalar_array::<bebop::bf16>().for_field("HalfPrecisionMessage", "bf16_arr")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "HalfPrecisionMessage", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:HalfPrecisionMessage)
@@ -1566,17 +1380,11 @@ impl<'buf> HalfPrecisionMessage<'buf> {
     self.bf16_val = option::Option::Some(value);
     self
   }
-  pub fn with_f16_arr(
-    mut self,
-    value: impl convert::Into<borrow::Cow<'buf, [bebop::f16]>>,
-  ) -> Self {
+  pub fn with_f16_arr(mut self, value: impl convert::Into<borrow::Cow<'buf, [bebop::f16]>>) -> Self {
     self.f16_arr = option::Option::Some(value.into());
     self
   }
-  pub fn with_bf16_arr(
-    mut self,
-    value: impl convert::Into<borrow::Cow<'buf, [bebop::bf16]>>,
-  ) -> Self {
+  pub fn with_bf16_arr(mut self, value: impl convert::Into<borrow::Cow<'buf, [bebop::bf16]>>) -> Self {
     self.bf16_arr = option::Option::Some(value.into());
     self
   }
@@ -1584,7 +1392,8 @@ impl<'buf> HalfPrecisionMessage<'buf> {
 }
 
 /// Struct with multiple string fields (all need Cow).
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Address<'buf> {
   pub street: borrow::Cow<'buf, str>,
   pub city: borrow::Cow<'buf, str>,
@@ -1605,12 +1414,7 @@ impl<'buf> Address<'buf> {
     let city = city.into();
     let country = country.into();
     let zip_code = zip_code.into();
-    Self {
-      street,
-      city,
-      country,
-      zip_code,
-    }
+    Self { street, city, country, zip_code }
   }
 }
 
@@ -1649,17 +1453,12 @@ impl<'buf> bebop::BebopDecode<'buf> for Address<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Address)
-    let street = borrow::Cow::Borrowed(reader.read_str()?);
-    let city = borrow::Cow::Borrowed(reader.read_str()?);
-    let country = borrow::Cow::Borrowed(reader.read_str()?);
-    let zip_code = borrow::Cow::Borrowed(reader.read_str()?);
+    let street = borrow::Cow::Borrowed(reader.read_str().for_field("Address", "street")?);
+    let city = borrow::Cow::Borrowed(reader.read_str().for_field("Address", "city")?);
+    let country = borrow::Cow::Borrowed(reader.read_str().for_field("Address", "country")?);
+    let zip_code = borrow::Cow::Borrowed(reader.read_str().for_field("Address", "zip_code")?);
     // @@bebop_insertion_point(decode_end:Address)
-    result::Result::Ok(Address {
-      street,
-      city,
-      country,
-      zip_code,
-    })
+    result::Result::Ok(Address { street, city, country, zip_code })
   }
 }
 
@@ -1668,7 +1467,8 @@ impl<'buf> Address<'buf> {
 }
 
 /// Message with array-of-defined-type and nested references.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct Scene<'buf> {
   pub shapes: option::Option<vec::Vec<Shape<'buf>>>,
   pub background: option::Option<Color>,
@@ -1680,9 +1480,7 @@ pub type SceneOwned = Scene<'static>;
 impl<'buf> Scene<'buf> {
   pub fn into_owned(self) -> SceneOwned {
     Scene {
-      shapes: self
-        .shapes
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      shapes: self.shapes.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
       background: self.background,
       title: self.title.map(|v| borrow::Cow::Owned(v.into_owned())),
     }
@@ -1718,8 +1516,7 @@ impl<'buf> bebop::BebopEncode for Scene<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let option::Option::Some(ref v) = self.shapes {
-      size +=
-        bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| _el.encoded_size()));
     }
     if let option::Option::Some(ref v) = self.background {
       size += bebop::wire_size::tagged_size(v.encoded_size());
@@ -1741,19 +1538,12 @@ impl<'buf> bebop::BebopDecode<'buf> for Scene<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => msg.shapes = option::Option::Some(reader.read_array(|_r| Shape::decode(_r))?),
-        2 => msg.background = option::Option::Some(Color::decode(reader)?),
-        3 => msg.title = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "Scene",
-            tag,
-          });
-        }
+        1 => msg.shapes = option::Option::Some(reader.read_array(|_r| Shape::decode(_r)).for_field("Scene", "shapes")?),
+        2 => msg.background = option::Option::Some(Color::decode(reader).for_field("Scene", "background")?),
+        3 => msg.title = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("Scene", "title")?)),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "Scene", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:Scene)
@@ -1778,7 +1568,8 @@ impl<'buf> Scene<'buf> {
 }
 
 /// Message with map[string, defined-type] value.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Inventory<'buf> {
   pub items: option::Option<bebop::HashMap<borrow::Cow<'buf, str>, u32>>,
   pub label: option::Option<borrow::Cow<'buf, str>>,
@@ -1789,11 +1580,7 @@ pub type InventoryOwned = Inventory<'static>;
 impl<'buf> Inventory<'buf> {
   pub fn into_owned(self) -> InventoryOwned {
     Inventory {
-      items: self.items.map(|v| {
-        v.into_iter()
-          .map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), _v))
-          .collect()
-      }),
+      items: self.items.map(|v| v.into_iter().map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), _v)).collect()),
       label: self.label.map(|v| borrow::Cow::Owned(v.into_owned())),
     }
   }
@@ -1810,10 +1597,7 @@ impl<'buf> bebop::BebopEncode for Inventory<'buf> {
     // normally. This behavior should be revisited once the spec intent is clarified.
     if let option::Option::Some(ref v) = self.items {
       writer.write_tag(1);
-      writer.write_map(&v, |_w, _k, _v| {
-        _w.write_string(&_k);
-        _w.write_u32(*_v);
-      });
+      writer.write_map(&v, |_w, _k, _v| { _w.write_string(&_k); _w.write_u32(*_v); });
     }
     if let option::Option::Some(ref v) = self.label {
       writer.write_tag(2);
@@ -1827,9 +1611,7 @@ impl<'buf> bebop::BebopEncode for Inventory<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let option::Option::Some(ref v) = self.items {
-      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| {
-        bebop::wire_size::string_size(_k.len()) + mem::size_of::<u32>()
-      }));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| bebop::wire_size::string_size(_k.len()) + mem::size_of::<u32>()));
     }
     if let option::Option::Some(ref v) = self.label {
       size += bebop::wire_size::tagged_size(bebop::wire_size::string_size(v.len()));
@@ -1848,25 +1630,11 @@ impl<'buf> bebop::BebopDecode<'buf> for Inventory<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.items = option::Option::Some(reader.read_map(|_r| {
-            result::Result::Ok((
-              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-              _r.read_u32()?,
-            ))
-          })?)
-        }
-        2 => msg.label = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "Inventory",
-            tag,
-          });
-        }
+        1 => msg.items = option::Option::Some(reader.read_map(|_r| result::Result::Ok((result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?, _r.read_u32()?))).for_field("Inventory", "items")?),
+        2 => msg.label = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("Inventory", "label")?)),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "Inventory", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:Inventory)
@@ -1875,10 +1643,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Inventory<'buf> {
 }
 
 impl<'buf> Inventory<'buf> {
-  pub fn with_items(
-    mut self,
-    value: impl iter::IntoIterator<Item = (impl convert::Into<borrow::Cow<'buf, str>>, u32)>,
-  ) -> Self {
+  pub fn with_items(mut self, value: impl iter::IntoIterator<Item = (impl convert::Into<borrow::Cow<'buf, str>>, u32)>) -> Self {
     self.items = option::Option::Some(value.into_iter().map(|(_k, _v)| (_k.into(), _v)).collect());
     self
   }
@@ -1890,7 +1655,8 @@ impl<'buf> Inventory<'buf> {
 }
 
 /// Empty message (all fields optional, none set).
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct EmptyMessage<'buf> {
   pub unused_field: option::Option<borrow::Cow<'buf, str>>,
 }
@@ -1900,9 +1666,7 @@ pub type EmptyMessageOwned = EmptyMessage<'static>;
 impl<'buf> EmptyMessage<'buf> {
   pub fn into_owned(self) -> EmptyMessageOwned {
     EmptyMessage {
-      unused_field: self
-        .unused_field
-        .map(|v| borrow::Cow::Owned(v.into_owned())),
+      unused_field: self.unused_field.map(|v| borrow::Cow::Owned(v.into_owned())),
     }
   }
 }
@@ -1944,17 +1708,10 @@ impl<'buf> bebop::BebopDecode<'buf> for EmptyMessage<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => msg.unused_field = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "EmptyMessage",
-            tag,
-          });
-        }
+        1 => msg.unused_field = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("EmptyMessage", "unused_field")?)),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "EmptyMessage", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:EmptyMessage)
@@ -1971,7 +1728,8 @@ impl<'buf> EmptyMessage<'buf> {
 }
 
 /// Struct with a timestamp field.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TimestampedEvent<'buf> {
   pub when: bebop::BebopTimestamp,
   pub what: borrow::Cow<'buf, str>,
@@ -2018,8 +1776,8 @@ impl<'buf> bebop::BebopDecode<'buf> for TimestampedEvent<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:TimestampedEvent)
-    let when = reader.read_timestamp()?;
-    let what = borrow::Cow::Borrowed(reader.read_str()?);
+    let when = reader.read_timestamp().for_field("TimestampedEvent", "when")?;
+    let what = borrow::Cow::Borrowed(reader.read_str().for_field("TimestampedEvent", "what")?);
     // @@bebop_insertion_point(decode_end:TimestampedEvent)
     result::Result::Ok(TimestampedEvent { when, what })
   }
@@ -2030,7 +1788,8 @@ impl<'buf> TimestampedEvent<'buf> {
 }
 
 /// Message with temporal fields.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct ScheduleEntry<'buf> {
   pub start: option::Option<bebop::BebopTimestamp>,
   pub duration: option::Option<bebop::BebopDuration>,
@@ -2100,19 +1859,12 @@ impl<'buf> bebop::BebopDecode<'buf> for ScheduleEntry<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => msg.start = option::Option::Some(reader.read_timestamp()?),
-        2 => msg.duration = option::Option::Some(reader.read_duration()?),
-        3 => msg.label = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "ScheduleEntry",
-            tag,
-          });
-        }
+        1 => msg.start = option::Option::Some(reader.read_timestamp().for_field("ScheduleEntry", "start")?),
+        2 => msg.duration = option::Option::Some(reader.read_duration().for_field("ScheduleEntry", "duration")?),
+        3 => msg.label = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("ScheduleEntry", "label")?)),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "ScheduleEntry", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:ScheduleEntry)
@@ -2137,7 +1889,8 @@ impl<'buf> ScheduleEntry<'buf> {
 }
 
 /// Forward reference coverage: A references B before B is declared.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ForwardRefA<'buf> {
   pub b: ForwardRefB<'buf>,
 }
@@ -2176,7 +1929,7 @@ impl<'buf> bebop::BebopDecode<'buf> for ForwardRefA<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:ForwardRefA)
-    let b = ForwardRefB::decode(reader)?;
+    let b = ForwardRefB::decode(reader).for_field("ForwardRefA", "b")?;
     // @@bebop_insertion_point(decode_end:ForwardRefA)
     result::Result::Ok(ForwardRefA { b })
   }
@@ -2186,7 +1939,8 @@ impl<'buf> ForwardRefA<'buf> {
   // @@bebop_insertion_point(struct_scope:ForwardRefA)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ForwardRefB<'buf> {
   pub value: borrow::Cow<'buf, str>,
 }
@@ -2226,7 +1980,7 @@ impl<'buf> bebop::BebopDecode<'buf> for ForwardRefB<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:ForwardRefB)
-    let value = borrow::Cow::Borrowed(reader.read_str()?);
+    let value = borrow::Cow::Borrowed(reader.read_str().for_field("ForwardRefB", "value")?);
     // @@bebop_insertion_point(decode_end:ForwardRefB)
     result::Result::Ok(ForwardRefB { value })
   }
@@ -2237,12 +1991,13 @@ impl<'buf> ForwardRefB<'buf> {
 }
 
 /// Message with deprecated fields that should still round-trip on the wire.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct DeprecatedFieldsMessage<'buf> {
   pub current_name: option::Option<borrow::Cow<'buf, str>>,
-  #[deprecated(note = "legacy wire compatibility")]
+#[deprecated(note = "legacy wire compatibility")]
   pub legacy_name: option::Option<borrow::Cow<'buf, str>>,
-  #[deprecated]
+#[deprecated]
   pub legacy_enabled: option::Option<bool>,
 }
 
@@ -2251,9 +2006,7 @@ pub type DeprecatedFieldsMessageOwned = DeprecatedFieldsMessage<'static>;
 impl<'buf> DeprecatedFieldsMessage<'buf> {
   pub fn into_owned(self) -> DeprecatedFieldsMessageOwned {
     DeprecatedFieldsMessage {
-      current_name: self
-        .current_name
-        .map(|v| borrow::Cow::Owned(v.into_owned())),
+      current_name: self.current_name.map(|v| borrow::Cow::Owned(v.into_owned())),
       legacy_name: self.legacy_name.map(|v| borrow::Cow::Owned(v.into_owned())),
       legacy_enabled: self.legacy_enabled,
     }
@@ -2311,19 +2064,12 @@ impl<'buf> bebop::BebopDecode<'buf> for DeprecatedFieldsMessage<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => msg.current_name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        2 => msg.legacy_name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        3 => msg.legacy_enabled = option::Option::Some(reader.read_bool()?),
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "DeprecatedFieldsMessage",
-            tag,
-          });
-        }
+        1 => msg.current_name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("DeprecatedFieldsMessage", "current_name")?)),
+        2 => msg.legacy_name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("DeprecatedFieldsMessage", "legacy_name")?)),
+        3 => msg.legacy_enabled = option::Option::Some(reader.read_bool().for_field("DeprecatedFieldsMessage", "legacy_enabled")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "DeprecatedFieldsMessage", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:DeprecatedFieldsMessage)
@@ -2348,7 +2094,8 @@ impl<'buf> DeprecatedFieldsMessage<'buf> {
 }
 
 /// Integer-key map coverage.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct IntegerKeyMaps<'buf> {
   pub labels_by_id: option::Option<bebop::HashMap<u32, borrow::Cow<'buf, str>>>,
   pub flags_by_id: option::Option<bebop::HashMap<i64, bool>>,
@@ -2359,11 +2106,7 @@ pub type IntegerKeyMapsOwned = IntegerKeyMaps<'static>;
 impl<'buf> IntegerKeyMaps<'buf> {
   pub fn into_owned(self) -> IntegerKeyMapsOwned {
     IntegerKeyMaps {
-      labels_by_id: self.labels_by_id.map(|v| {
-        v.into_iter()
-          .map(|(_k, _v)| (_k, borrow::Cow::Owned(_v.into_owned())))
-          .collect()
-      }),
+      labels_by_id: self.labels_by_id.map(|v| v.into_iter().map(|(_k, _v)| (_k, borrow::Cow::Owned(_v.into_owned()))).collect()),
       flags_by_id: self.flags_by_id,
     }
   }
@@ -2380,17 +2123,11 @@ impl<'buf> bebop::BebopEncode for IntegerKeyMaps<'buf> {
     // normally. This behavior should be revisited once the spec intent is clarified.
     if let option::Option::Some(ref v) = self.labels_by_id {
       writer.write_tag(1);
-      writer.write_map(&v, |_w, _k, _v| {
-        _w.write_u32(*_k);
-        _w.write_string(&_v);
-      });
+      writer.write_map(&v, |_w, _k, _v| { _w.write_u32(*_k); _w.write_string(&_v); });
     }
     if let option::Option::Some(ref v) = self.flags_by_id {
       writer.write_tag(2);
-      writer.write_map(&v, |_w, _k, _v| {
-        _w.write_i64(*_k);
-        _w.write_bool(*_v);
-      });
+      writer.write_map(&v, |_w, _k, _v| { _w.write_i64(*_k); _w.write_bool(*_v); });
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
@@ -2400,14 +2137,10 @@ impl<'buf> bebop::BebopEncode for IntegerKeyMaps<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let option::Option::Some(ref v) = self.labels_by_id {
-      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| {
-        mem::size_of::<u32>() + bebop::wire_size::string_size(_v.len())
-      }));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| mem::size_of::<u32>() + bebop::wire_size::string_size(_v.len())));
     }
     if let option::Option::Some(ref v) = self.flags_by_id {
-      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| {
-        mem::size_of::<i64>() + mem::size_of::<bool>()
-      }));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| mem::size_of::<i64>() + mem::size_of::<bool>()));
     }
     size
   }
@@ -2423,29 +2156,11 @@ impl<'buf> bebop::BebopDecode<'buf> for IntegerKeyMaps<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.labels_by_id = option::Option::Some(reader.read_map(|_r| {
-            result::Result::Ok((
-              _r.read_u32()?,
-              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-            ))
-          })?)
-        }
-        2 => {
-          msg.flags_by_id = option::Option::Some(
-            reader.read_map(|_r| result::Result::Ok((_r.read_i64()?, _r.read_bool()?)))?,
-          )
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "IntegerKeyMaps",
-            tag,
-          });
-        }
+        1 => msg.labels_by_id = option::Option::Some(reader.read_map(|_r| result::Result::Ok((_r.read_u32()?, result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?))).for_field("IntegerKeyMaps", "labels_by_id")?),
+        2 => msg.flags_by_id = option::Option::Some(reader.read_map(|_r| result::Result::Ok((_r.read_i64()?, _r.read_bool()?))).for_field("IntegerKeyMaps", "flags_by_id")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "IntegerKeyMaps", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:IntegerKeyMaps)
@@ -2454,12 +2169,8 @@ impl<'buf> bebop::BebopDecode<'buf> for IntegerKeyMaps<'buf> {
 }
 
 impl<'buf> IntegerKeyMaps<'buf> {
-  pub fn with_labels_by_id(
-    mut self,
-    value: impl iter::IntoIterator<Item = (u32, impl convert::Into<borrow::Cow<'buf, str>>)>,
-  ) -> Self {
-    self.labels_by_id =
-      option::Option::Some(value.into_iter().map(|(_k, _v)| (_k, _v.into())).collect());
+  pub fn with_labels_by_id(mut self, value: impl iter::IntoIterator<Item = (u32, impl convert::Into<borrow::Cow<'buf, str>>)>) -> Self {
+    self.labels_by_id = option::Option::Some(value.into_iter().map(|(_k, _v)| (_k, _v.into())).collect());
     self
   }
   pub fn with_flags_by_id(mut self, value: impl iter::IntoIterator<Item = (i64, bool)>) -> Self {
@@ -2470,7 +2181,8 @@ impl<'buf> IntegerKeyMaps<'buf> {
 }
 
 /// Nested type used by deep compound collections.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NestedLeaf<'buf> {
   pub label: borrow::Cow<'buf, str>,
 }
@@ -2510,7 +2222,7 @@ impl<'buf> bebop::BebopDecode<'buf> for NestedLeaf<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:NestedLeaf)
-    let label = borrow::Cow::Borrowed(reader.read_str()?);
+    let label = borrow::Cow::Borrowed(reader.read_str().for_field("NestedLeaf", "label")?);
     // @@bebop_insertion_point(decode_end:NestedLeaf)
     result::Result::Ok(NestedLeaf { label })
   }
@@ -2521,14 +2233,10 @@ impl<'buf> NestedLeaf<'buf> {
 }
 
 /// Deeply nested map/array/defined-type composition.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DeepNestedCollections<'buf> {
-  pub nested: option::Option<
-    bebop::HashMap<
-      borrow::Cow<'buf, str>,
-      vec::Vec<bebop::HashMap<borrow::Cow<'buf, str>, NestedLeaf<'buf>>>,
-    >,
-  >,
+  pub nested: option::Option<bebop::HashMap<borrow::Cow<'buf, str>, vec::Vec<bebop::HashMap<borrow::Cow<'buf, str>, NestedLeaf<'buf>>>>>,
 }
 
 pub type DeepNestedCollectionsOwned = DeepNestedCollections<'static>;
@@ -2536,22 +2244,7 @@ pub type DeepNestedCollectionsOwned = DeepNestedCollections<'static>;
 impl<'buf> DeepNestedCollections<'buf> {
   pub fn into_owned(self) -> DeepNestedCollectionsOwned {
     DeepNestedCollections {
-      nested: self.nested.map(|v| {
-        v.into_iter()
-          .map(|(_k, _v)| {
-            (
-              borrow::Cow::Owned(_k.into_owned()),
-              _v.into_iter()
-                .map(|_e| {
-                  _e.into_iter()
-                    .map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), _v.into_owned()))
-                    .collect()
-                })
-                .collect(),
-            )
-          })
-          .collect()
-      }),
+      nested: self.nested.map(|v| v.into_iter().map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), _v.into_iter().map(|_e| _e.into_iter().map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), _v.into_owned())).collect()).collect())).collect()),
     }
   }
 }
@@ -2567,15 +2260,7 @@ impl<'buf> bebop::BebopEncode for DeepNestedCollections<'buf> {
     // normally. This behavior should be revisited once the spec intent is clarified.
     if let option::Option::Some(ref v) = self.nested {
       writer.write_tag(1);
-      writer.write_map(&v, |_w, _k, _v| {
-        _w.write_string(&_k);
-        _w.write_array(&_v, |_w, _el| {
-          _w.write_map(&_el, |_w, _k, _v| {
-            _w.write_string(&_k);
-            _v.encode(_w);
-          })
-        });
-      });
+      writer.write_map(&v, |_w, _k, _v| { _w.write_string(&_k); _w.write_array(&_v, |_w, _el| { _w.write_map(&_el, |_w, _k, _v| { _w.write_string(&_k); _v.encode(_w); }) }); });
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
@@ -2585,14 +2270,7 @@ impl<'buf> bebop::BebopEncode for DeepNestedCollections<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let option::Option::Some(ref v) = self.nested {
-      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| {
-        bebop::wire_size::string_size(_k.len())
-          + bebop::wire_size::array_size(_v, |_el| {
-            bebop::wire_size::map_size(_el, |_k, _v| {
-              bebop::wire_size::string_size(_k.len()) + _v.encoded_size()
-            })
-          })
-      }));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| bebop::wire_size::string_size(_k.len()) + bebop::wire_size::array_size(_v, |_el| bebop::wire_size::map_size(_el, |_k, _v| bebop::wire_size::string_size(_k.len()) + _v.encoded_size()))));
     }
     size
   }
@@ -2608,31 +2286,10 @@ impl<'buf> bebop::BebopDecode<'buf> for DeepNestedCollections<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.nested = option::Option::Some(reader.read_map(|_r| {
-            result::Result::Ok((
-              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-              _r.read_array(|_r| {
-                _r.read_map(|_r| {
-                  result::Result::Ok((
-                    result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-                    NestedLeaf::decode(_r)?,
-                  ))
-                })
-              })?,
-            ))
-          })?)
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "DeepNestedCollections",
-            tag,
-          });
-        }
+        1 => msg.nested = option::Option::Some(reader.read_map(|_r| result::Result::Ok((result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?, _r.read_array(|_r| _r.read_map(|_r| result::Result::Ok((result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?, NestedLeaf::decode(_r)?))))?))).for_field("DeepNestedCollections", "nested")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "DeepNestedCollections", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:DeepNestedCollections)
@@ -2641,15 +2298,7 @@ impl<'buf> bebop::BebopDecode<'buf> for DeepNestedCollections<'buf> {
 }
 
 impl<'buf> DeepNestedCollections<'buf> {
-  pub fn with_nested(
-    mut self,
-    value: impl iter::IntoIterator<
-      Item = (
-        impl convert::Into<borrow::Cow<'buf, str>>,
-        vec::Vec<bebop::HashMap<borrow::Cow<'buf, str>, NestedLeaf<'buf>>>,
-      ),
-    >,
-  ) -> Self {
+  pub fn with_nested(mut self, value: impl iter::IntoIterator<Item = (impl convert::Into<borrow::Cow<'buf, str>>, vec::Vec<bebop::HashMap<borrow::Cow<'buf, str>, NestedLeaf<'buf>>>)>) -> Self {
     self.nested = option::Option::Some(value.into_iter().map(|(_k, _v)| (_k.into(), _v)).collect());
     self
   }
@@ -2657,7 +2306,8 @@ impl<'buf> DeepNestedCollections<'buf> {
 }
 
 /// Struct with nested byte array (byte[][]).
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ByteMatrix<'buf> {
   pub rows: vec::Vec<bebop::BebopBytes<'buf>>,
 }
@@ -2665,9 +2315,7 @@ pub struct ByteMatrix<'buf> {
 pub type ByteMatrixOwned = ByteMatrix<'static>;
 
 impl<'buf> ByteMatrix<'buf> {
-  pub fn new(
-    rows: impl iter::IntoIterator<Item = impl convert::Into<bebop::BebopBytes<'buf>>>,
-  ) -> Self {
+  pub fn new(rows: impl iter::IntoIterator<Item = impl convert::Into<bebop::BebopBytes<'buf>>>) -> Self {
     let rows = rows.into_iter().map(|_e| _e.into()).collect();
     Self { rows }
   }
@@ -2684,15 +2332,13 @@ impl<'buf> ByteMatrix<'buf> {
 impl<'buf> bebop::BebopEncode for ByteMatrix<'buf> {
   fn encode(&self, writer: &mut bebop::BebopWriter) {
     // @@bebop_insertion_point(encode_start:ByteMatrix)
-    writer.write_array(&self.rows, |_w, _el| _w.write_byte_array(&_el));
+    writer.write_array(&self.rows, |_w, _el| { _w.write_byte_array(&_el) });
     // @@bebop_insertion_point(encode_end:ByteMatrix)
   }
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += bebop::wire_size::array_size(&self.rows, |_el| {
-      bebop::wire_size::byte_array_size(_el.len())
-    });
+    size += bebop::wire_size::array_size(&self.rows, |_el| bebop::wire_size::byte_array_size(_el.len()));
     size
   }
 }
@@ -2701,8 +2347,7 @@ impl<'buf> bebop::BebopDecode<'buf> for ByteMatrix<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:ByteMatrix)
-    let rows = reader
-      .read_array(|_r| result::Result::Ok(bebop::BebopBytes::borrowed(_r.read_byte_slice()?)))?;
+    let rows = reader.read_array(|_r| result::Result::Ok(bebop::BebopBytes::borrowed(_r.read_byte_slice()?))).for_field("ByteMatrix", "rows")?;
     // @@bebop_insertion_point(decode_end:ByteMatrix)
     result::Result::Ok(ByteMatrix { rows })
   }
@@ -2713,7 +2358,8 @@ impl<'buf> ByteMatrix<'buf> {
 }
 
 /// Struct with map containing byte array values.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ByteTagMap<'buf> {
   pub entries: bebop::HashMap<borrow::Cow<'buf, str>, bebop::BebopBytes<'buf>>,
 }
@@ -2721,18 +2367,8 @@ pub struct ByteTagMap<'buf> {
 pub type ByteTagMapOwned = ByteTagMap<'static>;
 
 impl<'buf> ByteTagMap<'buf> {
-  pub fn new(
-    entries: impl iter::IntoIterator<
-      Item = (
-        impl convert::Into<borrow::Cow<'buf, str>>,
-        impl convert::Into<bebop::BebopBytes<'buf>>,
-      ),
-    >,
-  ) -> Self {
-    let entries = entries
-      .into_iter()
-      .map(|(_k, _v)| (_k.into(), _v.into()))
-      .collect();
+  pub fn new(entries: impl iter::IntoIterator<Item = (impl convert::Into<borrow::Cow<'buf, str>>, impl convert::Into<bebop::BebopBytes<'buf>>)>) -> Self {
+    let entries = entries.into_iter().map(|(_k, _v)| (_k.into(), _v.into())).collect();
     Self { entries }
   }
 }
@@ -2740,11 +2376,7 @@ impl<'buf> ByteTagMap<'buf> {
 impl<'buf> ByteTagMap<'buf> {
   pub fn into_owned(self) -> ByteTagMapOwned {
     ByteTagMap {
-      entries: self
-        .entries
-        .into_iter()
-        .map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), _v.into_owned()))
-        .collect(),
+      entries: self.entries.into_iter().map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), _v.into_owned())).collect(),
     }
   }
 }
@@ -2752,18 +2384,13 @@ impl<'buf> ByteTagMap<'buf> {
 impl<'buf> bebop::BebopEncode for ByteTagMap<'buf> {
   fn encode(&self, writer: &mut bebop::BebopWriter) {
     // @@bebop_insertion_point(encode_start:ByteTagMap)
-    writer.write_map(&self.entries, |_w, _k, _v| {
-      _w.write_string(&_k);
-      _w.write_byte_array(&_v);
-    });
+    writer.write_map(&self.entries, |_w, _k, _v| { _w.write_string(&_k); _w.write_byte_array(&_v); });
     // @@bebop_insertion_point(encode_end:ByteTagMap)
   }
 
   fn encoded_size(&self) -> usize {
     let mut size = 0;
-    size += bebop::wire_size::map_size(&self.entries, |_k, _v| {
-      bebop::wire_size::string_size(_k.len()) + bebop::wire_size::byte_array_size(_v.len())
-    });
+    size += bebop::wire_size::map_size(&self.entries, |_k, _v| bebop::wire_size::string_size(_k.len()) + bebop::wire_size::byte_array_size(_v.len()));
     size
   }
 }
@@ -2772,12 +2399,7 @@ impl<'buf> bebop::BebopDecode<'buf> for ByteTagMap<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:ByteTagMap)
-    let entries = reader.read_map(|_r| {
-      result::Result::Ok((
-        result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-        result::Result::Ok(bebop::BebopBytes::borrowed(_r.read_byte_slice()?))?,
-      ))
-    })?;
+    let entries = reader.read_map(|_r| result::Result::Ok((result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?, result::Result::Ok(bebop::BebopBytes::borrowed(_r.read_byte_slice()?))?))).for_field("ByteTagMap", "entries")?;
     // @@bebop_insertion_point(decode_end:ByteTagMap)
     result::Result::Ok(ByteTagMap { entries })
   }
@@ -2788,7 +2410,8 @@ impl<'buf> ByteTagMap<'buf> {
 }
 
 /// Message with byte array field — tests Option<BebopBytes> serde.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct ByteArrayMessage<'buf> {
   pub label: option::Option<borrow::Cow<'buf, str>>,
   pub payload: option::Option<bebop::BebopBytes<'buf>>,
@@ -2849,20 +2472,11 @@ impl<'buf> bebop::BebopDecode<'buf> for ByteArrayMessage<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => msg.label = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        2 => {
-          msg.payload = option::Option::Some(bebop::BebopBytes::borrowed(reader.read_byte_slice()?))
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "ByteArrayMessage",
-            tag,
-          });
-        }
+        1 => msg.label = option::Option::Some(borrow::Cow::Borrowed(reader.read_str().for_field("ByteArrayMessage", "label")?)),
+        2 => msg.payload = option::Option::Some(bebop::BebopBytes::borrowed(reader.read_byte_slice().for_field("ByteArrayMessage", "payload")?)),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "ByteArrayMessage", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:ByteArrayMessage)
@@ -2883,7 +2497,8 @@ impl<'buf> ByteArrayMessage<'buf> {
 }
 
 /// Message with nested byte arrays and maps.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ByteCollectionMessage<'buf> {
   pub matrix: option::Option<vec::Vec<bebop::BebopBytes<'buf>>>,
   pub tagged: option::Option<bebop::HashMap<borrow::Cow<'buf, str>, bebop::BebopBytes<'buf>>>,
@@ -2894,14 +2509,8 @@ pub type ByteCollectionMessageOwned = ByteCollectionMessage<'static>;
 impl<'buf> ByteCollectionMessage<'buf> {
   pub fn into_owned(self) -> ByteCollectionMessageOwned {
     ByteCollectionMessage {
-      matrix: self
-        .matrix
-        .map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
-      tagged: self.tagged.map(|v| {
-        v.into_iter()
-          .map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), _v.into_owned()))
-          .collect()
-      }),
+      matrix: self.matrix.map(|v| v.into_iter().map(|_e| _e.into_owned()).collect()),
+      tagged: self.tagged.map(|v| v.into_iter().map(|(_k, _v)| (borrow::Cow::Owned(_k.into_owned()), _v.into_owned())).collect()),
     }
   }
 }
@@ -2917,14 +2526,11 @@ impl<'buf> bebop::BebopEncode for ByteCollectionMessage<'buf> {
     // normally. This behavior should be revisited once the spec intent is clarified.
     if let option::Option::Some(ref v) = self.matrix {
       writer.write_tag(1);
-      writer.write_array(&v, |_w, _el| _w.write_byte_array(&_el));
+      writer.write_array(&v, |_w, _el| { _w.write_byte_array(&_el) });
     }
     if let option::Option::Some(ref v) = self.tagged {
       writer.write_tag(2);
-      writer.write_map(&v, |_w, _k, _v| {
-        _w.write_string(&_k);
-        _w.write_byte_array(&_v);
-      });
+      writer.write_map(&v, |_w, _k, _v| { _w.write_string(&_k); _w.write_byte_array(&_v); });
     }
     writer.write_end_marker();
     writer.fill_message_length(pos);
@@ -2934,14 +2540,10 @@ impl<'buf> bebop::BebopEncode for ByteCollectionMessage<'buf> {
   fn encoded_size(&self) -> usize {
     let mut size = bebop::wire_size::WIRE_MESSAGE_BASE_SIZE;
     if let option::Option::Some(ref v) = self.matrix {
-      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| {
-        bebop::wire_size::byte_array_size(_el.len())
-      }));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::array_size(v, |_el| bebop::wire_size::byte_array_size(_el.len())));
     }
     if let option::Option::Some(ref v) = self.tagged {
-      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| {
-        bebop::wire_size::string_size(_k.len()) + bebop::wire_size::byte_array_size(_v.len())
-      }));
+      size += bebop::wire_size::tagged_size(bebop::wire_size::map_size(v, |_k, _v| bebop::wire_size::string_size(_k.len()) + bebop::wire_size::byte_array_size(_v.len())));
     }
     size
   }
@@ -2957,29 +2559,11 @@ impl<'buf> bebop::BebopDecode<'buf> for ByteCollectionMessage<'buf> {
 
     while reader.position() < end {
       let tag = reader.read_tag()?;
-      if tag == 0 {
-        break;
-      }
+      if tag == 0 { break; }
       match tag {
-        1 => {
-          msg.matrix = option::Option::Some(reader.read_array(|_r| {
-            result::Result::Ok(bebop::BebopBytes::borrowed(_r.read_byte_slice()?))
-          })?)
-        }
-        2 => {
-          msg.tagged = option::Option::Some(reader.read_map(|_r| {
-            result::Result::Ok((
-              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-              result::Result::Ok(bebop::BebopBytes::borrowed(_r.read_byte_slice()?))?,
-            ))
-          })?)
-        }
-        tag => {
-          return result::Result::Err(bebop::DecodeError::InvalidField {
-            type_name: "ByteCollectionMessage",
-            tag,
-          });
-        }
+        1 => msg.matrix = option::Option::Some(reader.read_array(|_r| result::Result::Ok(bebop::BebopBytes::borrowed(_r.read_byte_slice()?))).for_field("ByteCollectionMessage", "matrix")?),
+        2 => msg.tagged = option::Option::Some(reader.read_map(|_r| result::Result::Ok((result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?, result::Result::Ok(bebop::BebopBytes::borrowed(_r.read_byte_slice()?))?))).for_field("ByteCollectionMessage", "tagged")?),
+        tag => { return result::Result::Err(bebop::DecodeError::InvalidField { type_name: "ByteCollectionMessage", tag }); }
       }
     }
     // @@bebop_insertion_point(decode_end:ByteCollectionMessage)
@@ -2988,35 +2572,20 @@ impl<'buf> bebop::BebopDecode<'buf> for ByteCollectionMessage<'buf> {
 }
 
 impl<'buf> ByteCollectionMessage<'buf> {
-  pub fn with_matrix(
-    mut self,
-    value: impl iter::IntoIterator<Item = impl convert::Into<bebop::BebopBytes<'buf>>>,
-  ) -> Self {
+  pub fn with_matrix(mut self, value: impl iter::IntoIterator<Item = impl convert::Into<bebop::BebopBytes<'buf>>>) -> Self {
     self.matrix = option::Option::Some(value.into_iter().map(|_e| _e.into()).collect());
     self
   }
-  pub fn with_tagged(
-    mut self,
-    value: impl iter::IntoIterator<
-      Item = (
-        impl convert::Into<borrow::Cow<'buf, str>>,
-        impl convert::Into<bebop::BebopBytes<'buf>>,
-      ),
-    >,
-  ) -> Self {
-    self.tagged = option::Option::Some(
-      value
-        .into_iter()
-        .map(|(_k, _v)| (_k.into(), _v.into()))
-        .collect(),
-    );
+  pub fn with_tagged(mut self, value: impl iter::IntoIterator<Item = (impl convert::Into<borrow::Cow<'buf, str>>, impl convert::Into<bebop::BebopBytes<'buf>>)>) -> Self {
+    self.tagged = option::Option::Some(value.into_iter().map(|(_k, _v)| (_k.into(), _v.into())).collect());
     self
   }
   // @@bebop_insertion_point(message_scope:ByteCollectionMessage)
 }
 
 /// Struct with a UUID field for serde round-trip testing.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UuidHolder<'buf> {
   pub id: bebop::Uuid,
   pub label: borrow::Cow<'buf, str>,
@@ -3025,7 +2594,10 @@ pub struct UuidHolder<'buf> {
 pub type UuidHolderOwned = UuidHolder<'static>;
 
 impl<'buf> UuidHolder<'buf> {
-  pub fn new(id: bebop::Uuid, label: impl convert::Into<borrow::Cow<'buf, str>>) -> Self {
+  pub fn new(
+    id: bebop::Uuid,
+    label: impl convert::Into<borrow::Cow<'buf, str>>,
+  ) -> Self {
     let label = label.into();
     Self { id, label }
   }
@@ -3060,8 +2632,8 @@ impl<'buf> bebop::BebopDecode<'buf> for UuidHolder<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:UuidHolder)
-    let id = reader.read_uuid()?;
-    let label = borrow::Cow::Borrowed(reader.read_str()?);
+    let id = reader.read_uuid().for_field("UuidHolder", "id")?;
+    let label = borrow::Cow::Borrowed(reader.read_str().for_field("UuidHolder", "label")?);
     // @@bebop_insertion_point(decode_end:UuidHolder)
     result::Result::Ok(UuidHolder { id, label })
   }

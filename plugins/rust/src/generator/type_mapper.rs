@@ -572,25 +572,38 @@ pub fn read_expression(
   }
 }
 
-/// Returns a direct borrowed `Cow` decode expression when applicable.
+/// Generate a decode expression with `.for_field()` context applied.
 ///
-/// This is used by generators that want local statements like:
-/// `let name = Cow::Borrowed(reader.read_str()?);`
-pub fn borrowed_cow_read_expression(td: &TypeDescriptor, reader: &str) -> Option<String> {
-  match td.kind? {
-    TypeKind::String => Some(format!("borrow::Cow::Borrowed({}.read_str()?)", reader)),
-    TypeKind::Array => {
-      let elem = td.array_element.as_ref()?;
-      if elem.kind == Some(TypeKind::Byte) {
-        Some(format!(
-          "bebop::BebopBytes::borrowed({}.read_byte_slice()?)",
-          reader
-        ))
-      } else {
-        None
-      }
-    }
-    _ => None,
+/// Handles zero-copy string/byte-array fields inline and delegates everything
+/// else to [`read_expression`]. The returned expression includes the trailing
+/// `?` and evaluates to the decoded field value.
+pub fn read_field_expression(
+  td: &TypeDescriptor,
+  reader: &str,
+  analysis: &LifetimeAnalysis,
+  type_name: &str,
+  field_name: &str,
+) -> Result<String, GeneratorError> {
+  let kind = td
+    .kind
+    .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
+
+  if kind == TypeKind::String {
+    Ok(format!(
+      "borrow::Cow::Borrowed({}.read_str().for_field(\"{}\", \"{}\")?)",
+      reader, type_name, field_name
+    ))
+  } else if is_byte_array_cow_field(td) {
+    Ok(format!(
+      "bebop::BebopBytes::borrowed({}.read_byte_slice().for_field(\"{}\", \"{}\")?)",
+      reader, type_name, field_name
+    ))
+  } else {
+    let read_expr = read_expression(td, reader, analysis)?;
+    Ok(format!(
+      "{}.for_field(\"{}\", \"{}\")?",
+      read_expr, type_name, field_name
+    ))
   }
 }
 

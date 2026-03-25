@@ -30,6 +30,8 @@ pub fn generate(
     disc: u8,
     inner_type: String,
     inner_fqn: Option<String>,
+    /// Original branch name from the Bebop schema, for decode error context.
+    schema_name: String,
   }
 
   let branch_infos: Vec<BranchInfo> = branches
@@ -50,11 +52,22 @@ pub fn generate(
       } else {
         ("Unknown".to_string(), "Unknown".to_string(), None)
       };
+      let schema_name = b
+        .name
+        .as_deref()
+        .or_else(|| {
+          b.inline_fqn
+            .as_deref()
+            .and_then(|fqn| fqn.rsplit('.').next())
+        })
+        .unwrap_or("unknown")
+        .to_string();
       BranchInfo {
         variant,
         disc,
         inner_type,
         inner_fqn,
+        schema_name,
       }
     })
     .collect();
@@ -222,8 +235,8 @@ pub fn generate(
   output.push_str("    let value = match discriminator {\n");
   for b in &branch_infos {
     output.push_str(&format!(
-      "      {} => result::Result::Ok(Self::{}({}::decode(reader)?)),\n",
-      b.disc, b.variant, b.inner_type
+      "      {} => result::Result::Ok(Self::{}({}::decode(reader).for_field(\"{}\", \"{}\")?)),\n",
+      b.disc, b.variant, b.inner_type, name, b.schema_name
     ));
   }
   if is_forward_compatible {

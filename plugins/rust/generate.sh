@@ -33,7 +33,6 @@ echo "Generating descriptor.rs + plugin.rs..."
 mkdir -p "$RUST_DIR/src/generated"
 cp "$TMPDIR/bootstrap/descriptor.rs" "$RUST_DIR/src/generated/descriptor.rs"
 cp "$TMPDIR/bootstrap/plugin.rs" "$RUST_DIR/src/generated/plugin.rs"
-rustfmt "$RUST_DIR/src/generated/descriptor.rs" "$RUST_DIR/src/generated/plugin.rs"
 
 # ── 2. Integration tests: test_types.rs ──────────────────────────────
 
@@ -47,7 +46,6 @@ echo "Generating test_types.rs..."
   -q 2>/dev/null
 
 cp "$TMPDIR/integration/test_types.rs" "$RUST_DIR/integration-tests/src/test_types.rs"
-rustfmt "$RUST_DIR/integration-tests/src/test_types.rs"
 
 echo "Generating collision_types.rs..."
 "$BEBOPC" build \
@@ -59,7 +57,6 @@ echo "Generating collision_types.rs..."
   -q 2>/dev/null
 
 cp "$TMPDIR/collision/collision_types.rs" "$RUST_DIR/integration-tests/src/collision_types.rs"
-rustfmt "$RUST_DIR/integration-tests/src/collision_types.rs"
 
 # ── 3. Benchmarks: benchmark_types.rs ────────────────────────────────
 
@@ -72,6 +69,5 @@ echo "Generating benchmark_types.rs..."
   -q 2>/dev/null
 
 cp "$TMPDIR/bench/benchmark.rs" "$RUST_DIR/benchmarks/src/benchmark_types.rs"
-rustfmt "$RUST_DIR/benchmarks/src/benchmark_types.rs"
 
 echo "Done. Regenerated all generated files."

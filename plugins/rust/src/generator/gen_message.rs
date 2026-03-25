@@ -42,6 +42,8 @@ fn field_wrap(field_type: &TypeDescriptor<'_>, own_fqn: &str) -> FieldWrap {
 /// Pre-computed metadata for a single message field.
 struct FieldMeta<'a> {
   fname: String,
+  /// Bebop schema field name for decode error context (e.g. `"self"`, not `"self_"`).
+  schema_name: String,
   cow_type: String,
   tag: u32,
   wrap: FieldWrap,
@@ -115,7 +117,9 @@ pub fn generate(
   let field_metas: Vec<FieldMeta<'_>> = fields
     .iter()
     .map(|f| {
-      let fname = field_name(f.name.as_deref().unwrap_or("unknown"));
+      let raw = f.name.as_deref().unwrap_or("unknown");
+      let fname = field_name(raw);
+      let schema_name = raw.to_string();
       let td = f
         .r#type
         .as_ref()
@@ -127,6 +131,7 @@ pub fn generate(
       let wrap = field_wrap(td, own_fqn);
       Ok(FieldMeta {
         fname,
+        schema_name,
         cow_type,
         tag,
         wrap,
@@ -311,27 +316,20 @@ pub fn generate(
   output.push_str("      match tag {\n");
 
   for meta in &field_metas {
+    let expr =
+      type_mapper::read_field_expression(meta.td, "reader", analysis, &name, &meta.schema_name)?;
     match meta.wrap {
       FieldWrap::Boxed => {
-        let read_expr = type_mapper::read_expression(meta.td, "reader", analysis)?;
         output.push_str(&format!(
-          "        {} => msg.{} = option::Option::Some(boxed::Box::new({}?)),\n",
-          meta.tag, meta.fname, read_expr
+          "        {} => msg.{} = option::Option::Some(boxed::Box::new({})),\n",
+          meta.tag, meta.fname, expr
         ));
       }
       _ => {
-        if let Some(read_expr) = type_mapper::borrowed_cow_read_expression(meta.td, "reader") {
-          output.push_str(&format!(
-            "        {} => msg.{} = option::Option::Some({}),\n",
-            meta.tag, meta.fname, read_expr
-          ));
-        } else {
-          let read_expr = type_mapper::read_expression(meta.td, "reader", analysis)?;
-          output.push_str(&format!(
-            "        {} => msg.{} = option::Option::Some({}?),\n",
-            meta.tag, meta.fname, read_expr
-          ));
-        }
+        output.push_str(&format!(
+          "        {} => msg.{} = option::Option::Some({}),\n",
+          meta.tag, meta.fname, expr
+        ));
       }
     }
   }

@@ -1875,3 +1875,116 @@ fn fc_flags_unknown_bits_round_trip() {
   let decoded = FlexPermissions::from_bytes(&bytes).unwrap();
   assert_eq!(decoded.bits(), 129); // 1 | 128
 }
+
+// ═══════════════════════════════════════════════════════════════
+// DecodeError field context (issue #7)
+// ═══════════════════════════════════════════════════════════════
+
+#[test]
+fn decode_error_invalid_utf8_reports_type_and_field() {
+  // Construct a valid wire prefix but corrupt UTF-8 bytes for the `name` field.
+  // Person wire format: [u32 len][utf8 bytes][NUL][u32 age]
+  let mut buf = Vec::new();
+  buf.extend_from_slice(&2u32.to_le_bytes()); // length = 2
+  buf.push(0xFF); // invalid UTF-8 byte
+  buf.push(0xFE); // invalid UTF-8 byte
+  buf.push(0x00); // NUL terminator
+  buf.extend_from_slice(&30u32.to_le_bytes()); // age = 30
+
+  let err = Person::from_bytes(&buf).unwrap_err();
+  let msg = err.to_string();
+  assert!(
+    msg.contains("Person"),
+    "expected type name 'Person' in error message: {msg}"
+  );
+  assert!(
+    msg.contains("name"),
+    "expected field name 'name' in error message: {msg}"
+  );
+  assert!(
+    msg.contains("utf-8"),
+    "expected 'utf-8' in error message: {msg}"
+  );
+  // Exact format: "invalid utf-8 in Person.name"
+  assert_eq!(msg, "invalid utf-8 in Person.name");
+}
+
+#[test]
+fn decode_error_unexpected_eof_reports_type_and_field() {
+  // Truncated Person: valid name field, but age is only 2 bytes instead of 4.
+  let mut buf = Vec::new();
+  buf.extend_from_slice(&5u32.to_le_bytes()); // name length = 5
+  buf.extend_from_slice(b"Alice"); // name bytes
+  buf.push(0x00); // NUL terminator
+  buf.extend_from_slice(&[0x1E, 0x00]); // only 2 bytes of the 4-byte age
+
+  let err = Person::from_bytes(&buf).unwrap_err();
+  let msg = err.to_string();
+  assert!(
+    msg.contains("Person"),
+    "expected type name 'Person' in error message: {msg}"
+  );
+  assert!(
+    msg.contains("age"),
+    "expected field name 'age' in error message: {msg}"
+  );
+  // Exact format: "unexpected eof in Person.age: needed 4 bytes, 2 available"
+  assert_eq!(
+    msg,
+    "unexpected eof in Person.age: needed 4 bytes, 2 available"
+  );
+}
+
+#[test]
+fn decode_error_message_field_reports_type_and_field() {
+  // Truncated UserProfile message: valid wire header, but email field has bad UTF-8.
+  // Message wire format: [u32 body_len] [tag u8] [field data] ... [0x00]
+  // We'll encode a real message first and then corrupt the email field bytes.
+  let profile = UserProfile::default()
+    .with_display_name("Alice")
+    .with_email("alice@example.com");
+  let mut bytes = profile.to_bytes();
+
+  // Find the email field bytes and corrupt them.
+  // Message layout: [u32 body_len][body...]
+  // Body for this specific message (only display_name and email set):
+  //   [tag1=0x01][u32 display_name_len]["Alice"][NUL]
+  //   [tag2=0x02][u32 email_len]["alice@example.com"][NUL]
+  //   [0x00 terminator]
+  // Compute the email string's start offset directly rather than scanning for
+  // a 0x02 byte that could appear in unrelated parts of the encoding.
+  let display_name_bytes = b"Alice";
+  // 4 bytes body_len + 1 byte tag1 + 4 bytes u32 len + display_name + NUL
+  let email_tag_pos = 4 + 1 + 4 + display_name_bytes.len() + 1;
+  assert_eq!(
+    bytes[email_tag_pos], 2,
+    "expected email tag (0x02) at computed offset {email_tag_pos}"
+  );
+  // skip tag2 + u32 email_len to reach the first byte of email string data
+  let str_start = email_tag_pos + 1 + 4;
+  assert!(
+    str_start < bytes.len(),
+    "str_start {str_start} out of bounds (len={})",
+    bytes.len()
+  );
+  bytes[str_start] = 0xFF; // corrupt first byte of email string
+  let err = UserProfile::from_bytes(&bytes).unwrap_err();
+  let msg = err.to_string();
+  assert!(
+    msg.contains("UserProfile"),
+    "expected 'UserProfile' in error: {msg}"
+  );
+  assert!(msg.contains("email"), "expected 'email' in error: {msg}");
+  assert!(msg.contains("utf-8"), "expected 'utf-8' in error: {msg}");
+}
+
+#[test]
+fn decode_error_without_context_still_works() {
+  // An error from a decode path that doesn't go through generated code
+  // (e.g., truncated message length header) should still display gracefully.
+  let buf = [0x01u8]; // only 1 byte — not enough for the u32 message length
+  let err = UserProfile::from_bytes(&buf).unwrap_err();
+  let msg = err.to_string();
+  // Without field context, should fall back to the contextless message format.
+  assert!(msg.contains("unexpected eof"), "expected eof error: {msg}");
+}
