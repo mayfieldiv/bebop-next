@@ -572,28 +572,6 @@ pub fn read_expression(
   }
 }
 
-/// Returns a direct borrowed `Cow` decode expression when applicable.
-///
-/// This is used by generators that want local statements like:
-/// `let name = Cow::Borrowed(reader.read_str()?);`
-pub fn borrowed_cow_read_expression(td: &TypeDescriptor, reader: &str) -> Option<String> {
-  match td.kind? {
-    TypeKind::String => Some(format!("borrow::Cow::Borrowed({}.read_str()?)", reader)),
-    TypeKind::Array => {
-      let elem = td.array_element.as_ref()?;
-      if elem.kind == Some(TypeKind::Byte) {
-        Some(format!(
-          "bebop::BebopBytes::borrowed({}.read_byte_slice()?)",
-          reader
-        ))
-      } else {
-        None
-      }
-    }
-    _ => None,
-  }
-}
-
 /// Generate a write expression for a TypeDescriptor (Cow-aware).
 ///
 /// For Cow<str> we call `writer.write_string(&v)` (Cow derefs to &str).

@@ -18,6 +18,7 @@ extern crate core;
 use super::descriptor::*;
 use alloc::{borrow, boxed, string, vec};
 use bebop_runtime as bebop;
+use bebop_runtime::DecodeContext as _;
 use core::convert::Into as _;
 use core::iter::{IntoIterator as _, Iterator as _};
 use core::{convert, default, iter, mem, ops, option, result};
@@ -90,10 +91,10 @@ impl<'buf> bebop::BebopDecode<'buf> for Version<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Version)
-    let major = reader.read_i32()?;
-    let minor = reader.read_i32()?;
-    let patch = reader.read_i32()?;
-    let suffix = borrow::Cow::Borrowed(reader.read_str()?);
+    let major = reader.read_i32().for_field("Version", "major")?;
+    let minor = reader.read_i32().for_field("Version", "minor")?;
+    let patch = reader.read_i32().for_field("Version", "patch")?;
+    let suffix = borrow::Cow::Borrowed(reader.read_str().for_field("Version", "suffix")?);
     // @@bebop_insertion_point(decode_end:Version)
     result::Result::Ok(Version {
       major,
@@ -242,21 +243,41 @@ impl<'buf> bebop::BebopDecode<'buf> for CodeGeneratorRequest<'buf> {
       match tag {
         1 => {
           msg.files_to_generate = option::Option::Some(
-            reader.read_array(|_r| result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?)))?,
+            reader
+              .read_array(|_r| result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?)))
+              .for_field("CodeGeneratorRequest", "files_to_generate")?,
           )
         }
-        2 => msg.parameter = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        3 => msg.compiler_version = option::Option::Some(Version::decode(reader)?),
+        2 => {
+          msg.parameter = option::Option::Some(borrow::Cow::Borrowed(
+            reader
+              .read_str()
+              .for_field("CodeGeneratorRequest", "parameter")?,
+          ))
+        }
+        3 => {
+          msg.compiler_version = option::Option::Some(
+            Version::decode(reader).for_field("CodeGeneratorRequest", "compiler_version")?,
+          )
+        }
         4 => {
-          msg.schemas = option::Option::Some(reader.read_array(|_r| SchemaDescriptor::decode(_r))?)
+          msg.schemas = option::Option::Some(
+            reader
+              .read_array(|_r| SchemaDescriptor::decode(_r))
+              .for_field("CodeGeneratorRequest", "schemas")?,
+          )
         }
         5 => {
-          msg.host_options = option::Option::Some(reader.read_map(|_r| {
-            result::Result::Ok((
-              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-            ))
-          })?)
+          msg.host_options = option::Option::Some(
+            reader
+              .read_map(|_r| {
+                result::Result::Ok((
+                  result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
+                  result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
+                ))
+              })
+              .for_field("CodeGeneratorRequest", "host_options")?,
+          )
         }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
@@ -473,11 +494,33 @@ impl<'buf> bebop::BebopDecode<'buf> for Diagnostic<'buf> {
         break;
       }
       match tag {
-        1 => msg.severity = option::Option::Some(DiagnosticSeverity::decode(reader)?),
-        2 => msg.text = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        3 => msg.hint = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        4 => msg.file = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        5 => msg.span = option::Option::Some(reader.read_fixed_array::<i32, 4>()?),
+        1 => {
+          msg.severity = option::Option::Some(
+            DiagnosticSeverity::decode(reader).for_field("Diagnostic", "severity")?,
+          )
+        }
+        2 => {
+          msg.text = option::Option::Some(borrow::Cow::Borrowed(
+            reader.read_str().for_field("Diagnostic", "text")?,
+          ))
+        }
+        3 => {
+          msg.hint = option::Option::Some(borrow::Cow::Borrowed(
+            reader.read_str().for_field("Diagnostic", "hint")?,
+          ))
+        }
+        4 => {
+          msg.file = option::Option::Some(borrow::Cow::Borrowed(
+            reader.read_str().for_field("Diagnostic", "file")?,
+          ))
+        }
+        5 => {
+          msg.span = option::Option::Some(
+            reader
+              .read_fixed_array::<i32, 4>()
+              .for_field("Diagnostic", "span")?,
+          )
+        }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "Diagnostic",
@@ -621,10 +664,28 @@ impl<'buf> bebop::BebopDecode<'buf> for GeneratedFile<'buf> {
         break;
       }
       match tag {
-        1 => msg.name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        2 => msg.insertion_point = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        3 => msg.content = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        4 => msg.generated_code_info = option::Option::Some(SourceCodeInfo::decode(reader)?),
+        1 => {
+          msg.name = option::Option::Some(borrow::Cow::Borrowed(
+            reader.read_str().for_field("GeneratedFile", "name")?,
+          ))
+        }
+        2 => {
+          msg.insertion_point = option::Option::Some(borrow::Cow::Borrowed(
+            reader
+              .read_str()
+              .for_field("GeneratedFile", "insertion_point")?,
+          ))
+        }
+        3 => {
+          msg.content = option::Option::Some(borrow::Cow::Borrowed(
+            reader.read_str().for_field("GeneratedFile", "content")?,
+          ))
+        }
+        4 => {
+          msg.generated_code_info = option::Option::Some(
+            SourceCodeInfo::decode(reader).for_field("GeneratedFile", "generated_code_info")?,
+          )
+        }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "GeneratedFile",
@@ -757,10 +818,26 @@ impl<'buf> bebop::BebopDecode<'buf> for CodeGeneratorResponse<'buf> {
         break;
       }
       match tag {
-        1 => msg.error = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        2 => msg.files = option::Option::Some(reader.read_array(|_r| GeneratedFile::decode(_r))?),
+        1 => {
+          msg.error = option::Option::Some(borrow::Cow::Borrowed(
+            reader
+              .read_str()
+              .for_field("CodeGeneratorResponse", "error")?,
+          ))
+        }
+        2 => {
+          msg.files = option::Option::Some(
+            reader
+              .read_array(|_r| GeneratedFile::decode(_r))
+              .for_field("CodeGeneratorResponse", "files")?,
+          )
+        }
         3 => {
-          msg.diagnostics = option::Option::Some(reader.read_array(|_r| Diagnostic::decode(_r))?)
+          msg.diagnostics = option::Option::Some(
+            reader
+              .read_array(|_r| Diagnostic::decode(_r))
+              .for_field("CodeGeneratorResponse", "diagnostics")?,
+          )
         }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {

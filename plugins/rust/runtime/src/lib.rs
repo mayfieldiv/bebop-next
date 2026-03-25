@@ -13,7 +13,7 @@ pub mod wire_size;
 mod writer;
 
 pub use bytes::BebopBytes;
-pub use error::DecodeError;
+pub use error::{DecodeContext, DecodeError};
 #[cfg(feature = "half")]
 pub use half::bf16;
 #[cfg(feature = "half")]

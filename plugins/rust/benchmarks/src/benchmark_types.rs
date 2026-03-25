@@ -17,6 +17,7 @@ extern crate bebop_runtime;
 extern crate core;
 use alloc::{borrow, boxed, string, vec};
 use bebop_runtime as bebop;
+use bebop_runtime::DecodeContext as _;
 use core::convert::Into as _;
 use core::iter::{IntoIterator as _, Iterator as _};
 use core::{convert, default, iter, mem, ops, option, result};
@@ -86,10 +87,10 @@ impl<'buf> bebop::BebopDecode<'buf> for Person<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Person)
-    let id = reader.read_i32()?;
-    let name = borrow::Cow::Borrowed(reader.read_str()?);
-    let email = borrow::Cow::Borrowed(reader.read_str()?);
-    let age = reader.read_i32()?;
+    let id = reader.read_i32().for_field("Person", "id")?;
+    let name = borrow::Cow::Borrowed(reader.read_str().for_field("Person", "name")?);
+    let email = borrow::Cow::Borrowed(reader.read_str().for_field("Person", "email")?);
+    let age = reader.read_i32().for_field("Person", "age")?;
     // @@bebop_insertion_point(decode_end:Person)
     result::Result::Ok(Person {
       id,
@@ -179,12 +180,16 @@ impl<'buf> bebop::BebopDecode<'buf> for Order<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Order)
-    let order_id = reader.read_i64()?;
-    let customer_id = reader.read_i64()?;
-    let item_ids = reader.read_scalar_array::<i64>()?;
-    let quantities = reader.read_scalar_array::<i32>()?;
-    let total = reader.read_f64()?;
-    let timestamp = reader.read_i64()?;
+    let order_id = reader.read_i64().for_field("Order", "order_id")?;
+    let customer_id = reader.read_i64().for_field("Order", "customer_id")?;
+    let item_ids = reader
+      .read_scalar_array::<i64>()
+      .for_field("Order", "item_ids")?;
+    let quantities = reader
+      .read_scalar_array::<i32>()
+      .for_field("Order", "quantities")?;
+    let total = reader.read_f64().for_field("Order", "total")?;
+    let timestamp = reader.read_i64().for_field("Order", "timestamp")?;
     // @@bebop_insertion_point(decode_end:Order)
     result::Result::Ok(Order {
       order_id,
@@ -271,11 +276,12 @@ impl<'buf> bebop::BebopDecode<'buf> for Event<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Event)
-    let id = reader.read_i64()?;
-    let r#type = borrow::Cow::Borrowed(reader.read_str()?);
-    let source = borrow::Cow::Borrowed(reader.read_str()?);
-    let timestamp = reader.read_i64()?;
-    let payload = bebop::BebopBytes::borrowed(reader.read_byte_slice()?);
+    let id = reader.read_i64().for_field("Event", "id")?;
+    let r#type = borrow::Cow::Borrowed(reader.read_str().for_field("Event", "type")?);
+    let source = borrow::Cow::Borrowed(reader.read_str().for_field("Event", "source")?);
+    let timestamp = reader.read_i64().for_field("Event", "timestamp")?;
+    let payload =
+      bebop::BebopBytes::borrowed(reader.read_byte_slice().for_field("Event", "payload")?);
     // @@bebop_insertion_point(decode_end:Event)
     result::Result::Ok(Event {
       id,
@@ -346,8 +352,14 @@ impl<'buf> bebop::BebopDecode<'buf> for TreeNode {
         break;
       }
       match tag {
-        1 => msg.value = option::Option::Some(reader.read_i32()?),
-        2 => msg.children = option::Option::Some(reader.read_array(|_r| TreeNode::decode(_r))?),
+        1 => msg.value = option::Option::Some(reader.read_i32().for_field("TreeNode", "value")?),
+        2 => {
+          msg.children = option::Option::Some(
+            reader
+              .read_array(|_r| TreeNode::decode(_r))
+              .for_field("TreeNode", "children")?,
+          )
+        }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "TreeNode",
@@ -487,12 +499,24 @@ impl<'buf> bebop::BebopDecode<'buf> for JsonValue<'buf> {
     let start = reader.position();
     let discriminator = reader.read_byte()?;
     let value = match discriminator {
-      1 => result::Result::Ok(Self::Null(JsonNull::decode(reader)?)),
-      2 => result::Result::Ok(Self::Bool(Bool::decode(reader)?)),
-      3 => result::Result::Ok(Self::Number(Number::decode(reader)?)),
-      4 => result::Result::Ok(Self::String(String::decode(reader)?)),
-      5 => result::Result::Ok(Self::List(List::decode(reader)?)),
-      6 => result::Result::Ok(Self::Object(Object::decode(reader)?)),
+      1 => result::Result::Ok(Self::Null(
+        JsonNull::decode(reader).for_field("JsonValue", "null")?,
+      )),
+      2 => result::Result::Ok(Self::Bool(
+        Bool::decode(reader).for_field("JsonValue", "bool")?,
+      )),
+      3 => result::Result::Ok(Self::Number(
+        Number::decode(reader).for_field("JsonValue", "number")?,
+      )),
+      4 => result::Result::Ok(Self::String(
+        String::decode(reader).for_field("JsonValue", "string")?,
+      )),
+      5 => result::Result::Ok(Self::List(
+        List::decode(reader).for_field("JsonValue", "list")?,
+      )),
+      6 => result::Result::Ok(Self::Object(
+        Object::decode(reader).for_field("JsonValue", "object")?,
+      )),
       _ => result::Result::Err(bebop::DecodeError::InvalidUnion {
         type_name: "JsonValue",
         discriminator,
@@ -553,7 +577,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Bool {
         break;
       }
       match tag {
-        1 => msg.value = option::Option::Some(reader.read_bool()?),
+        1 => msg.value = option::Option::Some(reader.read_bool().for_field("Bool", "value")?),
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "Bool",
@@ -621,7 +645,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Number {
         break;
       }
       match tag {
-        1 => msg.value = option::Option::Some(reader.read_f64()?),
+        1 => msg.value = option::Option::Some(reader.read_f64().for_field("Number", "value")?),
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "Number",
@@ -699,7 +723,11 @@ impl<'buf> bebop::BebopDecode<'buf> for String<'buf> {
         break;
       }
       match tag {
-        1 => msg.value = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
+        1 => {
+          msg.value = option::Option::Some(borrow::Cow::Borrowed(
+            reader.read_str().for_field("String", "value")?,
+          ))
+        }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "String",
@@ -780,7 +808,13 @@ impl<'buf> bebop::BebopDecode<'buf> for List<'buf> {
         break;
       }
       match tag {
-        1 => msg.values = option::Option::Some(reader.read_array(|_r| JsonValue::decode(_r))?),
+        1 => {
+          msg.values = option::Option::Some(
+            reader
+              .read_array(|_r| JsonValue::decode(_r))
+              .for_field("List", "values")?,
+          )
+        }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "List",
@@ -868,12 +902,16 @@ impl<'buf> bebop::BebopDecode<'buf> for Object<'buf> {
       }
       match tag {
         1 => {
-          msg.fields = option::Option::Some(reader.read_map(|_r| {
-            result::Result::Ok((
-              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-              JsonValue::decode(_r)?,
-            ))
-          })?)
+          msg.fields = option::Option::Some(
+            reader
+              .read_map(|_r| {
+                result::Result::Ok((
+                  result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
+                  JsonValue::decode(_r)?,
+                ))
+              })
+              .for_field("Object", "fields")?,
+          )
         }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
@@ -982,15 +1020,27 @@ impl<'buf> bebop::BebopDecode<'buf> for Document<'buf> {
         break;
       }
       match tag {
-        1 => msg.title = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        2 => msg.body = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
+        1 => {
+          msg.title = option::Option::Some(borrow::Cow::Borrowed(
+            reader.read_str().for_field("Document", "title")?,
+          ))
+        }
+        2 => {
+          msg.body = option::Option::Some(borrow::Cow::Borrowed(
+            reader.read_str().for_field("Document", "body")?,
+          ))
+        }
         3 => {
-          msg.metadata = option::Option::Some(reader.read_map(|_r| {
-            result::Result::Ok((
-              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-              JsonValue::decode(_r)?,
-            ))
-          })?)
+          msg.metadata = option::Option::Some(
+            reader
+              .read_map(|_r| {
+                result::Result::Ok((
+                  result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
+                  JsonValue::decode(_r)?,
+                ))
+              })
+              .for_field("Document", "metadata")?,
+          )
         }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
@@ -1117,9 +1167,9 @@ impl<'buf> bebop::BebopDecode<'buf> for TextSpan {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:TextSpan)
-    let start = reader.read_u32()?;
-    let len = reader.read_u32()?;
-    let kind = ChunkKind::decode(reader)?;
+    let start = reader.read_u32().for_field("TextSpan", "start")?;
+    let len = reader.read_u32().for_field("TextSpan", "len")?;
+    let kind = ChunkKind::decode(reader).for_field("TextSpan", "kind")?;
     // @@bebop_insertion_point(decode_end:TextSpan)
     result::Result::Ok(TextSpan { start, len, kind })
   }
@@ -1177,8 +1227,10 @@ impl<'buf> bebop::BebopDecode<'buf> for ChunkedText<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:ChunkedText)
-    let source = borrow::Cow::Borrowed(reader.read_str()?);
-    let spans = reader.read_array(|_r| TextSpan::decode(_r))?;
+    let source = borrow::Cow::Borrowed(reader.read_str().for_field("ChunkedText", "source")?);
+    let spans = reader
+      .read_array(|_r| TextSpan::decode(_r))
+      .for_field("ChunkedText", "spans")?;
     // @@bebop_insertion_point(decode_end:ChunkedText)
     result::Result::Ok(ChunkedText { source, spans })
   }
@@ -1235,8 +1287,10 @@ impl<'buf> bebop::BebopDecode<'buf> for EmbeddingBf16<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:EmbeddingBf16)
-    let id = reader.read_uuid()?;
-    let vector = reader.read_scalar_array::<bebop::bf16>()?;
+    let id = reader.read_uuid().for_field("EmbeddingBf16", "id")?;
+    let vector = reader
+      .read_scalar_array::<bebop::bf16>()
+      .for_field("EmbeddingBf16", "vector")?;
     // @@bebop_insertion_point(decode_end:EmbeddingBf16)
     result::Result::Ok(EmbeddingBf16 { id, vector })
   }
@@ -1290,8 +1344,10 @@ impl<'buf> bebop::BebopDecode<'buf> for EmbeddingF32<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:EmbeddingF32)
-    let id = reader.read_uuid()?;
-    let vector = reader.read_scalar_array::<f32>()?;
+    let id = reader.read_uuid().for_field("EmbeddingF32", "id")?;
+    let vector = reader
+      .read_scalar_array::<f32>()
+      .for_field("EmbeddingF32", "vector")?;
     // @@bebop_insertion_point(decode_end:EmbeddingF32)
     result::Result::Ok(EmbeddingF32 { id, vector })
   }
@@ -1362,9 +1418,13 @@ impl<'buf> bebop::BebopDecode<'buf> for EmbeddingBatch<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:EmbeddingBatch)
-    let model = borrow::Cow::Borrowed(reader.read_str()?);
-    let embeddings = reader.read_array(|_r| EmbeddingBf16::decode(_r))?;
-    let usage_tokens = reader.read_u32()?;
+    let model = borrow::Cow::Borrowed(reader.read_str().for_field("EmbeddingBatch", "model")?);
+    let embeddings = reader
+      .read_array(|_r| EmbeddingBf16::decode(_r))
+      .for_field("EmbeddingBatch", "embeddings")?;
+    let usage_tokens = reader
+      .read_u32()
+      .for_field("EmbeddingBatch", "usage_tokens")?;
     // @@bebop_insertion_point(decode_end:EmbeddingBatch)
     result::Result::Ok(EmbeddingBatch {
       model,
@@ -1434,9 +1494,9 @@ impl<'buf> bebop::BebopDecode<'buf> for TokenLogprob<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:TokenLogprob)
-    let token = borrow::Cow::Borrowed(reader.read_str()?);
-    let token_id = reader.read_u32()?;
-    let logprob = reader.read_f32()?;
+    let token = borrow::Cow::Borrowed(reader.read_str().for_field("TokenLogprob", "token")?);
+    let token_id = reader.read_u32().for_field("TokenLogprob", "token_id")?;
+    let logprob = reader.read_f32().for_field("TokenLogprob", "logprob")?;
     // @@bebop_insertion_point(decode_end:TokenLogprob)
     result::Result::Ok(TokenLogprob {
       token,
@@ -1494,7 +1554,9 @@ impl<'buf> bebop::BebopDecode<'buf> for TokenAlternatives<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:TokenAlternatives)
-    let top_tokens = reader.read_array(|_r| TokenLogprob::decode(_r))?;
+    let top_tokens = reader
+      .read_array(|_r| TokenLogprob::decode(_r))
+      .for_field("TokenAlternatives", "top_tokens")?;
     // @@bebop_insertion_point(decode_end:TokenAlternatives)
     result::Result::Ok(TokenAlternatives { top_tokens })
   }
@@ -1577,11 +1639,18 @@ impl<'buf> bebop::BebopDecode<'buf> for LlmStreamChunk<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:LlmStreamChunk)
-    let chunk_id = reader.read_u32()?;
-    let tokens =
-      reader.read_array(|_r| result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?)))?;
-    let logprobs = reader.read_array(|_r| TokenAlternatives::decode(_r))?;
-    let finish_reason = borrow::Cow::Borrowed(reader.read_str()?);
+    let chunk_id = reader.read_u32().for_field("LlmStreamChunk", "chunk_id")?;
+    let tokens = reader
+      .read_array(|_r| result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?)))
+      .for_field("LlmStreamChunk", "tokens")?;
+    let logprobs = reader
+      .read_array(|_r| TokenAlternatives::decode(_r))
+      .for_field("LlmStreamChunk", "logprobs")?;
+    let finish_reason = borrow::Cow::Borrowed(
+      reader
+        .read_str()
+        .for_field("LlmStreamChunk", "finish_reason")?,
+    );
     // @@bebop_insertion_point(decode_end:LlmStreamChunk)
     result::Result::Ok(LlmStreamChunk {
       chunk_id,
@@ -1673,12 +1742,18 @@ impl<'buf> bebop::BebopDecode<'buf> for TensorShard<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:TensorShard)
-    let name = borrow::Cow::Borrowed(reader.read_str()?);
-    let shape = reader.read_scalar_array::<u32>()?;
-    let dtype = borrow::Cow::Borrowed(reader.read_str()?);
-    let data = reader.read_scalar_array::<bebop::bf16>()?;
-    let offset = reader.read_u64()?;
-    let total_elements = reader.read_u64()?;
+    let name = borrow::Cow::Borrowed(reader.read_str().for_field("TensorShard", "name")?);
+    let shape = reader
+      .read_scalar_array::<u32>()
+      .for_field("TensorShard", "shape")?;
+    let dtype = borrow::Cow::Borrowed(reader.read_str().for_field("TensorShard", "dtype")?);
+    let data = reader
+      .read_scalar_array::<bebop::bf16>()
+      .for_field("TensorShard", "data")?;
+    let offset = reader.read_u64().for_field("TensorShard", "offset")?;
+    let total_elements = reader
+      .read_u64()
+      .for_field("TensorShard", "total_elements")?;
     // @@bebop_insertion_point(decode_end:TensorShard)
     result::Result::Ok(TensorShard {
       name,
@@ -1740,9 +1815,15 @@ impl<'buf> bebop::BebopDecode<'buf> for InferenceTiming {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:InferenceTiming)
-    let queue_time = reader.read_duration()?;
-    let inference_time = reader.read_duration()?;
-    let tokens_per_second = reader.read_f32()?;
+    let queue_time = reader
+      .read_duration()
+      .for_field("InferenceTiming", "queue_time")?;
+    let inference_time = reader
+      .read_duration()
+      .for_field("InferenceTiming", "inference_time")?;
+    let tokens_per_second = reader
+      .read_f32()
+      .for_field("InferenceTiming", "tokens_per_second")?;
     // @@bebop_insertion_point(decode_end:InferenceTiming)
     result::Result::Ok(InferenceTiming {
       queue_time,
@@ -1816,9 +1897,13 @@ impl<'buf> bebop::BebopDecode<'buf> for InferenceResponse<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:InferenceResponse)
-    let request_id = reader.read_uuid()?;
-    let embeddings = reader.read_array(|_r| EmbeddingBf16::decode(_r))?;
-    let timing = InferenceTiming::decode(reader)?;
+    let request_id = reader
+      .read_uuid()
+      .for_field("InferenceResponse", "request_id")?;
+    let embeddings = reader
+      .read_array(|_r| EmbeddingBf16::decode(_r))
+      .for_field("InferenceResponse", "embeddings")?;
+    let timing = InferenceTiming::decode(reader).for_field("InferenceResponse", "timing")?;
     // @@bebop_insertion_point(decode_end:InferenceResponse)
     result::Result::Ok(InferenceResponse {
       request_id,

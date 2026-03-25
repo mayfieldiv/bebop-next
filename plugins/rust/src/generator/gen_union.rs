@@ -221,9 +221,11 @@ pub fn generate(
   output.push_str("    let discriminator = reader.read_byte()?;\n");
   output.push_str("    let value = match discriminator {\n");
   for b in &branch_infos {
+    // Use lowercase variant name as field_name for error context.
+    let branch_field = b.variant.to_ascii_lowercase();
     output.push_str(&format!(
-      "      {} => result::Result::Ok(Self::{}({}::decode(reader)?)),\n",
-      b.disc, b.variant, b.inner_type
+      "      {} => result::Result::Ok(Self::{}({}::decode(reader).for_field(\"{}\", \"{}\")?)),\n",
+      b.disc, b.variant, b.inner_type, name, branch_field
     ));
   }
   if is_forward_compatible {

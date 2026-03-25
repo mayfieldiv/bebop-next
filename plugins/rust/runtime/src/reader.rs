@@ -13,7 +13,10 @@ use crate::HashMap;
 /// Returns the validated `&str` directly, avoiding `from_utf8_unchecked`.
 #[inline]
 fn validate_utf8(bytes: &[u8]) -> core::result::Result<&str, DecodeError> {
-  simdutf8::basic::from_utf8(bytes).map_err(|_| DecodeError::InvalidUtf8)
+  simdutf8::basic::from_utf8(bytes).map_err(|_| DecodeError::InvalidUtf8 {
+    type_name: "",
+    field_name: "",
+  })
 }
 
 type Result<T> = core::result::Result<T, DecodeError>;
@@ -61,6 +64,8 @@ impl<'a> BebopReader<'a> {
       Err(DecodeError::UnexpectedEof {
         needed: count,
         available: self.remaining(),
+        type_name: "",
+        field_name: "",
       })
     }
   }
@@ -176,6 +181,8 @@ impl<'a> BebopReader<'a> {
     let total = len.checked_add(1).ok_or(DecodeError::UnexpectedEof {
       needed: usize::MAX,
       available: self.remaining(),
+      type_name: "",
+      field_name: "",
     })?;
     self.ensure(total)?; // string bytes + NUL
     let str_bytes = &self.buf[self.pos..self.pos + len];
@@ -245,6 +252,8 @@ impl<'a> BebopReader<'a> {
       return Err(DecodeError::UnexpectedEof {
         needed: count,
         available: self.remaining(),
+        type_name: "",
+        field_name: "",
       });
     }
     let mut items: Vec<T> = Vec::new();
@@ -298,6 +307,8 @@ impl<'a> BebopReader<'a> {
       .ok_or(DecodeError::UnexpectedEof {
         needed: usize::MAX,
         available: self.remaining(),
+        type_name: "",
+        field_name: "",
       })?;
     self.ensure(byte_len)?;
 
@@ -354,6 +365,8 @@ impl<'a> BebopReader<'a> {
       return Err(DecodeError::UnexpectedEof {
         needed: count.saturating_mul(2),
         available: self.remaining(),
+        type_name: "",
+        field_name: "",
       });
     }
     let mut map = HashMap::new();
@@ -411,6 +424,8 @@ impl<'a> BebopReader<'a> {
     let total = len.checked_add(1).ok_or(DecodeError::UnexpectedEof {
       needed: usize::MAX,
       available: self.remaining(),
+      type_name: "",
+      field_name: "",
     })?;
     self.ensure(total)?; // string bytes + NUL
     let str_bytes = &self.buf[self.pos..self.pos + len];

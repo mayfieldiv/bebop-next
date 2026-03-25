@@ -613,6 +613,7 @@ impl RustGenerator {
     // types. User types are PascalCase; these are all lowercase module names.
     output.push_str("use alloc::{borrow, boxed, string, vec};\n");
     output.push_str("use bebop_runtime as bebop;\n");
+    output.push_str("use bebop_runtime::DecodeContext as _;\n");
     output.push_str("use core::convert::Into as _;\n");
     output.push_str("use core::iter::{IntoIterator as _, Iterator as _};\n");
     output.push_str("use core::{convert, default, iter, mem, ops, option, result};\n");

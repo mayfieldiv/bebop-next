@@ -18,6 +18,7 @@ extern crate core;
 use alloc::{borrow, boxed, string, vec};
 use bebop_runtime as bebop;
 use bebop_runtime::serde;
+use bebop_runtime::DecodeContext as _;
 use core::convert::Into as _;
 use core::iter::{IntoIterator as _, Iterator as _};
 use core::{convert, default, iter, mem, ops, option, result};
@@ -242,8 +243,8 @@ impl<'buf> bebop::BebopDecode<'buf> for Point {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Point)
-    let x = reader.read_f32()?;
-    let y = reader.read_f32()?;
+    let x = reader.read_f32().for_field("Point", "x")?;
+    let y = reader.read_f32().for_field("Point", "y")?;
     // @@bebop_insertion_point(decode_end:Point)
     result::Result::Ok(Point { x, y })
   }
@@ -292,9 +293,9 @@ impl<'buf> bebop::BebopDecode<'buf> for Pixel {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Pixel)
-    let position = Point::decode(reader)?;
-    let color = Color::decode(reader)?;
-    let alpha = reader.read_byte()?;
+    let position = Point::decode(reader).for_field("Pixel", "position")?;
+    let color = Color::decode(reader).for_field("Pixel", "color")?;
+    let alpha = reader.read_byte().for_field("Pixel", "alpha")?;
     // @@bebop_insertion_point(decode_end:Pixel)
     result::Result::Ok(Pixel {
       position,
@@ -353,8 +354,8 @@ impl<'buf> bebop::BebopDecode<'buf> for Person<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Person)
-    let name = borrow::Cow::Borrowed(reader.read_str()?);
-    let age = reader.read_u32()?;
+    let name = borrow::Cow::Borrowed(reader.read_str().for_field("Person", "name")?);
+    let age = reader.read_u32().for_field("Person", "age")?;
     // @@bebop_insertion_point(decode_end:Person)
     result::Result::Ok(Person { name, age })
   }
@@ -409,8 +410,12 @@ impl<'buf> bebop::BebopDecode<'buf> for BinaryPayload<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BinaryPayload)
-    let tag = reader.read_u32()?;
-    let data = bebop::BebopBytes::borrowed(reader.read_byte_slice()?);
+    let tag = reader.read_u32().for_field("BinaryPayload", "tag")?;
+    let data = bebop::BebopBytes::borrowed(
+      reader
+        .read_byte_slice()
+        .for_field("BinaryPayload", "data")?,
+    );
     // @@bebop_insertion_point(decode_end:BinaryPayload)
     result::Result::Ok(BinaryPayload { tag, data })
   }
@@ -553,24 +558,44 @@ impl<'buf> bebop::BebopDecode<'buf> for UserProfile<'buf> {
         break;
       }
       match tag {
-        1 => msg.display_name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        2 => msg.email = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        3 => msg.age = option::Option::Some(reader.read_u32()?),
-        4 => msg.active = option::Option::Some(reader.read_bool()?),
+        1 => {
+          msg.display_name = option::Option::Some(borrow::Cow::Borrowed(
+            reader.read_str().for_field("UserProfile", "display_name")?,
+          ))
+        }
+        2 => {
+          msg.email = option::Option::Some(borrow::Cow::Borrowed(
+            reader.read_str().for_field("UserProfile", "email")?,
+          ))
+        }
+        3 => msg.age = option::Option::Some(reader.read_u32().for_field("UserProfile", "age")?),
+        4 => {
+          msg.active = option::Option::Some(reader.read_bool().for_field("UserProfile", "active")?)
+        }
         5 => {
           msg.tags = option::Option::Some(
-            reader.read_array(|_r| result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?)))?,
+            reader
+              .read_array(|_r| result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?)))
+              .for_field("UserProfile", "tags")?,
           )
         }
         6 => {
-          msg.metadata = option::Option::Some(reader.read_map(|_r| {
-            result::Result::Ok((
-              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-            ))
-          })?)
+          msg.metadata = option::Option::Some(
+            reader
+              .read_map(|_r| {
+                result::Result::Ok((
+                  result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
+                  result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
+                ))
+              })
+              .for_field("UserProfile", "metadata")?,
+          )
         }
-        7 => msg.permissions = option::Option::Some(Permissions::decode(reader)?),
+        7 => {
+          msg.permissions = option::Option::Some(
+            Permissions::decode(reader).for_field("UserProfile", "permissions")?,
+          )
+        }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "UserProfile",
@@ -716,10 +741,22 @@ impl<'buf> bebop::BebopDecode<'buf> for DrawCommand<'buf> {
         break;
       }
       match tag {
-        1 => msg.target = option::Option::Some(Point::decode(reader)?),
-        2 => msg.color = option::Option::Some(Color::decode(reader)?),
-        3 => msg.label = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        4 => msg.thickness = option::Option::Some(reader.read_f32()?),
+        1 => {
+          msg.target =
+            option::Option::Some(Point::decode(reader).for_field("DrawCommand", "target")?)
+        }
+        2 => {
+          msg.color = option::Option::Some(Color::decode(reader).for_field("DrawCommand", "color")?)
+        }
+        3 => {
+          msg.label = option::Option::Some(borrow::Cow::Borrowed(
+            reader.read_str().for_field("DrawCommand", "label")?,
+          ))
+        }
+        4 => {
+          msg.thickness =
+            option::Option::Some(reader.read_f32().for_field("DrawCommand", "thickness")?)
+        }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "DrawCommand",
@@ -798,8 +835,8 @@ impl<'buf> bebop::BebopDecode<'buf> for TextLabel<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:TextLabel)
-    let position = Point::decode(reader)?;
-    let text = borrow::Cow::Borrowed(reader.read_str()?);
+    let position = Point::decode(reader).for_field("TextLabel", "position")?;
+    let text = borrow::Cow::Borrowed(reader.read_str().for_field("TextLabel", "text")?);
     // @@bebop_insertion_point(decode_end:TextLabel)
     result::Result::Ok(TextLabel { position, text })
   }
@@ -879,9 +916,15 @@ impl<'buf> bebop::BebopDecode<'buf> for Shape<'buf> {
     let start = reader.position();
     let discriminator = reader.read_byte()?;
     let value = match discriminator {
-      1 => result::Result::Ok(Self::Point(Point::decode(reader)?)),
-      2 => result::Result::Ok(Self::Pixel(Pixel::decode(reader)?)),
-      3 => result::Result::Ok(Self::Label(TextLabel::decode(reader)?)),
+      1 => result::Result::Ok(Self::Point(
+        Point::decode(reader).for_field("Shape", "point")?,
+      )),
+      2 => result::Result::Ok(Self::Pixel(
+        Pixel::decode(reader).for_field("Shape", "pixel")?,
+      )),
+      3 => result::Result::Ok(Self::Label(
+        TextLabel::decode(reader).for_field("Shape", "label")?,
+      )),
       // @@bebop_insertion_point(decode_switch:Shape)
       _ => {
         let remaining = length - (reader.position() - start);
@@ -942,8 +985,12 @@ impl<'buf> bebop::BebopDecode<'buf> for StrictShape {
     let start = reader.position();
     let discriminator = reader.read_byte()?;
     let value = match discriminator {
-      1 => result::Result::Ok(Self::Point(Point::decode(reader)?)),
-      2 => result::Result::Ok(Self::Pixel(Pixel::decode(reader)?)),
+      1 => result::Result::Ok(Self::Point(
+        Point::decode(reader).for_field("StrictShape", "point")?,
+      )),
+      2 => result::Result::Ok(Self::Pixel(
+        Pixel::decode(reader).for_field("StrictShape", "pixel")?,
+      )),
       _ => result::Result::Err(bebop::DecodeError::InvalidUnion {
         type_name: "StrictShape",
         discriminator,
@@ -1095,8 +1142,14 @@ impl<'buf> bebop::BebopDecode<'buf> for StrictConfig<'buf> {
         break;
       }
       match tag {
-        1 => msg.name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        2 => msg.value = option::Option::Some(reader.read_u32()?),
+        1 => {
+          msg.name = option::Option::Some(borrow::Cow::Borrowed(
+            reader.read_str().for_field("StrictConfig", "name")?,
+          ))
+        }
+        2 => {
+          msg.value = option::Option::Some(reader.read_u32().for_field("StrictConfig", "value")?)
+        }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "StrictConfig",
@@ -1187,8 +1240,12 @@ impl<'buf> bebop::BebopDecode<'buf> for FlexConfig<'buf> {
         break;
       }
       match tag {
-        1 => msg.name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        2 => msg.value = option::Option::Some(reader.read_u32()?),
+        1 => {
+          msg.name = option::Option::Some(borrow::Cow::Borrowed(
+            reader.read_str().for_field("FlexConfig", "name")?,
+          ))
+        }
+        2 => msg.value = option::Option::Some(reader.read_u32().for_field("FlexConfig", "value")?),
         _ => {
           reader.skip(end - reader.position())?;
         }
@@ -1318,7 +1375,9 @@ impl<'buf> bebop::BebopDecode<'buf> for Matrix2x2 {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Matrix2x2)
-    let values = reader.read_fixed_array::<f32, 4>()?;
+    let values = reader
+      .read_fixed_array::<f32, 4>()
+      .for_field("Matrix2x2", "values")?;
     // @@bebop_insertion_point(decode_end:Matrix2x2)
     result::Result::Ok(Matrix2x2 { values })
   }
@@ -1361,8 +1420,12 @@ impl<'buf> bebop::BebopDecode<'buf> for HalfPrecisionScalars {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:HalfPrecisionScalars)
-    let f16_val = reader.read_f16()?;
-    let bf16_val = reader.read_bf16()?;
+    let f16_val = reader
+      .read_f16()
+      .for_field("HalfPrecisionScalars", "f16_val")?;
+    let bf16_val = reader
+      .read_bf16()
+      .for_field("HalfPrecisionScalars", "bf16_val")?;
     // @@bebop_insertion_point(decode_end:HalfPrecisionScalars)
     result::Result::Ok(HalfPrecisionScalars { f16_val, bf16_val })
   }
@@ -1435,10 +1498,18 @@ impl<'buf> bebop::BebopDecode<'buf> for HalfPrecisionArrays<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:HalfPrecisionArrays)
-    let f16_dynamic = reader.read_scalar_array::<bebop::f16>()?;
-    let bf16_dynamic = reader.read_scalar_array::<bebop::bf16>()?;
-    let f16_fixed = reader.read_fixed_array::<bebop::f16, 4>()?;
-    let bf16_fixed = reader.read_fixed_array::<bebop::bf16, 4>()?;
+    let f16_dynamic = reader
+      .read_scalar_array::<bebop::f16>()
+      .for_field("HalfPrecisionArrays", "f16_dynamic")?;
+    let bf16_dynamic = reader
+      .read_scalar_array::<bebop::bf16>()
+      .for_field("HalfPrecisionArrays", "bf16_dynamic")?;
+    let f16_fixed = reader
+      .read_fixed_array::<bebop::f16, 4>()
+      .for_field("HalfPrecisionArrays", "f16_fixed")?;
+    let bf16_fixed = reader
+      .read_fixed_array::<bebop::bf16, 4>()
+      .for_field("HalfPrecisionArrays", "bf16_fixed")?;
     // @@bebop_insertion_point(decode_end:HalfPrecisionArrays)
     result::Result::Ok(HalfPrecisionArrays {
       f16_dynamic,
@@ -1540,10 +1611,34 @@ impl<'buf> bebop::BebopDecode<'buf> for HalfPrecisionMessage<'buf> {
         break;
       }
       match tag {
-        1 => msg.f16_val = option::Option::Some(reader.read_f16()?),
-        2 => msg.bf16_val = option::Option::Some(reader.read_bf16()?),
-        3 => msg.f16_arr = option::Option::Some(reader.read_scalar_array::<bebop::f16>()?),
-        4 => msg.bf16_arr = option::Option::Some(reader.read_scalar_array::<bebop::bf16>()?),
+        1 => {
+          msg.f16_val = option::Option::Some(
+            reader
+              .read_f16()
+              .for_field("HalfPrecisionMessage", "f16_val")?,
+          )
+        }
+        2 => {
+          msg.bf16_val = option::Option::Some(
+            reader
+              .read_bf16()
+              .for_field("HalfPrecisionMessage", "bf16_val")?,
+          )
+        }
+        3 => {
+          msg.f16_arr = option::Option::Some(
+            reader
+              .read_scalar_array::<bebop::f16>()
+              .for_field("HalfPrecisionMessage", "f16_arr")?,
+          )
+        }
+        4 => {
+          msg.bf16_arr = option::Option::Some(
+            reader
+              .read_scalar_array::<bebop::bf16>()
+              .for_field("HalfPrecisionMessage", "bf16_arr")?,
+          )
+        }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "HalfPrecisionMessage",
@@ -1649,10 +1744,10 @@ impl<'buf> bebop::BebopDecode<'buf> for Address<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Address)
-    let street = borrow::Cow::Borrowed(reader.read_str()?);
-    let city = borrow::Cow::Borrowed(reader.read_str()?);
-    let country = borrow::Cow::Borrowed(reader.read_str()?);
-    let zip_code = borrow::Cow::Borrowed(reader.read_str()?);
+    let street = borrow::Cow::Borrowed(reader.read_str().for_field("Address", "street")?);
+    let city = borrow::Cow::Borrowed(reader.read_str().for_field("Address", "city")?);
+    let country = borrow::Cow::Borrowed(reader.read_str().for_field("Address", "country")?);
+    let zip_code = borrow::Cow::Borrowed(reader.read_str().for_field("Address", "zip_code")?);
     // @@bebop_insertion_point(decode_end:Address)
     result::Result::Ok(Address {
       street,
@@ -1745,9 +1840,22 @@ impl<'buf> bebop::BebopDecode<'buf> for Scene<'buf> {
         break;
       }
       match tag {
-        1 => msg.shapes = option::Option::Some(reader.read_array(|_r| Shape::decode(_r))?),
-        2 => msg.background = option::Option::Some(Color::decode(reader)?),
-        3 => msg.title = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
+        1 => {
+          msg.shapes = option::Option::Some(
+            reader
+              .read_array(|_r| Shape::decode(_r))
+              .for_field("Scene", "shapes")?,
+          )
+        }
+        2 => {
+          msg.background =
+            option::Option::Some(Color::decode(reader).for_field("Scene", "background")?)
+        }
+        3 => {
+          msg.title = option::Option::Some(borrow::Cow::Borrowed(
+            reader.read_str().for_field("Scene", "title")?,
+          ))
+        }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "Scene",
@@ -1853,14 +1961,22 @@ impl<'buf> bebop::BebopDecode<'buf> for Inventory<'buf> {
       }
       match tag {
         1 => {
-          msg.items = option::Option::Some(reader.read_map(|_r| {
-            result::Result::Ok((
-              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-              _r.read_u32()?,
-            ))
-          })?)
+          msg.items = option::Option::Some(
+            reader
+              .read_map(|_r| {
+                result::Result::Ok((
+                  result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
+                  _r.read_u32()?,
+                ))
+              })
+              .for_field("Inventory", "items")?,
+          )
         }
-        2 => msg.label = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
+        2 => {
+          msg.label = option::Option::Some(borrow::Cow::Borrowed(
+            reader.read_str().for_field("Inventory", "label")?,
+          ))
+        }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "Inventory",
@@ -1948,7 +2064,13 @@ impl<'buf> bebop::BebopDecode<'buf> for EmptyMessage<'buf> {
         break;
       }
       match tag {
-        1 => msg.unused_field = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
+        1 => {
+          msg.unused_field = option::Option::Some(borrow::Cow::Borrowed(
+            reader
+              .read_str()
+              .for_field("EmptyMessage", "unused_field")?,
+          ))
+        }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "EmptyMessage",
@@ -2018,8 +2140,10 @@ impl<'buf> bebop::BebopDecode<'buf> for TimestampedEvent<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:TimestampedEvent)
-    let when = reader.read_timestamp()?;
-    let what = borrow::Cow::Borrowed(reader.read_str()?);
+    let when = reader
+      .read_timestamp()
+      .for_field("TimestampedEvent", "when")?;
+    let what = borrow::Cow::Borrowed(reader.read_str().for_field("TimestampedEvent", "what")?);
     // @@bebop_insertion_point(decode_end:TimestampedEvent)
     result::Result::Ok(TimestampedEvent { when, what })
   }
@@ -2104,9 +2228,25 @@ impl<'buf> bebop::BebopDecode<'buf> for ScheduleEntry<'buf> {
         break;
       }
       match tag {
-        1 => msg.start = option::Option::Some(reader.read_timestamp()?),
-        2 => msg.duration = option::Option::Some(reader.read_duration()?),
-        3 => msg.label = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
+        1 => {
+          msg.start = option::Option::Some(
+            reader
+              .read_timestamp()
+              .for_field("ScheduleEntry", "start")?,
+          )
+        }
+        2 => {
+          msg.duration = option::Option::Some(
+            reader
+              .read_duration()
+              .for_field("ScheduleEntry", "duration")?,
+          )
+        }
+        3 => {
+          msg.label = option::Option::Some(borrow::Cow::Borrowed(
+            reader.read_str().for_field("ScheduleEntry", "label")?,
+          ))
+        }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "ScheduleEntry",
@@ -2176,7 +2316,7 @@ impl<'buf> bebop::BebopDecode<'buf> for ForwardRefA<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:ForwardRefA)
-    let b = ForwardRefB::decode(reader)?;
+    let b = ForwardRefB::decode(reader).for_field("ForwardRefA", "b")?;
     // @@bebop_insertion_point(decode_end:ForwardRefA)
     result::Result::Ok(ForwardRefA { b })
   }
@@ -2226,7 +2366,7 @@ impl<'buf> bebop::BebopDecode<'buf> for ForwardRefB<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:ForwardRefB)
-    let value = borrow::Cow::Borrowed(reader.read_str()?);
+    let value = borrow::Cow::Borrowed(reader.read_str().for_field("ForwardRefB", "value")?);
     // @@bebop_insertion_point(decode_end:ForwardRefB)
     result::Result::Ok(ForwardRefB { value })
   }
@@ -2315,9 +2455,27 @@ impl<'buf> bebop::BebopDecode<'buf> for DeprecatedFieldsMessage<'buf> {
         break;
       }
       match tag {
-        1 => msg.current_name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        2 => msg.legacy_name = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        3 => msg.legacy_enabled = option::Option::Some(reader.read_bool()?),
+        1 => {
+          msg.current_name = option::Option::Some(borrow::Cow::Borrowed(
+            reader
+              .read_str()
+              .for_field("DeprecatedFieldsMessage", "current_name")?,
+          ))
+        }
+        2 => {
+          msg.legacy_name = option::Option::Some(borrow::Cow::Borrowed(
+            reader
+              .read_str()
+              .for_field("DeprecatedFieldsMessage", "legacy_name")?,
+          ))
+        }
+        3 => {
+          msg.legacy_enabled = option::Option::Some(
+            reader
+              .read_bool()
+              .for_field("DeprecatedFieldsMessage", "legacy_enabled")?,
+          )
+        }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "DeprecatedFieldsMessage",
@@ -2428,16 +2586,22 @@ impl<'buf> bebop::BebopDecode<'buf> for IntegerKeyMaps<'buf> {
       }
       match tag {
         1 => {
-          msg.labels_by_id = option::Option::Some(reader.read_map(|_r| {
-            result::Result::Ok((
-              _r.read_u32()?,
-              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-            ))
-          })?)
+          msg.labels_by_id = option::Option::Some(
+            reader
+              .read_map(|_r| {
+                result::Result::Ok((
+                  _r.read_u32()?,
+                  result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
+                ))
+              })
+              .for_field("IntegerKeyMaps", "labels_by_id")?,
+          )
         }
         2 => {
           msg.flags_by_id = option::Option::Some(
-            reader.read_map(|_r| result::Result::Ok((_r.read_i64()?, _r.read_bool()?)))?,
+            reader
+              .read_map(|_r| result::Result::Ok((_r.read_i64()?, _r.read_bool()?)))
+              .for_field("IntegerKeyMaps", "flags_by_id")?,
           )
         }
         tag => {
@@ -2510,7 +2674,7 @@ impl<'buf> bebop::BebopDecode<'buf> for NestedLeaf<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:NestedLeaf)
-    let label = borrow::Cow::Borrowed(reader.read_str()?);
+    let label = borrow::Cow::Borrowed(reader.read_str().for_field("NestedLeaf", "label")?);
     // @@bebop_insertion_point(decode_end:NestedLeaf)
     result::Result::Ok(NestedLeaf { label })
   }
@@ -2613,19 +2777,23 @@ impl<'buf> bebop::BebopDecode<'buf> for DeepNestedCollections<'buf> {
       }
       match tag {
         1 => {
-          msg.nested = option::Option::Some(reader.read_map(|_r| {
-            result::Result::Ok((
-              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-              _r.read_array(|_r| {
-                _r.read_map(|_r| {
-                  result::Result::Ok((
-                    result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-                    NestedLeaf::decode(_r)?,
-                  ))
-                })
-              })?,
-            ))
-          })?)
+          msg.nested = option::Option::Some(
+            reader
+              .read_map(|_r| {
+                result::Result::Ok((
+                  result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
+                  _r.read_array(|_r| {
+                    _r.read_map(|_r| {
+                      result::Result::Ok((
+                        result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
+                        NestedLeaf::decode(_r)?,
+                      ))
+                    })
+                  })?,
+                ))
+              })
+              .for_field("DeepNestedCollections", "nested")?,
+          )
         }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
@@ -2702,7 +2870,8 @@ impl<'buf> bebop::BebopDecode<'buf> for ByteMatrix<'buf> {
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:ByteMatrix)
     let rows = reader
-      .read_array(|_r| result::Result::Ok(bebop::BebopBytes::borrowed(_r.read_byte_slice()?)))?;
+      .read_array(|_r| result::Result::Ok(bebop::BebopBytes::borrowed(_r.read_byte_slice()?)))
+      .for_field("ByteMatrix", "rows")?;
     // @@bebop_insertion_point(decode_end:ByteMatrix)
     result::Result::Ok(ByteMatrix { rows })
   }
@@ -2772,12 +2941,14 @@ impl<'buf> bebop::BebopDecode<'buf> for ByteTagMap<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:ByteTagMap)
-    let entries = reader.read_map(|_r| {
-      result::Result::Ok((
-        result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-        result::Result::Ok(bebop::BebopBytes::borrowed(_r.read_byte_slice()?))?,
-      ))
-    })?;
+    let entries = reader
+      .read_map(|_r| {
+        result::Result::Ok((
+          result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
+          result::Result::Ok(bebop::BebopBytes::borrowed(_r.read_byte_slice()?))?,
+        ))
+      })
+      .for_field("ByteTagMap", "entries")?;
     // @@bebop_insertion_point(decode_end:ByteTagMap)
     result::Result::Ok(ByteTagMap { entries })
   }
@@ -2853,9 +3024,17 @@ impl<'buf> bebop::BebopDecode<'buf> for ByteArrayMessage<'buf> {
         break;
       }
       match tag {
-        1 => msg.label = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
+        1 => {
+          msg.label = option::Option::Some(borrow::Cow::Borrowed(
+            reader.read_str().for_field("ByteArrayMessage", "label")?,
+          ))
+        }
         2 => {
-          msg.payload = option::Option::Some(bebop::BebopBytes::borrowed(reader.read_byte_slice()?))
+          msg.payload = option::Option::Some(bebop::BebopBytes::borrowed(
+            reader
+              .read_byte_slice()
+              .for_field("ByteArrayMessage", "payload")?,
+          ))
         }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
@@ -2962,17 +3141,25 @@ impl<'buf> bebop::BebopDecode<'buf> for ByteCollectionMessage<'buf> {
       }
       match tag {
         1 => {
-          msg.matrix = option::Option::Some(reader.read_array(|_r| {
-            result::Result::Ok(bebop::BebopBytes::borrowed(_r.read_byte_slice()?))
-          })?)
+          msg.matrix = option::Option::Some(
+            reader
+              .read_array(|_r| {
+                result::Result::Ok(bebop::BebopBytes::borrowed(_r.read_byte_slice()?))
+              })
+              .for_field("ByteCollectionMessage", "matrix")?,
+          )
         }
         2 => {
-          msg.tagged = option::Option::Some(reader.read_map(|_r| {
-            result::Result::Ok((
-              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-              result::Result::Ok(bebop::BebopBytes::borrowed(_r.read_byte_slice()?))?,
-            ))
-          })?)
+          msg.tagged = option::Option::Some(
+            reader
+              .read_map(|_r| {
+                result::Result::Ok((
+                  result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
+                  result::Result::Ok(bebop::BebopBytes::borrowed(_r.read_byte_slice()?))?,
+                ))
+              })
+              .for_field("ByteCollectionMessage", "tagged")?,
+          )
         }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
@@ -3060,8 +3247,8 @@ impl<'buf> bebop::BebopDecode<'buf> for UuidHolder<'buf> {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:UuidHolder)
-    let id = reader.read_uuid()?;
-    let label = borrow::Cow::Borrowed(reader.read_str()?);
+    let id = reader.read_uuid().for_field("UuidHolder", "id")?;
+    let label = borrow::Cow::Borrowed(reader.read_str().for_field("UuidHolder", "label")?);
     // @@bebop_insertion_point(decode_end:UuidHolder)
     result::Result::Ok(UuidHolder { id, label })
   }

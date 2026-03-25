@@ -18,6 +18,7 @@ extern crate core;
 use alloc::{borrow, boxed, string, vec};
 use bebop_runtime as bebop;
 use bebop_runtime::serde;
+use bebop_runtime::DecodeContext as _;
 use core::convert::Into as _;
 use core::iter::{IntoIterator as _, Iterator as _};
 use core::{convert, default, iter, mem, ops, option, result};
@@ -56,8 +57,8 @@ impl<'buf> bebop::BebopDecode<'buf> for Point {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Point)
-    let x = reader.read_f32()?;
-    let y = reader.read_f32()?;
+    let x = reader.read_f32().for_field("Point", "x")?;
+    let y = reader.read_f32().for_field("Point", "y")?;
     // @@bebop_insertion_point(decode_end:Point)
     result::Result::Ok(Point { x, y })
   }
@@ -96,7 +97,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Uuid {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Uuid)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Uuid", "tag")?;
     // @@bebop_insertion_point(decode_end:Uuid)
     result::Result::Ok(Uuid { tag })
   }
@@ -135,7 +136,7 @@ impl<'buf> bebop::BebopDecode<'buf> for HashMap {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:HashMap)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("HashMap", "tag")?;
     // @@bebop_insertion_point(decode_end:HashMap)
     result::Result::Ok(HashMap { tag })
   }
@@ -174,7 +175,7 @@ impl<'buf> bebop::BebopDecode<'buf> for DecodeError {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:DecodeError)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("DecodeError", "tag")?;
     // @@bebop_insertion_point(decode_end:DecodeError)
     result::Result::Ok(DecodeError { tag })
   }
@@ -213,7 +214,7 @@ impl<'buf> bebop::BebopDecode<'buf> for BebopReader {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopReader)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("BebopReader", "tag")?;
     // @@bebop_insertion_point(decode_end:BebopReader)
     result::Result::Ok(BebopReader { tag })
   }
@@ -252,7 +253,7 @@ impl<'buf> bebop::BebopDecode<'buf> for BebopWriter {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopWriter)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("BebopWriter", "tag")?;
     // @@bebop_insertion_point(decode_end:BebopWriter)
     result::Result::Ok(BebopWriter { tag })
   }
@@ -291,7 +292,7 @@ impl<'buf> bebop::BebopDecode<'buf> for BebopDecode {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopDecode)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("BebopDecode", "tag")?;
     // @@bebop_insertion_point(decode_end:BebopDecode)
     result::Result::Ok(BebopDecode { tag })
   }
@@ -330,7 +331,7 @@ impl<'buf> bebop::BebopDecode<'buf> for BebopEncode {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopEncode)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("BebopEncode", "tag")?;
     // @@bebop_insertion_point(decode_end:BebopEncode)
     result::Result::Ok(BebopEncode { tag })
   }
@@ -369,7 +370,7 @@ impl<'buf> bebop::BebopDecode<'buf> for BebopDuration {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopDuration)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("BebopDuration", "tag")?;
     // @@bebop_insertion_point(decode_end:BebopDuration)
     result::Result::Ok(BebopDuration { tag })
   }
@@ -408,7 +409,7 @@ impl<'buf> bebop::BebopDecode<'buf> for BebopTimestamp {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopTimestamp)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("BebopTimestamp", "tag")?;
     // @@bebop_insertion_point(decode_end:BebopTimestamp)
     result::Result::Ok(BebopTimestamp { tag })
   }
@@ -447,7 +448,7 @@ impl<'buf> bebop::BebopDecode<'buf> for BebopFlags {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopFlags)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("BebopFlags", "tag")?;
     // @@bebop_insertion_point(decode_end:BebopFlags)
     result::Result::Ok(BebopFlags { tag })
   }
@@ -486,7 +487,7 @@ impl<'buf> bebop::BebopDecode<'buf> for BebopBytes {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:BebopBytes)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("BebopBytes", "tag")?;
     // @@bebop_insertion_point(decode_end:BebopBytes)
     result::Result::Ok(BebopBytes { tag })
   }
@@ -525,7 +526,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Serde {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Serde)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Serde", "tag")?;
     // @@bebop_insertion_point(decode_end:Serde)
     result::Result::Ok(Serde { tag })
   }
@@ -564,7 +565,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Wire {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Wire)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Wire", "tag")?;
     // @@bebop_insertion_point(decode_end:Wire)
     result::Result::Ok(Wire { tag })
   }
@@ -603,7 +604,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Mod {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Mod)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Mod", "tag")?;
     // @@bebop_insertion_point(decode_end:Mod)
     result::Result::Ok(Mod { tag })
   }
@@ -642,7 +643,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Trait {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Trait)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Trait", "tag")?;
     // @@bebop_insertion_point(decode_end:Trait)
     result::Result::Ok(Trait { tag })
   }
@@ -681,7 +682,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Impl {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Impl)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Impl", "tag")?;
     // @@bebop_insertion_point(decode_end:Impl)
     result::Result::Ok(Impl { tag })
   }
@@ -720,7 +721,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Fn {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Fn)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Fn", "tag")?;
     // @@bebop_insertion_point(decode_end:Fn)
     result::Result::Ok(Fn { tag })
   }
@@ -759,7 +760,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Let {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Let)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Let", "tag")?;
     // @@bebop_insertion_point(decode_end:Let)
     result::Result::Ok(Let { tag })
   }
@@ -798,7 +799,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Use {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Use)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Use", "tag")?;
     // @@bebop_insertion_point(decode_end:Use)
     result::Result::Ok(Use { tag })
   }
@@ -837,7 +838,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Crate {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Crate)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Crate", "tag")?;
     // @@bebop_insertion_point(decode_end:Crate)
     result::Result::Ok(Crate { tag })
   }
@@ -876,7 +877,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Async {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Async)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Async", "tag")?;
     // @@bebop_insertion_point(decode_end:Async)
     result::Result::Ok(Async { tag })
   }
@@ -915,7 +916,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Await {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Await)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Await", "tag")?;
     // @@bebop_insertion_point(decode_end:Await)
     result::Result::Ok(Await { tag })
   }
@@ -954,7 +955,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Match {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Match)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Match", "tag")?;
     // @@bebop_insertion_point(decode_end:Match)
     result::Result::Ok(Match { tag })
   }
@@ -993,7 +994,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Where {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Where)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Where", "tag")?;
     // @@bebop_insertion_point(decode_end:Where)
     result::Result::Ok(Where { tag })
   }
@@ -1032,7 +1033,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Loop {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Loop)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Loop", "tag")?;
     // @@bebop_insertion_point(decode_end:Loop)
     result::Result::Ok(Loop { tag })
   }
@@ -1071,7 +1072,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Move {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Move)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Move", "tag")?;
     // @@bebop_insertion_point(decode_end:Move)
     result::Result::Ok(Move { tag })
   }
@@ -1110,7 +1111,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Ref {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Ref)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Ref", "tag")?;
     // @@bebop_insertion_point(decode_end:Ref)
     result::Result::Ok(Ref { tag })
   }
@@ -1149,7 +1150,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Dyn {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Dyn)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Dyn", "tag")?;
     // @@bebop_insertion_point(decode_end:Dyn)
     result::Result::Ok(Dyn { tag })
   }
@@ -1188,7 +1189,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Yield {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Yield)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Yield", "tag")?;
     // @@bebop_insertion_point(decode_end:Yield)
     result::Result::Ok(Yield { tag })
   }
@@ -1227,7 +1228,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Unsafe {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Unsafe)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Unsafe", "tag")?;
     // @@bebop_insertion_point(decode_end:Unsafe)
     result::Result::Ok(Unsafe { tag })
   }
@@ -1266,7 +1267,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Extern {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Extern)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Extern", "tag")?;
     // @@bebop_insertion_point(decode_end:Extern)
     result::Result::Ok(Extern { tag })
   }
@@ -1305,7 +1306,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Static {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Static)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Static", "tag")?;
     // @@bebop_insertion_point(decode_end:Static)
     result::Result::Ok(Static { tag })
   }
@@ -1344,7 +1345,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Virtual {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Virtual)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Virtual", "tag")?;
     // @@bebop_insertion_point(decode_end:Virtual)
     result::Result::Ok(Virtual { tag })
   }
@@ -1383,7 +1384,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Override {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Override)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Override", "tag")?;
     // @@bebop_insertion_point(decode_end:Override)
     result::Result::Ok(Override { tag })
   }
@@ -1422,7 +1423,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Final {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Final)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Final", "tag")?;
     // @@bebop_insertion_point(decode_end:Final)
     result::Result::Ok(Final { tag })
   }
@@ -1461,7 +1462,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Abstract {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Abstract)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Abstract", "tag")?;
     // @@bebop_insertion_point(decode_end:Abstract)
     result::Result::Ok(Abstract { tag })
   }
@@ -1500,7 +1501,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Self_ {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Self_)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Self_", "tag")?;
     // @@bebop_insertion_point(decode_end:Self_)
     result::Result::Ok(Self_ { tag })
   }
@@ -1539,7 +1540,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Super {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Super)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Super", "tag")?;
     // @@bebop_insertion_point(decode_end:Super)
     result::Result::Ok(Super { tag })
   }
@@ -1578,7 +1579,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Type {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Type)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Type", "tag")?;
     // @@bebop_insertion_point(decode_end:Type)
     result::Result::Ok(Type { tag })
   }
@@ -1617,7 +1618,7 @@ impl<'buf> bebop::BebopDecode<'buf> for For {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:For)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("For", "tag")?;
     // @@bebop_insertion_point(decode_end:For)
     result::Result::Ok(For { tag })
   }
@@ -1656,7 +1657,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Interface {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Interface)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Interface", "tag")?;
     // @@bebop_insertion_point(decode_end:Interface)
     result::Result::Ok(Interface { tag })
   }
@@ -1695,7 +1696,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Namespace {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Namespace)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Namespace", "tag")?;
     // @@bebop_insertion_point(decode_end:Namespace)
     result::Result::Ok(Namespace { tag })
   }
@@ -1734,7 +1735,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Default {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Default)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Default", "tag")?;
     // @@bebop_insertion_point(decode_end:Default)
     result::Result::Ok(Default { tag })
   }
@@ -1773,7 +1774,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Switch {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Switch)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Switch", "tag")?;
     // @@bebop_insertion_point(decode_end:Switch)
     result::Result::Ok(Switch { tag })
   }
@@ -1812,7 +1813,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Case {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Case)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Case", "tag")?;
     // @@bebop_insertion_point(decode_end:Case)
     result::Result::Ok(Case { tag })
   }
@@ -1851,7 +1852,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Goto {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Goto)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Goto", "tag")?;
     // @@bebop_insertion_point(decode_end:Goto)
     result::Result::Ok(Goto { tag })
   }
@@ -1890,7 +1891,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Volatile {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Volatile)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Volatile", "tag")?;
     // @@bebop_insertion_point(decode_end:Volatile)
     result::Result::Ok(Volatile { tag })
   }
@@ -1929,7 +1930,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Synchronized {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Synchronized)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Synchronized", "tag")?;
     // @@bebop_insertion_point(decode_end:Synchronized)
     result::Result::Ok(Synchronized { tag })
   }
@@ -1968,7 +1969,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Transient {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Transient)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Transient", "tag")?;
     // @@bebop_insertion_point(decode_end:Transient)
     result::Result::Ok(Transient { tag })
   }
@@ -2007,7 +2008,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Native {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Native)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Native", "tag")?;
     // @@bebop_insertion_point(decode_end:Native)
     result::Result::Ok(Native { tag })
   }
@@ -2046,7 +2047,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Throws {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Throws)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Throws", "tag")?;
     // @@bebop_insertion_point(decode_end:Throws)
     result::Result::Ok(Throws { tag })
   }
@@ -2085,7 +2086,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Strictfp {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Strictfp)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Strictfp", "tag")?;
     // @@bebop_insertion_point(decode_end:Strictfp)
     result::Result::Ok(Strictfp { tag })
   }
@@ -2124,7 +2125,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Assert {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Assert)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Assert", "tag")?;
     // @@bebop_insertion_point(decode_end:Assert)
     result::Result::Ok(Assert { tag })
   }
@@ -2163,7 +2164,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Sizeof {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Sizeof)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Sizeof", "tag")?;
     // @@bebop_insertion_point(decode_end:Sizeof)
     result::Result::Ok(Sizeof { tag })
   }
@@ -2202,7 +2203,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Typeof {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Typeof)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Typeof", "tag")?;
     // @@bebop_insertion_point(decode_end:Typeof)
     result::Result::Ok(Typeof { tag })
   }
@@ -2241,7 +2242,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Nullptr {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Nullptr)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Nullptr", "tag")?;
     // @@bebop_insertion_point(decode_end:Nullptr)
     result::Result::Ok(Nullptr { tag })
   }
@@ -2280,7 +2281,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Decltype {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Decltype)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Decltype", "tag")?;
     // @@bebop_insertion_point(decode_end:Decltype)
     result::Result::Ok(Decltype { tag })
   }
@@ -2319,7 +2320,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Constexpr {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Constexpr)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Constexpr", "tag")?;
     // @@bebop_insertion_point(decode_end:Constexpr)
     result::Result::Ok(Constexpr { tag })
   }
@@ -2358,7 +2359,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Noexcept {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Noexcept)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Noexcept", "tag")?;
     // @@bebop_insertion_point(decode_end:Noexcept)
     result::Result::Ok(Noexcept { tag })
   }
@@ -2397,7 +2398,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Template {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Template)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Template", "tag")?;
     // @@bebop_insertion_point(decode_end:Template)
     result::Result::Ok(Template { tag })
   }
@@ -2436,7 +2437,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Typename {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Typename)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Typename", "tag")?;
     // @@bebop_insertion_point(decode_end:Typename)
     result::Result::Ok(Typename { tag })
   }
@@ -2475,7 +2476,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Friend {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Friend)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Friend", "tag")?;
     // @@bebop_insertion_point(decode_end:Friend)
     result::Result::Ok(Friend { tag })
   }
@@ -2514,7 +2515,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Inline {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Inline)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Inline", "tag")?;
     // @@bebop_insertion_point(decode_end:Inline)
     result::Result::Ok(Inline { tag })
   }
@@ -2553,7 +2554,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Mutable {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Mutable)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Mutable", "tag")?;
     // @@bebop_insertion_point(decode_end:Mutable)
     result::Result::Ok(Mutable { tag })
   }
@@ -2592,7 +2593,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Explicit {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Explicit)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Explicit", "tag")?;
     // @@bebop_insertion_point(decode_end:Explicit)
     result::Result::Ok(Explicit { tag })
   }
@@ -2631,7 +2632,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Implicit {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Implicit)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Implicit", "tag")?;
     // @@bebop_insertion_point(decode_end:Implicit)
     result::Result::Ok(Implicit { tag })
   }
@@ -2670,7 +2671,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Operator {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Operator)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Operator", "tag")?;
     // @@bebop_insertion_point(decode_end:Operator)
     result::Result::Ok(Operator { tag })
   }
@@ -2709,7 +2710,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Delete {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Delete)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Delete", "tag")?;
     // @@bebop_insertion_point(decode_end:Delete)
     result::Result::Ok(Delete { tag })
   }
@@ -2748,7 +2749,7 @@ impl<'buf> bebop::BebopDecode<'buf> for New {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:New)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("New", "tag")?;
     // @@bebop_insertion_point(decode_end:New)
     result::Result::Ok(New { tag })
   }
@@ -2787,7 +2788,7 @@ impl<'buf> bebop::BebopDecode<'buf> for This {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:This)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("This", "tag")?;
     // @@bebop_insertion_point(decode_end:This)
     result::Result::Ok(This { tag })
   }
@@ -2826,7 +2827,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Extends {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Extends)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Extends", "tag")?;
     // @@bebop_insertion_point(decode_end:Extends)
     result::Result::Ok(Extends { tag })
   }
@@ -2865,7 +2866,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Implements {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Implements)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Implements", "tag")?;
     // @@bebop_insertion_point(decode_end:Implements)
     result::Result::Ok(Implements { tag })
   }
@@ -2904,7 +2905,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Instanceof {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Instanceof)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Instanceof", "tag")?;
     // @@bebop_insertion_point(decode_end:Instanceof)
     result::Result::Ok(Instanceof { tag })
   }
@@ -2943,7 +2944,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Boolean {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Boolean)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Boolean", "tag")?;
     // @@bebop_insertion_point(decode_end:Boolean)
     result::Result::Ok(Boolean { tag })
   }
@@ -2982,7 +2983,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Byte {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Byte)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Byte", "tag")?;
     // @@bebop_insertion_point(decode_end:Byte)
     result::Result::Ok(Byte { tag })
   }
@@ -3021,7 +3022,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Short {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Short)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Short", "tag")?;
     // @@bebop_insertion_point(decode_end:Short)
     result::Result::Ok(Short { tag })
   }
@@ -3060,7 +3061,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Long {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Long)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Long", "tag")?;
     // @@bebop_insertion_point(decode_end:Long)
     result::Result::Ok(Long { tag })
   }
@@ -3099,7 +3100,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Double {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Double)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Double", "tag")?;
     // @@bebop_insertion_point(decode_end:Double)
     result::Result::Ok(Double { tag })
   }
@@ -3138,7 +3139,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Float {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Float)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Float", "tag")?;
     // @@bebop_insertion_point(decode_end:Float)
     result::Result::Ok(Float { tag })
   }
@@ -3177,7 +3178,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Char {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Char)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Char", "tag")?;
     // @@bebop_insertion_point(decode_end:Char)
     result::Result::Ok(Char { tag })
   }
@@ -3216,7 +3217,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Void {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Void)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Void", "tag")?;
     // @@bebop_insertion_point(decode_end:Void)
     result::Result::Ok(Void { tag })
   }
@@ -3255,7 +3256,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Int {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Int)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Int", "tag")?;
     // @@bebop_insertion_point(decode_end:Int)
     result::Result::Ok(Int { tag })
   }
@@ -3294,7 +3295,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Var {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Var)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Var", "tag")?;
     // @@bebop_insertion_point(decode_end:Var)
     result::Result::Ok(Var { tag })
   }
@@ -3333,7 +3334,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Function {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Function)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Function", "tag")?;
     // @@bebop_insertion_point(decode_end:Function)
     result::Result::Ok(Function { tag })
   }
@@ -3372,7 +3373,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Debugger {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Debugger)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Debugger", "tag")?;
     // @@bebop_insertion_point(decode_end:Debugger)
     result::Result::Ok(Debugger { tag })
   }
@@ -3411,7 +3412,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Undefined {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Undefined)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Undefined", "tag")?;
     // @@bebop_insertion_point(decode_end:Undefined)
     result::Result::Ok(Undefined { tag })
   }
@@ -3450,7 +3451,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Declare {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Declare)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Declare", "tag")?;
     // @@bebop_insertion_point(decode_end:Declare)
     result::Result::Ok(Declare { tag })
   }
@@ -3489,7 +3490,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Require {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Require)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Require", "tag")?;
     // @@bebop_insertion_point(decode_end:Require)
     result::Result::Ok(Require { tag })
   }
@@ -3528,7 +3529,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Module {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Module)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Module", "tag")?;
     // @@bebop_insertion_point(decode_end:Module)
     result::Result::Ok(Module { tag })
   }
@@ -3567,7 +3568,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Global {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Global)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Global", "tag")?;
     // @@bebop_insertion_point(decode_end:Global)
     result::Result::Ok(Global { tag })
   }
@@ -3606,7 +3607,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Internal {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Internal)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Internal", "tag")?;
     // @@bebop_insertion_point(decode_end:Internal)
     result::Result::Ok(Internal { tag })
   }
@@ -3645,7 +3646,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Object {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Object)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Object", "tag")?;
     // @@bebop_insertion_point(decode_end:Object)
     result::Result::Ok(Object { tag })
   }
@@ -3684,7 +3685,7 @@ impl<'buf> bebop::BebopDecode<'buf> for String {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:String)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("String", "tag")?;
     // @@bebop_insertion_point(decode_end:String)
     result::Result::Ok(String { tag })
   }
@@ -3723,7 +3724,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Symbol {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Symbol)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Symbol", "tag")?;
     // @@bebop_insertion_point(decode_end:Symbol)
     result::Result::Ok(Symbol { tag })
   }
@@ -3762,7 +3763,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Bigint {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Bigint)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Bigint", "tag")?;
     // @@bebop_insertion_point(decode_end:Bigint)
     result::Result::Ok(Bigint { tag })
   }
@@ -3801,7 +3802,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Never {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Never)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Never", "tag")?;
     // @@bebop_insertion_point(decode_end:Never)
     result::Result::Ok(Never { tag })
   }
@@ -3840,7 +3841,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Unknown {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Unknown)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Unknown", "tag")?;
     // @@bebop_insertion_point(decode_end:Unknown)
     result::Result::Ok(Unknown { tag })
   }
@@ -3879,7 +3880,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Keyof {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Keyof)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Keyof", "tag")?;
     // @@bebop_insertion_point(decode_end:Keyof)
     result::Result::Ok(Keyof { tag })
   }
@@ -3918,7 +3919,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Infer {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Infer)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Infer", "tag")?;
     // @@bebop_insertion_point(decode_end:Infer)
     result::Result::Ok(Infer { tag })
   }
@@ -3957,7 +3958,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Satisfies {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Satisfies)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Satisfies", "tag")?;
     // @@bebop_insertion_point(decode_end:Satisfies)
     result::Result::Ok(Satisfies { tag })
   }
@@ -3996,7 +3997,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Out {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Out)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Out", "tag")?;
     // @@bebop_insertion_point(decode_end:Out)
     result::Result::Ok(Out { tag })
   }
@@ -4035,7 +4036,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Inout {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Inout)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Inout", "tag")?;
     // @@bebop_insertion_point(decode_end:Inout)
     result::Result::Ok(Inout { tag })
   }
@@ -4074,7 +4075,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Protocol {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Protocol)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Protocol", "tag")?;
     // @@bebop_insertion_point(decode_end:Protocol)
     result::Result::Ok(Protocol { tag })
   }
@@ -4113,7 +4114,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Subscript {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Subscript)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Subscript", "tag")?;
     // @@bebop_insertion_point(decode_end:Subscript)
     result::Result::Ok(Subscript { tag })
   }
@@ -4152,7 +4153,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Defer {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Defer)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Defer", "tag")?;
     // @@bebop_insertion_point(decode_end:Defer)
     result::Result::Ok(Defer { tag })
   }
@@ -4191,7 +4192,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Fallthrough {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Fallthrough)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Fallthrough", "tag")?;
     // @@bebop_insertion_point(decode_end:Fallthrough)
     result::Result::Ok(Fallthrough { tag })
   }
@@ -4230,7 +4231,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Repeat {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Repeat)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Repeat", "tag")?;
     // @@bebop_insertion_point(decode_end:Repeat)
     result::Result::Ok(Repeat { tag })
   }
@@ -4269,7 +4270,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Indirect {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Indirect)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Indirect", "tag")?;
     // @@bebop_insertion_point(decode_end:Indirect)
     result::Result::Ok(Indirect { tag })
   }
@@ -4308,7 +4309,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Nonisolated {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Nonisolated)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Nonisolated", "tag")?;
     // @@bebop_insertion_point(decode_end:Nonisolated)
     result::Result::Ok(Nonisolated { tag })
   }
@@ -4347,7 +4348,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Lazy {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Lazy)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Lazy", "tag")?;
     // @@bebop_insertion_point(decode_end:Lazy)
     result::Result::Ok(Lazy { tag })
   }
@@ -4386,7 +4387,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Weak {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Weak)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Weak", "tag")?;
     // @@bebop_insertion_point(decode_end:Weak)
     result::Result::Ok(Weak { tag })
   }
@@ -4425,7 +4426,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Unowned {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Unowned)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Unowned", "tag")?;
     // @@bebop_insertion_point(decode_end:Unowned)
     result::Result::Ok(Unowned { tag })
   }
@@ -4464,7 +4465,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Convenience {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Convenience)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Convenience", "tag")?;
     // @@bebop_insertion_point(decode_end:Convenience)
     result::Result::Ok(Convenience { tag })
   }
@@ -4503,7 +4504,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Required {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Required)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Required", "tag")?;
     // @@bebop_insertion_point(decode_end:Required)
     result::Result::Ok(Required { tag })
   }
@@ -4542,7 +4543,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Optional {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Optional)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Optional", "tag")?;
     // @@bebop_insertion_point(decode_end:Optional)
     result::Result::Ok(Optional { tag })
   }
@@ -4581,7 +4582,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Rethrows {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Rethrows)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Rethrows", "tag")?;
     // @@bebop_insertion_point(decode_end:Rethrows)
     result::Result::Ok(Rethrows { tag })
   }
@@ -4620,7 +4621,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Try {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Try)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Try", "tag")?;
     // @@bebop_insertion_point(decode_end:Try)
     result::Result::Ok(Try { tag })
   }
@@ -4659,7 +4660,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Catch {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Catch)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Catch", "tag")?;
     // @@bebop_insertion_point(decode_end:Catch)
     result::Result::Ok(Catch { tag })
   }
@@ -4698,7 +4699,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Throw {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Throw)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Throw", "tag")?;
     // @@bebop_insertion_point(decode_end:Throw)
     result::Result::Ok(Throw { tag })
   }
@@ -4737,7 +4738,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Guard {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Guard)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Guard", "tag")?;
     // @@bebop_insertion_point(decode_end:Guard)
     result::Result::Ok(Guard { tag })
   }
@@ -4776,7 +4777,7 @@ impl<'buf> bebop::BebopDecode<'buf> for In {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:In)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("In", "tag")?;
     // @@bebop_insertion_point(decode_end:In)
     result::Result::Ok(In { tag })
   }
@@ -4815,7 +4816,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Is {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Is)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Is", "tag")?;
     // @@bebop_insertion_point(decode_end:Is)
     result::Result::Ok(Is { tag })
   }
@@ -4854,7 +4855,7 @@ impl<'buf> bebop::BebopDecode<'buf> for As {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:As)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("As", "tag")?;
     // @@bebop_insertion_point(decode_end:As)
     result::Result::Ok(As { tag })
   }
@@ -4893,7 +4894,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Select {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Select)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Select", "tag")?;
     // @@bebop_insertion_point(decode_end:Select)
     result::Result::Ok(Select { tag })
   }
@@ -4932,7 +4933,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Event {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Event)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Event", "tag")?;
     // @@bebop_insertion_point(decode_end:Event)
     result::Result::Ok(Event { tag })
   }
@@ -4971,7 +4972,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Delegate {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Delegate)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Delegate", "tag")?;
     // @@bebop_insertion_point(decode_end:Delegate)
     result::Result::Ok(Delegate { tag })
   }
@@ -5010,7 +5011,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Checked {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Checked)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Checked", "tag")?;
     // @@bebop_insertion_point(decode_end:Checked)
     result::Result::Ok(Checked { tag })
   }
@@ -5049,7 +5050,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Unchecked {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Unchecked)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Unchecked", "tag")?;
     // @@bebop_insertion_point(decode_end:Unchecked)
     result::Result::Ok(Unchecked { tag })
   }
@@ -5088,7 +5089,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Stackalloc {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Stackalloc)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Stackalloc", "tag")?;
     // @@bebop_insertion_point(decode_end:Stackalloc)
     result::Result::Ok(Stackalloc { tag })
   }
@@ -5127,7 +5128,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Params {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Params)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Params", "tag")?;
     // @@bebop_insertion_point(decode_end:Params)
     result::Result::Ok(Params { tag })
   }
@@ -5166,7 +5167,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Lock {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Lock)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Lock", "tag")?;
     // @@bebop_insertion_point(decode_end:Lock)
     result::Result::Ok(Lock { tag })
   }
@@ -5205,7 +5206,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Nameof {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Nameof)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Nameof", "tag")?;
     // @@bebop_insertion_point(decode_end:Nameof)
     result::Result::Ok(Nameof { tag })
   }
@@ -5244,7 +5245,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Sbyte {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Sbyte)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Sbyte", "tag")?;
     // @@bebop_insertion_point(decode_end:Sbyte)
     result::Result::Ok(Sbyte { tag })
   }
@@ -5283,7 +5284,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Ushort {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Ushort)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Ushort", "tag")?;
     // @@bebop_insertion_point(decode_end:Ushort)
     result::Result::Ok(Ushort { tag })
   }
@@ -5322,7 +5323,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Uint {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Uint)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Uint", "tag")?;
     // @@bebop_insertion_point(decode_end:Uint)
     result::Result::Ok(Uint { tag })
   }
@@ -5361,7 +5362,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Ulong {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Ulong)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Ulong", "tag")?;
     // @@bebop_insertion_point(decode_end:Ulong)
     result::Result::Ok(Ulong { tag })
   }
@@ -5400,7 +5401,7 @@ impl<'buf> bebop::BebopDecode<'buf> for When {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:When)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("When", "tag")?;
     // @@bebop_insertion_point(decode_end:When)
     result::Result::Ok(When { tag })
   }
@@ -5439,7 +5440,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Init {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Init)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Init", "tag")?;
     // @@bebop_insertion_point(decode_end:Init)
     result::Result::Ok(Init { tag })
   }
@@ -5478,7 +5479,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Deinit {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Deinit)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Deinit", "tag")?;
     // @@bebop_insertion_point(decode_end:Deinit)
     result::Result::Ok(Deinit { tag })
   }
@@ -5517,7 +5518,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Get {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Get)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Get", "tag")?;
     // @@bebop_insertion_point(decode_end:Get)
     result::Result::Ok(Get { tag })
   }
@@ -5556,7 +5557,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Set {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Set)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Set", "tag")?;
     // @@bebop_insertion_point(decode_end:Set)
     result::Result::Ok(Set { tag })
   }
@@ -5595,7 +5596,7 @@ impl<'buf> bebop::BebopDecode<'buf> for WillSet {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:WillSet)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("WillSet", "tag")?;
     // @@bebop_insertion_point(decode_end:WillSet)
     result::Result::Ok(WillSet { tag })
   }
@@ -5634,7 +5635,7 @@ impl<'buf> bebop::BebopDecode<'buf> for DidSet {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:DidSet)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("DidSet", "tag")?;
     // @@bebop_insertion_point(decode_end:DidSet)
     result::Result::Ok(DidSet { tag })
   }
@@ -5673,7 +5674,7 @@ impl<'buf> bebop::BebopDecode<'buf> for Associatedtype {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:Associatedtype)
-    let tag = reader.read_i32()?;
+    let tag = reader.read_i32().for_field("Associatedtype", "tag")?;
     // @@bebop_insertion_point(decode_end:Associatedtype)
     result::Result::Ok(Associatedtype { tag })
   }
@@ -5805,24 +5806,24 @@ impl<'buf> bebop::BebopDecode<'buf> for RustKeywordFields {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:RustKeywordFields)
-    let r#type = reader.read_i32()?;
-    let r#mod = reader.read_i32()?;
-    let self_ = reader.read_i32()?;
-    let super_ = reader.read_i32()?;
-    let crate_ = reader.read_i32()?;
-    let r#match = reader.read_i32()?;
-    let r#where = reader.read_i32()?;
-    let r#loop = reader.read_i32()?;
-    let r#move = reader.read_i32()?;
-    let r#ref = reader.read_i32()?;
-    let r#dyn = reader.read_i32()?;
-    let r#use = reader.read_i32()?;
-    let r#let = reader.read_i32()?;
-    let r#fn = reader.read_i32()?;
-    let r#as = reader.read_i32()?;
-    let r#in = reader.read_i32()?;
-    let is = reader.read_i32()?;
-    let r#try = reader.read_i32()?;
+    let r#type = reader.read_i32().for_field("RustKeywordFields", "type")?;
+    let r#mod = reader.read_i32().for_field("RustKeywordFields", "mod")?;
+    let self_ = reader.read_i32().for_field("RustKeywordFields", "self_")?;
+    let super_ = reader.read_i32().for_field("RustKeywordFields", "super_")?;
+    let crate_ = reader.read_i32().for_field("RustKeywordFields", "crate_")?;
+    let r#match = reader.read_i32().for_field("RustKeywordFields", "match")?;
+    let r#where = reader.read_i32().for_field("RustKeywordFields", "where")?;
+    let r#loop = reader.read_i32().for_field("RustKeywordFields", "loop")?;
+    let r#move = reader.read_i32().for_field("RustKeywordFields", "move")?;
+    let r#ref = reader.read_i32().for_field("RustKeywordFields", "ref")?;
+    let r#dyn = reader.read_i32().for_field("RustKeywordFields", "dyn")?;
+    let r#use = reader.read_i32().for_field("RustKeywordFields", "use")?;
+    let r#let = reader.read_i32().for_field("RustKeywordFields", "let")?;
+    let r#fn = reader.read_i32().for_field("RustKeywordFields", "fn")?;
+    let r#as = reader.read_i32().for_field("RustKeywordFields", "as")?;
+    let r#in = reader.read_i32().for_field("RustKeywordFields", "in")?;
+    let is = reader.read_i32().for_field("RustKeywordFields", "is")?;
+    let r#try = reader.read_i32().for_field("RustKeywordFields", "try")?;
     // @@bebop_insertion_point(decode_end:RustKeywordFields)
     result::Result::Ok(RustKeywordFields {
       r#type,
@@ -6051,8 +6052,12 @@ impl<'buf> bebop::BebopDecode<'buf> for KeywordUnion {
     let start = reader.position();
     let discriminator = reader.read_byte()?;
     let value = match discriminator {
-      1 => result::Result::Ok(Self::Mod(Point::decode(reader)?)),
-      2 => result::Result::Ok(Self::Match(Point::decode(reader)?)),
+      1 => result::Result::Ok(Self::Mod(
+        Point::decode(reader).for_field("KeywordUnion", "mod")?,
+      )),
+      2 => result::Result::Ok(Self::Match(
+        Point::decode(reader).for_field("KeywordUnion", "match")?,
+      )),
       _ => result::Result::Err(bebop::DecodeError::InvalidUnion {
         type_name: "KeywordUnion",
         discriminator,
@@ -6152,10 +6157,29 @@ impl<'buf> bebop::BebopDecode<'buf> for KeywordFieldMessage<'buf> {
         break;
       }
       match tag {
-        1 => msg.r#type = option::Option::Some(reader.read_i32()?),
-        2 => msg.r#mod = option::Option::Some(borrow::Cow::Borrowed(reader.read_str()?)),
-        3 => msg.self_ = option::Option::Some(reader.read_bool()?),
-        4 => msg.crate_ = option::Option::Some(reader.read_i32()?),
+        1 => {
+          msg.r#type =
+            option::Option::Some(reader.read_i32().for_field("KeywordFieldMessage", "type")?)
+        }
+        2 => {
+          msg.r#mod = option::Option::Some(borrow::Cow::Borrowed(
+            reader.read_str().for_field("KeywordFieldMessage", "mod")?,
+          ))
+        }
+        3 => {
+          msg.self_ = option::Option::Some(
+            reader
+              .read_bool()
+              .for_field("KeywordFieldMessage", "self_")?,
+          )
+        }
+        4 => {
+          msg.crate_ = option::Option::Some(
+            reader
+              .read_i32()
+              .for_field("KeywordFieldMessage", "crate_")?,
+          )
+        }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
             type_name: "KeywordFieldMessage",
@@ -6224,8 +6248,10 @@ impl<'buf> bebop::BebopDecode<'buf> for GuidAndUserUuidCollision {
   #[inline]
   fn decode(reader: &mut bebop::BebopReader<'buf>) -> result::Result<Self, bebop::DecodeError> {
     // @@bebop_insertion_point(decode_start:GuidAndUserUuidCollision)
-    let runtime_guid = reader.read_uuid()?;
-    let user_uuid = Uuid::decode(reader)?;
+    let runtime_guid = reader
+      .read_uuid()
+      .for_field("GuidAndUserUuidCollision", "runtime_guid")?;
+    let user_uuid = Uuid::decode(reader).for_field("GuidAndUserUuidCollision", "user_uuid")?;
     // @@bebop_insertion_point(decode_end:GuidAndUserUuidCollision)
     result::Result::Ok(GuidAndUserUuidCollision {
       runtime_guid,
@@ -6304,12 +6330,16 @@ impl<'buf> bebop::BebopDecode<'buf> for MapWithUserHashMapStruct<'buf> {
       }
       match tag {
         1 => {
-          msg.items = option::Option::Some(reader.read_map(|_r| {
-            result::Result::Ok((
-              result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
-              HashMap::decode(_r)?,
-            ))
-          })?)
+          msg.items = option::Option::Some(
+            reader
+              .read_map(|_r| {
+                result::Result::Ok((
+                  result::Result::Ok(borrow::Cow::Borrowed(_r.read_str()?))?,
+                  HashMap::decode(_r)?,
+                ))
+              })
+              .for_field("MapWithUserHashMapStruct", "items")?,
+          )
         }
         tag => {
           return result::Result::Err(bebop::DecodeError::InvalidField {
