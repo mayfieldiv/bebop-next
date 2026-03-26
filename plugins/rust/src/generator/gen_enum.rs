@@ -5,7 +5,7 @@ use super::naming::{const_name, enum_variant_name, type_name};
 use super::type_mapper::{enum_base_rust_type, enum_read_method, enum_write_method, fixed_size};
 use super::{
   emit_deprecated, emit_doc_comment, has_decorator, visibility_keyword, GeneratorOptions,
-  LifetimeAnalysis, FORWARD_COMPATIBLE,
+  SchemaAnalysis, FORWARD_COMPATIBLE,
 };
 
 /// Shared context for enum code generation, built once in `generate()`.
@@ -46,7 +46,7 @@ pub fn generate(
   def: &DefinitionDescriptor,
   output: &mut String,
   options: &GeneratorOptions,
-  _analysis: &LifetimeAnalysis,
+  _analysis: &SchemaAnalysis,
 ) -> Result<(), GeneratorError> {
   let name = type_name(def.name.as_deref().unwrap_or("<unnamed>"));
 
