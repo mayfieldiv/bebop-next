@@ -4,7 +4,7 @@ use crate::generated::DefinitionDescriptor;
 use super::naming::{fqn_to_type_name, type_name};
 use super::{
   emit_deprecated, emit_doc_comment, has_decorator, visibility_keyword, GeneratorOptions,
-  LifetimeAnalysis, FORWARD_COMPATIBLE,
+  SchemaAnalysis, FORWARD_COMPATIBLE,
 };
 
 /// Generate Rust code for a union definition.
@@ -12,7 +12,7 @@ pub fn generate(
   def: &DefinitionDescriptor,
   output: &mut String,
   options: &GeneratorOptions,
-  analysis: &LifetimeAnalysis,
+  analysis: &SchemaAnalysis,
 ) -> Result<(), GeneratorError> {
   let name = type_name(def.name.as_deref().unwrap_or("<unnamed>"));
   let fqn = def.fqn.as_deref().unwrap_or("");
@@ -74,7 +74,7 @@ pub fn generate(
 
   let vis = visibility_keyword(def, options);
   let is_forward_compatible = has_decorator(def, FORWARD_COMPATIBLE);
-  let has_lifetime = analysis.lifetime_fqns.contains(fqn);
+  let has_lifetime = analysis.needs_lifetime(fqn);
   let lt = if has_lifetime { "<'buf>" } else { "" };
 
   // ── Doc comment + deprecated ──────────────────────────────────
@@ -97,7 +97,7 @@ pub fn generate(
   output.push_str(&format!("{} enum {}{} {{\n", vis, name, lt));
   for b in &branch_infos {
     let inner_lt = if let Some(ref fqn) = b.inner_fqn {
-      if analysis.lifetime_fqns.contains(fqn) {
+      if analysis.needs_lifetime(fqn) {
         "<'buf>"
       } else {
         ""
@@ -127,7 +127,7 @@ pub fn generate(
       let has_lt = b
         .inner_fqn
         .as_ref()
-        .is_some_and(|fqn| analysis.lifetime_fqns.contains(fqn));
+        .is_some_and(|fqn| analysis.needs_lifetime(fqn));
       if has_lt {
         output.push_str(&format!(
           "      Self::{}(inner) => {}::{}(inner.into_owned()),\n",

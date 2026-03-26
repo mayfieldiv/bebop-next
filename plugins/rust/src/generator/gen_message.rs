@@ -5,7 +5,7 @@ use super::naming::{field_name, serde_field_rename, type_name};
 use super::type_mapper;
 use super::{
   emit_deprecated, emit_doc_comment, has_decorator, visibility_keyword, GeneratorOptions,
-  LifetimeAnalysis, FORWARD_COMPATIBLE,
+  SchemaAnalysis, FORWARD_COMPATIBLE,
 };
 
 /// Wrapping strategy for a message field.
@@ -62,7 +62,7 @@ impl FieldMeta<'_> {
 /// Return (param_type, body_expression) for a message `with_*` setter.
 fn setter_signature(
   meta: &FieldMeta<'_>,
-  analysis: &LifetimeAnalysis,
+  analysis: &SchemaAnalysis,
 ) -> Result<(String, String), GeneratorError> {
   let kind = meta.kind;
 
@@ -96,7 +96,7 @@ pub fn generate(
   def: &DefinitionDescriptor,
   output: &mut String,
   options: &GeneratorOptions,
-  analysis: &LifetimeAnalysis,
+  analysis: &SchemaAnalysis,
 ) -> Result<(), GeneratorError> {
   let name = type_name(def.name.as_deref().unwrap_or("<unnamed>"));
   let own_fqn = def.fqn.as_deref().unwrap_or("");
@@ -109,7 +109,7 @@ pub fn generate(
   let fields = message_def.fields.as_deref().unwrap_or(&[]);
   let vis = visibility_keyword(def, options);
   let is_forward_compatible = has_decorator(def, FORWARD_COMPATIBLE);
-  let has_lifetime = analysis.lifetime_fqns.contains(own_fqn);
+  let has_lifetime = analysis.needs_lifetime(own_fqn);
 
   let lt = if has_lifetime { "<'buf>" } else { "" };
 

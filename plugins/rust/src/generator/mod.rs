@@ -158,22 +158,22 @@ impl SerdeMode {
 }
 
 /// Pre-computed lifetime and kind information for all definitions in a schema.
-pub struct LifetimeAnalysis {
+pub struct SchemaAnalysis {
   /// FQNs of enum definitions (never need a lifetime parameter).
-  pub enum_fqns: HashSet<String>,
+  enum_fqns: HashSet<String>,
   /// FQNs of types that need `'buf` (contain strings, byte arrays, or unions).
-  pub lifetime_fqns: HashSet<String>,
+  lifetime_fqns: HashSet<String>,
   /// FQNs of types that can derive `Eq` (no floating-point fields transitively).
-  pub eq_fqns: HashSet<String>,
+  eq_fqns: HashSet<String>,
   /// FQNs of types that can derive `Hash` (no floating-point or map fields transitively).
-  pub hash_fqns: HashSet<String>,
+  hash_fqns: HashSet<String>,
 }
 
-impl LifetimeAnalysis {
+impl SchemaAnalysis {
   /// Build a combined analysis from all schemas, so cross-schema type
   /// references resolve correctly.
-  pub fn build_all(schemas: &[SchemaDescriptor]) -> Self {
-    let mut analysis = LifetimeAnalysis {
+  pub fn build(schemas: &[SchemaDescriptor]) -> Self {
+    let mut analysis = SchemaAnalysis {
       enum_fqns: HashSet::new(),
       lifetime_fqns: HashSet::new(),
       eq_fqns: HashSet::new(),
@@ -263,7 +263,11 @@ impl LifetimeAnalysis {
   }
 
   /// Check if a TypeDescriptor transitively contains strings or byte arrays.
-  fn type_needs_lifetime(&self, td: &TypeDescriptor) -> bool {
+  pub fn needs_lifetime(&self, fqn: &str) -> bool {
+    self.lifetime_fqns.contains(fqn)
+  }
+
+  pub fn type_needs_lifetime(&self, td: &TypeDescriptor) -> bool {
     let kind = match td.kind {
       Some(k) => k,
       None => return false,
@@ -577,7 +581,7 @@ impl RustGenerator {
     &self,
     schema: &SchemaDescriptor,
     sibling_imports: &[&str],
-    analysis: &LifetimeAnalysis,
+    analysis: &SchemaAnalysis,
   ) -> Result<String, GeneratorError> {
     let mut output = String::new();
 
@@ -651,7 +655,7 @@ impl RustGenerator {
     def: &DefinitionDescriptor,
     output: &mut String,
     depth: usize,
-    analysis: &LifetimeAnalysis,
+    analysis: &SchemaAnalysis,
   ) -> Result<(), GeneratorError> {
     let kind = def
       .kind
@@ -1166,7 +1170,7 @@ mod tests {
   #[test]
   fn emits_file_level_insertion_points() {
     let schema = build_schema();
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::new(None)
       .generate(&schema, &[], &analysis)
       .expect("generator should succeed");
@@ -1183,7 +1187,7 @@ mod tests {
   #[test]
   fn emits_type_and_codec_insertion_points() {
     let schema = build_schema();
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::new(None)
       .generate(&schema, &[], &analysis)
       .expect("generator should succeed");
@@ -1244,7 +1248,7 @@ mod tests {
   #[test]
   fn emits_trait_derives_based_on_float_and_map_content() {
     let schema = build_trait_schema();
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::new(None)
       .generate(&schema, &[], &analysis)
       .expect("generator should succeed");
@@ -1263,7 +1267,7 @@ mod tests {
   #[test]
   fn recursive_union_float_propagates_into_object_eq_derives() {
     let schema = build_recursive_union_schema();
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::new(None)
       .generate(&schema, &[], &analysis)
       .expect("generator should succeed");
@@ -1275,7 +1279,7 @@ mod tests {
   #[test]
   fn struct_constructor_converts_owned_string_arrays() {
     let schema = build_string_array_constructor_schema();
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::new(None)
       .generate(&schema, &[], &analysis)
       .expect("generator should succeed");
@@ -1337,9 +1341,9 @@ mod tests {
       ..Default::default()
     };
 
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
-    assert!(analysis.lifetime_fqns.contains("test.B"));
-    assert!(analysis.lifetime_fqns.contains("test.A"));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
+    assert!(analysis.needs_lifetime("test.B"));
+    assert!(analysis.needs_lifetime("test.A"));
 
     let output = RustGenerator::new(None)
       .generate(&schema, &[], &analysis)
@@ -1390,7 +1394,7 @@ mod tests {
       definitions: Some(vec![payload]),
       ..Default::default()
     };
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::with_options(
       None,
       GeneratorOptions {
@@ -1497,7 +1501,7 @@ mod tests {
       definitions: Some(vec![payload, msg, status, flags, result_union]),
       ..Default::default()
     };
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::new(None)
       .generate(&schema, &[], &analysis)
       .expect("generator should succeed");
@@ -1584,7 +1588,7 @@ mod tests {
       definitions: Some(vec![payload]),
       ..Default::default()
     };
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::new(None)
       .generate(&schema, &[], &analysis)
       .expect("generator should succeed");
@@ -1622,7 +1626,7 @@ mod tests {
       definitions: Some(vec![my_const]),
       ..Default::default()
     };
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::new(None)
       .generate(&schema, &[], &analysis)
       .expect("generator should succeed");
@@ -1683,9 +1687,9 @@ mod tests {
       ..Default::default()
     };
 
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     assert!(
-      !analysis.lifetime_fqns.contains("test.StrictUnion"),
+      !analysis.needs_lifetime("test.StrictUnion"),
       "strict union with scalar-only branches should NOT need lifetime"
     );
   }
@@ -1734,9 +1738,9 @@ mod tests {
       ..Default::default()
     };
 
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     assert!(
-      analysis.lifetime_fqns.contains("test.FcUnion"),
+      analysis.needs_lifetime("test.FcUnion"),
       "forward-compatible union should always need lifetime"
     );
   }
@@ -1773,7 +1777,7 @@ mod tests {
       ..Default::default()
     };
 
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::new(None)
       .generate(&schema, &[], &analysis)
       .expect("generator should succeed");
@@ -1836,7 +1840,7 @@ mod tests {
       ..Default::default()
     };
 
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::new(None)
       .generate(&schema, &[], &analysis)
       .expect("generator should succeed");
@@ -1891,7 +1895,7 @@ mod tests {
       ..Default::default()
     };
 
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::new(None)
       .generate(&schema, &[], &analysis)
       .expect("generator should succeed");
@@ -1928,7 +1932,7 @@ mod tests {
       ..Default::default()
     };
 
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::new(None)
       .generate(&schema, &[], &analysis)
       .expect("generator should succeed");
@@ -1963,7 +1967,7 @@ mod tests {
       ..Default::default()
     };
 
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::new(None)
       .generate(&schema, &[], &analysis)
       .expect("generator should succeed");
@@ -1998,7 +2002,7 @@ mod tests {
       definitions: Some(vec![payload]),
       ..Default::default()
     };
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::with_options(
       None,
       GeneratorOptions {
@@ -2041,7 +2045,7 @@ mod tests {
       definitions: Some(vec![payload]),
       ..Default::default()
     };
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::with_options(
       None,
       GeneratorOptions {
@@ -2065,7 +2069,7 @@ mod tests {
       definitions: Some(vec![]),
       ..Default::default()
     };
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::with_options(
       None,
       GeneratorOptions {
@@ -2087,7 +2091,7 @@ mod tests {
       definitions: Some(vec![]),
       ..Default::default()
     };
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::with_options(
       None,
       GeneratorOptions {
@@ -2108,7 +2112,7 @@ mod tests {
       definitions: Some(vec![]),
       ..Default::default()
     };
-    let analysis = LifetimeAnalysis::build_all(std::slice::from_ref(&schema));
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
     let output = RustGenerator::with_options(
       None,
       GeneratorOptions {

@@ -4,7 +4,7 @@ use crate::generated::{DefinitionDescriptor, TypeDescriptor};
 use super::naming::{field_name, serde_field_rename, type_name};
 use super::type_mapper;
 use super::{
-  emit_deprecated, emit_doc_comment, visibility_keyword, GeneratorOptions, LifetimeAnalysis,
+  emit_deprecated, emit_doc_comment, visibility_keyword, GeneratorOptions, SchemaAnalysis,
 };
 
 struct StructFieldMeta<'a> {
@@ -21,7 +21,7 @@ pub fn generate(
   def: &DefinitionDescriptor,
   output: &mut String,
   options: &GeneratorOptions,
-  analysis: &LifetimeAnalysis,
+  analysis: &SchemaAnalysis,
 ) -> Result<(), GeneratorError> {
   let name = type_name(def.name.as_deref().unwrap_or("<unnamed>"));
   let fqn = def.fqn.as_deref().unwrap_or("");
@@ -33,7 +33,7 @@ pub fn generate(
 
   let fields = struct_def.fields.as_deref().unwrap_or(&[]);
   let vis = visibility_keyword(def, options);
-  let has_lifetime = analysis.lifetime_fqns.contains(fqn);
+  let has_lifetime = analysis.needs_lifetime(fqn);
 
   let lt = if has_lifetime { "<'buf>" } else { "" };
   let impl_header = if has_lifetime {
@@ -310,7 +310,7 @@ pub fn generate(
 fn emit_encoded_size_body(
   field_metas: &[StructFieldMeta<'_>],
   output: &mut String,
-  analysis: &LifetimeAnalysis,
+  analysis: &SchemaAnalysis,
 ) -> Result<(), GeneratorError> {
   output.push_str("    let mut size = 0;\n");
   for meta in field_metas {

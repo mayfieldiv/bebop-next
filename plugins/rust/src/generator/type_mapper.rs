@@ -2,7 +2,7 @@ use crate::error::GeneratorError;
 use crate::generated::{TypeDescriptor, TypeKind};
 
 use super::naming::fqn_to_type_name;
-use super::LifetimeAnalysis;
+use super::SchemaAnalysis;
 
 /// Map a scalar TypeKind to its Rust type string.
 pub fn scalar_type(kind: TypeKind) -> Option<&'static str> {
@@ -314,7 +314,7 @@ pub fn is_byte_array_cow_field(td: &TypeDescriptor) -> bool {
 /// parameter types compile correctly.
 pub fn rust_type_owned(
   td: &TypeDescriptor,
-  analysis: &LifetimeAnalysis,
+  analysis: &SchemaAnalysis,
 ) -> Result<String, GeneratorError> {
   let kind = td
     .kind
@@ -372,7 +372,7 @@ pub fn rust_type_owned(
         .as_deref()
         .ok_or_else(|| GeneratorError::MalformedType("defined type missing fqn".into()))?;
       let type_name = fqn_to_type_name(fqn);
-      if analysis.lifetime_fqns.contains(fqn) {
+      if analysis.needs_lifetime(fqn) {
         Ok(format!("{}<'static>", type_name))
       } else {
         Ok(type_name)
@@ -386,10 +386,7 @@ pub fn rust_type_owned(
 }
 
 /// Map a full TypeDescriptor to its Rust type string using Cow for borrowed types.
-pub fn rust_type(
-  td: &TypeDescriptor,
-  analysis: &LifetimeAnalysis,
-) -> Result<String, GeneratorError> {
+pub fn rust_type(td: &TypeDescriptor, analysis: &SchemaAnalysis) -> Result<String, GeneratorError> {
   let kind = td
     .kind
     .ok_or_else(|| GeneratorError::MalformedType("type descriptor missing kind".into()))?;
@@ -447,7 +444,7 @@ pub fn rust_type(
         .as_deref()
         .ok_or_else(|| GeneratorError::MalformedType("defined type missing fqn".into()))?;
       let type_name = fqn_to_type_name(fqn);
-      if analysis.lifetime_fqns.contains(fqn) {
+      if analysis.needs_lifetime(fqn) {
         Ok(format!("{}<'buf>", type_name))
       } else {
         Ok(type_name)
@@ -468,7 +465,7 @@ pub fn rust_type(
 pub fn read_expression(
   td: &TypeDescriptor,
   reader: &str,
-  _analysis: &LifetimeAnalysis,
+  _analysis: &SchemaAnalysis,
 ) -> Result<String, GeneratorError> {
   let kind = td
     .kind
@@ -580,7 +577,7 @@ pub fn read_expression(
 pub fn read_field_expression(
   td: &TypeDescriptor,
   reader: &str,
-  analysis: &LifetimeAnalysis,
+  analysis: &SchemaAnalysis,
   type_name: &str,
   field_name: &str,
 ) -> Result<String, GeneratorError> {
@@ -616,7 +613,7 @@ pub fn write_expression(
   td: &TypeDescriptor,
   value: &str,
   writer: &str,
-  _analysis: &LifetimeAnalysis,
+  _analysis: &SchemaAnalysis,
 ) -> Result<String, GeneratorError> {
   let kind = td
     .kind
@@ -748,7 +745,7 @@ fn collection_ref(value: &str) -> String {
 pub fn encoded_size_expression(
   td: &TypeDescriptor,
   value: &str,
-  _analysis: &LifetimeAnalysis,
+  _analysis: &SchemaAnalysis,
 ) -> Result<String, GeneratorError> {
   let kind = td
     .kind
@@ -835,7 +832,7 @@ pub fn encoded_size_expression(
 pub fn into_owned_expression(
   td: &TypeDescriptor,
   value: &str,
-  analysis: &LifetimeAnalysis,
+  analysis: &SchemaAnalysis,
 ) -> Result<String, GeneratorError> {
   let kind = td
     .kind
@@ -912,7 +909,7 @@ pub fn into_owned_expression(
     }
     TypeKind::Defined => {
       if let Some(ref fqn) = td.defined_fqn {
-        if analysis.lifetime_fqns.contains(fqn.as_ref()) {
+        if analysis.needs_lifetime(fqn.as_ref()) {
           return Ok(format!("{}.into_owned()", value));
         }
       }
@@ -932,7 +929,7 @@ pub fn into_owned_expression(
 pub fn into_borrowed_expression(
   td: &TypeDescriptor,
   value: &str,
-  analysis: &LifetimeAnalysis,
+  analysis: &SchemaAnalysis,
 ) -> Result<String, GeneratorError> {
   let kind = td
     .kind
@@ -1036,7 +1033,7 @@ pub fn into_borrowed_expression(
 /// `needs_into` indicates whether `.into()` is required in the body.
 fn element_into_info(
   td: &TypeDescriptor,
-  analysis: &LifetimeAnalysis,
+  analysis: &SchemaAnalysis,
 ) -> Result<(String, bool), GeneratorError> {
   let kind = td
     .kind
@@ -1091,7 +1088,7 @@ fn element_into_info(
 pub fn collection_into_iter(
   td: &TypeDescriptor,
   param_name: &str,
-  analysis: &LifetimeAnalysis,
+  analysis: &SchemaAnalysis,
 ) -> Result<Option<(String, String)>, GeneratorError> {
   let kind = td
     .kind
