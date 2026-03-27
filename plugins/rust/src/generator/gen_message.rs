@@ -1,8 +1,8 @@
 use crate::error::GeneratorError;
 use crate::generated::{DefinitionDescriptor, TypeDescriptor, TypeKind};
 
+use super::field_codegen::FieldCodegen;
 use super::naming::{field_name, serde_field_rename, type_name};
-use super::type_mapper;
 use super::{
   emit_deprecated, emit_doc_comment, has_decorator, visibility_keyword, GeneratorOptions,
   SchemaAnalysis, FORWARD_COMPATIBLE,
@@ -44,12 +44,11 @@ struct FieldMeta<'a> {
   fname: String,
   /// Bebop schema field name for decode error context (e.g. `"self"`, not `"self_"`).
   schema_name: String,
-  cow_type: String,
   tag: u32,
   wrap: FieldWrap,
-  td: &'a TypeDescriptor<'a>,
   kind: TypeKind,
   needs_owned: bool,
+  codegen: FieldCodegen<'a>,
 }
 
 impl FieldMeta<'_> {
@@ -60,35 +59,22 @@ impl FieldMeta<'_> {
 }
 
 /// Return (param_type, body_expression) for a message `with_*` setter.
+///
+/// Message setters store values directly into `Option<T>` fields, so
+/// pass-through parameters use `cow_type` (e.g. `Inner<'buf>`).
+/// This differs from struct constructors, which use `owned_type`
+/// (`Inner<'static>`) and rely on covariance for the assignment.
 fn setter_signature(
   meta: &FieldMeta<'_>,
-  analysis: &SchemaAnalysis,
+  has_lifetime: bool,
 ) -> Result<(String, String), GeneratorError> {
-  let kind = meta.kind;
-
-  // 1. Collection fields — use IntoIterator (same logic as struct new())
-  if let Some((param, body)) = type_mapper::collection_into_iter(meta.td, "value", analysis)? {
-    return Ok((param, body));
+  let cp = meta.codegen.constructor_param("value", has_lifetime)?;
+  // For pass-through params (no conversion), use the field's cow_type
+  // so message setters accept T<'buf> rather than T<'static>.
+  if cp.init_expr == "value" {
+    return Ok((meta.codegen.cow_type().to_string(), cp.init_expr));
   }
-
-  // 2. Direct Cow fields (string, bytes, bulk scalar arrays) — use impl Into
-  if type_mapper::is_cow_field(meta.td) {
-    return Ok((
-      format!("impl convert::Into<{}>", meta.cow_type),
-      "value.into()".to_string(),
-    ));
-  }
-
-  // 3. String without lifetime (shouldn't happen for messages, but defensive)
-  if kind == TypeKind::String {
-    return Ok((
-      format!("impl convert::Into<{}>", meta.cow_type),
-      "value.into()".to_string(),
-    ));
-  }
-
-  // 4. Everything else (scalars, enums, defined types) — pass through
-  Ok((meta.cow_type.clone(), "value".to_string()))
+  Ok((cp.param_type, cp.init_expr))
 }
 
 /// Generate Rust code for a message definition.
@@ -124,7 +110,7 @@ pub fn generate(
         .r#type
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedDefinition("message field missing type".into()))?;
-      let cow_type = type_mapper::rust_type(td, analysis)?;
+      let codegen = FieldCodegen::new(td, analysis)?;
       let tag = f
         .index
         .ok_or_else(|| GeneratorError::MalformedDefinition("message field missing index".into()))?;
@@ -132,12 +118,11 @@ pub fn generate(
       Ok(FieldMeta {
         fname,
         schema_name,
-        cow_type,
         tag,
         wrap,
-        td,
         kind: td.kind.unwrap_or(TypeKind::Unknown),
         needs_owned: analysis.type_needs_lifetime(td),
+        codegen,
       })
     })
     .collect::<Result<Vec<_>, GeneratorError>>()?;
@@ -169,13 +154,17 @@ pub fn generate(
       FieldWrap::Boxed => {
         output.push_str(&format!(
           "  {} {}: option::Option<boxed::Box<{}>>,\n",
-          vis, meta.fname, meta.cow_type
+          vis,
+          meta.fname,
+          meta.codegen.cow_type()
         ));
       }
       _ => {
         output.push_str(&format!(
           "  {} {}: option::Option<{}>,\n",
-          vis, meta.fname, meta.cow_type
+          vis,
+          meta.fname,
+          meta.codegen.cow_type()
         ));
       }
     }
@@ -209,7 +198,7 @@ pub fn generate(
         }
         _ => {
           if meta.needs_owned {
-            let inner_expr = type_mapper::into_owned_expression(meta.td, "v", analysis)?;
+            let inner_expr = meta.codegen.owned_expr("v")?;
             output.push_str(&format!(
               "      {}: self.{}.map(|v| {}),\n",
               meta.fname, meta.fname, inner_expr
@@ -260,7 +249,7 @@ pub fn generate(
       ref_kw, meta.fname
     ));
     output.push_str(&format!("      writer.write_tag({});\n", meta.tag));
-    let write_stmt = type_mapper::write_expression(meta.td, "v", "writer", analysis)?;
+    let write_stmt = meta.codegen.write_expr("v", "writer")?;
     output.push_str(&format!("      {};\n", write_stmt));
     output.push_str("    }\n");
   }
@@ -282,7 +271,7 @@ pub fn generate(
       "    if let option::Option::Some({}v) = self.{} {{\n",
       ref_kw, meta.fname
     ));
-    let size_expr = type_mapper::encoded_size_expression(meta.td, "v", analysis)?;
+    let size_expr = meta.codegen.size_expr("v")?;
     output.push_str(&format!(
       "      size += bebop::wire_size::tagged_size({});\n",
       size_expr
@@ -316,8 +305,7 @@ pub fn generate(
   output.push_str("      match tag {\n");
 
   for meta in &field_metas {
-    let expr =
-      type_mapper::read_field_expression(meta.td, "reader", analysis, &name, &meta.schema_name)?;
+    let expr = meta.codegen.read_expr("reader", &name, &meta.schema_name)?;
     match meta.wrap {
       FieldWrap::Boxed => {
         output.push_str(&format!(
@@ -357,7 +345,7 @@ pub fn generate(
   output.push_str(&format!("impl{} {}{} {{\n", lt, name, lt));
   for meta in &field_metas {
     // Determine param type and body expression for this field
-    let (param_type, body_expr) = setter_signature(meta, analysis)?;
+    let (param_type, body_expr) = setter_signature(meta, has_lifetime)?;
     // Strip r# prefix for method name — "with_type" is not a keyword
     let method_name = meta.fname.strip_prefix("r#").unwrap_or(&meta.fname);
     output.push_str(&format!(
