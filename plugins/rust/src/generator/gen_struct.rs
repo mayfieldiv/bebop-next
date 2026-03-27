@@ -1,8 +1,8 @@
 use crate::error::GeneratorError;
-use crate::generated::{DefinitionDescriptor, TypeDescriptor};
+use crate::generated::DefinitionDescriptor;
 
+use super::field_codegen::FieldCodegen;
 use super::naming::{field_name, serde_field_rename, type_name};
-use super::type_mapper;
 use super::{
   emit_deprecated, emit_doc_comment, visibility_keyword, GeneratorOptions, SchemaAnalysis,
 };
@@ -11,9 +11,7 @@ struct StructFieldMeta<'a> {
   fname: String,
   /// Bebop schema field name for decode error context (e.g. `"self"`, not `"self_"`).
   schema_name: String,
-  cow_type: String,
-  owned_type: String,
-  td: &'a TypeDescriptor<'a>,
+  codegen: FieldCodegen<'a>,
 }
 
 /// Generate Rust code for a struct definition.
@@ -53,12 +51,11 @@ pub fn generate(
       let raw = f.name.as_deref().unwrap_or("unknown");
       let fname = field_name(raw);
       let schema_name = raw.to_string();
+      let codegen = FieldCodegen::new(td, analysis)?;
       Ok(StructFieldMeta {
         fname,
         schema_name,
-        cow_type: type_mapper::rust_type(td, analysis)?,
-        owned_type: type_mapper::rust_type_owned(td, analysis)?,
-        td,
+        codegen,
       })
     })
     .collect::<Result<Vec<_>, GeneratorError>>()?;
@@ -86,7 +83,12 @@ pub fn generate(
         .serde
         .emit_field_attr(output, &format!("rename = \"{}\"", rename));
     }
-    output.push_str(&format!("  {} {}: {},\n", vis, meta.fname, meta.cow_type));
+    output.push_str(&format!(
+      "  {} {}: {},\n",
+      vis,
+      meta.fname,
+      meta.codegen.cow_type()
+    ));
   }
   output.push_str("}\n\n");
 
@@ -105,8 +107,8 @@ pub fn generate(
       let mut parts: Vec<String> = Vec::with_capacity(field_metas.len());
       let mut can_emit_expr = true;
       for meta in &field_metas {
-        match type_mapper::fixed_encoded_size_expression(meta.td)? {
-          Some(expr) => parts.push(expr),
+        match meta.codegen.wire_size_expr() {
+          Some(expr) => parts.push(expr.to_string()),
           None => {
             can_emit_expr = false;
             break;
@@ -138,25 +140,16 @@ pub fn generate(
       }
     }
   }
-  // Pre-compute IntoIterator info for collection fields
-  let collection_infos: Vec<Option<(String, String)>> = field_metas
+  // Pre-compute constructor params for all fields
+  let constructor_params: Vec<_> = field_metas
     .iter()
-    .map(|meta| type_mapper::collection_into_iter(meta.td, &meta.fname, analysis))
+    .map(|meta| meta.codegen.constructor_param(&meta.fname, has_lifetime))
     .collect::<Result<Vec<_>, GeneratorError>>()?;
 
   let params: Vec<String> = field_metas
     .iter()
-    .enumerate()
-    .map(|(i, meta)| {
-      let param_type = if let Some((ref pt, _)) = collection_infos[i] {
-        pt.clone()
-      } else if has_lifetime && type_mapper::is_cow_field(meta.td) {
-        format!("impl convert::Into<{}>", meta.cow_type)
-      } else {
-        meta.owned_type.clone()
-      };
-      format!("{}: {}", meta.fname, param_type)
-    })
+    .zip(&constructor_params)
+    .map(|(meta, cp)| format!("{}: {}", meta.fname, cp.param_type))
     .collect();
 
   if params.len() >= 2 {
@@ -169,33 +162,11 @@ pub fn generate(
     output.push_str(&format!("  pub fn new({}) -> Self {{\n", params.join(", ")));
   }
   let mut init_fields: Vec<String> = Vec::with_capacity(field_metas.len());
-  for (i, meta) in field_metas.iter().enumerate() {
-    if let Some((_, ref body_expr)) = collection_infos[i] {
-      // Collection field: use IntoIterator collect expression
-      output.push_str(&format!("    let {} = {};\n", meta.fname, body_expr));
-      init_fields.push(meta.fname.clone());
-    } else if has_lifetime && type_mapper::is_cow_field(meta.td) {
-      output.push_str(&format!(
-        "    let {} = {}.into();\n",
-        meta.fname, meta.fname
-      ));
-      init_fields.push(meta.fname.clone());
-    } else if has_lifetime && analysis.type_needs_lifetime(meta.td) {
-      let expr = type_mapper::into_borrowed_expression(meta.td, &meta.fname, analysis)?;
-      if expr != meta.fname {
-        output.push_str(&format!("    let {} = {};\n", meta.fname, expr));
-      }
-      init_fields.push(meta.fname.clone());
-    } else if type_mapper::is_cow_field(meta.td) {
-      // Defensive fallback for non-lifetime cases.
-      output.push_str(&format!(
-        "    let {} = borrow::Cow::Owned({});\n",
-        meta.fname, meta.fname
-      ));
-      init_fields.push(meta.fname.clone());
-    } else {
-      init_fields.push(meta.fname.clone());
+  for (meta, cp) in field_metas.iter().zip(&constructor_params) {
+    if cp.init_expr != meta.fname {
+      output.push_str(&format!("    let {} = {};\n", meta.fname, cp.init_expr));
     }
+    init_fields.push(meta.fname.clone());
   }
   if init_fields.is_empty() {
     output.push_str("    Self {}\n");
@@ -211,8 +182,7 @@ pub fn generate(
     output.push_str(&format!("  pub fn into_owned(self) -> {}Owned {{\n", name));
     output.push_str(&format!("    {} {{\n", name));
     for meta in &field_metas {
-      let expr =
-        type_mapper::into_owned_expression(meta.td, &format!("self.{}", meta.fname), analysis)?;
+      let expr = meta.codegen.owned_expr(&format!("self.{}", meta.fname))?;
       output.push_str(&format!("      {}: {},\n", meta.fname, expr));
     }
     output.push_str("    }\n");
@@ -233,8 +203,9 @@ pub fn generate(
     name
   ));
   for meta in &field_metas {
-    let write_stmt =
-      type_mapper::write_expression(meta.td, &format!("self.{}", meta.fname), "writer", analysis)?;
+    let write_stmt = meta
+      .codegen
+      .write_expr(&format!("self.{}", meta.fname), "writer")?;
     output.push_str(&format!("    {};\n", write_stmt));
   }
   output.push_str(&format!(
@@ -249,10 +220,10 @@ pub fn generate(
     if fs > 0 {
       output.push_str("    Self::FIXED_ENCODED_SIZE\n");
     } else {
-      emit_encoded_size_body(&field_metas, output, analysis)?;
+      emit_encoded_size_body(&field_metas, output)?;
     }
   } else {
-    emit_encoded_size_body(&field_metas, output, analysis)?;
+    emit_encoded_size_body(&field_metas, output)?;
   }
   output.push_str("  }\n");
 
@@ -272,8 +243,7 @@ pub fn generate(
     name
   ));
   for meta in &field_metas {
-    let expr =
-      type_mapper::read_field_expression(meta.td, "reader", analysis, &name, &meta.schema_name)?;
+    let expr = meta.codegen.read_expr("reader", &name, &meta.schema_name)?;
     output.push_str(&format!("    let {} = {};\n", meta.fname, expr));
   }
   output.push_str(&format!(
@@ -310,12 +280,10 @@ pub fn generate(
 fn emit_encoded_size_body(
   field_metas: &[StructFieldMeta<'_>],
   output: &mut String,
-  analysis: &SchemaAnalysis,
 ) -> Result<(), GeneratorError> {
   output.push_str("    let mut size = 0;\n");
   for meta in field_metas {
-    let expr =
-      type_mapper::encoded_size_expression(meta.td, &format!("self.{}", meta.fname), analysis)?;
+    let expr = meta.codegen.size_expr(&format!("self.{}", meta.fname))?;
     output.push_str(&format!("    size += {};\n", expr));
   }
   output.push_str("    size\n");

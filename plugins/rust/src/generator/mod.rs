@@ -1,3 +1,4 @@
+pub mod field_codegen;
 pub mod gen_const;
 pub mod gen_enum;
 pub mod gen_message;
@@ -5,7 +6,6 @@ pub mod gen_service;
 pub mod gen_struct;
 pub mod gen_union;
 pub mod naming;
-pub mod type_mapper;
 
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -282,7 +282,7 @@ impl SchemaAnalysis {
             return true;
           }
           // bulk scalar arrays need lifetime (Cow<'buf, [T]>)
-          if elem.kind.is_some_and(type_mapper::is_bulk_scalar) {
+          if elem.kind.is_some_and(field_codegen::is_bulk_scalar) {
             return true;
           }
           self.type_needs_lifetime(elem)
@@ -1634,6 +1634,66 @@ mod tests {
     assert!(
       output.contains("pub(crate) const MY_VALUE: i32 = 42i32;"),
       "local const should use pub(crate), got: {}",
+      output
+    );
+  }
+
+  /// Message `with_*` setters for defined-type fields with a lifetime must
+  /// accept `T<'buf>`, not `T<'static>`. The setter stores the value directly
+  /// into an `Option<T<'buf>>` field — no ownership conversion is needed.
+  /// Struct constructors intentionally use `T<'static>` (owned form) and rely
+  /// on covariance, but message setters should not impose that restriction.
+  #[test]
+  fn message_setter_uses_buf_lifetime_for_defined_type_fields() {
+    // Inner is a struct with a string field → needs 'buf
+    let inner = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Struct),
+      name: Some(Cow::Borrowed("Inner")),
+      fqn: Some(Cow::Borrowed("test.Inner")),
+      struct_def: Some(StructDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("name")),
+          r#type: Some(scalar_type(TypeKind::String)),
+          index: Some(0),
+          ..Default::default()
+        }]),
+        ..Default::default()
+      }),
+      ..Default::default()
+    };
+
+    // Wrapper is a message with a field of type Inner
+    let wrapper = DefinitionDescriptor {
+      kind: Some(DefinitionKind::Message),
+      name: Some(Cow::Borrowed("Wrapper")),
+      fqn: Some(Cow::Borrowed("test.Wrapper")),
+      message_def: Some(MessageDef {
+        fields: Some(vec![FieldDescriptor {
+          name: Some(Cow::Borrowed("payload")),
+          r#type: Some(defined_type("test.Inner")),
+          index: Some(1),
+          ..Default::default()
+        }]),
+      }),
+      ..Default::default()
+    };
+
+    let schema = SchemaDescriptor {
+      path: Some(Cow::Borrowed("msg-setter.bop")),
+      definitions: Some(vec![inner, wrapper]),
+      ..Default::default()
+    };
+
+    let analysis = SchemaAnalysis::build(std::slice::from_ref(&schema));
+    let output = RustGenerator::new(None)
+      .generate(&schema, &[], &analysis)
+      .expect("generator should succeed");
+
+    // The setter must accept Inner<'buf>, not Inner<'static>
+    assert!(
+      output.contains("pub fn with_payload(mut self, value: Inner<'buf>) -> Self"),
+      "message setter should use 'buf lifetime for defined-type field;\n\
+       look for 'with_payload' in output:\n{}",
       output
     );
   }
