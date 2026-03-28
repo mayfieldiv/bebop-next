@@ -1,8 +1,8 @@
 use crate::error::GeneratorError;
 use crate::generated::{DefinitionDescriptor, LiteralKind, LiteralValue, TypeDescriptor, TypeKind};
 
+use super::field_codegen::fixed_scalar_info;
 use super::naming::const_name;
-use super::type_mapper::scalar_type;
 use super::{emit_deprecated, emit_doc_comment, visibility_keyword, GeneratorOptions};
 
 /// Generate Rust code for a const definition.
@@ -61,7 +61,7 @@ fn const_rust_type(td: &TypeDescriptor) -> Result<&'static str, GeneratorError> 
         ))
       }
     }
-    _ => scalar_type(kind).ok_or_else(|| {
+    _ => fixed_scalar_info(kind).map(|s| s.rust_type).ok_or_else(|| {
       GeneratorError::MalformedType(format!("unsupported const type kind: {}", kind as u8))
     }),
   }

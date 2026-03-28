@@ -1,11 +1,11 @@
 use crate::error::GeneratorError;
 use crate::generated::{DefinitionDescriptor, EnumMemberDescriptor, TypeKind};
 
+use super::field_codegen::fixed_scalar_info;
 use super::naming::{const_name, enum_variant_name, type_name};
-use super::type_mapper::{enum_base_rust_type, enum_read_method, enum_write_method, fixed_size};
 use super::{
   emit_deprecated, emit_doc_comment, has_decorator, visibility_keyword, GeneratorOptions,
-  LifetimeAnalysis, FORWARD_COMPATIBLE,
+  FORWARD_COMPATIBLE,
 };
 
 /// Shared context for enum code generation, built once in `generate()`.
@@ -46,7 +46,6 @@ pub fn generate(
   def: &DefinitionDescriptor,
   output: &mut String,
   options: &GeneratorOptions,
-  _analysis: &LifetimeAnalysis,
 ) -> Result<(), GeneratorError> {
   let name = type_name(def.name.as_deref().unwrap_or("<unnamed>"));
 
@@ -59,11 +58,18 @@ pub fn generate(
     .base_type
     .ok_or_else(|| GeneratorError::MalformedDefinition("enum missing base_type".into()))?;
 
-  let base_type = enum_base_rust_type(base_kind)?;
-  let read_method = enum_read_method(base_kind)?;
-  let write_method = enum_write_method(base_kind)?;
-  let byte_size = fixed_size(base_kind)
-    .ok_or_else(|| GeneratorError::MalformedType("enum base type has no fixed size".into()))?;
+  let scalar_info = fixed_scalar_info(base_kind)
+    .filter(|s| s.is_enum_base)
+    .ok_or_else(|| {
+      GeneratorError::MalformedType(format!(
+        "unsupported enum base type kind: {}",
+        base_kind as u8
+      ))
+    })?;
+  let base_type = scalar_info.rust_type;
+  let read_method = scalar_info.read_method;
+  let write_method = scalar_info.write_method;
+  let byte_size = scalar_info.wire_size;
   let is_flags = enum_def.is_flags.unwrap_or(false);
   let is_signed = matches!(
     base_kind,
