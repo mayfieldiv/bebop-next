@@ -25,6 +25,10 @@ pub struct FixedScalarInfo {
   pub is_bulk_eligible: bool,
   /// Valid as enum/flags base type (integer types only).
   pub is_enum_base: bool,
+  /// Implements the runtime `FixedScalar` trait, enabling `read_fixed_array`
+  /// / `write_fixed_array`. True for the 15 primitive numeric types (Bool
+  /// through Float64); false for Uuid, Timestamp, Duration.
+  pub is_fixed_array_scalar: bool,
 }
 
 pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
@@ -37,6 +41,7 @@ pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
     wire_size_expr: "mem::size_of::<bool>()",
     is_bulk_eligible: false,
     is_enum_base: false,
+    is_fixed_array_scalar: true,
   },
   FixedScalarInfo {
     kind: TypeKind::Byte,
@@ -47,6 +52,7 @@ pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
     wire_size_expr: "mem::size_of::<u8>()",
     is_bulk_eligible: false,
     is_enum_base: true,
+    is_fixed_array_scalar: true,
   },
   FixedScalarInfo {
     kind: TypeKind::Int8,
@@ -57,6 +63,7 @@ pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
     wire_size_expr: "mem::size_of::<i8>()",
     is_bulk_eligible: true,
     is_enum_base: true,
+    is_fixed_array_scalar: true,
   },
   FixedScalarInfo {
     kind: TypeKind::Int16,
@@ -67,6 +74,7 @@ pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
     wire_size_expr: "mem::size_of::<i16>()",
     is_bulk_eligible: true,
     is_enum_base: true,
+    is_fixed_array_scalar: true,
   },
   FixedScalarInfo {
     kind: TypeKind::Uint16,
@@ -77,6 +85,7 @@ pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
     wire_size_expr: "mem::size_of::<u16>()",
     is_bulk_eligible: true,
     is_enum_base: true,
+    is_fixed_array_scalar: true,
   },
   FixedScalarInfo {
     kind: TypeKind::Int32,
@@ -87,6 +96,7 @@ pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
     wire_size_expr: "mem::size_of::<i32>()",
     is_bulk_eligible: true,
     is_enum_base: true,
+    is_fixed_array_scalar: true,
   },
   FixedScalarInfo {
     kind: TypeKind::Uint32,
@@ -97,6 +107,7 @@ pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
     wire_size_expr: "mem::size_of::<u32>()",
     is_bulk_eligible: true,
     is_enum_base: true,
+    is_fixed_array_scalar: true,
   },
   FixedScalarInfo {
     kind: TypeKind::Int64,
@@ -107,6 +118,7 @@ pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
     wire_size_expr: "mem::size_of::<i64>()",
     is_bulk_eligible: true,
     is_enum_base: true,
+    is_fixed_array_scalar: true,
   },
   FixedScalarInfo {
     kind: TypeKind::Uint64,
@@ -117,6 +129,7 @@ pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
     wire_size_expr: "mem::size_of::<u64>()",
     is_bulk_eligible: true,
     is_enum_base: true,
+    is_fixed_array_scalar: true,
   },
   FixedScalarInfo {
     kind: TypeKind::Int128,
@@ -127,6 +140,7 @@ pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
     wire_size_expr: "mem::size_of::<i128>()",
     is_bulk_eligible: true,
     is_enum_base: false,
+    is_fixed_array_scalar: true,
   },
   FixedScalarInfo {
     kind: TypeKind::Uint128,
@@ -137,6 +151,7 @@ pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
     wire_size_expr: "mem::size_of::<u128>()",
     is_bulk_eligible: true,
     is_enum_base: false,
+    is_fixed_array_scalar: true,
   },
   FixedScalarInfo {
     kind: TypeKind::Float16,
@@ -147,6 +162,7 @@ pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
     wire_size_expr: "mem::size_of::<bebop::f16>()",
     is_bulk_eligible: true,
     is_enum_base: false,
+    is_fixed_array_scalar: true,
   },
   FixedScalarInfo {
     kind: TypeKind::Bfloat16,
@@ -157,6 +173,7 @@ pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
     wire_size_expr: "mem::size_of::<bebop::bf16>()",
     is_bulk_eligible: true,
     is_enum_base: false,
+    is_fixed_array_scalar: true,
   },
   FixedScalarInfo {
     kind: TypeKind::Float32,
@@ -167,6 +184,7 @@ pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
     wire_size_expr: "mem::size_of::<f32>()",
     is_bulk_eligible: true,
     is_enum_base: false,
+    is_fixed_array_scalar: true,
   },
   FixedScalarInfo {
     kind: TypeKind::Float64,
@@ -177,6 +195,7 @@ pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
     wire_size_expr: "mem::size_of::<f64>()",
     is_bulk_eligible: true,
     is_enum_base: false,
+    is_fixed_array_scalar: true,
   },
   FixedScalarInfo {
     kind: TypeKind::Uuid,
@@ -187,6 +206,7 @@ pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
     wire_size_expr: "mem::size_of::<bebop::Uuid>()",
     is_bulk_eligible: false,
     is_enum_base: false,
+    is_fixed_array_scalar: false,
   },
   FixedScalarInfo {
     kind: TypeKind::Timestamp,
@@ -194,10 +214,11 @@ pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
     read_method: "read_timestamp",
     write_method: "write_timestamp",
     // Wire size is i64 + i32 (no padding), not size_of the struct
-    wire_size: mem::size_of::<i64>() + size_of::<i32>(),
+    wire_size: mem::size_of::<i64>() + mem::size_of::<i32>(),
     wire_size_expr: "mem::size_of::<i64>() + mem::size_of::<i32>()",
     is_bulk_eligible: false,
     is_enum_base: false,
+    is_fixed_array_scalar: false,
   },
   FixedScalarInfo {
     kind: TypeKind::Duration,
@@ -205,10 +226,11 @@ pub(super) static FIXED_SCALAR_TABLE: &[FixedScalarInfo] = &[
     read_method: "read_duration",
     write_method: "write_duration",
     // Wire size is i64 + i32 (no padding), not size_of the struct
-    wire_size: mem::size_of::<i64>() + size_of::<i32>(),
+    wire_size: mem::size_of::<i64>() + mem::size_of::<i32>(),
     wire_size_expr: "mem::size_of::<i64>() + mem::size_of::<i32>()",
     is_bulk_eligible: false,
     is_enum_base: false,
+    is_fixed_array_scalar: false,
   },
 ];
 
@@ -695,7 +717,7 @@ fn read_expression(
         .fixed_array_size
         .ok_or_else(|| GeneratorError::MalformedType("fixed array missing size".into()))?;
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
-      if fixed_scalar_info(elem_kind).is_some() {
+      if fixed_scalar_info(elem_kind).is_some_and(|s| s.is_fixed_array_scalar) {
         let ty = fixed_scalar_info(elem_kind).unwrap().rust_type;
         Ok(format!("{}.read_fixed_array::<{}, {}>()", reader, ty, size))
       } else {
@@ -835,7 +857,7 @@ fn write_expression(
         .as_ref()
         .ok_or_else(|| GeneratorError::MalformedType("fixed array missing element type".into()))?;
       let elem_kind = elem.kind.unwrap_or(TypeKind::Unknown);
-      if fixed_scalar_info(elem_kind).is_some() {
+      if fixed_scalar_info(elem_kind).is_some_and(|s| s.is_fixed_array_scalar) {
         let size = td
           .fixed_array_size
           .ok_or_else(|| GeneratorError::MalformedType("fixed array missing size".into()))?;
@@ -845,14 +867,7 @@ fn write_expression(
           writer, ty, size, value
         ))
       } else {
-        let elem_val = if elem_kind == TypeKind::String {
-          "_el"
-        } else if fixed_scalar_info(elem_kind).is_some() {
-          "*_el"
-        } else {
-          "_el"
-        };
-        let inner = write_expression(elem, elem_val, writer, analysis)?;
+        let inner = write_expression(elem, "_el", writer, analysis)?;
         Ok(format!("for _el in {}.iter() {{ {} }}", value, inner))
       }
     }
