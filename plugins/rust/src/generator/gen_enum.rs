@@ -5,7 +5,7 @@ use super::field_codegen::fixed_scalar_info;
 use super::naming::{const_name, enum_variant_name, type_name};
 use super::{
   emit_deprecated, emit_doc_comment, has_decorator, visibility_keyword, GeneratorOptions,
-  SchemaAnalysis, FORWARD_COMPATIBLE,
+  FORWARD_COMPATIBLE,
 };
 
 /// Shared context for enum code generation, built once in `generate()`.
@@ -46,7 +46,6 @@ pub fn generate(
   def: &DefinitionDescriptor,
   output: &mut String,
   options: &GeneratorOptions,
-  _analysis: &SchemaAnalysis,
 ) -> Result<(), GeneratorError> {
   let name = type_name(def.name.as_deref().unwrap_or("<unnamed>"));
 
