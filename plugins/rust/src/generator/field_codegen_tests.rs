@@ -540,6 +540,107 @@ fn read_expr_array_of_defined() {
   );
 }
 
+// ── FixedArray non-FixedScalar tests (Uuid, Timestamp, Duration) ────
+
+#[test]
+fn fixed_array_uuid_uses_element_loop_not_read_fixed_array() {
+  let analysis = empty_analysis();
+  let td = td_fixed_array(td_scalar(TypeKind::Uuid), 4);
+  let fc = FieldCodegen::new(&td, &analysis).unwrap();
+
+  let read = fc.read_expr("reader", "MyStruct", "ids").unwrap();
+  // Must NOT contain read_fixed_array (Uuid doesn't implement FixedScalar)
+  assert!(
+    !read.contains("read_fixed_array"),
+    "Uuid fixed array should use element loop, got: {}",
+    read
+  );
+  assert!(read.contains("Default::default()"), "should use manual loop");
+
+  let write = fc.write_expr("self.ids", "writer").unwrap();
+  assert!(
+    !write.contains("write_fixed_array"),
+    "Uuid fixed array should use element loop, got: {}",
+    write
+  );
+  assert!(write.contains("for _el in"), "should iterate elements");
+}
+
+#[test]
+fn fixed_array_timestamp_uses_element_loop() {
+  let analysis = empty_analysis();
+  let td = td_fixed_array(td_scalar(TypeKind::Timestamp), 2);
+  let fc = FieldCodegen::new(&td, &analysis).unwrap();
+
+  let read = fc.read_expr("reader", "MyStruct", "times").unwrap();
+  assert!(!read.contains("read_fixed_array"), "Timestamp: {}", read);
+
+  let write = fc.write_expr("self.times", "writer").unwrap();
+  assert!(!write.contains("write_fixed_array"), "Timestamp: {}", write);
+}
+
+#[test]
+fn fixed_array_i32_uses_read_fixed_array() {
+  let analysis = empty_analysis();
+  let td = td_fixed_array(td_scalar(TypeKind::Int32), 3);
+  let fc = FieldCodegen::new(&td, &analysis).unwrap();
+
+  let read = fc.read_expr("reader", "MyStruct", "vals").unwrap();
+  assert!(
+    read.contains("read_fixed_array::<i32, 3>"),
+    "i32 fixed array should use read_fixed_array, got: {}",
+    read
+  );
+
+  let write = fc.write_expr("self.vals", "writer").unwrap();
+  assert!(
+    write.contains("write_fixed_array::<i32, 3>"),
+    "i32 fixed array should use write_fixed_array, got: {}",
+    write
+  );
+}
+
+#[test]
+fn is_fixed_array_scalar_matches_runtime_fixed_scalar_trait() {
+  // The 15 types with FixedScalar impls in the runtime
+  let fixed_scalar_kinds = [
+    TypeKind::Bool,
+    TypeKind::Byte,
+    TypeKind::Int8,
+    TypeKind::Int16,
+    TypeKind::Uint16,
+    TypeKind::Int32,
+    TypeKind::Uint32,
+    TypeKind::Int64,
+    TypeKind::Uint64,
+    TypeKind::Int128,
+    TypeKind::Uint128,
+    TypeKind::Float16,
+    TypeKind::Bfloat16,
+    TypeKind::Float32,
+    TypeKind::Float64,
+  ];
+  for kind in fixed_scalar_kinds {
+    let info = fixed_scalar_info(kind).unwrap();
+    assert!(
+      info.is_fixed_array_scalar,
+      "{:?} should have is_fixed_array_scalar = true",
+      kind
+    );
+  }
+
+  // The 3 types without FixedScalar impls
+  let non_fixed_scalar_kinds = [TypeKind::Uuid, TypeKind::Timestamp, TypeKind::Duration];
+  for kind in non_fixed_scalar_kinds {
+    let info = fixed_scalar_info(kind).unwrap();
+    assert!(
+      !info.is_fixed_array_scalar,
+      "{:?} should have is_fixed_array_scalar = false",
+      kind
+    );
+  }
+}
+
 #[test]
 fn is_cow_field_variants() {
   assert!(is_cow_field(&td_scalar(TypeKind::String)));
